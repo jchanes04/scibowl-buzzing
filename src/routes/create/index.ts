@@ -1,10 +1,10 @@
 import type { Request } from "@sveltejs/kit";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
-import { createNewGame } from "src/server";
+import { createNewGame } from "../../server";
 
 export async function post(request: Request) {
     try {
-        let formData = (<ReadOnlyFormData>request.body)
+        let formData = <ReadOnlyFormData>request.body
         let ownerName = formData.get("owner-name")
 
         let gameName = formData.get("game-name")
@@ -22,14 +22,18 @@ export async function post(request: Request) {
 
         return {
             headers: {
-                'Location': "/game/" + game.id
-            }
+                'Location': "/game/" + game.id,
+                'Set-Cookie': "memberID=" + game.owner.id
+            },
+            status: 302
         }
-    } catch {
+    } catch (e) {
+        console.error(e)
         return {
             headers: {
                 'Location': "/error/invalid-create"
-            }
+            },
+            status: 302
         }
     }
 }

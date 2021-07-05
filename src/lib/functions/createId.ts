@@ -10,8 +10,9 @@ let joinCodes: string[] = []
         G: Game
         M: Member
         S: Message
+        T: Team
 
-    Game/Member ID structure:
+    Game/Member/Team ID structure:
         xx   xxxxxx  x
        Seed   Time  Sum
 
@@ -47,6 +48,12 @@ export function createMessageID(): string {
     return body + getSumDigit("S", body)
 }
 
+export function createTeamID(): string {
+    let timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
+    let seedComponent = incrementSeed()
+    let body: string = seedComponent + timeComponent
+    return body + getSumDigit("T", body)
+}
 
 
 function getSumDigit(targetSum: string, body: string) {

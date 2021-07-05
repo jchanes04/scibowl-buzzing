@@ -1,6 +1,6 @@
 import { Game } from './Game'
 import type { Member } from './Member'
-import { createJoinCode } from 'src/functions/createId'
+import { createJoinCode } from '$lib/functions/createId'
 
 export interface GameManager {
 
@@ -16,6 +16,20 @@ export class GameManager {
 
     get(id: string) {
         return this.games[id] || null
+    }
+
+    has(id: string) {
+        return (id in this.games)
+    }
+
+    find(func: (game: Game) => boolean) {
+        for (let id in this.games) {
+            if (func(this.games[id])) {
+                return this.games[id]
+            }
+        }
+
+        return null
     }
 
     createGame(options: { name: string, ownerMember: Member }) {
