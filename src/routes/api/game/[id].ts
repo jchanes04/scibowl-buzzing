@@ -11,7 +11,8 @@ export function get({ params }: Request) {
     return {
         body: {
             memberList,
-            gameName: game.name
+            gameName: game.name,
+            chatMessages: game.chatMessages.map(x => { return {...x} })
         }
     }
 }

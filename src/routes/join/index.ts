@@ -1,18 +1,26 @@
 import { Member } from "$lib/classes/Member";
 import type { Request } from "@sveltejs/kit";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
-import { getGameFromCode } from "../../server";
+import { getGameFromCode, getGame } from "../../server";
+import { redirectTo } from "$lib/functions/redirectTo";
+import { io } from '../../server'
 
 export async function post(request: Request) {
     try {
         let formData = <ReadOnlyFormData>request.body
         let name = formData.get('name')
         let joinCode = formData.get('join-code')
+        let gameID = formData.get('gameID')
 
-        let game = getGameFromCode(joinCode)
+        let game = joinCode ? getGameFromCode(joinCode) : getGame(gameID)
         
         let newMember = new Member({ name })
         game.addMember(newMember)
+        io.to(game.id).emit('memberJoin', newMember)
+        game.addChatMessage({
+            text: newMember.name + ' has joined',
+            type: 'notification'
+        })
 
         return {
             headers: {
@@ -21,12 +29,8 @@ export async function post(request: Request) {
             },
             status: 302
         }
-    } catch {
-        return {
-            headers: {
-                'Location': "/error/invalid-join"
-            },
-            status: 302
-        }
+    } catch (e) {
+        console.error(e)
+        return redirectTo('/error/invalid-join')
     }
 }

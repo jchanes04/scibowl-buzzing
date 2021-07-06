@@ -9,7 +9,10 @@
         if (res.ok) {
             let json = await res.json()
             return {
-                props: json
+                props: {
+                    ...json,
+                    gameID: page.params.id
+                }
             }
         }
 
@@ -18,7 +21,7 @@
 </script>
 
 <script lang="ts">
-    export let memberNames: string[], gameName: string
+    export let memberNames: string[], gameName: string, gameID: string
 
     import { session } from "$app/stores"
     
@@ -39,6 +42,7 @@
     <form action={`/join`} method="POST" on:submit={handleSubmit} on:input={handleFormInput}>
         <h3>Join {gameName}</h3>
         <div>
+            <input type="hidden" name="gameID" value={gameID} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" />
             <button id="join-game" disabled>Join</button>
         </div>
