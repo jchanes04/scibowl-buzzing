@@ -1,13 +1,10 @@
 <script lang="ts">
     export let gameName: string
-    export let timer
-
-    import Timer from './Timer.svelte'
 </script>
 
 <div id="top-bar">
     <h1>{gameName}</h1>
-    <Timer bind:timer={timer} />
+    <slot></slot>
 </div>
 
 <style lang="scss">

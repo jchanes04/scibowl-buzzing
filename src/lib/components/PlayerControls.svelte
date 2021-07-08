@@ -1,14 +1,16 @@
 <script lang="ts">
     export let buzz
+    export let buzzingDisabled: boolean
 </script>
 
 <div>
-    <button id="buzz" on:click={buzz} disabled>buzz</button>
+    <button id="buzz" on:click={buzz} disabled={buzzingDisabled}>buzz</button>
 </div>
 
 <style>
     div {
         grid-area: control-panel;
+        border: solid black 2px;
     }
 
     button {

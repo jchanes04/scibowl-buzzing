@@ -6,7 +6,7 @@ import type { Team } from "./Team";
 export interface Member {
     name: string,
     id: string,
-    team: Team,
+    team: Team | string,
     scoreboard: MemberScoreboard,
     socket?: Socket
 }
@@ -15,7 +15,8 @@ export class Member {
     constructor({ name, team }: { name: string, team?: Team }) {
         this.id = createMemberID()
         this.name = name
-        this.team = team || null
+        this.team = team || this.id
+        team.addMember(this)
         this.scoreboard = new MemberScoreboard(team?.scoreboard)
     }
 

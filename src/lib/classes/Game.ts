@@ -1,6 +1,8 @@
 import { createGameID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
 import type { Member } from "./Member"
+import type { Team } from "./Team"
+import { Timer } from "./Timer"
 
 export type Message = {
     text: string,
@@ -23,8 +25,15 @@ export interface Game {
 
     owner: Member,
     members: Member[],
+    teams: Array<Team | string>
 
     chatMessages: Message[],
+
+    timer: Timer,
+    times: {
+        tossup: [number, number],
+        bonus: [number, number]
+    }
 
     state: 'idle' | 'open' | 'buzzed',
     currentBuzzer: Member | null,
@@ -38,18 +47,24 @@ export interface Game {
 }
 
 export class Game {
-    constructor({ name, ownerMember, joinCode }: { name: string, ownerMember: Member, joinCode: string }) {
+    constructor({ name, ownerMember, joinCode, times }: { name: string, ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
         this.id = createGameID()
         this.joinCode = joinCode
 
         this.name = name
-
         this.scoreboard = new GameScoreboard({})
         
         this.owner = ownerMember
         this.members = [ownerMember]
+        this.teams = [ownerMember.team]
 
         this.chatMessages = []
+
+        this.timer = new Timer()
+        this.times = {
+            tossup: times?.tossup || [5, 2],
+            bonus: times?.bonus || [20, 2]
+        }
 
         this.state = 'idle'
 
@@ -63,9 +78,17 @@ export class Game {
 
     addMember(member: Member) {
         if (this.members.some(x => x.id === member.id)) throw new Error("Member is already in the game")
-
         this.members = [...this.members, member]
+        for (let m of this.members) {
+            if (m.team !== null){
+                if (!this.teams.some(t => typeof t !== "string" && t.id === (<Team>member.team).id)){
+                    this.teams.push(m.team)
+                }
+            } 
+        }
+        
         return this.members
+
     }
 
     removeMember(id: string) {
@@ -82,10 +105,14 @@ export class Game {
     buzz(memberID: string) {
         console.dir(this.members)
         let member = this.members.find(x => x.id === memberID)
-        this.buzzedPlayers.push(member)
-        this.currentBuzzer = member
-        this.state = 'buzzed'
-        return member
+        if (!this.buzzedPlayers.filter(x => typeof x.team !== "string").some(x => (<Team>x.team).id === (<Team>member.team).id)){
+            this.buzzedPlayers.push(member)
+            this.currentBuzzer = member
+            this.state = 'buzzed'
+            return member
+        } else {
+            return false
+        }
     }
 
     newQ(memberID: string, question: Question ) {
@@ -97,6 +124,38 @@ export class Game {
             return true
         } else {
 
+        }
+    }
+
+    scoreQ(score: 'correct' | 'incorrect' | 'penalty') {
+        console.dir(this.currentQuestion)
+        let scoredMember = this.currentBuzzer
+        if (this.currentQuestion.bonus) {
+            if (score === "correct") {
+                this.scoreboard.correctBonus(scoredMember, this.currentQuestion.category)
+            } else if (score === 'incorrect') {
+                this.scoreboard.incorrectBonus(scoredMember, this.currentQuestion.category)
+            } else if (score === 'penalty') {
+                this.scoreboard.penalty(scoredMember, this.currentQuestion.category)
+            }
+        } else {
+            if (score === "correct") {
+                this.scoreboard.correctTossup(scoredMember, this.currentQuestion.category)
+            } else if (score === 'incorrect') {
+                this.scoreboard.incorrectTossup(scoredMember, this.currentQuestion.category)
+            } else if (score === 'penalty') {
+                this.scoreboard.penalty(scoredMember, this.currentQuestion.category)
+            }
+        }
+        
+        let open = !this.currentQuestion.bonus && 
+            this.buzzedPlayers.length < 3 && 
+            this.buzzedPlayers.length < this.teams.length && 
+            score !== 'correct'
+
+        return {
+            scoredMember,
+            open
         }
     }
 }

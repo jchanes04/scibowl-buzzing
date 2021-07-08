@@ -1,8 +1,9 @@
-import EventEmitter from "events"
+import { EventEmitter } from "events"
 
-export interface Timer {
+export interface Timer extends EventEmitter {
+    length: number,
     time: number,
-    interval: any
+    interval: any,
 }
 
 export class Timer extends EventEmitter {
@@ -15,10 +16,11 @@ export class Timer extends EventEmitter {
     start(length: number) {
         if (this.interval) clearInterval(this.interval)
 
+        this.time = length
         this.interval = setInterval(() => {
-            this.time = this.time + 1
+            this.time = this.time - 1
             console.log(this.time)
-            if (this.time == length){
+            if (this.time == 0){
                 this.end()
             }
             this.emit('update', this.time)
@@ -29,6 +31,20 @@ export class Timer extends EventEmitter {
     pause() {
         if (this.interval) clearInterval(this.interval)
         this.emit('pause', this.time)
+    }
+
+    resume() {
+        if (this.interval) clearInterval(this.interval)
+
+        this.interval = setInterval(() => {
+            this.time = this.time - 1
+            console.log(this.time)
+            if (this.time == 0){
+                this.end()
+            }
+            this.emit('update', this.time)
+        }, 1000)
+        this.emit('resume', this.time)
     }
 
     end(){

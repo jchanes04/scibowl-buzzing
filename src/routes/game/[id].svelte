@@ -36,14 +36,19 @@
     import MemberList from "$lib/components/MemberList.svelte";
     import Chatbox from '$lib/components/Chatbox.svelte'
     import TopBar from '$lib/components/TopBar.svelte'
+    import Timer from '$lib/components/Timer.svelte'
     import PlayerControls from '$lib/components/PlayerControls.svelte'
     import ReaderControls from '$lib/components/ReaderControls.svelte'
+    import Scoreboard from '$lib/components/Scoreboard.svelte'
 
     import type { LoadInput } from "@sveltejs/kit";
     import type { Member } from "$lib/classes/Member";
     import type { Message, Question } from "$lib/classes/Game"
     import { io } from 'socket.io-client'
     import Cookie from 'js-cookie'
+
+    import { time } from "$lib/components/Timer.svelte"
+    let timer
 
     let joined = false
     const memberID = Cookie.get('memberID')
@@ -94,44 +99,77 @@
             type: 'buzz',
             text: member.name + ' has buzzed'
         }]
+        timer.pause()
     })
 
     $socket.on('questionOpen', (question: Question) => {
-        if (<HTMLInputElement>document.getElementById("buzz")){
-            (<HTMLInputElement>document.getElementById("buzz")).disabled = false 
-        }
+        buzzingDisabled = false
+        buzzingLockout = false
         $messages = [...$messages, {
             type: 'notification',
             text: 'new question opened'
         }]
     })
 
+    $socket.on('buzzFailed', () => {
+        
+    })
+
+    $socket.on('timerStart', (length: number) => {
+        timer.start(length)
+        buzzingDisabled = false
+    })
+
+    $socket.on('timerEnd', () => {
+        timer.end()
+
+        buzzingDisabled = true
+    })
+
+    $socket.on('scoreChange', ({ score, memberID, memberScore }: { score: 'correct' | 'incorrect' | 'penalty', memberID: string, memberScore: number }) => {
+        let member = memberList.find(x => x.id === memberID)
+        console.log(score)
+        console.log(memberScore)
+        if (member) {
+            member.scoreboard.score = memberScore
+            memberList = memberList
+        }
+        if (score === "correct") {
+           timer.end()
+        } else if (score === "incorrect") {
+            timer.resume()
+        } else if (score === "penalty") {
+            timer.resume()
+        }
+    })
+
+    let buzzingDisabled = true
+    let buzzingLockout = false
     function buzz() {
-        console.log('buzzed')
         $socket.emit('buzz');
-        (<HTMLInputElement>document.getElementById("buzz")).disabled = true
+        buzzingDisabled = true
+        buzzingLockout = true
+        timer.pause()
         $messages = [...$messages, {
             type: 'buzz',
             text: 'You have buzzed'
         }]
     }
-
-    let timer
 </script>
 
 <div id="game">
     {#if joined}
-        <TopBar gameName={gameName} bind:timer />
+        <TopBar gameName={gameName}>
+            <Timer bind:this={timer} on:end={() => buzzingDisabled = true} />
+        </TopBar>
         <MemberList memberList={memberList} />
-        <div id="scoreboard" class="gamediv">
-            <h2 id="timer">0:00</h2>
-        </div>
+        <Scoreboard memberList={memberList} />
         <Chatbox messages={messages} />
 
         {#if reader}
-            <ReaderControls socket={socket} messages={messages} timer={timer} />
+            <ReaderControls socket={socket} messages={messages} />
         {:else}
-            <PlayerControls buzz={buzz} />
+            <PlayerControls buzz={buzz} buzzingDisabled={buzzingDisabled || buzzingLockout} />
         {/if}
     {:else}
         <h1>Joining...</h1>

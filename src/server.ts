@@ -38,18 +38,23 @@ io.on('connection', socket => {
             console.log('buzz received')
             if (game.state === 'open') {
                 let buzzed = game.buzz(memberID)
-                game.addChatMessage({
-                    text: buzzed.name + "buzzed",
-                    type: 'buzz'
-                })
-                socket.to(gameID).emit('buzz', memberID)
+                if (buzzed) {
+                    game.timer.pause()
+                    game.addChatMessage({
+                        text: buzzed.name + "buzzed",
+                        type: 'buzz'
+                    })
+                    socket.to(gameID).emit('buzz', memberID)
+                } else {
+                    socket.emit('buzzFailed')
+                }
             } else {
                 
             }
         })
-        
-        socket.on('newQ',(question)=>{
-            game.newQ(memberID,question)
+
+        socket.on('newQ', (question)=>{
+            game.newQ(memberID, question)
             game.addChatMessage({
                 text: "new question opened",
                 type: 'notification'
@@ -57,6 +62,44 @@ io.on('connection', socket => {
             socket.to(gameID).emit('questionOpen', question)
         })
 
+        socket.on('startTimer', () => {
+            if (game.state === "open") {
+                let serverLength = game.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+                game.timer.start(serverLength)
+
+
+                let clientLength = game.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
+                socket.to(gameID).emit('timerStart', clientLength)
+                socket.emit('timerStart', clientLength)
+
+                game.timer.once('end', () => {
+                    socket.to(gameID).emit('timerEnd')
+                })
+            }
+        })
+
+        socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
+            if (game.state === "buzzed") {
+                let { scoredMember, open } = game.scoreQ(score)
+                
+                socket.to(gameID).emit('scoreChange', {
+                    score,
+                    memberID: scoredMember.id,
+                    memberScore: scoredMember.scoreboard.score
+                })
+                socket.emit('scoreChange', {
+                    score,
+                    memberID: scoredMember.id,
+                    memberScore: scoredMember.scoreboard.score
+                })
+
+                if (open) {
+                    game.timer.resume()
+                } else {
+                    game.timer.end()
+                }
+            }
+        })
     } else {
         socket.emit('authFailed')
         socket.disconnect()
