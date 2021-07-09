@@ -18,11 +18,13 @@
 </script>
 
 <script lang="ts">
-    export let memberList: Member[]
+    export let memberList: MemberClean[]
+    export let teamList: Array<TeamClean | IndividualTeamClean>
     export let gameName: string
     export let gameID: string
     export let chatMessages: Message[]
     let reader: boolean
+    let buzzedTeamIDs: string[] = []
 
     type Message = {
         text: string
@@ -42,23 +44,32 @@
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
     import type { LoadInput } from "@sveltejs/kit";
-    import type { Member } from "$lib/classes/Member";
+    import type { MemberClean } from "$lib/classes/Member";
+    import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
+    import type { TeamClean } from '$lib/classes/Team'
     import type { Message, Question } from "$lib/classes/Game"
     import { io } from 'socket.io-client'
     import Cookie from 'js-cookie'
+    import { browser } from '$app/env'
 
     import { time } from "$lib/components/Timer.svelte"
     let timer
 
     let joined = false
-    const memberID = Cookie.get('memberID')
+    const myMemberID = Cookie.get('memberID')
+    const myMember = memberList.find(m => m.id === myMemberID)
+    const myTeam = teamList.find(x => x.id === myMember?.teamID)
 
     const socket = writable(io("http://localhost:3030", {
         auth: {
-            memberID: memberID,
+            memberID: myMemberID,
             gameID
-        } 
+        },
+        autoConnect: false
     }))
+    if (browser) {
+        $socket.connect()
+    }
 
     $socket.on('authenticated', (data) => {
         reader = data.reader
@@ -69,8 +80,11 @@
     //     window.location.href = '/join/' + gameID
     // })
 
-    $socket.on('memberJoin', (member: Member) => {
+    $socket.on('memberJoin', ({ member, team }: { member: MemberClean, team: TeamClean | IndividualTeamClean }) => {
         memberList = [...memberList, member]
+        if (!teamList.some(t => t.id === team.id)) {
+            teamList = [...teamList, team]
+        }
         $messages = [...$messages, {
             type: 'notification',
             text: member.name + ' has joined'
@@ -79,6 +93,10 @@
 
     $socket.on('memberLeave', id => {
         let member = memberList.find(x => x.id === id)
+        let team = teamList.find(t => t.id === member.teamID)
+        if (team.members.length === 1) {
+            teamList = teamList.filter(t => t.id !== team.id)
+        }
         memberList = memberList.filter(x => x.id !== id)
         $messages = [...$messages, {
             type: 'notification',
@@ -103,8 +121,8 @@
     })
 
     $socket.on('questionOpen', (question: Question) => {
-        buzzingDisabled = false
-        buzzingLockout = false
+        buzzedTeamIDs = []
+        playerControls.enableBuzzing()
         $messages = [...$messages, {
             type: 'notification',
             text: 'new question opened'
@@ -112,44 +130,57 @@
     })
 
     $socket.on('buzzFailed', () => {
-        
+
     })
 
     $socket.on('timerStart', (length: number) => {
         timer.start(length)
-        buzzingDisabled = false
+        playerControls.enableBuzzing()
     })
 
     $socket.on('timerEnd', () => {
         timer.end()
 
-        buzzingDisabled = true
+        playerControls.disableBuzzing()
     })
 
-    $socket.on('scoreChange', ({ score, memberID, memberScore }: { score: 'correct' | 'incorrect' | 'penalty', memberID: string, memberScore: number }) => {
-        let member = memberList.find(x => x.id === memberID)
-        console.log(score)
-        console.log(memberScore)
+    $socket.on('scoreChange', (
+        { open, memberID, memberScore, teamID, teamScore }: 
+        { open: boolean, memberID: string, memberScore: number, teamID: string, teamScore: number }
+    ) => {
+        let team = teamList.find(t => t.id === teamID)
+        let member = memberList.find(m => m.id === memberID)
         if (member) {
             member.scoreboard.score = memberScore
             memberList = memberList
         }
-        if (score === "correct") {
-           timer.end()
-        } else if (score === "incorrect") {
+        if (team) {
+            team.scoreboard.score = teamScore
+            teamList = teamList
+        }
+
+        if (open) {
             timer.resume()
-        } else if (score === "penalty") {
-            timer.resume()
+            //if (buzzedTeamIDs.includes(myTeam.id)) {
+            //    playerControls.disableBuzzing()
+            //} else {
+                playerControls.enableBuzzing()
+            //}
+        } else {
+            timer.end()
+            playerControls.disableBuzzing()
         }
     })
 
-    let buzzingDisabled = true
-    let buzzingLockout = false
+    let playerControls
     function buzz() {
         $socket.emit('buzz');
-        buzzingDisabled = true
-        buzzingLockout = true
+
+        playerControls.disableBuzzing()
+        buzzedTeamIDs.push(myTeam.id)
+
         timer.pause()
+
         $messages = [...$messages, {
             type: 'buzz',
             text: 'You have buzzed'
@@ -160,16 +191,16 @@
 <div id="game">
     {#if joined}
         <TopBar gameName={gameName}>
-            <Timer bind:this={timer} on:end={() => buzzingDisabled = true} />
+            <Timer bind:this={timer} on:end={() => playerControls.disableBuzzing()} />
         </TopBar>
         <MemberList memberList={memberList} />
-        <Scoreboard memberList={memberList} />
+        <Scoreboard teamList={teamList} />
         <Chatbox messages={messages} />
 
         {#if reader}
             <ReaderControls socket={socket} messages={messages} />
         {:else}
-            <PlayerControls buzz={buzz} buzzingDisabled={buzzingDisabled || buzzingLockout} />
+            <PlayerControls buzz={buzz} bind:this={playerControls} />
         {/if}
     {:else}
         <h1>Joining...</h1>
@@ -187,56 +218,5 @@
             "top-bar top-bar top-bar top-bar top-bar"
             ". member-list scoreboard chat-box ."
             ". control-panel control-panel control-panel .";
-    }
-
-    .gamediv {
-        border-color: black;
-        border-width: 2px;
-    }
-
-    .reader-label {
-        color: #f09231;
-    }
-
-    #scoreboard {
-        grid-area: scoreboard;
-        border-left-style: solid;
-        border-top-style: solid;
-        border-right-style: solid;
-        position: relative;
-    }
-
-    #scoreboard h2 {
-        display: inline-block;
-    }
-
-    #chatbox {
-        width: 30%;
-        min-height: 200px;
-        max-height: 400px;
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-        border-top-style: solid;
-        border-right-style: solid;
-    }
-
-
-    
-    #control-panel {
-        grid-area: control-panel;
-        padding: 20px 20px 20px 20px;
-        height: 200px;
-        border-style:solid ;
-    }
-
-    #timer {
-        position: absolute;
-        top: 10px;
-        right: 20px;
-        display: none;
-        font-size: 54px;
-        margin-block-start: 0em;
-        margin-block-end: 0em;
     }
 </style>

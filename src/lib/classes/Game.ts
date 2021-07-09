@@ -1,5 +1,6 @@
 import { createGameID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
+import type { IndividualTeam } from "./IndividualTeam"
 import type { Member } from "./Member"
 import type { Team } from "./Team"
 import { Timer } from "./Timer"
@@ -25,7 +26,7 @@ export interface Game {
 
     owner: Member,
     members: Member[],
-    teams: Array<Team | string>
+    teams: Array<Team | IndividualTeam>
 
     chatMessages: Message[],
 
@@ -41,7 +42,7 @@ export interface Game {
         category: Category,
         bonus: boolean
     } | null
-    buzzedPlayers: Member[]
+    buzzedTeams: Array<Team | IndividualTeam>
 
     leftPlayers: Member[]
 }
@@ -70,7 +71,7 @@ export class Game {
 
         this.currentBuzzer = null
         this.currentQuestion = null
-        this.buzzedPlayers = []
+        this.buzzedTeams = []
         this.leftPlayers = []
 
 
@@ -79,12 +80,9 @@ export class Game {
     addMember(member: Member) {
         if (this.members.some(x => x.id === member.id)) throw new Error("Member is already in the game")
         this.members = [...this.members, member]
-        for (let m of this.members) {
-            if (m.team !== null){
-                if (!this.teams.some(t => typeof t !== "string" && t.id === (<Team>member.team).id)){
-                    this.teams.push(m.team)
-                }
-            } 
+
+        if (!this.teams.some(t => t.id === member.team.id)){
+            this.teams.push(member.team)
         }
         
         return this.members
@@ -103,10 +101,9 @@ export class Game {
     }
 
     buzz(memberID: string) {
-        console.dir(this.members)
         let member = this.members.find(x => x.id === memberID)
-        if (!this.buzzedPlayers.filter(x => typeof x.team !== "string").some(x => (<Team>x.team).id === (<Team>member.team).id)){
-            this.buzzedPlayers.push(member)
+        if (!this.buzzedTeams.some(x => x.id === member.team.id)){
+            this.buzzedTeams.push(member.team)
             this.currentBuzzer = member
             this.state = 'buzzed'
             return member
@@ -120,7 +117,7 @@ export class Game {
             this.currentBuzzer = null
             this.currentQuestion = question
             this.state = 'open'
-            this.buzzedPlayers = []
+            this.buzzedTeams = []
             return true
         } else {
 
@@ -149,13 +146,14 @@ export class Game {
         }
         
         let open = !this.currentQuestion.bonus && 
-            this.buzzedPlayers.length < 3 && 
-            this.buzzedPlayers.length < this.teams.length && 
+            this.buzzedTeams.length < 3 && 
+            this.buzzedTeams.length < this.teams.length && 
             score !== 'correct'
 
         return {
             scoredMember,
-            open
+            open,
+            scoredTeam: scoredMember.team
         }
     }
 }

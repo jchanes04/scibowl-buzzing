@@ -39,7 +39,7 @@
 </script>
 
 <div>
-    <form action={`/join`} method="POST" on:submit={handleSubmit} on:input={handleFormInput}>
+    <form action={`/join`} method="POST" on:submit={handleSubmit} on:input={handleFormInput} autocomplete="off">
         <h3>Join {gameName}</h3>
         <div>
             <input type="hidden" name="gameID" value={gameID} />

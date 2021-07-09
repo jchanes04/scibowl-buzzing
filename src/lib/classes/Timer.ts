@@ -35,6 +35,7 @@ export class Timer extends EventEmitter {
 
     resume() {
         if (this.interval) clearInterval(this.interval)
+        if (this.time <= 0) return
 
         this.interval = setInterval(() => {
             this.time = this.time - 1

@@ -31,6 +31,7 @@
 
     export function resume() {
         if (interval) clearInterval(interval)
+        if ($time <= 0) return
 
         interval = setInterval(() => {
             $time = $time - 1

@@ -1,6 +1,16 @@
 <script lang="ts">
     export let buzz
-    export let buzzingDisabled: boolean
+    let buzzingDisabled = true
+
+    export function enableBuzzing() {
+        console.log('enable')
+        buzzingDisabled = false
+    }
+
+    export function disableBuzzing() {
+        console.log('disable')
+        buzzingDisabled = true
+    }
 </script>
 
 <div>

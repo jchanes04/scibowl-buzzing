@@ -1,14 +1,24 @@
 <script lang="ts">
-    import type { Member } from '$lib/classes/Member'
+    import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
+    import type { TeamClean } from '$lib/classes/Team'
 
-    export let memberList: Member[]
+    export let teamList: Array<TeamClean | IndividualTeamClean>
 </script>
 
 <div>
     <h3>Scoreboard</h3>
     <ul>
-        {#each memberList as member}
-            <li>{member.name + ": " + member.scoreboard.score}</li>
+        {#each teamList as team}
+            <li>
+                {team.name + ": " + team.scoreboard.score}
+                {#if !team.individual}
+                    <ul>
+                        {#each team.members as member}
+                            <li>{member.name}</li>
+                        {/each}
+                    </ul>
+                {/if}
+            </li>
         {/each}
     </ul>
 </div>
@@ -26,5 +36,8 @@
     ul {
         list-style: none;
         padding-left: 0px;
+    }
+    li ul {
+        padding-left: 1em;
     }
 </style>

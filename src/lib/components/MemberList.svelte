@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { Member } from "$lib/classes/Member";
+    import type { MemberClean } from "$lib/classes/Member";
 
-    export let memberList: Member[] = []
+    export let memberList: MemberClean[] = []
 </script>
 
 <div>

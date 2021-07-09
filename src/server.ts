@@ -80,17 +80,21 @@ io.on('connection', socket => {
 
         socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
             if (game.state === "buzzed") {
-                let { scoredMember, open } = game.scoreQ(score)
+                let { scoredMember, scoredTeam, open } = game.scoreQ(score)
                 
                 socket.to(gameID).emit('scoreChange', {
-                    score,
+                    open,
                     memberID: scoredMember.id,
-                    memberScore: scoredMember.scoreboard.score
+                    memberScore: scoredMember.scoreboard.score,
+                    teamID: scoredTeam.id,
+                    teamScore: scoredTeam.scoreboard.score
                 })
                 socket.emit('scoreChange', {
-                    score,
+                    open,
                     memberID: scoredMember.id,
-                    memberScore: scoredMember.scoreboard.score
+                    memberScore: scoredMember.scoreboard.score,
+                    teamID: scoredTeam.id,
+                    teamScore: scoredTeam.scoreboard.score
                 })
 
                 if (open) {
@@ -101,8 +105,8 @@ io.on('connection', socket => {
             }
         })
     } else {
+        console.dir(socket.handshake.auth)
         socket.emit('authFailed')
-        socket.disconnect()
     }
 })
 

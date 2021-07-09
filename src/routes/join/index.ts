@@ -16,7 +16,7 @@ export async function post(request: Request) {
         
         let newMember = new Member({ name })
         game.addMember(newMember)
-        io.to(game.id).emit('memberJoin', newMember)
+        io.to(game.id).emit('memberJoin', { member: newMember.self, team: newMember.team.self })
         game.addChatMessage({
             text: newMember.name + ' has joined',
             type: 'notification'
