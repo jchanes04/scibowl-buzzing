@@ -16,6 +16,7 @@ export function get({ params }: Request) {
             memberList,
             teamList,
             gameName: game.name,
+            joinCode: game.joinCode,
             chatMessages: game.chatMessages.map(x => { return {...x} })
         }
     }

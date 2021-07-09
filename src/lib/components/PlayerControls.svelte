@@ -5,6 +5,10 @@
     export function enableBuzzing() {
         console.log('enable')
         buzzingDisabled = false
+        setTimeout(() => {
+            console.log(buzzingDisabled)
+            console.log((<HTMLInputElement>document.getElementById("buzz")).disabled)
+        }, 100)
     }
 
     export function disableBuzzing() {

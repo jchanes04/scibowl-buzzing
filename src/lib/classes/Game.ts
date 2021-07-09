@@ -50,7 +50,7 @@ export interface Game {
 export class Game {
     constructor({ name, ownerMember, joinCode, times }: { name: string, ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
         this.id = createGameID()
-        this.joinCode = joinCode
+        this.joinCode = joinCode.toUpperCase()
 
         this.name = name
         this.scoreboard = new GameScoreboard({})

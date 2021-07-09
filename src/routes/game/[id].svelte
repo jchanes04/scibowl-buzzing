@@ -22,6 +22,7 @@
     export let teamList: Array<TeamClean | IndividualTeamClean>
     export let gameName: string
     export let gameID: string
+    export let joinCode: string
     export let chatMessages: Message[]
     let reader: boolean
     let buzzedTeamIDs: string[] = []
@@ -110,19 +111,21 @@
 
     $socket.on('buzz', (id) => {
         let member = memberList.find(x => x.id === id);
-        if (<HTMLInputElement>document.getElementById("buzz")){
-            (<HTMLInputElement>document.getElementById("buzz")).disabled = true
-        } 
+        playerControls?.disableBuzzing()
+
+        buzzedTeamIDs = [...buzzedTeamIDs, member.teamID]
+
         $messages = [...$messages, {
             type: 'buzz',
             text: member.name + ' has buzzed'
         }]
+        
         timer.pause()
     })
 
     $socket.on('questionOpen', (question: Question) => {
         buzzedTeamIDs = []
-        playerControls.enableBuzzing()
+        playerControls?.enableBuzzing()
         $messages = [...$messages, {
             type: 'notification',
             text: 'new question opened'
@@ -135,13 +138,13 @@
 
     $socket.on('timerStart', (length: number) => {
         timer.start(length)
-        playerControls.enableBuzzing()
+        playerControls?.enableBuzzing()
     })
 
     $socket.on('timerEnd', () => {
         timer.end()
 
-        playerControls.disableBuzzing()
+        playerControls?.disableBuzzing()
     })
 
     $socket.on('scoreChange', (
@@ -161,14 +164,14 @@
 
         if (open) {
             timer.resume()
-            //if (buzzedTeamIDs.includes(myTeam.id)) {
-            //    playerControls.disableBuzzing()
-            //} else {
-                playerControls.enableBuzzing()
-            //}
+            if (buzzedTeamIDs.includes(myTeam.id)) {
+               playerControls?.disableBuzzing()
+            } else {
+                playerControls?.enableBuzzing()
+            }
         } else {
             timer.end()
-            playerControls.disableBuzzing()
+            playerControls?.disableBuzzing()
         }
     })
 
@@ -176,7 +179,7 @@
     function buzz() {
         $socket.emit('buzz');
 
-        playerControls.disableBuzzing()
+        playerControls?.disableBuzzing()
         buzzedTeamIDs.push(myTeam.id)
 
         timer.pause()
@@ -190,8 +193,8 @@
 
 <div id="game">
     {#if joined}
-        <TopBar gameName={gameName}>
-            <Timer bind:this={timer} on:end={() => playerControls.disableBuzzing()} />
+        <TopBar gameName={gameName} joinCode={joinCode} >
+            <Timer bind:this={timer} on:end={() => playerControls?.disableBuzzing()} />
         </TopBar>
         <MemberList memberList={memberList} />
         <Scoreboard teamList={teamList} />

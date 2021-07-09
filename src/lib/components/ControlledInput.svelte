@@ -8,7 +8,8 @@
 
 <input type="text" placeholder={placeholderValue} name={name} bind:value on:input={() => {
     if (validateFunction(value)) {
-        lastValue = value
+        lastValue = value.toUpperCase()
+        value = value.toUpperCase()
     } else {
         value = lastValue
     }
