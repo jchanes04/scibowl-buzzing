@@ -77,18 +77,21 @@
         joined = true
     })
 
-    // $socket.on('authFailed', () => {
-    //     window.location.href = '/join/' + gameID
-    // })
+    $socket.on('authFailed', () => {
+        window.location.href = '/join/' + gameID
+    })
 
     $socket.on('memberJoin', ({ member, team }: { member: MemberClean, team: TeamClean | IndividualTeamClean }) => {
         memberList = [...memberList, member]
         if (!teamList.some(t => t.id === team.id)) {
             teamList = [...teamList, team]
+        } else {
+            teamList[teamList.findIndex(x => x.id === team.id)] = team
+            teamList = [...teamList]
         }
         $messages = [...$messages, {
             type: 'notification',
-            text: member.name + ' has joined'
+            text: member.name + ' has joined the game'
         }]
     })
 
@@ -101,7 +104,7 @@
         memberList = memberList.filter(x => x.id !== id)
         $messages = [...$messages, {
             type: 'notification',
-            text: member.name + ' has left'
+            text: member.name + ' has left the game'
         }]
     })
 
@@ -142,14 +145,20 @@
     })
 
     $socket.on('timerEnd', () => {
-        timer.end()
+        if (timer.live()) {
+            timer.end()
+            $messages = [...$messages, {
+                type: 'warning',
+                text: "Time is up"
+            }]
+        }
 
         playerControls?.disableBuzzing()
     })
 
     $socket.on('scoreChange', (
-        { open, memberID, memberScore, teamID, teamScore }: 
-        { open: boolean, memberID: string, memberScore: number, teamID: string, teamScore: number }
+        { open, score, memberID, memberScore, teamID, teamScore }: 
+        { open: boolean, score: 'correct' | 'incorrect' | 'penalty', memberID: string, memberScore: number, teamID: string, teamScore: number }
     ) => {
         let team = teamList.find(t => t.id === teamID)
         let member = memberList.find(m => m.id === memberID)
@@ -162,6 +171,23 @@
             teamList = teamList
         }
 
+        if (score === "correct") {
+            $messages = [...$messages, {
+                type: 'success',
+                text: 'Correct answer'
+            }]
+        } else if (score === "incorrect") {
+            $messages = [...$messages, {
+                type: 'warning',
+                text: 'Incorrect answer'
+            }]
+        } else if (score === "penalty") {
+            $messages = [...$messages, {
+                type: 'warning',
+                text: 'Penalty applied'
+            }]
+        }
+
         if (open) {
             timer.resume()
             if (buzzedTeamIDs.includes(myTeam.id)) {
@@ -170,7 +196,7 @@
                 playerControls?.enableBuzzing()
             }
         } else {
-            timer.end()
+            timer.reset()
             playerControls?.disableBuzzing()
         }
     })
@@ -197,7 +223,7 @@
             <Timer bind:this={timer} on:end={() => playerControls?.disableBuzzing()} />
         </TopBar>
         <MemberList memberList={memberList} />
-        <Scoreboard teamList={teamList} />
+        <Scoreboard teamList={teamList} buzzedTeamIDs={buzzedTeamIDs} />
         <Chatbox messages={messages} />
 
         {#if reader}
@@ -221,5 +247,6 @@
             "top-bar top-bar top-bar top-bar top-bar"
             ". member-list scoreboard chat-box ."
             ". control-panel control-panel control-panel .";
+        height: 95vh;
     }
 </style>

@@ -28,7 +28,7 @@ io.on('connection', socket => {
             if (removed !== null) {
                 socket.to(gameID).emit('memberLeave', memberID)
                 game.addChatMessage({
-                    text: removed.name + " has left",
+                    text: removed.name + " has left the game",
                     type: 'notification'
                 })
             }
@@ -84,6 +84,7 @@ io.on('connection', socket => {
                 
                 socket.to(gameID).emit('scoreChange', {
                     open,
+                    score, 
                     memberID: scoredMember.id,
                     memberScore: scoredMember.scoreboard.score,
                     teamID: scoredTeam.id,
@@ -91,6 +92,7 @@ io.on('connection', socket => {
                 })
                 socket.emit('scoreChange', {
                     open,
+                    score,
                     memberID: scoredMember.id,
                     memberScore: scoredMember.scoreboard.score,
                     teamID: scoredTeam.id,
@@ -114,7 +116,7 @@ httpServer.listen(3030)
 
 export const games = new GameManager()
 
-export function createNewGame(ownerData: { name: string }, gameData: { name: string, privateGame: boolean }) {
+export function createNewGame(ownerData: { name: string, reader: boolean }, gameData: { name: string, teamFormat: 'any' | 'individuals' | 'teams', teamNames: string[] }) {
     let ownerMember = new Member(ownerData)
     let game = games.createGame({ ...gameData, ownerMember })
     return game

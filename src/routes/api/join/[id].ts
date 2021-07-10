@@ -7,11 +7,15 @@ export function get({ params }: Request) {
     let game = getGame(id)
 
     let memberNames = game.members.map(x => x.name)
+    let teamFormat = game.teamFormat
+    let teams = game.teams.map(t => t.self).filter(t => !t.individual)
 
     return {
         body: {
             memberNames,
-            gameName: game.name
+            gameName: game.name,
+            teamFormat,
+            teams
         }
     }
 }

@@ -6,16 +6,18 @@ export async function post(request: Request) {
     try {
         let formData = <ReadOnlyFormData>request.body
         let ownerName = formData.get("owner-name")
-
         let gameName = formData.get("game-name")
-        let privateGame = formData.get("private-game") === "on"
+        let teamFormat = <'any' | 'individuals' | 'teams'>formData.get("team-format")
+        let teamNames = JSON.parse(formData.get('teams') || "[]")
 
         let ownerData = {
-            name: ownerName
+            name: ownerName,
+            reader: true
         }
         let gameData = {
             name: gameName,
-            privateGame
+            teamFormat,
+            teamNames
         }
 
         let game = createNewGame(ownerData, gameData)

@@ -21,30 +21,70 @@
 </script>
 
 <script lang="ts">
-    export let memberNames: string[], gameName: string, gameID: string
+    export let memberNames: string[], gameName: string, gameID: string, teamFormat: TeamFormat, teams: TeamClean[]
 
     import { session } from "$app/stores"
     
     import JoinMemberList from '$lib/components/JoinMemberList.svelte'
+    import type { TeamFormat } from "$lib/classes/Game";
+    import type { TeamClean } from "$lib/classes/Team";
+
+    let memberName
+    let teamOrIndiv
+    let teamID
+    let newTeamName
 
     function handleSubmit() {
-        let name = (<HTMLInputElement>document.getElementById("name-input")).value
-        $session.memberName = name
+        $session.memberName = memberName
     }
 
-    function handleFormInput() {
-        let name = (<HTMLInputElement>document.getElementById("name-input")).value;
-        (<HTMLButtonElement>document.getElementById('join-game')).disabled = name === ''
-    }
+    $: disabled = 
+        memberName === '' || 
+        (teamFormat === "any" &&
+            !teamOrIndiv || 
+            (teamOrIndiv === "team" && !teamID) ||
+            (teamOrIndiv === "new-team" && !newTeamName)
+        ) ||
+        (teamFormat === "teams" && !teamID)
 </script>
 
 <div>
-    <form action={`/join`} method="POST" on:submit={handleSubmit} on:input={handleFormInput} autocomplete="off">
+    <form action={`/join`} method="POST" on:submit={handleSubmit} autocomplete="off">
         <h3>Join {gameName}</h3>
         <div>
             <input type="hidden" name="gameID" value={gameID} />
-            <input type="text" placeholder="Your Name" name="name" id="name-input" />
-            <button id="join-game" disabled>Join</button>
+            <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
+            <br />
+            {#if teamFormat === "any"}
+                <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
+                <label for="indiv">Play on my own</label>
+                <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
+                <label for="new-team">
+                    Create a new team: 
+                    <input type="text" name="new-team-name" bind:value={newTeamName} />
+                </label>
+                {#if teams.length > 0}
+                    <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
+                    <label for="team">
+                        Play with an existing team:
+                        <br />
+                        <select name="team-id" bind:value={teamID}>
+                            {#each teams as team}
+                                <option value={team.id}>{team.name}</option>
+                            {/each}
+                        </select>
+                    </label>
+                {/if}
+            {:else if teamFormat === "teams"}
+                <label for="team-id">Team: </label>
+                <select id="team-id" name="team-id" bind:value={teamID}>
+                    {#each teams as team}
+                        <option value={team.id}>{team.name}</option>
+                    {/each}
+                </select>
+            {/if}
+            <br />
+            <button id="join-game" disabled={disabled}>Join</button>
         </div>
         <JoinMemberList memberNames={memberNames} />
     </form>

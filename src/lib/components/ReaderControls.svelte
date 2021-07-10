@@ -77,20 +77,23 @@
 <style>
     div {
         grid-area: control-panel;
-        border-color: black;
-        border-width: 2px;
+        border-left: solid 2px;
+        border-right: solid 2px;
+        border-bottom: solid 2px;
+        border-top: solid 1px;
+        box-sizing: border-box;
     }
 
 
     #buttons {
         padding: 24px 24px 24px 24px;
         min-height: 240px;
-        border-style:solid ;
+        border-style: solid;
     }
 
     button {
-        background: hsl(145, 50%, 40%);
-        border: 3px solid hsl(210, 100%, 38%);
+        background: var(--green);
+        border: 3px solid var(--blue);
         border-radius: 7px;
         font-size: 24px;
         font-weight: 600;
@@ -100,8 +103,8 @@
 
     button:disabled {
         color: #333;
-        background: #146737;
-        border-color: #004990;
+        background: var(--green-dull);
+        border-color: var(--blue-dull);
         cursor: default;
     }
 

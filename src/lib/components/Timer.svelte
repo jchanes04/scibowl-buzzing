@@ -5,12 +5,15 @@
 
 <script lang="ts">
     let interval = null
+    let isLive = false
 
     import { createEventDispatcher } from 'svelte'
     const dispatch = createEventDispatcher()
 
     export function start(length: number) {
         if (interval) clearInterval(interval)
+
+        isLive = true
 
         $time = length
         interval = setInterval(() => {
@@ -26,12 +29,15 @@
     
     export function pause() {
         if (interval) clearInterval(interval)
+        isLive = false
         dispatch('pause', $time)
     }
 
     export function resume() {
         if (interval) clearInterval(interval)
         if ($time <= 0) return
+
+        isLive = true
 
         interval = setInterval(() => {
             $time = $time - 1
@@ -48,6 +54,19 @@
         $time = 0 
         clearInterval(interval)
         dispatch('end')
+
+        isLive = false
+    }
+
+    export function reset() {
+        $time = 0
+        clearInterval(interval)
+
+        isLive = false
+    }
+
+    export function live() {
+        return isLive
     }
 </script>
 

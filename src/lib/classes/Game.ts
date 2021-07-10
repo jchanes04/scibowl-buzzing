@@ -11,6 +11,7 @@ export type Message = {
 }
 
 export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
+export type TeamFormat = 'any' | 'individuals' | 'teams'
 
 export type Question = {
     bonus: boolean,
@@ -26,6 +27,7 @@ export interface Game {
 
     owner: Member,
     members: Member[],
+    teamFormat: TeamFormat,
     teams: Array<Team | IndividualTeam>
 
     chatMessages: Message[],
@@ -48,7 +50,7 @@ export interface Game {
 }
 
 export class Game {
-    constructor({ name, ownerMember, joinCode, times }: { name: string, ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
+    constructor({ name, teamFormat, teams, ownerMember, joinCode, times }: { name: string, teamFormat: TeamFormat, teams: Team[], ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
         this.id = createGameID()
         this.joinCode = joinCode.toUpperCase()
 
@@ -57,7 +59,8 @@ export class Game {
         
         this.owner = ownerMember
         this.members = [ownerMember]
-        this.teams = [ownerMember.team]
+        this.teamFormat = teamFormat
+        this.teams = [ownerMember.team, ...teams]
 
         this.chatMessages = []
 
@@ -125,8 +128,8 @@ export class Game {
     }
 
     scoreQ(score: 'correct' | 'incorrect' | 'penalty') {
-        console.dir(this.currentQuestion)
         let scoredMember = this.currentBuzzer
+
         if (this.currentQuestion.bonus) {
             if (score === "correct") {
                 this.scoreboard.correctBonus(scoredMember, this.currentQuestion.category)
@@ -144,11 +147,20 @@ export class Game {
                 this.scoreboard.penalty(scoredMember, this.currentQuestion.category)
             }
         }
+
+        this.currentBuzzer = null
         
         let open = !this.currentQuestion.bonus && 
             this.buzzedTeams.length < 3 && 
             this.buzzedTeams.length < this.teams.length && 
             score !== 'correct'
+
+        if (!open) {
+            this.currentQuestion = null
+            this.state = 'idle'
+        } else {
+            this.state = 'open'
+        }
 
         return {
             scoredMember,

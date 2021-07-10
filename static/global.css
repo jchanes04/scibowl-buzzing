@@ -1,0 +1,14 @@
+:root {
+    --blue: hsl(210, 100%, 38%);
+    --green: #2C8250;
+}
+
+html, body {
+    margin: 0;
+    font-family: 'Ubuntu';
+    background-color: #d4d9d9;
+}
+
+input {
+    outline: none;
+}

@@ -15,6 +15,7 @@
         display: flex;
         flex-direction: row;
         justify-content: space-between;
+        padding: 0 2em;
     }
 
     h1 {

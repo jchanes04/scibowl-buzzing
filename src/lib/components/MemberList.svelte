@@ -8,24 +8,31 @@
     <h3>Members</h3>
     <ul>
         {#each memberList as member}
-            <li>{member.name}</li>
+            <li class={member.reader ? "reader" : ""}>{member.name}</li>
         {/each}
     </ul>
 </div>
 
 <style>
     div {
-        min-height: 200px;
-        max-height: 400px;
+        height: 100%;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
-        border-left-style: solid;
-        border-top-style: solid;
+        border-left: solid 2px;
+        border-top: solid 2px;
+        border-right: solid 1px;
+        border-bottom: solid 1px;
         grid-area: member-list;
+        box-sizing: border-box;
+        padding: 1em;
     }
     ul {
         list-style: none;
         padding-left: 0px;
+    }
+
+    .reader {
+        color: orange;
     }
 </style>

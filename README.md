@@ -12,4 +12,5 @@ Bolded options are required for the tournament
 ## Reader Controls
 - **Export scores or write scores to server**
 - Kick players
-- 
+- Manually adjust scores and catscores in case of a mistake
+- Direct bonuses towards a specific team

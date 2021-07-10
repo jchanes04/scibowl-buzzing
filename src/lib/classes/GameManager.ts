@@ -1,6 +1,7 @@
 import { Game } from './Game'
 import type { Member } from './Member'
 import { createJoinCode } from '$lib/functions/createId'
+import { Team } from './Team'
 
 export interface GameManager {
 
@@ -32,11 +33,12 @@ export class GameManager {
         return null
     }
 
-    createGame(options: { name: string, ownerMember: Member }) {
+    createGame(options: { name: string, teamFormat: 'any' | 'individuals' | 'teams', teamNames: string[], ownerMember: Member }) {
         let joinCode = createJoinCode()
         this.joinCodes.push(joinCode)
+        let teams = options.teamNames.map(n => new Team(n))
 
-        let game = new Game({ ...options, joinCode })
+        let game = new Game({ ...options, teams, joinCode })
         this.games[game.id] = game
         
         return game
