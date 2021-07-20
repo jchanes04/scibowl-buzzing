@@ -17,20 +17,23 @@
     <ul>
         {#each teams as team}
             <li>
-                <span on:click={() => {teams = teams.filter(x => x !== team)}}>❌</span>
+                <span on:click={() => {teams = teams.filter(x => x !== team)}}>
+                    <span class="remove" />
+                </span>
                 {team}
             </li>
         {/each}
         <li>
             <input type="text" id="new-team" />
-            <span on:click={addTeam}>✔️</span>
+            <span on:click={addTeam}>
+                <span class="add" />
+            </span>
         </li>
     </ul>
 </div>
 
 <style lang="scss">
     div {
-        display: inline-block;
         margin-top: 1.5em;
     }
 
@@ -40,10 +43,49 @@
 
     ul {
         list-style: none;
+        text-align: center;
     }
 
-    li span {
+    li {
+        margin-top: 0.3em;
+        margin-bottom: 0.3em;
+    }
+
+    li > span {
         width: 1em;
         height: 1em;
+        display: inline-block;
+        cursor: pointer;
+        vertical-align: middle;
+
+        span {
+            width: 100%;
+            height: 100%;
+            display: inline-block;
+        }
+    }
+
+    .add {
+        background: hsl(210, 100%, 38%);
+        clip-path: polygon(0 40%, 40% 40%, 40% 0, 60% 0, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%);
+        margin-left: 0.2em;
+    }
+
+    .remove {
+        clip-path: polygon(15% 0, 0 15%, 35% 50%, 0 85%, 15% 100%, 50% 65%, 85% 100%, 100% 85%, 65% 50%, 100% 15%, 85% 0, 50% 35%);        background: red;
+        background: red;
+        margin-right: 0.5em;
+    }
+
+    input[type="text"] {
+        padding: 0.3em;
+        font-size: 16px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 25ch;
+        text-align: center;
+        position: relative;
     }
 </style>
