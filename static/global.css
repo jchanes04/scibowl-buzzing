@@ -12,3 +12,43 @@ html, body {
 input {
     outline: none;
 }
+
+input:focus {
+    outline: none;
+}
+
+button:focus {
+    outline: none;
+}
+
+select:focus {
+    outline: none;
+}
+
+body::-webkit-scrollbar {
+    width: 7px;
+}
+
+body::-webkit-scrollbar-button {
+    display: none;
+}
+
+body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+    background: var(--green);
+    width: 7px;
+    border-radius: 7px;
+}
+
+body::-webkit-scrollbar-track-piece:start {
+    margin-top: 0.2em;
+    background: transparent;
+}
+
+body::-webkit-scrollbar-track-piece:end {
+    margin-bottom: 0.2em;
+    background: transparent;
+}

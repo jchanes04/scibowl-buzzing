@@ -69,6 +69,7 @@
         background: hsl(210, 100%, 38%);
         clip-path: polygon(0 40%, 40% 40%, 40% 0, 60% 0, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%);
         margin-left: 0.2em;
+        float: right;
     }
 
     .remove {

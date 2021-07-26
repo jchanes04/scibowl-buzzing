@@ -24,20 +24,20 @@
 <style>
     div {
         grid-area: control-panel;
-        border-left: solid 2px;
-        border-right: solid 2px;
-        border-bottom: solid 2px;
-        border-top: solid 1px;
+        display: grid;
+        place-content: center;
         box-sizing: border-box;
+        border-radius: 1em;
+        background: #EEE;
     }
 
     button {
         background: var(--green);
         border: 3px solid var(--blue);
-        border-radius: 7px;
-        font-size: 24px;
+        border-radius: 0.5em;
+        font-size: 36px;
         font-weight: 600;
-        padding: 15px 15px 15px 15px;
+        padding: 1em 2em;
         cursor: pointer;
     }
 

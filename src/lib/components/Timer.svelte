@@ -74,6 +74,6 @@
 
 <style lang="scss">
     h1 {
-        float: right;
+        justify-self: end;
     }
 </style>

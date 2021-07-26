@@ -24,8 +24,10 @@
     export let gameID: string
     export let joinCode: string
     export let chatMessages: Message[]
+    export let teamFormat: 'any' | 'individuals' | 'teams'
     let reader: boolean
     let buzzedTeamIDs: string[] = []
+    let state: 'idle' | 'open' | 'buzzed' = 'idle'
 
     type Message = {
         text: string
@@ -98,8 +100,11 @@
     $socket.on('memberLeave', id => {
         let member = memberList.find(x => x.id === id)
         let team = teamList.find(t => t.id === member.teamID)
-        if (team.members.length === 1) {
+        if (team.members.length === 1 && teamFormat !== 'teams') {
             teamList = teamList.filter(t => t.id !== team.id)
+        } else {
+            team.members = team.members.filter(x => x.id !== id)
+            teamList = teamList
         }
         memberList = memberList.filter(x => x.id !== id)
         $messages = [...$messages, {
@@ -115,6 +120,7 @@
     $socket.on('buzz', (id) => {
         let member = memberList.find(x => x.id === id);
         playerControls?.disableBuzzing()
+        state = 'buzzed'
 
         buzzedTeamIDs = [...buzzedTeamIDs, member.teamID]
 
@@ -129,6 +135,7 @@
     $socket.on('questionOpen', (question: Question) => {
         buzzedTeamIDs = []
         playerControls?.enableBuzzing()
+        state = 'open'
         $messages = [...$messages, {
             type: 'notification',
             text: 'new question opened'
@@ -142,6 +149,7 @@
     $socket.on('timerStart', (length: number) => {
         timer.start(length)
         playerControls?.enableBuzzing()
+        state = 'open'
     })
 
     $socket.on('timerEnd', () => {
@@ -154,6 +162,7 @@
         }
 
         playerControls?.disableBuzzing()
+        state = 'idle'
     })
 
     $socket.on('scoreChange', (
@@ -190,6 +199,7 @@
 
         if (open) {
             timer.resume()
+            state = 'open'
             if (buzzedTeamIDs.includes(myTeam.id)) {
                playerControls?.disableBuzzing()
             } else {
@@ -197,6 +207,7 @@
             }
         } else {
             timer.reset()
+            state = 'idle'
             playerControls?.disableBuzzing()
         }
     })
@@ -209,6 +220,7 @@
         buzzedTeamIDs.push(myTeam.id)
 
         timer.pause()
+        state = 'buzzed'
 
         $messages = [...$messages, {
             type: 'buzz',
@@ -227,7 +239,7 @@
         <Chatbox messages={messages} />
 
         {#if reader}
-            <ReaderControls socket={socket} messages={messages} />
+            <ReaderControls socket={socket} messages={messages} bind:state={state} teamList={teamList} />
         {:else}
             <PlayerControls buzz={buzz} bind:this={playerControls} />
         {/if}
@@ -242,11 +254,25 @@
     #game {
         display: grid;
         grid-template-columns: .1fr 1fr 1fr 1fr .1fr;
-        grid-template-rows: max(10vh, 80px) 1fr 1fr;
+        grid-template-rows: max(10vh, 80px) auto auto;
         grid-template-areas: 
             "top-bar top-bar top-bar top-bar top-bar"
             ". member-list scoreboard chat-box ."
             ". control-panel control-panel control-panel .";
-        height: 95vh;
+        column-gap: 1em;
+        row-gap: 1em;
+        min-height: 95vh;
+
+        @media (max-width: 800px) {
+            grid-template-columns: .1fr 1fr 1fr .1fr;
+            grid-template-rows: max(10vh, 80px) auto auto auto;
+            grid-template-areas: 
+                "top-bar top-bar top-bar top-bar"
+                ". chat-box chat-box ."
+                ". control-panel control-panel ."
+                ". member-list scoreboard .";
+            min-height: 130vh;
+            margin-bottom: 1em;
+        }
     }
 </style>

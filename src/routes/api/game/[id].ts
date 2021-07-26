@@ -8,8 +8,6 @@ export function get({ params }: Request) {
 
     let memberList = game.members.map(m => m.self)
     let teamList = game.teams.map(x => x.self)
-    console.log("team list:")
-    console.dir(teamList)
 
     return {
         body: {
@@ -17,7 +15,8 @@ export function get({ params }: Request) {
             teamList,
             gameName: game.name,
             joinCode: game.joinCode,
-            chatMessages: game.chatMessages.map(x => { return {...x} })
+            chatMessages: game.chatMessages.map(x => { return {...x} }),
+            teamFormat: game.teamFormat
         }
     }
 }

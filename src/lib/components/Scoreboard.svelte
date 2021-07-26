@@ -1,9 +1,14 @@
 <script lang="ts">
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
+import { afterUpdate } from 'svelte';
 
     export let teamList: Array<TeamClean | IndividualTeamClean>
     export let buzzedTeamIDs: string[]
+
+    afterUpdate(() => {
+        console.log('a')
+    })
 </script>
 
 <div>
@@ -32,13 +37,39 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
-        border-top: solid 2px;
-        border-left: solid 1px;
-        border-right: solid 1px;
-        border-bottom: solid 1px;
         grid-area: scoreboard;
-        box-sizing: border-box;
         padding: 1em;
+        box-sizing: border-box;
+        border-radius: 1em;
+        background: #EEE;
+
+        &::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        &::-webkit-scrollbar-button {
+            display: none;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--green);
+            width: 5px;
+            border-radius: 5px;
+        }
+
+        &::-webkit-scrollbar-track-piece:start {
+            margin-top: 1.2em;
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-track-piece:end {
+            margin-bottom: 1.2em;
+            background: transparent;
+        }
     }
 
     ul {

@@ -65,6 +65,12 @@
         text-underline-offset: 0.2em;
     }
 
+    h3 {
+        font-size: 24px;
+        text-decoration: underline #0061c3 2px;
+        text-underline-offset: 0.1em;
+    }
+
     .radio-wrapper {
         text-align: left;
         display: inline-block;
@@ -88,8 +94,8 @@
 
     label {
         cursor: pointer;
-        margin-top: 0.3em;
-        margin-bottom: 0.3em;
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
         display: inline-block;
 
         input {
@@ -138,8 +144,8 @@
         background: #2C8250;
         border-radius: 0.3em;
         font-weight: bold;
-        border: none;
-        font-size: 16px;
+        border: solid black 3px;
+        font-size: 18px;
         cursor: pointer;
 
         &:disabled {
