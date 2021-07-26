@@ -1,4 +1,6 @@
 <script lang="ts">
+    import ControlSection from '$lib/components/ControlSection.svelte'
+
     type Message = {
         text: string
         type: 'buzz' | 'notification' | 'warning' | 'success'
@@ -7,20 +9,36 @@
     import type { Socket } from 'socket.io-client';
     import type { Writable } from 'svelte/store'
     import type Timer from './Timer.svelte'
+    import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
+    import type { TeamClean } from '$lib/classes/Team'
     export let socket: Writable<Socket>
     export let messages: Writable<Message[]>
+    export let teamList: Array<TeamClean | IndividualTeamClean>
+    export let state: 'idle' | 'open' | 'buzzed'
     
-    let advancedShowing: boolean = false
-
+    let categorySelect: HTMLSelectElement
+    let teamSelect: HTMLSelectElement
+    let selectedCategory
+    let selectedTeam
+    let questionType
     function newQ() {
-        let category = (<HTMLInputElement>document.getElementById('category')).value
-        let bonus = (<HTMLInputElement>document.getElementById('bonus')).checked
-        $socket.emit('newQ',{category,bonus})
+        $socket.emit('newQ', {
+            category: selectedCategory,
+            bonus: questionType === "bonus",
+            team: questionType === "bonus" ? selectedTeam : null
+        })
 
         $messages = [...$messages, {
             type: 'notification',
             text: 'new question opened'
         }]
+
+        state = 'open'
+
+        categorySelect.selectedIndex = 0
+        teamSelect.selectedIndex = 0;
+        (<HTMLInputElement>document.querySelector('input[name="question-type"]:checked')).checked = false
+        selectedCategory = ""
     }
     
     function startTimer() {
@@ -35,13 +53,39 @@
     function clearScores() {
         $socket.emit('clearScores')
     }
-    function scoreQuestion(score: 'correct' | 'incorrect' | 'penalty') {
-        $socket.emit('scoreQuestion', score)
+
+    let selectedScore
+    function scoreQuestion() {
+        $socket.emit('scoreQuestion', selectedScore)
     }
 </script>
 
-    <div id="buttons" class="gamediv">
-        <select name="categories" id="category">
+<div id="buttons">
+    <ControlSection title="Questions" style="display: flex; flex-direction: column; align-items: center;">
+        <div id="question-type-wrapper">
+            <label for="tossup-radio">
+                <input type="radio" id="tossup-radio" name="question-type" value="tossup" bind:group={questionType}>
+                <span>Tossup</span>
+            </label>
+            <label for="bonus-radio">
+                <input type="radio" id="bonus-radio" name="question-type" value="bonus" bind:group={questionType}>
+                <span>Bonus</span>
+            </label>
+        </div>
+        <br />
+        <div id="target-team-wrapper" class={questionType === 'bonus' ? "" : "hidden"}>
+            <select name="target-team" id="target-team" bind:this={teamSelect} bind:value={selectedTeam}>
+                <option value="" hidden default></option>
+                {#each teamList as team}
+                    {#if team.members.length !== 1 || !team.members[0].reader}
+                        <option value={team.id}>{team.name}</option>
+                    {/if}
+                {/each}
+            </select>
+        </div>
+        <br />
+        <select name="categories" id="category" bind:this={categorySelect} bind:value={selectedCategory}>
+            <option value="" hidden default></option>
             <option value="earth">Earth and Space</option>
             <option value="bio">Biology</option>
             <option value="chem">Chemistry</option>
@@ -49,87 +93,163 @@
             <option value="math">Math</option>
             <option value="energy">Energy</option>
         </select>
-        <label id="bonus-label" for="bonus" class="container">Bonus<input id="bonus" type="checkbox" class="default" name="bonus" value="N/A"><span class="checkbox"></span></label><br>
-        <button on:click={newQ} id="new-question">New Question</button>
-        <button on:click={startTimer} id="start-timer">Start Timer</button>
-        <button on:click={() => {advancedShowing = !advancedShowing}} id="showAdvanced">Advanced Controls</button>
-        {#if advancedShowing}
-            <div> 
-                <button on:click={endGame} id="endGame">End Game</button>
-                <button on:click={showData} id="showData">Show Game Data</button>
-                <button on:click={clearScores} id="clearScores">Clear Scores</button>
-                <div id="gameDatashow"></div>
-            </div><br><br>
-        {/if}
-        <button on:click={() => scoreQuestion('correct')} >correct</button> 
-        <button on:click={() => scoreQuestion('incorrect')} >incorrect</button> 
-        <button on:click={() => scoreQuestion('penalty')} >penalty</button> 
-
-        
-        <div id="warn">
-            <p id="warning"></p><br>
-            <div id="warnButtons">
-                <button id="yes">yes</button>
-                <button id="no">no</button>
-            </div>
+        <br />
+        <button on:click={newQ} disabled={!questionType || !selectedCategory}>New Question</button>
+    </ControlSection>
+    <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
+        <button on:click={startTimer} id="start-timer" disabled={state !== "open"}>Start Timer</button>
+        <br />
+        <div id="score-wrapper" class={state === "buzzed" ? "" : "disabled"}>
+            <label for="correct-radio">
+                <input type="radio" id="correct-radio" name="selected-score" value="correct" bind:group={selectedScore} disabled={state !== "buzzed"}>
+                <span>Correct</span>
+            </label>
+            <label for="incorrect-radio">
+                <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect" bind:group={selectedScore} disabled={state !== "buzzed"}>
+                <span>Incorrect</span>
+            </label>
+            <label for="penalty-radio">
+                <input type="radio" id="penalty-radio" name="selected-score" value="penalty" bind:group={selectedScore} disabled={state !== "buzzed"}>
+                <span>Penalty</span>
+            </label>
         </div>
-    </div>
-<style>
-    div {
-        grid-area: control-panel;
-        border-left: solid 2px;
-        border-right: solid 2px;
-        border-bottom: solid 2px;
-        border-top: solid 1px;
-        box-sizing: border-box;
-    }
+        <button on:click={scoreQuestion} disabled={state !== "buzzed"}>Score</button> 
+    </ControlSection>
+    <ControlSection title="Scoreboard">
+        <button>Export Scores</button>
+    </ControlSection>
+    <ControlSection title="Game Control">
+        <button on:click={endGame} id="endGame">End Game</button>
+    </ControlSection>
+</div>
 
-
+<style lang="scss">
     #buttons {
-        padding: 24px 24px 24px 24px;
-        min-height: 240px;
-        border-style: solid;
+        padding: 1em;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+
+        grid-area: control-panel;
+        box-sizing: border-box;
+        border-radius: 1em;
+        background: #EEE;
     }
 
     button {
-        background: var(--green);
-        border: 3px solid var(--blue);
-        border-radius: 7px;
-        font-size: 24px;
-        font-weight: 600;
-        padding: 15px 15px 15px 15px;
+        color: #EEE;
+        background: #2C8250;
+        font-size: 20px;
+        font-weight: bold;
+        padding: 0.6em;
+        border-radius: 0.6em;
+        border: solid black 3px;
         cursor: pointer;
     }
 
     button:disabled {
-        color: #333;
-        background: var(--green-dull);
-        border-color: var(--blue-dull);
+        border: solid #2C8250 3px;
+        background: transparent;
+        color: #444;
         cursor: default;
     }
 
-    #warn {
-        text-align: center;
-        background-color: white;
-        border-color: #000000;
-        border-radius: 5px;
-        border-style: solid;
-        position: fixed;
-        top: 35%;
-        left: 30%;
-        width: 40%;
-        height: 30%;
-        display:none;
+    #question-type-wrapper label {
+        cursor: pointer;
+        position: relative;
+        
+        input {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+
+            &:checked ~ span {
+                border: 2px solid var(--blue);
+                padding: calc(0.3em - 2px);
+                border-radius: 0.3em;
+            }
+        }
+
+        span {
+            padding: 0.3em;
+            display: inline-block;
+
+            &:hover {
+                text-decoration: underline #000 2px;
+            }
+        }
     }
 
-    #warning {
-        font-size:24px;
+    #score-wrapper label {
+        cursor: pointer;
+        position: relative;
+        
+        input {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+
+            &:checked ~ span {
+                border: 2px solid;
+                padding: calc(0.3em - 2px);
+                border-radius: 0.3em;
+            }
+        }
+
+        #correct-radio:checked ~ span {
+            border-color: var(--green);
+        }
+
+        #incorrect-radio:checked ~ span {
+            border-color: red;
+        }
+
+        #penalty-radio:checked ~ span {
+            border-color: red;
+        }
+
+        span {
+            padding: 0.3em;
+            display: inline-block;
+            border: none;
+
+            &:hover {
+                text-decoration: underline #000 2px;
+            }
+        }
     }
 
-    #warnButtons{
-        margin: auto;
+    #score-wrapper.disabled {
+        cursor: default;
+
+        label {
+            cursor: default;
+
+            span {
+                color: #333;
+
+                &:hover {
+                    text-decoration: none;
+                }
+            }
+
+            input:checked ~ span {
+                padding: 0.3em;
+                border: none;
+            }
+        }
     }
-
-
+    
+    #target-team-wrapper.hidden {
+        visibility: hidden;
+    }
 </style>
 

@@ -1,11 +1,18 @@
  <script lang="ts">
     import type { Message } from "$lib/classes/Game"
     import type { Writable } from 'svelte/store';
+    import { afterUpdate } from 'svelte'
 
     export let messages: Writable<Message[]>
+
+    let div: HTMLElement
+    
+    afterUpdate(() => {
+        div.scrollTo(0, div.scrollHeight)
+    })
 </script>
 
-<div id="chatbox" class="gamediv">
+<div id="chatbox" class="gamediv" bind:this={div}>
     {#each $messages as message}
         <p class={message.type}>{message.text}</p>
     {/each}
@@ -18,12 +25,10 @@
         flex-direction: column;
         overflow-y: scroll;
         height: 100%;
-        border-top: solid 2px;
-        border-right: solid 2px;
-        border-left: solid 1px;
-        border-bottom: solid 1px;
         padding: 1em;
         box-sizing: border-box;
+        border-radius: 1em;
+        background: #EEE;
 
         &::-webkit-scrollbar {
             width: 5px;
@@ -44,12 +49,12 @@
         }
 
         &::-webkit-scrollbar-track-piece:start {
-            margin-top: 0.2em;
+            margin-top: 1.2em;
             background: transparent;
         }
 
         &::-webkit-scrollbar-track-piece:end {
-            margin-bottom: 0.2em;
+            margin-bottom: 1.2em;
             background: transparent;
         }
     }

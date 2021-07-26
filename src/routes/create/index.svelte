@@ -22,14 +22,23 @@
 
     <h3>Teams</h3>
     <div class="radio-wrapper">
-        <input id="any-teams" type="radio" name="team-format" value="any" bind:group={teamFormat} />
-        <label for="any-teams">Individuals or Teams</label>
+        <label for="any-teams">
+            <input id="any-teams" type="radio" name="team-format" value="any" bind:group={teamFormat} />
+            <span />
+            Individuals or Teams
+        </label>
         <br />
-        <input id="individual-teams" type="radio" name="team-format" value="individuals" bind:group={teamFormat} />
-        <label for="individual-teams">Only Individuals</label>
+        <label for="individual-teams">
+            <input id="individual-teams" type="radio" name="team-format" value="individuals" bind:group={teamFormat} />
+            <span />
+            Only Individuals
+        </label>
         <br />
-        <input id="group-teams" type="radio" name="team-format" value="teams" bind:group={teamFormat} />
-        <label for="group-teams">Only Teams</label>
+        <label for="group-teams">
+            <input id="group-teams" type="radio" name="team-format" value="teams" bind:group={teamFormat} />
+            <span />
+            Only Teams
+        </label>
         <br />
     </div>
     <br />
@@ -56,6 +65,12 @@
         text-underline-offset: 0.2em;
     }
 
+    h3 {
+        font-size: 24px;
+        text-decoration: underline #0061c3 2px;
+        text-underline-offset: 0.1em;
+    }
+
     .radio-wrapper {
         text-align: left;
         display: inline-block;
@@ -77,7 +92,68 @@
         }
     }
 
+    label {
+        cursor: pointer;
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
+        display: inline-block;
+
+        input {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        span {
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            border: #CCC 2px solid;
+            display: inline-block;
+            position: relative;
+            background: #FFF;
+            vertical-align: text-top;
+            margin-right: 0.3em;
+
+            &::after {
+                content: '';
+                position: absolute;
+                display: none;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 0.7em;
+                height: 0.7em;
+                border-radius: 0.35em;
+                background: #0061c3;
+            }
+        }
+
+        &:hover > span {
+            border-color: #2C8250;
+        }
+
+        input:checked ~ span::after {
+            display: inline-block;
+        }
+    }
+
     button {
-        
+        padding: 0.5em;
+        color: #EEE;
+        background: #2C8250;
+        border-radius: 0.3em;
+        font-weight: bold;
+        border: solid black 3px;
+        font-size: 18px;
+        cursor: pointer;
+
+        &:disabled {
+            padding: calc(0.5em - 3px);
+            border: solid #2C8250 3px;
+            background: transparent;
+            color: #444;
+            cursor: default;
+        }
     }
 </style>

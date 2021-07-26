@@ -29,7 +29,7 @@
     import type { TeamFormat } from "$lib/classes/Game";
     import type { TeamClean } from "$lib/classes/Team";
 
-    let memberName
+    let memberName = ''
     let teamOrIndiv
     let teamID
     let newTeamName
@@ -50,7 +50,7 @@
 
 <div>
     <form action={`/join`} method="POST" on:submit={handleSubmit} autocomplete="off">
-        <h3>Join {gameName}</h3>
+        <h2>Join {gameName}</h2>
         <div>
             <input type="hidden" name="gameID" value={gameID} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
@@ -75,6 +75,7 @@
                         </select>
                     </label>
                 {/if}
+                <br />
             {:else if teamFormat === "teams"}
                 <label for="team-id">Team: </label>
                 <select id="team-id" name="team-id" bind:value={teamID}>
@@ -82,6 +83,7 @@
                         <option value={team.id}>{team.name}</option>
                     {/each}
                 </select>
+                <br />
             {/if}
             <br />
             <button id="join-game" disabled={disabled}>Join</button>
@@ -90,3 +92,110 @@
     </form>
 </div>
 
+<style lang="scss">
+    form {
+        margin: 3em auto;
+        border-radius: 1em;
+        text-align: center;
+        padding: 1em;
+        position: relative;
+    }
+
+    h2 {
+        font-size: 44px;
+        text-decoration: underline #0061c3 3px;
+        text-underline-offset: 0.2em;
+    }
+
+    .radio-wrapper {
+        text-align: left;
+        display: inline-block;
+    }
+
+    input[type="text"] {
+        padding: 0.3em;
+        font-size: 24px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 25ch;
+        text-align: center;
+        position: relative;
+
+        &:focus::placeholder {
+            color: transparent;
+        }
+    }
+
+    label {
+        cursor: pointer;
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
+        display: inline-block;
+        font-size: 20px;
+
+        input {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        span {
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            border: #CCC 2px solid;
+            display: inline-block;
+            position: relative;
+            background: #FFF;
+            vertical-align: text-top;
+            margin-right: 0.3em;
+
+            &::after {
+                content: '';
+                position: absolute;
+                display: none;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 0.7em;
+                height: 0.7em;
+                border-radius: 0.35em;
+                background: #0061c3;
+            }
+        }
+
+        &:hover > span {
+            border-color: #2C8250;
+        }
+
+        input:checked ~ span::after {
+            display: inline-block;
+        }
+    }
+
+    select {
+        font-size: 20px;
+        margin-left: 0.5em;
+    }
+
+    button {
+        padding: 0.5em;
+        color: #EEE;
+        background: #2C8250;
+        border-radius: 0.3em;
+        font-weight: bold;
+        border: solid black 3px;
+        font-size: 18px;
+        cursor: pointer;
+        width: 8ch;
+
+        &:disabled {
+            border: solid #2C8250 3px;
+            background: transparent;
+            color: #444;
+            cursor: default;
+        }
+    }
+</style>
