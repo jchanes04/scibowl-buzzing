@@ -111,12 +111,12 @@ export class Game {
     }
 
     rejoinMember(id: string) {
-        let member = this.leftPlayers.find(x => x.id === id)
+        let member = this.leftPlayers.find(x => x?.id === id)
         if (member) {
             this.members = [...this.members, member]
-            this.leftPlayers = this.leftPlayers.filter(x => x.id !== id)
+            this.leftPlayers = this.leftPlayers.filter(x => x?.id !== id)
 
-            if (!this.teams.some(t => t.id === member.team.id)) {   // if player's team is not already in the list of teams
+            if (!this.teams.some(t => t?.id === member.team.id)) {   // if player's team is not already in the list of teams
                 this.teams.push(member.team)
             }
 

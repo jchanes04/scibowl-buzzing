@@ -8,7 +8,8 @@
             return {
                 props: {
                     ...json,
-                    gameID: page.params.id
+                    gameID: page.params.id,
+                    host: page.host
                 }
             }
         }
@@ -25,6 +26,7 @@
     export let joinCode: string
     export let chatMessages: Message[]
     export let teamFormat: 'any' | 'individuals' | 'teams'
+    export let host: string
     let reader: boolean
     let buzzedTeamIDs: string[] = []
     let state: 'idle' | 'open' | 'buzzed' = 'idle'
@@ -63,7 +65,7 @@
     const myMember = memberList.find(m => m.id === myMemberID)
     const myTeam = teamList.find(x => x.id === myMember?.teamID)
 
-    const socket = writable(io("http://localhost:3030", {
+    const socket = writable(io(host.split(":")[0] + ":3030", {
         auth: {
             memberID: myMemberID,
             gameID
@@ -210,6 +212,10 @@
             state = 'idle'
             playerControls?.disableBuzzing()
         }
+    })
+
+    $socket.on('gameEnd', () => {
+        window.location.href = "/"
     })
 
     let playerControls

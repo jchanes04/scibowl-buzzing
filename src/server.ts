@@ -7,7 +7,7 @@ import { Server } from 'socket.io'
 const httpServer = http.createServer()
 export const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:3000"
+        origin: '*'
     }
 })
 
@@ -32,6 +32,10 @@ io.on('connection', socket => {
                     text: removed.name + " has left the game",
                     type: 'notification'
                 })
+            }
+
+            if (removed.reader) {
+                
             }
         })
 
@@ -106,6 +110,12 @@ io.on('connection', socket => {
                     game.timer.end()
                 }
             }
+        })
+
+        socket.on('endGame', () => {
+            socket.to(gameID).emit('gameEnd')
+            game.timer.end()
+            games.deleteGame(gameID)
         })
     } else {
         console.dir(socket.handshake.auth)

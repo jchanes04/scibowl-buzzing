@@ -56,26 +56,40 @@
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
             <br />
             {#if teamFormat === "any"}
-                <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
-                <label for="indiv">Play on my own</label>
-                <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
-                <label for="new-team">
-                    Create a new team: 
-                    <input type="text" name="new-team-name" bind:value={newTeamName} />
-                </label>
-                {#if teams.length > 0}
-                    <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
-                    <label for="team">
-                        Play with an existing team:
-                        <br />
-                        <select name="team-id" bind:value={teamID}>
-                            <option value="" hidden default></option>
-                            {#each teams as team}
-                                <option value={team.id}>{team.name}</option>
-                            {/each}
-                        </select>
+                <div class="radio-wrapper">
+                    <label for="indiv">
+                        <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
+                        <span />
+                        Play on my own
                     </label>
+                    <br />
+                    <label for="new-team">
+                        <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
+                        <span />
+                        Create a new team:
+                    </label>
+                </div>
+                <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
+                    <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} />
+                </div>
+                {#if teams.length > 0}
+                    <br />
+                    <div class="radio-wrapper">
+                            <label for="team">
+                                <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
+                                <span />
+                                Play with an existing team:
+                            </label>
+                    </div>
                 {/if}
+                <div style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
+                    <select name="team-id" bind:value={teamID}>
+                        <option value="" hidden default></option>
+                        {#each teams as team}
+                            <option value={team.id}>{team.name}</option>
+                        {/each}
+                    </select>
+                </div>
                 <br />
             {:else if teamFormat === "teams"}
                 <label for="team-id">Team: </label>

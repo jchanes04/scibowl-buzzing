@@ -47,6 +47,6 @@ export class GameManager {
     }
 
     deleteGame(id: string) {
-        
+        delete this.games[id]
     }
 }

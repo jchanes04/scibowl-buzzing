@@ -56,6 +56,7 @@
 
     let selectedScore
     function scoreQuestion() {
+        selectedScore = ""
         $socket.emit('scoreQuestion', selectedScore)
     }
 </script>
@@ -113,7 +114,7 @@
                 <span>Penalty</span>
             </label>
         </div>
-        <button on:click={scoreQuestion} disabled={state !== "buzzed"}>Score</button> 
+        <button on:click={scoreQuestion} disabled={state !== "buzzed" || !selectedScore}>Score</button> 
     </ControlSection>
     <ControlSection title="Scoreboard">
         <button>Export Scores</button>
