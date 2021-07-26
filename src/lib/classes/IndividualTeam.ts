@@ -17,6 +17,8 @@ export interface IndividualTeamClean {
     individual: true
 }
 
+// acts as a base class so that extra typecasting to <Team> isn't needed
+
 export class IndividualTeam {
     constructor(id: string, member: Member) {
         this.id = id

@@ -16,9 +16,10 @@ io.on('connection', socket => {
     const { gameID, memberID } = socket.handshake.auth
 
     let game = getGame(gameID)
-    if (game && game.members.some(x => x.id === memberID)) {
-        let member = game.members.find(x => x.id === memberID)
+    if (checkAuthenticated(gameID, memberID)) {
         socket.join(gameID)
+
+        let member = game.members.find(x => x.id === memberID)
         socket.emit('authenticated', {
             reader: memberID === game.owner.id
         })
@@ -128,7 +129,8 @@ export function getGame(id: string) {
 }
 
 export function checkAuthenticated(gameID: string, memberID: string) {
-    return games.has(gameID) && games.get(gameID).members.some(x => x.id === memberID)
+    let game = games.get(gameID)
+    return game?.members.some(x => x.id === memberID) || game?.leftPlayers.some(x => x.id === memberID)
 }
 
 export function gameExists(id: string) {

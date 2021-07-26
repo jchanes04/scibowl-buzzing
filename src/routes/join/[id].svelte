@@ -69,6 +69,7 @@
                         Play with an existing team:
                         <br />
                         <select name="team-id" bind:value={teamID}>
+                            <option value="" hidden default></option>
                             {#each teams as team}
                                 <option value={team.id}>{team.name}</option>
                             {/each}
@@ -79,6 +80,7 @@
             {:else if teamFormat === "teams"}
                 <label for="team-id">Team: </label>
                 <select id="team-id" name="team-id" bind:value={teamID}>
+                    <option value="" hidden default></option>
                     {#each teams as team}
                         <option value={team.id}>{team.name}</option>
                     {/each}

@@ -7,6 +7,8 @@ export interface GameManager {
 
 }
 
+// basically just a fancy array with methods and shit
+
 export class GameManager {
     constructor() {
         

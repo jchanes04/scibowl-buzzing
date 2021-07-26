@@ -55,7 +55,7 @@ export async function post(request: Request) {
             return {
                 headers: {
                     'Location': "/game/" + game.id,
-                    'Set-Cookie': "memberID=" + newMember.id
+                    'Set-Cookie': "memberID=" + newMember.id + "; Max-Age=3600"
                 },
                 status: 302
             }

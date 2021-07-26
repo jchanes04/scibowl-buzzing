@@ -6,6 +6,8 @@ export interface Timer extends EventEmitter {
     interval: any,
 }
 
+// extending the EventEmitter class allows events to be emitted and listened to with timer.on(...)
+
 export class Timer extends EventEmitter {
     constructor () {
         super()

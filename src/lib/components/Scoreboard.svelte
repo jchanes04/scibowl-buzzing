@@ -5,10 +5,6 @@ import { afterUpdate } from 'svelte';
 
     export let teamList: Array<TeamClean | IndividualTeamClean>
     export let buzzedTeamIDs: string[]
-
-    afterUpdate(() => {
-        console.log('a')
-    })
 </script>
 
 <div>

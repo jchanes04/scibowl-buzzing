@@ -19,6 +19,8 @@ const emptyCatScores: catScore = {
     energy: 0
 }
 
+// main purpose is to keep track of point values for the game
+
 export class GameScoreboard {
     constructor({ tossup = 4, bonus = 10, penalty = -4}: { tossup?: number, bonus?: number, penalty?: number }) {
         this.pointValues = {
