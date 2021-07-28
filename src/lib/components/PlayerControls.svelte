@@ -1,24 +1,28 @@
 <script lang="ts">
     export let buzz
-    let buzzingDisabled = true
+    let disabled = true
 
     export function enableBuzzing() {
         console.log('enable')
-        buzzingDisabled = false
+        disabled = false
         setTimeout(() => {
-            console.log(buzzingDisabled)
+            console.log(disabled)
             console.log((<HTMLInputElement>document.getElementById("buzz")).disabled)
         }, 100)
     }
 
     export function disableBuzzing() {
         console.log('disable')
-        buzzingDisabled = true
+        disabled = true
+    }
+
+    export function buzzingEnabled() {
+        return !disabled
     }
 </script>
 
 <div>
-    <button id="buzz" on:click={buzz} disabled={buzzingDisabled}>buzz</button>
+    <button id="buzz" on:click={buzz} disabled={disabled}>buzz</button>
 </div>
 
 <style>
@@ -29,6 +33,7 @@
         box-sizing: border-box;
         border-radius: 1em;
         background: #EEE;
+        padding: 2em;
     }
 
     button {

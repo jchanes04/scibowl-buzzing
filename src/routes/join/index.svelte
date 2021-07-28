@@ -13,8 +13,12 @@
     let joinCodeValue: string
 </script>
 
+<svelte:head>
+    <title>Join Game</title>
+</svelte:head>
+
 <form action={`/join`} method="POST" on:input={handleFormInput}>
-    <h2>Enter a join code</h2>
+    <h1>Enter a join code</h1>
     <div>
         <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
             <br />
@@ -31,16 +35,16 @@
         position: relative;
     }
 
-    h2 {
+    h1 {
         font-size: 44px;
-        text-decoration: underline #0061c3 3px;
+        text-decoration: underline var(--blue) 3px;
         text-underline-offset: 0.2em;
     }
 
     button {
         padding: 0.5em;
         color: #EEE;
-        background: #2C8250;
+        background: var(--green);
         border-radius: 0.3em;
         font-weight: bold;
         border: solid black 3px;
@@ -49,7 +53,7 @@
         width: 8ch;
 
         &:disabled {
-            border: solid #2C8250 3px;
+            border: solid var(--green) 3px;
             background: transparent;
             color: #444;
             cursor: default;

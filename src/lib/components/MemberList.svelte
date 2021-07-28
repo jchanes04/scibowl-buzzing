@@ -8,7 +8,7 @@
     <h3>Members</h3>
     <ul>
         {#each memberList as member}
-            <li class={member.reader ? "reader" : ""}>{member.name}</li>
+            <li class:reader={member.reader}>{member.name}</li>
         {/each}
     </ul>
 </div>
@@ -16,6 +16,8 @@
 <style lang="scss">
     div {
         height: 100%;
+        min-height: 10em;
+        max-height: 25em;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
@@ -60,6 +62,6 @@
     }
 
     .reader {
-        color: orange;
+        color: var(--orange);
     }
 </style>

@@ -18,7 +18,7 @@
 
     h3 {
         font-size: 24px;
-        text-decoration: underline #0061c3 2px;
+        text-decoration: underline var(--blue) 2px;
         text-underline-offset: 0.1em;
         margin-bottom: 0.5em;
     }

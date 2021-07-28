@@ -24,6 +24,7 @@
         border-radius: 0.3em;
         box-sizing: border-box;
         width: 25ch;
+        max-width: 80vw;
         text-align: center;
         position: relative;
 

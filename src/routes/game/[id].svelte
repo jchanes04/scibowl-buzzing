@@ -31,6 +31,8 @@
     let buzzedTeamIDs: string[] = []
     let state: 'idle' | 'open' | 'buzzed' = 'idle'
 
+    let windowWidth: number
+
     type Message = {
         text: string
         type: 'buzz' | 'notification' | 'warning' | 'success'
@@ -43,6 +45,7 @@
     import MemberList from "$lib/components/MemberList.svelte";
     import Chatbox from '$lib/components/Chatbox.svelte'
     import TopBar from '$lib/components/TopBar.svelte'
+    import MobileTopBar from '$lib/components/MobileTopBar.svelte'
     import Timer from '$lib/components/Timer.svelte'
     import PlayerControls from '$lib/components/PlayerControls.svelte'
     import ReaderControls from '$lib/components/ReaderControls.svelte'
@@ -52,12 +55,14 @@
     import type { MemberClean } from "$lib/classes/Member";
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
+    import { emptyCatScores } from '$lib/classes/TeamScoreboard'
     import type { Message, Question } from "$lib/classes/Game"
     import { io } from 'socket.io-client'
     import Cookie from 'js-cookie'
     import { browser } from '$app/env'
 
     import { time } from "$lib/components/Timer.svelte"
+    import { goto } from '$app/navigation';
     let timer
 
     let joined = false
@@ -82,7 +87,7 @@
     })
 
     $socket.on('authFailed', () => {
-        window.location.href = '/join/' + gameID
+        goto('/join/' + gameID)
     })
 
     $socket.on('memberJoin', ({ member, team }: { member: MemberClean, team: TeamClean | IndividualTeamClean }) => {
@@ -135,12 +140,17 @@
     })
 
     $socket.on('questionOpen', (question: Question) => {
-        buzzedTeamIDs = []
-        playerControls?.enableBuzzing()
+        if (question.team && question.team !== myTeam.id) {
+            buzzedTeamIDs = [myTeam.id]
+            playerControls?.disableBuzzing()
+        } else {
+            buzzedTeamIDs = []
+            playerControls?.enableBuzzing()
+        }
         state = 'open'
         $messages = [...$messages, {
             type: 'notification',
-            text: 'new question opened'
+            text: 'New question opened' + (teamList.find(x => x.id === question.team) ? " for " + teamList.find(x => x.id === question.team)?.name : "")
         }]
     })
 
@@ -214,8 +224,33 @@
         }
     })
 
+    $socket.on('scoresClear', () => {
+        teamList.forEach(t => {
+            t.scoreboard.score = 0
+            t.scoreboard.catScores = emptyCatScores
+        })
+        memberList.forEach(m => {
+            m.scoreboard.score = 0
+            m.scoreboard.catScores = emptyCatScores
+        })
+        memberList = memberList
+        teamList = teamList
+
+        $messages = [...$messages, {
+            type: 'notification',
+            text: 'Scores cleared'
+        }]
+    })
+
+    $socket.on('scoresSaved', () => {
+        $messages = [...$messages, {
+            type: 'notification',
+            text: "Scores saved successfully"
+        }]
+    })
+
     $socket.on('gameEnd', () => {
-        window.location.href = "/"
+        goto('/')
     })
 
     let playerControls
@@ -235,11 +270,28 @@
     }
 </script>
 
+<svelte:head>
+    <title>{gameName}</title>
+</svelte:head>
+
+<svelte:body on:keydown={(e) => {
+    let { code, keyCode } = e
+    if ((code === "Space" || code === "Enter") && playerControls?.buzzingEnabled()) {
+        buzz()
+    } else if (code === null || code === undefined) {
+        if ((keyCode === 32 || keyCode === 13) && playerControls?.buzzingEnabled()) {
+            buzz()
+        }
+    }
+}} />
+
+<svelte:window bind:innerWidth={windowWidth}></svelte:window>
+
 <div id="game">
     {#if joined}
-        <TopBar gameName={gameName} joinCode={joinCode} >
+        <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameName} joinCode={joinCode}>
             <Timer bind:this={timer} on:end={() => playerControls?.disableBuzzing()} />
-        </TopBar>
+        </svelte:component>
         <MemberList memberList={memberList} />
         <Scoreboard teamList={teamList} buzzedTeamIDs={buzzedTeamIDs} />
         <Chatbox messages={messages} />
@@ -279,6 +331,17 @@
                 ". member-list scoreboard .";
             min-height: 130vh;
             margin-bottom: 1em;
+        }
+
+        @media (max-width: 500px) {
+            grid-template-columns: .05fr 1fr.05fr;
+            grid-template-rows: max(10vh, 80px) auto auto auto auto;
+            grid-template-areas: 
+                "mobile-top-bar mobile-top-bar mobile-top-bar"
+                ". chat-box ."
+                ". control-panel ."
+                ". scoreboard ."
+                ". member-list .";
         }
     }
 </style>

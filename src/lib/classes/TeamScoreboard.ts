@@ -3,7 +3,7 @@ type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
 type catScore = { correct: number, incorrect: number }
 type catScores = Record<category, catScore>
 
-const emptyCatScores: catScores = {
+export const emptyCatScores: catScores = {
     earth: {correct: 0, incorrect: 0},
     chem: {correct: 0, incorrect: 0},
     math: {correct: 0, incorrect: 0},
@@ -39,5 +39,10 @@ export class TeamScoreboard {
         if (category) {
             this.catScores[category].incorrect += 1
         }
+    }
+
+    clear() {
+        this.score = 0
+        this.catScores = emptyCatScores
     }
 }

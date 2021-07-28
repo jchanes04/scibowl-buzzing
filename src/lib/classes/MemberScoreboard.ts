@@ -55,4 +55,9 @@ export class MemberScoreboard {
             this.teamScoreboard.penalty(category, value)
         }
     }
+
+    clear() {
+        this.score = 0
+        this.catScores = emptyCatScores
+    }
 }

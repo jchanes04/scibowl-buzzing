@@ -12,7 +12,7 @@ import { afterUpdate } from 'svelte';
     <ul>
         {#each teamList as team}
             {#if team.members.length !== 1 || !team.members[0].reader}
-                <li class={buzzedTeamIDs.includes(team.id) ? "buzzed" : ""}>
+                <li class:buzzed={buzzedTeamIDs.includes(team.id)}>
                     {team.name + ": " + team.scoreboard.score}
                     {#if !team.individual}
                         <ul>
@@ -30,6 +30,8 @@ import { afterUpdate } from 'svelte';
 <style lang="scss">
     div {
         height: 100%;
+        min-height: 10em;
+        max-height: 25em;
         display: flex;
         flex-direction: column;
         overflow-y: auto;

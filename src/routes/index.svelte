@@ -1,3 +1,3 @@
 <svelte:head>
-    <title>Svelte App</title>
+    <title>Scibowl Buzzing</title>
 </svelte:head>

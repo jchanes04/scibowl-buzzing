@@ -25,6 +25,8 @@
         flex-direction: column;
         overflow-y: scroll;
         height: 100%;
+        min-height: 10em;
+        max-height: 25em;
         padding: 1em;
         box-sizing: border-box;
         border-radius: 1em;
@@ -68,7 +70,7 @@
     }
 
     .buzz {
-        color: #f09231;
+        color: var(--orange);
     }
 
     .notif {
@@ -76,10 +78,10 @@
     }
 
     .warning {
-        color: red;
+        color: var(--red);
     }
 
     .success {
-        color: green;
+        color: var(--green);
     }
 </style>

@@ -4,6 +4,8 @@ import { Member } from '$lib/classes/Member'
 import * as http from 'http'
 import { Server } from 'socket.io'
 
+import fs from "fs"
+
 const httpServer = http.createServer()
 export const io = new Server(httpServer, {
     cors: {
@@ -33,10 +35,6 @@ io.on('connection', socket => {
                     type: 'notification'
                 })
             }
-
-            if (removed.reader) {
-                
-            }
         })
 
         socket.on('buzz', () => {
@@ -46,7 +44,7 @@ io.on('connection', socket => {
                 if (buzzed) {
                     game.timer.pause()
                     game.addChatMessage({
-                        text: buzzed.name + "buzzed",
+                        text: buzzed.name + " has buzzed",
                         type: 'buzz'
                     })
                     socket.to(gameID).emit('buzz', memberID)
@@ -61,7 +59,7 @@ io.on('connection', socket => {
         socket.on('newQ', (question)=>{
             game.newQ(memberID, question)
             game.addChatMessage({
-                text: "new question opened",
+                text: 'New question opened' + (game.teams.find(x => x.id === question.team) ? " for " + game.teams.find(x => x.id === question.team)?.name : ""),
                 type: 'notification'
             })
             socket.to(gameID).emit('questionOpen', question)
@@ -112,6 +110,49 @@ io.on('connection', socket => {
             }
         })
 
+        socket.on('clearScores', () => {
+            game.clearScores()
+            socket.to(gameID).emit('scoresClear')
+            socket.emit('scoresClear')
+        })
+
+        socket.on('saveScores', async () => {
+            console.log('saving scores')
+            let filename = game.name
+                .replace(/[^a-zA-Z0-9-_\(\)]/g, "")
+                .replace(/\s/g, "_")
+            let postfix: "" | number = ""
+
+            let fullName = await findOpenFile(filename, postfix)
+
+            let data = {
+                teams: {},
+                members: {}
+            }
+
+            game.teams.forEach(t => {
+                if (!t.individual) {
+                    data.teams[t.name] = {
+                        score: t.scoreboard.score,
+                        catScores: t.scoreboard.catScores
+                    }
+                }
+            })
+
+            game.members.forEach(m => {
+                data.members[m.name] = {
+                    score: m.scoreboard.score,
+                    catScores: m.scoreboard.catScores
+                }
+            })
+
+            console.dir(data)
+
+            fs.writeFileSync(process.cwd() + '/data/' + fullName + '.json', JSON.stringify(data, null, '\t'))
+
+            socket.emit('scoresSaved')
+        })
+
         socket.on('endGame', () => {
             socket.to(gameID).emit('gameEnd')
             game.timer.end()
@@ -149,4 +190,17 @@ export function gameExists(id: string) {
 
 export function getGameFromCode(code: string) {
     return games.find(x => x.joinCode === code)
+}
+
+async function findOpenFile(filename: string, postfix: "" | number) {
+    let p = new Promise((res, rej) => {
+        fs.stat(process.cwd() + "/data/" + filename + postfix + '.json', (err) => {
+            if (err === null) {
+                res(findOpenFile(filename, postfix === "" ? 1 : postfix + 1))
+            } else {
+                res(filename + postfix)
+            }
+        })
+    })
+    return p
 }

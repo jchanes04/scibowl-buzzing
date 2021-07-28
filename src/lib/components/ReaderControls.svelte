@@ -30,7 +30,7 @@
 
         $messages = [...$messages, {
             type: 'notification',
-            text: 'new question opened'
+            text: 'New question opened'
         }]
 
         state = 'open'
@@ -39,6 +39,8 @@
         teamSelect.selectedIndex = 0;
         (<HTMLInputElement>document.querySelector('input[name="question-type"]:checked')).checked = false
         selectedCategory = ""
+        selectedTeam = ""
+        questionType = ""
     }
     
     function startTimer() {
@@ -47,17 +49,17 @@
     function endGame() {
         $socket.emit('endGame')
     }
-    function showData() {
-        
-    }
     function clearScores() {
         $socket.emit('clearScores')
+    }
+    function saveScores() {
+        $socket.emit('saveScores')
     }
 
     let selectedScore
     function scoreQuestion() {
-        selectedScore = ""
         $socket.emit('scoreQuestion', selectedScore)
+        selectedScore = ""
     }
 </script>
 
@@ -74,7 +76,7 @@
             </label>
         </div>
         <br />
-        <div id="target-team-wrapper" class={questionType === 'bonus' ? "" : "hidden"}>
+        <div id="target-team-wrapper" class:hidden={questionType !== 'bonus'}>
             <select name="target-team" id="target-team" bind:this={teamSelect} bind:value={selectedTeam}>
                 <option value="" hidden default></option>
                 {#each teamList as team}
@@ -100,7 +102,7 @@
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
         <button on:click={startTimer} id="start-timer" disabled={state !== "open"}>Start Timer</button>
         <br />
-        <div id="score-wrapper" class={state === "buzzed" ? "" : "disabled"}>
+        <div id="score-wrapper" class:disabled={state !== "buzzed"}>
             <label for="correct-radio">
                 <input type="radio" id="correct-radio" name="selected-score" value="correct" bind:group={selectedScore} disabled={state !== "buzzed"}>
                 <span>Correct</span>
@@ -117,7 +119,8 @@
         <button on:click={scoreQuestion} disabled={state !== "buzzed" || !selectedScore}>Score</button> 
     </ControlSection>
     <ControlSection title="Scoreboard">
-        <button>Export Scores</button>
+        <button on:click={clearScores}>Clear Scores</button>
+        <button on:click={saveScores}>Save Scores</button>
     </ControlSection>
     <ControlSection title="Game Control">
         <button on:click={endGame} id="endGame">End Game</button>
@@ -141,7 +144,7 @@
 
     button {
         color: #EEE;
-        background: #2C8250;
+        background: var(--green);
         font-size: 20px;
         font-weight: bold;
         padding: 0.6em;
@@ -151,7 +154,7 @@
     }
 
     button:disabled {
-        border: solid #2C8250 3px;
+        border: solid var(--green) 3px;
         background: transparent;
         color: #444;
         cursor: default;
@@ -210,11 +213,11 @@
         }
 
         #incorrect-radio:checked ~ span {
-            border-color: red;
+            border-color: var(--red);
         }
 
         #penalty-radio:checked ~ span {
-            border-color: red;
+            border-color: var(--red);
         }
 
         span {

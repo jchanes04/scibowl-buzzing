@@ -61,7 +61,7 @@ export async function post(request: Request) {
             }
 
         } else {
-            return redirectTo('/error/invalid-join')
+            return redirectTo('/error/invalid-code')
         }
     } catch (e) {
         console.error(e)

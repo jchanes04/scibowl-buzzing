@@ -1,6 +1,8 @@
 :root {
     --blue: hsl(210, 100%, 38%);
     --green: #2C8250;
+    --red: #D14444;
+    --orange: #F5C13D;
 }
 
 html, body {

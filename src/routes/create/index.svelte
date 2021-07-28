@@ -13,14 +13,18 @@
     }
 </script>
 
+<svelte:head>
+    <title>Create Game</title>
+</svelte:head>
+
 <form id="form" action="/create" method="POST" autocomplete="off" on:submit={handleSubmit}>
-    <h2>Create Game</h2>
+    <h1>Create Game</h1>
     <input type="text" placeholder="Game Name" name="game-name" id="game-name-input" bind:value={gameName} />
     <br />
     <input type="text" placeholder="Your Name" name="owner-name" id="owner-name-input" bind:value={ownerName} />
     <br />
 
-    <h3>Teams</h3>
+    <h2>Teams</h2>
     <div class="radio-wrapper">
         <label for="any-teams">
             <input id="any-teams" type="radio" name="team-format" value="any" bind:group={teamFormat} />
@@ -52,22 +56,21 @@
 <style lang="scss">
     form {
         margin: 3em auto;
-        width: 80ch;
         border-radius: 1em;
         text-align: center;
         padding: 1em;
         position: relative;
     }
 
-    h2 {
+    h1 {
         font-size: 44px;
-        text-decoration: underline #0061c3 3px;
+        text-decoration: underline var(--blue) 3px;
         text-underline-offset: 0.2em;
     }
 
-    h3 {
+    h2 {
         font-size: 24px;
-        text-decoration: underline #0061c3 2px;
+        text-decoration: underline var(--blue) 2px;
         text-underline-offset: 0.1em;
     }
 
@@ -84,6 +87,7 @@
         border-radius: 0.3em;
         box-sizing: border-box;
         width: 25ch;
+        max-width: 80vw;
         text-align: center;
         position: relative;
 
@@ -125,12 +129,12 @@
                 width: 0.7em;
                 height: 0.7em;
                 border-radius: 0.35em;
-                background: #0061c3;
+                background: var(--blue);
             }
         }
 
         &:hover > span {
-            border-color: #2C8250;
+            border-color: var(--green);
         }
 
         input:checked ~ span::after {
@@ -141,7 +145,7 @@
     button {
         padding: 0.5em;
         color: #EEE;
-        background: #2C8250;
+        background: var(--green);
         border-radius: 0.3em;
         font-weight: bold;
         border: solid black 3px;
@@ -150,7 +154,7 @@
 
         &:disabled {
             padding: calc(0.5em - 3px);
-            border: solid #2C8250 3px;
+            border: solid var(--green) 3px;
             background: transparent;
             color: #444;
             cursor: default;

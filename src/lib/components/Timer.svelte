@@ -4,10 +4,11 @@
 </script>
 
 <script lang="ts">
+    export let style: string = ""
     let interval = null
     let isLive = false
 
-    import { createEventDispatcher } from 'svelte'
+    import { createEventDispatcher, onDestroy } from 'svelte'
     const dispatch = createEventDispatcher()
 
     export function start(length: number) {
@@ -19,8 +20,9 @@
         interval = setInterval(() => {
             $time = $time - 1
             console.log($time)
-            if ($time == 0){
+            if ($time <= 0){
                 this.end()
+                clearInterval(interval)
             }
             dispatch('update', $time)
         }, 1000)
@@ -42,7 +44,7 @@
         interval = setInterval(() => {
             $time = $time - 1
             console.log($time)
-            if ($time == 0){
+            if ($time <= 0){
                 this.end()
             }
             dispatch('update', $time)
@@ -70,10 +72,11 @@
     }
 </script>
 
-<h1>{'0:' + ($time < 10 ? "0" + $time : $time)}</h1>
+<h1 style={style}>{'0:' + ($time < 10 ? "0" + $time : $time)}</h1>
 
 <style lang="scss">
     h1 {
-        justify-self: end;
+        display: grid;
+        place-content: center;
     }
 </style>

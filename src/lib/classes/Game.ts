@@ -15,7 +15,8 @@ export type TeamFormat = 'any' | 'individuals' | 'teams'
 
 export type Question = {
     bonus: boolean,
-    category: Category
+    category: Category,
+    team?: string
 }
 
 export interface Game {
@@ -194,6 +195,15 @@ export class Game {
             open,
             scoredTeam: scoredMember.team
         }
+    }
+
+    clearScores() {
+        this.teams.forEach(t => {
+            t.scoreboard.clear()
+        })
+        this.members.forEach(m => {
+            m.scoreboard.clear()
+        })
     }
 }
 

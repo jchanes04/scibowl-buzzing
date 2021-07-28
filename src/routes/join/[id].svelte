@@ -48,9 +48,13 @@
         (teamFormat === "teams" && !teamID)
 </script>
 
+<svelte:head>
+    <title>Join {gameName}</title>
+</svelte:head>
+
 <div>
     <form action={`/join`} method="POST" on:submit={handleSubmit} autocomplete="off">
-        <h2>Join {gameName}</h2>
+        <h1>Join {gameName}</h1>
         <div>
             <input type="hidden" name="gameID" value={gameID} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
@@ -117,9 +121,9 @@
         position: relative;
     }
 
-    h2 {
+    h1 {
         font-size: 44px;
-        text-decoration: underline #0061c3 3px;
+        text-decoration: underline var(--blue) 3px;
         text-underline-offset: 0.2em;
     }
 
@@ -136,6 +140,7 @@
         border-radius: 0.3em;
         box-sizing: border-box;
         width: 25ch;
+        max-width: 80vw;
         text-align: center;
         position: relative;
 
@@ -178,12 +183,12 @@
                 width: 0.7em;
                 height: 0.7em;
                 border-radius: 0.35em;
-                background: #0061c3;
+                background: var(--blue);
             }
         }
 
         &:hover > span {
-            border-color: #2C8250;
+            border-color: var(--green);
         }
 
         input:checked ~ span::after {
@@ -199,7 +204,7 @@
     button {
         padding: 0.5em;
         color: #EEE;
-        background: #2C8250;
+        background: var(--green);
         border-radius: 0.3em;
         font-weight: bold;
         border: solid black 3px;
@@ -208,7 +213,7 @@
         width: 8ch;
 
         &:disabled {
-            border: solid #2C8250 3px;
+            border: solid var(--green) 3px;
             background: transparent;
             color: #444;
             cursor: default;
