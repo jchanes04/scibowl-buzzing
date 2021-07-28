@@ -155,6 +155,7 @@ io.on('connection', socket => {
 
         socket.on('endGame', () => {
             socket.to(gameID).emit('gameEnd')
+            socket.emit('gameEnd')
             game.timer.end()
             games.deleteGame(gameID)
         })
