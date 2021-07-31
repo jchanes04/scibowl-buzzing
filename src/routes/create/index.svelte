@@ -4,11 +4,14 @@
     let ownerName
     let gameName
     let teams = []
+    let newTeamName
     $: submitEnabled = ownerName && gameName && teamFormat && (teamFormat !== "teams" || teams.length !== 0)
 
     import TeamList from '$lib/components/TeamList.svelte'
 
     function handleSubmit() {
+        teams = [...teams, newTeamName]
+        newTeamName = ''
         $session.memberName = ownerName
     }
 </script>
@@ -47,7 +50,7 @@
     </div>
     <br />
     {#if teamFormat === "teams"}
-        <TeamList bind:teams={teams} />
+        <TeamList bind:teams={teams} bind:newTeamName={newTeamName} />
     {/if}
     <br />
     <button type="submit" disabled={!submitEnabled}>Create Game</button>

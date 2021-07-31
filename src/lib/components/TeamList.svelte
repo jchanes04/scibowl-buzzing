@@ -1,13 +1,13 @@
 <script lang="ts">
     export let teams = []
+    export let newTeamName
     $: teamsJSON = JSON.stringify(teams)
 
     function addTeam() {
-        let input = <HTMLInputElement>document.getElementById('new-team')
-        if (input.value && !teams.includes(input.value)) {
-            teams = [...teams, input.value]
+        if (newTeamName && !teams.includes(newTeamName)) {
+            teams = [...teams, newTeamName]
         }
-        input.value = ''
+        newTeamName = ''
     }
 </script>
 
@@ -24,7 +24,7 @@
             </li>
         {/each}
         <li>
-            <input type="text" id="new-team" />
+            <input type="text" id="new-team" bind:value={newTeamName} />
             <span on:click={addTeam}>
                 <span class="add" />
             </span>
