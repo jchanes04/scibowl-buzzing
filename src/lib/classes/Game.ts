@@ -180,7 +180,7 @@ export class Game {
         
         let open = !this.currentQuestion.bonus && 
             this.buzzedTeams.length < 3 && 
-            this.buzzedTeams.length < this.teams.length && 
+            this.buzzedTeams.length < this.teams.length - 1 && 
             score !== 'correct'
 
         if (!open) {
