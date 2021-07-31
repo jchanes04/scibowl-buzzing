@@ -17,7 +17,7 @@
     <title>Join Game</title>
 </svelte:head>
 
-<form action={`/join`} method="POST" on:input={handleFormInput}>
+<form action={`/join`} method="POST" on:input={handleFormInput} autocomplete="off">
     <h1>Enter a join code</h1>
     <div>
         <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
