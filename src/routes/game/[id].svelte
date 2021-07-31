@@ -65,6 +65,8 @@
     import { goto } from '$app/navigation';
     let timer
 
+    let buzzAudio = browser ? new Audio('/buzz.mp3') : null
+
     let joined = false
     const myMemberID = Cookie.get('memberID')
     const myMember = memberList.find(m => m.id === myMemberID)
@@ -128,6 +130,8 @@
         let member = memberList.find(x => x.id === id);
         playerControls?.disableBuzzing()
         state = 'buzzed'
+
+        buzzAudio.play()
 
         buzzedTeamIDs = [...buzzedTeamIDs, member.teamID]
 
@@ -260,6 +264,8 @@
     let playerControls
     function buzz() {
         $socket.emit('buzz');
+
+        buzzAudio.play()
 
         playerControls?.disableBuzzing()
         buzzedTeamIDs.push(myTeam.id)
