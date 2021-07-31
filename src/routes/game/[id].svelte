@@ -160,7 +160,11 @@
 
     $socket.on('timerStart', (length: number) => {
         timer.start(length)
-        playerControls?.enableBuzzing()
+        if (!buzzedTeamIDs.includes(myTeam.id)) {
+            playerControls?.enableBuzzing()
+        } else {
+            playerControls?.disableBuzzing()
+        }
         state = 'open'
     })
 
