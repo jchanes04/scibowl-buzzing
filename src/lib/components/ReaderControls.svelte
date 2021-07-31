@@ -172,6 +172,16 @@
             top: 0;
             left: 0;
 
+            & ~ span {
+                color: #000;
+                font-weight: bold;
+            }
+
+            &:disabled ~ span {
+                color: #444;
+                font-weight: normal;
+            }
+
             &:checked ~ span {
                 border: 2px solid var(--blue);
                 padding: calc(0.3em - 2px);
@@ -189,6 +199,10 @@
         }
     }
 
+    #score-wrapper {
+        margin-bottom: 0.5em;
+    }
+
     #score-wrapper label {
         cursor: pointer;
         position: relative;
@@ -200,6 +214,16 @@
             position: absolute;
             top: 0;
             left: 0;
+
+            & ~ span {
+                color: #000;
+                font-weight: bold;
+            }
+
+            &:disabled ~ span {
+                color: #444;
+                font-weight: normal;
+            }
 
             &:checked ~ span {
                 border: 2px solid;
