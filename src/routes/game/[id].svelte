@@ -231,11 +231,11 @@
     $socket.on('scoresClear', () => {
         teamList.forEach(t => {
             t.scoreboard.score = 0
-            t.scoreboard.catScores = emptyCatScores
+            t.scoreboard.catScores = emptyCatScores()
         })
         memberList.forEach(m => {
             m.scoreboard.score = 0
-            m.scoreboard.catScores = emptyCatScores
+            m.scoreboard.catScores = emptyCatScores()
         })
         memberList = memberList
         teamList = teamList

@@ -3,15 +3,6 @@ type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
 type catScore = { correct: number, incorrect: number }
 type catScores = Record<category, catScore>
 
-export const emptyCatScores: catScores = {
-    earth: {correct: 0, incorrect: 0},
-    chem: {correct: 0, incorrect: 0},
-    math: {correct: 0, incorrect: 0},
-    bio: {correct: 0, incorrect: 0},
-    physics: {correct: 0, incorrect: 0},
-    energy: {correct: 0, incorrect: 0}
-}
-
 export interface TeamScoreboard {
     score: number,
     catScores: catScores
@@ -20,7 +11,7 @@ export interface TeamScoreboard {
 export class TeamScoreboard {
     constructor() {
         this.score = 0
-        this.catScores = emptyCatScores
+        this.catScores = emptyCatScores()
     }
 
     correctAnswer(category: category, value: number) {
@@ -43,6 +34,17 @@ export class TeamScoreboard {
 
     clear() {
         this.score = 0
-        this.catScores = emptyCatScores
+        this.catScores = emptyCatScores()
+    }
+}
+
+export function emptyCatScores(): catScores {
+    return {
+        earth: {correct: 0, incorrect: 0},
+        chem: {correct: 0, incorrect: 0},
+        math: {correct: 0, incorrect: 0},
+        bio: {correct: 0, incorrect: 0},
+        physics: {correct: 0, incorrect: 0},
+        energy: {correct: 0, incorrect: 0}
     }
 }

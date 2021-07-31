@@ -10,19 +10,10 @@ export interface MemberScoreboard {
     teamScoreboard: TeamScoreboard | null
 }
 
-const emptyCatScores: catScores = {
-    earth: {correct: 0, incorrect: 0},
-    chem: {correct: 0, incorrect: 0},
-    math: {correct: 0, incorrect: 0},
-    bio: {correct: 0, incorrect: 0},
-    physics: {correct: 0, incorrect: 0},
-    energy: {correct: 0, incorrect: 0}
-}
-
 export class MemberScoreboard {
     constructor(teamScoreboard?: TeamScoreboard) {
         this.score = 0
-        this.catScores = emptyCatScores
+        this.catScores = emptyCatScores()
         this.teamScoreboard = teamScoreboard || null
     }
 
@@ -58,6 +49,17 @@ export class MemberScoreboard {
 
     clear() {
         this.score = 0
-        this.catScores = emptyCatScores
+        this.catScores = emptyCatScores()
+    }
+}
+
+function emptyCatScores(): catScores {
+    return {
+        earth: {correct: 0, incorrect: 0},
+        chem: {correct: 0, incorrect: 0},
+        math: {correct: 0, incorrect: 0},
+        bio: {correct: 0, incorrect: 0},
+        physics: {correct: 0, incorrect: 0},
+        energy: {correct: 0, incorrect: 0}
     }
 }
