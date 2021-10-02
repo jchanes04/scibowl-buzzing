@@ -1,27 +1,21 @@
 <script lang="ts">
-    import { session } from "$app/stores"
-    let type
-    let category
-    let W,X,Y,Z
-    let question,answer
-    let newTeamName
-    $: submitEnabled = type && category && question && answer && (type !== "MCQ" || (W && X && Y && Z))
-
-    import TeamList from '$lib/components/TeamList.svelte'
-
-    function handleSubmit() {
-        teams = [...teams, newTeamName]
-        newTeamName = ''
-        $session.memberName = ownerName
-    }
+    import type { category } from "src/mongo";
+    let author: string
+    let type: "MCQ" | "SA"
+    let category: category
+    let optionW, optionX, optionY, optionZ: string
+    let questionText,answer: string
+    let correctAnswer: "W" | "X" | "Y" | "Z"
+    $: submitEnabled = author && type && category && questionText && (answer || correctAnswer) && (type !== "MCQ" || (optionW && optionX && optionY && optionZ))
 </script>
 
 <svelte:head>
-    <title>Create Game</title>
+    <title>Submit Questions</title>
 </svelte:head>
 
-<form id="form" action="/create" method="POST" autocomplete="off" on:submit={handleSubmit}>
+<form id="form" action="/write" method="POST" autocomplete="off">
     <h1>Submit Questions</h1>
+    <input type="text" name="author" id="author-input" bind:value={author} />
     <div class="radio-wrapper">
         <label for="any-teams">
             <input id="any-teams" type="radio" name="type" value="MCQ" bind:group={type} />
@@ -34,7 +28,6 @@
             <span />
             Short Answer 
         </label>
-        <br />
     </div>
     <select name="category" id="category" bind:value={category}>
             <option value="" hidden default></option>
@@ -45,27 +38,40 @@
             <option value="math">Math</option>
             <option value="energy">Energy</option>
     </select>
-    <br />
-    <br />
-    <input type="text" placeholder="question" name="question" id="question-input" bind:value={question} />
-    <br />
-    {#if type === "MCQ"}
-        <p>W) </p>
-        <input type="text" placeholder="W" name="W" id="W-input" bind:value={W} />
-        <br />
-        <p>X) </p>
-        <input type="text" placeholder="X" name="X" id="X-input" bind:value={X} />
-        <br />
-        <p>Y) </p>
-        <input type="text" placeholder="Y" name="Y" id="Y-input" bind:value={Y} />
-        <br />
-        <p>Z) </p>
-        <input type="text" placeholder="Z" name="Z" id="Z-input" bind:value={Z} />
-        <br />
+    <input type="text" placeholder="question" name="question-text" id="question-input" bind:value={questionText} />
+    {#if type === "MCQ"}    
+        <div class="radio-wrapper">
+            <label>
+                <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
+                <span />
+                W)
+                <input type="text" name="W" id="W-input" bind:value={optionW} />
+            </label>
+            <br />
+            <label>
+                <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
+                <span />
+                X)
+                <input type="text" name="X" id="X-input" bind:value={optionX} />
+            </label>
+            <br />
+            <label>
+                <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
+                <span />
+                Y)
+                <input type="text" name="Y" id="Y-input" bind:value={optionY} />
+            </label>
+            <br />
+            <label>
+                <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
+                <span />
+                Z)
+                <input type="text" name="Z" id="Z-input" bind:value={optionZ} />
+            </label>          
+        </div>
+    {:else if type === "SA"}
+        <input type="text" placeholder="answer" name="answer" id="answer-input" bind:value={answer} />
     {/if}
-    <br />
-    <input type="text" placeholder="answer" name="answer" id="answer-input" bind:value={answer} />
-    <br />
     <button type="submit" disabled={!submitEnabled}>Submit Question</button>
 </form>
 
@@ -76,6 +82,9 @@
         text-align: center;
         padding: 1em;
         position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     h1 {
@@ -93,6 +102,11 @@
     .radio-wrapper {
         text-align: left;
         display: inline-block;
+    }
+
+    select {
+        margin: 1em auto 0.5em;
+        font-size: 18px;
     }
 
     input[type="text"] {
@@ -118,10 +132,17 @@
         padding-bottom: 0.3em;
         display: inline-block;
 
-        input {
+        input[type="radio"] {
             visibility: hidden;
             width: 0;
             height: 0;
+        }
+
+        input[type="text"] {
+            padding: 0.2em 0.5em;
+            font-size: 20px;
+            text-align: left;
+            margin-left: 0.5em;
         }
 
         span {
@@ -167,6 +188,7 @@
         border: solid black 3px;
         font-size: 18px;
         cursor: pointer;
+        margin-top: 1em;
 
         &:disabled {
             padding: calc(0.5em - 3px);
