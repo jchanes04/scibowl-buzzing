@@ -1,6 +1,7 @@
 export type category = "earth" | "bio" | "chem" | "physics" | "math" | "energy"
 export type McqQuestion = {
     type: "MCQ",
+    id: string,
     category: category,
     questionText: string,
     author: string,
@@ -15,6 +16,7 @@ export type McqQuestion = {
 }
 export type SaQuestion = {
     type: "SA",
+    id: string,
     category: category,
     questionText: string,
     author: string,
@@ -43,13 +45,16 @@ export async function init() {
 
 export async function addQuestion(question: SaQuestion | McqQuestion) {
     let collection  = db.collection("submittedQuestions")
-    await collection.insertOne(question)
+    await collection.insertOne({
+        id: createID(),
+        ...question
+    })
 }
 
 type questionQuery = {
     author?: string,
-    category?: category,
-    type?: "SA" | "MCQ",
+    categories?: category[],
+    types?: ("SA" | "MCQ") [],
     timeRange?: {
         startDate?: Date,
         endDate?: Date
@@ -57,22 +62,22 @@ type questionQuery = {
 }
 type mongoQuestionQuery = {
     author?: string,
-    category?: category,
-    type?: "SA" | "MCQ",
+    category?: {$in: category[]},
+    type?: {$in: ("SA" | "MCQ") []},
     date?: {
         $lt?: Date,
         $gte?: Date
     }
 }
 
-export async function getQuestions({ author, category, type, timeRange }: questionQuery) {
+export async function getQuestions({ author, categories, types, timeRange }: questionQuery) {
     console.log(author)
     let collection = db.collection("submittedQuestions")
     
     let mongoQuery: mongoQuestionQuery = {}
     if (author) mongoQuery.author = author
-    if (category) mongoQuery.category = category
-    if (type) mongoQuery.type = type
+    if (categories?.length) mongoQuery.category = { $in: categories }
+    if (types?.length) mongoQuery.type = {$in: types}
     if (timeRange && (timeRange.startDate || timeRange.endDate)) {
         mongoQuery.date = {}
         if (timeRange.startDate) mongoQuery.date.$gte = timeRange.startDate
@@ -82,4 +87,14 @@ export async function getQuestions({ author, category, type, timeRange }: questi
     
     let cursor = collection.find(mongoQuery)
     return <(SaQuestion | McqQuestion)[]>(await cursor.toArray())
+}
+
+function createID() {
+    let time = Date.now()
+    let time1 = time.toString(16).slice(0, 4)
+    let time2 = time.toString(16).slice(4, 8)
+    let random1 = Math.floor(Math.random() * 16).toString(16)
+    let random2 = Math.floor(Math.random() * 16).toString(16)
+    let id = time2 + random1 + time1 + random2
+    return id
 }

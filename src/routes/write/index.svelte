@@ -17,14 +17,14 @@
     <h1>Submit Questions</h1>
     <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} />
     <div class="radio-wrapper">
-        <label for="any-teams">
-            <input id="any-teams" type="radio" name="type" value="MCQ" bind:group={type} />
+        <label for="multiple-choice">
+            <input id="multiple-choice" type="radio" name="type" value="MCQ" bind:group={type} />
             <span />
             Multiple Choice
         </label>
         <br />
-        <label for="individual-teams">
-            <input id="individual-teams" type="radio" name="type" value="SA" bind:group={type} />
+        <label for="short-answer">
+            <input id="short-answer" type="radio" name="type" value="SA" bind:group={type} />
             <span />
             Short Answer 
         </label>
@@ -38,7 +38,7 @@
             <option value="math">Math</option>
             <option value="energy">Energy</option>
     </select>
-    <input type="text" placeholder="Question" name="question-text" id="question-input" bind:value={questionText} />
+    <input type="textarea" placeholder="Question" name="question-text" id="question-input" bind:value={questionText} />
     {#if type === "MCQ"}    
         <div class="radio-wrapper">
             <label>
