@@ -28,6 +28,7 @@ let client = new MongoClient("mongodb://45.32.217.67:27108")
 var db: Db;
 export async function init() {
     try {
+        console.log("Connecting...")
         await client.connect()
         db = client.db("scibowl")
         return true

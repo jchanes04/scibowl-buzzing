@@ -15,7 +15,7 @@
 
 <form id="form" action="/write" method="POST" autocomplete="off">
     <h1>Submit Questions</h1>
-    <input type="text" name="author" id="author-input" bind:value={author} />
+    <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} />
     <div class="radio-wrapper">
         <label for="any-teams">
             <input id="any-teams" type="radio" name="type" value="MCQ" bind:group={type} />
@@ -38,39 +38,39 @@
             <option value="math">Math</option>
             <option value="energy">Energy</option>
     </select>
-    <input type="text" placeholder="question" name="question-text" id="question-input" bind:value={questionText} />
+    <input type="text" placeholder="Question" name="question-text" id="question-input" bind:value={questionText} />
     {#if type === "MCQ"}    
         <div class="radio-wrapper">
             <label>
                 <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
                 <span />
                 W)
-                <input type="text" name="W" id="W-input" bind:value={optionW} />
+                <input type="text" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
             </label>
             <br />
             <label>
                 <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
                 <span />
                 X)
-                <input type="text" name="X" id="X-input" bind:value={optionX} />
+                <input type="text" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
             </label>
             <br />
             <label>
                 <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
                 <span />
                 Y)
-                <input type="text" name="Y" id="Y-input" bind:value={optionY} />
+                <input type="text" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
             </label>
             <br />
             <label>
                 <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
                 <span />
                 Z)
-                <input type="text" name="Z" id="Z-input" bind:value={optionZ} />
+                <input type="text" name="Z" placeholder="Option Z" id="Z-input" bind:value={optionZ} />
             </label>          
         </div>
     {:else if type === "SA"}
-        <input type="text" placeholder="answer" name="answer" id="answer-input" bind:value={answer} />
+        <input type="text" name="answer" placeholder="Answer" id="answer-input" bind:value={answer} />
     {/if}
     <button type="submit" disabled={!submitEnabled}>Submit Question</button>
 </form>
@@ -91,12 +91,6 @@
         font-size: 44px;
         text-decoration: underline var(--blue) 3px;
         text-underline-offset: 0.2em;
-    }
-
-    h2 {
-        font-size: 24px;
-        text-decoration: underline var(--blue) 2px;
-        text-underline-offset: 0.1em;
     }
 
     .radio-wrapper {
