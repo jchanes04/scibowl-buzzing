@@ -1,5 +1,4 @@
-import type { Request } from "@sveltejs/kit";
-import { category, getQuestions } from "../../mongo";
+import { category, getQuestions } from "../../mongo"
 
 export async function get({ query }: { query: URLSearchParams }) {
     let author = query.get("author")
@@ -14,9 +13,18 @@ export async function get({ query }: { query: URLSearchParams }) {
     let startDate = typeof start === "number" ? new Date(start) : undefined
     let endDate = typeof end === "number" ? new Date(end) : undefined
     
-    let result = await getQuestions({ author, categories, types, timeRange: { startDate, endDate } })
-    return {
-        status: 302,
-        body: result
+    let questions = await getQuestions({ author, categories, types, timeRange: { startDate, endDate } })
+    if (questions.length === 0) {
+        return {
+            status: 302,
+            body: {
+                error: 'No questions matched the query'
+            }
+        }
+    } else {
+        return {
+            status: 302,
+            body: questions[Math.floor(Math.random() * questions.length)]
+        }
     }
 }

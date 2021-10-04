@@ -4,7 +4,7 @@
     export let question: SaQuestion | McqQuestion
     $: truncatedQuestion = question.questionText.length > 70 ? question.questionText.slice(0, 70) + "…" : question.questionText
     $: dateObject = new Date(question.date)
-    $: dateString = dateObject.toDateString() + " " + dateObject.getHours() + ":" + dateObject.getMinutes() + ":" + dateObject.getSeconds()
+    $: dateString = dateObject.toDateString() + " " + dateObject.toTimeString().split(" ")[0]
 
     let categoryNames = {
         bio: "Biology",
@@ -23,7 +23,7 @@
 <div id="preview" class={question.category} on:click={accessQuestion}>
     <h2>{categoryNames[question.category]}</h2>
     <h3>{truncatedQuestion}</h3>       
-    <p>Author - {question.author} ({dateString})</p>
+    <p>Author - {question.author} <i>({dateString})</i></p>
 </div>
 
 <style lang="scss">
@@ -50,9 +50,12 @@
         }
     }
 
+    h3 {
+        font-weight: 500;
+    }
+
     p {
         font-weight: 400;
-        font-style: italic;
         margin-bottom: 0.5em;
     }
 

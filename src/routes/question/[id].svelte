@@ -1,18 +1,30 @@
 <script lang="ts">
-    import QuestionPreview from "$lib/components/QuestionPreview.svelte";
-    import type { category } from "src/mongo";
+    import { page } from '$app/stores'
+    import type { category } from 'src/mongo';
+    import { onMount } from 'svelte';
     import type {SaQuestion, McqQuestion} from 'src/mongo'
+    import Question from '$lib/components/Question.svelte';
+    let answerVisible = false
+    let loaded = false
+    let noMatch = false
+    let question: SaQuestion | McqQuestion
+    let questionsSeen: string [] = []
 
-    let questions: (SaQuestion | McqQuestion)[] = []
-    
     let author: string
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     let start,end
 
-    $: console.log(types)
+
+
+    onMount(async () => {
+        let res = await fetch("/api/question/" + $page.params.id)
+        question = await res.json()
+        loaded = true
+    })
 
     async function sendQuery() {
+        answerVisible = false
         let inputs: Record<string, string> = {}
         if (author) inputs.author = author
         if (types.length) inputs.types = types.join(",")
@@ -20,11 +32,24 @@
         if (start) inputs.start = start
         if (end) inputs.end = end 
         let params = new URLSearchParams(inputs)
-        let res = await fetch("/api/questions?" + params.toString())
-        questions = await res.json()
-        console.log(questions)
+        let res = await fetch("/api/random?" + params.toString())
+        let returnedQuestion = await res.json()
+        if (returnedQuestion.error) {
+            noMatch = true
+        } else {
+            noMatch = false
+            question = returnedQuestion
+            questionsSeen.push(question.id)
+            history.pushState(null, '', '/question/' + question.id)
+        }
     }
 </script>
+
+<svelte:body on:keydown={(e) => {
+    if (e.code === "Enter") {
+        sendQuery()
+    }
+}}></svelte:body>
 
 <main>
     <h1>
@@ -89,11 +114,13 @@
             <br />            
             <button on:click={sendQuery}>Submit Query</button>
         </div>
-        <div id="results">
-            {#each questions as q}
-                <QuestionPreview question={q}/>
-            {/each}
-        </div>
+        {#if noMatch}
+            <h1>No questions matched that query</h1>
+        {:else if loaded}
+            <Question {question} bind:answerVisible={answerVisible} />
+        {:else}
+            <h1>Loading...</h1>
+        {/if}
     </div>
 </main>
 
@@ -101,6 +128,7 @@
     #page {
         display: flex;
         flex-direction: row;
+        align-items: flex-start;
     }
 
     input[type="date"] {
@@ -153,13 +181,6 @@
             height: 0;
         }
 
-        input[type="text"] {
-            padding: 0.2em 0.5em;
-            font-size: 20px;
-            text-align: left;
-            margin-left: 0.5em;
-        }
-
         span {
             width: 1em;
             height: 1em;
@@ -209,25 +230,6 @@
         @media (min-width: 600px) {
             width: 25vw;
         }
-    }
-
-    #results {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        row-gap: 20px;
-        column-gap: 20px;
-        margin: 20px;
-        height: 100%;
-        border-radius: 1em;
-
-        @media (min-width: 600px) {
-            width: 75vw;
-        }
-    }
-
-    .checkbox-wrapper {
-        text-align: left;
-        display: inline-block;
     }
     
     button {

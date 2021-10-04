@@ -1,17 +1,34 @@
 <script lang="ts">
     import type { McqQuestion, SaQuestion } from "src/mongo";
     export let question: SaQuestion | McqQuestion
-    $: dateString = (new Date(question.date)).toString()
+    export let answerVisible: boolean = false
+    $: dateObject = new Date(question.date)
+    $: dateString = dateObject.toDateString() + " " + dateObject.toTimeString().split(" ")[0]
 
-    let answerVisible = false
+    let categoryNames = {
+        bio: "Biology",
+        earth: "Earth and Space",
+        chem: "Chemistry",
+        physics: "Physics",
+        math: "Math",
+        energy: "Energy"
+    }
+
     function showAnswer() {
         answerVisible = !answerVisible
     }
+
+    function keyHandler(e: KeyboardEvent) {
+        if (e.code === "Space"){
+            showAnswer()
+        }
+    }   
 </script>
 
+<svelte:body on:keydown={keyHandler}></svelte:body>
 
-<div id={question.id}>
-    <h1>{question.category}</h1>
+<div id="question" class={question.category}>
+    <h1>{categoryNames[question.category]}</h1>
     <h3>{question.questionText}</h3>     
           
     {#if question.type === "MCQ"}
@@ -20,7 +37,7 @@
         <h3>   Y) {question.choices.Y}</h3>
         <h3>   Z) {question.choices.Z}</h3>
     {/if}   
-    <p>Author - {question.author} ({dateString})</p>
+    <p>Author - {question.author} <i>({dateString})</i></p>
     <button on:click={showAnswer}>Show Answer</button>
     {#if answerVisible}
         <h3 id={question.id+"-answer"}>Answer: {question.correctAnswer}</h3> 
@@ -29,11 +46,85 @@
 
 
 <style lang="scss">
-    p {
-        color: #333;
-        font-style: italic;
+    h1 {
+        margin-top: 0.5em;
     }
 
+    h3 {
+        font-weight: 500;
+    }
+
+    p {
+        font-weight: 400;
+        margin-bottom: 0.5em;
+    }
+
+    #question {
+        position: relative;
+        background-color: #EEE;
+        padding: 1em;
+        margin: 20px;
+        border-radius: 1em;
+        overflow: hidden;
+        width: 100%;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: -20px;
+            width: 0.4em;
+            height: 150%;
+        }
+    }
+
+    button {
+        color: #EEE;
+        background: var(--green);
+        font-size: 20px;
+        font-weight: bold;
+        padding: 0.6em;
+        margin: 1em 0 0.5em;
+        border-radius: 0.6em;
+        border: solid black 3px;
+        cursor: pointer;
+    }
+
+    .bio {
+        &::before {
+            background-color: #2C8250;
+        }
+    }
+
+    .earth {
+        &::before {
+            background-color: #F5C13D;
+        }
+    }
+
+    .chem {
+        &::before {
+            background-color: #D14444;
+        }
+    }
+
+    .physics {
+        &::before {
+            background-color: #623e98;
+        }
+    }
+    
+    .math {
+        &::before {
+            background-color: #0061C2;
+        }
+    }
+    
+    .energy {
+        &::before {
+            background-color: #00EFEF;
+        }
+    }
 </style>
 
     

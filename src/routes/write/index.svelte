@@ -38,35 +38,35 @@
             <option value="math">Math</option>
             <option value="energy">Energy</option>
     </select>
-    <input type="textarea" placeholder="Question" name="question-text" id="question-input" bind:value={questionText} />
+    <textarea name="question-text" placeholder="Question" id="question-input" bind:value={questionText} style="height: 4em; min-height: 4em;" />
     {#if type === "MCQ"}    
         <div class="radio-wrapper">
             <label>
                 <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
                 <span />
-                W)
-                <input type="text" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
+                <p>W)</p>
+                <textarea class="choice" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
             </label>
             <br />
             <label>
                 <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
                 <span />
-                X)
-                <input type="text" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
+                <p>X)</p>
+                <textarea class="choice" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
             </label>
             <br />
             <label>
                 <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
                 <span />
-                Y)
-                <input type="text" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
+                <p>Y)</p>
+                <textarea class="choice" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
             </label>
             <br />
             <label>
                 <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
                 <span />
-                Z)
-                <input type="text" name="Z" placeholder="Option Z" id="Z-input" bind:value={optionZ} />
+                <p>Z)</p>
+                <textarea class="choice" name="Z" placeholder="Option Z" id="Z-input" bind:value={optionZ} />
             </label>          
         </div>
     {:else if type === "SA"}
@@ -113,7 +113,29 @@
         width: 25ch;
         max-width: 80vw;
         text-align: center;
+        font-family: 'Ubuntu';
         position: relative;
+
+        &:focus::placeholder {
+            color: transparent;
+        }
+    }
+
+    textarea {
+        padding: 0.3em;
+        font-size: 20px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 40ch;
+        max-width: 80vw;
+        resize: vertical;
+        min-height: 1.8em;
+        height: 1.8em;
+        font-family: 'Ubuntu';
+        position: relative;
+        vertical-align: middle;
 
         &:focus::placeholder {
             color: transparent;
@@ -125,6 +147,8 @@
         padding-top: 0.3em;
         padding-bottom: 0.3em;
         display: inline-block;
+        font-size: 20px;
+        vertical-align: middle;
 
         input[type="radio"] {
             visibility: hidden;
@@ -137,6 +161,18 @@
             font-size: 20px;
             text-align: left;
             margin-left: 0.5em;
+        }
+
+        .choice {
+            width: 40ch;
+            height: 3em;
+            min-height: 3em;
+        }
+
+        p {
+            width: 2.5ch;
+            margin: 0;
+            display: inline-block;
         }
 
         span {

@@ -89,6 +89,15 @@ export async function getQuestions({ author, categories, types, timeRange }: que
     return <(SaQuestion | McqQuestion)[]>(await cursor.toArray())
 }
 
+export async function getQuestionByID(id : string){
+    let collection = db.collection("submittedQuestions")
+    let result = collection.findOne({ id })
+    return result || null
+}
+
+
+
+
 function createID() {
     let time = Date.now()
     let time1 = time.toString(16).slice(0, 4)
