@@ -1,7 +1,7 @@
 import { redirectTo } from "$lib/functions/redirectTo";
 import type { Request } from "@sveltejs/kit";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
-import { addQuestion, category, McqQuestion, SaQuestion } from "../../mongo";
+import { addQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion } from "../../mongo";
 
 export async function post(request: Request) {
     try {
@@ -21,7 +21,7 @@ export async function post(request: Request) {
         let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
         let answer = formData.get("answer")
         
-        let question: SaQuestion | McqQuestion
+        let question: SaBase | McqBase
         if (type == "MCQ") {
             question = {
                 author,
@@ -29,8 +29,7 @@ export async function post(request: Request) {
                 category,
                 questionText,
                 choices,
-                correctAnswer,
-                date: new Date()
+                correctAnswer
             }
         } else if (type === "SA") {
             question = {
@@ -38,8 +37,7 @@ export async function post(request: Request) {
                 type,
                 category,
                 questionText,
-                correctAnswer: answer,
-                date: new Date()
+                correctAnswer: answer
             }
         }
 

@@ -6,6 +6,7 @@
     let questions: (SaQuestion | McqQuestion)[] = []
     
     let author: string
+    let keywords: string
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     let start,end
@@ -15,6 +16,7 @@
     async function sendQuery() {
         let inputs: Record<string, string> = {}
         if (author) inputs.author = author
+        if (keywords) inputs.keywords = keywords
         if (types.length) inputs.types = types.join(",")
         if (categories.length) inputs.categories = categories.join(",")
         if (start) inputs.start = start
@@ -35,6 +37,7 @@
             <h2>Make a Query</h2>
             <div style="display: inline-block; text-allign: left;">
                 <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
+                <input type="text" name="keywords" placeholder="Keywords" id="keyword-input" bind:value={keywords} /><br />
                 <h3>Start Date:</h3><input type="date" name="start-date" bind:value={start}><br />
                 <h3>End Date:</h3><input type="date" name="end-date" bind:value={end}>
             </div>

@@ -1,7 +1,6 @@
 export type category = "earth" | "bio" | "chem" | "physics" | "math" | "energy"
-export type McqQuestion = {
+export interface McqBase {
     type: "MCQ",
-    id: string,
     category: category,
     questionText: string,
     author: string,
@@ -11,16 +10,23 @@ export type McqQuestion = {
         Y: string,
         Z: string
     },
-    correctAnswer: "W" | "X" | "Y" | "Z",
-    date: Date
+    correctAnswer: "W" | "X" | "Y" | "Z"
 }
-export type SaQuestion = {
+
+export interface SaBase {
     type: "SA",
-    id: string,
     category: category,
     questionText: string,
     author: string,
-    correctAnswer: string,
+    correctAnswer: string
+}
+
+export interface McqQuestion extends McqBase{
+    id: string,
+    date: Date
+}
+export interface SaQuestion extends SaBase {
+    id: string,
     date: Date
 }
 
@@ -43,16 +49,23 @@ export async function init() {
     }
 }
 
-export async function addQuestion(question: SaQuestion | McqQuestion) {
+export async function addQuestion(question: SaBase | McqBase) {
     let collection  = db.collection("submittedQuestions")
+    let searchString = question.questionText + " " + question.correctAnswer
+    if (question.type === "MCQ") {
+        searchString += " " + question.choices.W + " " + question.choices.X + " " + question.choices.Y + " " + question.choices.Z
+    }
     await collection.insertOne({
         id: createID(),
-        ...question
+        ...question,
+        searchString,
+        date: new Date()
     })
 }
 
 type questionQuery = {
     author?: string,
+    keywords?: string,
     categories?: category[],
     types?: ("SA" | "MCQ") [],
     timeRange?: {
@@ -62,6 +75,7 @@ type questionQuery = {
 }
 type mongoQuestionQuery = {
     author?: string,
+    $text?: { $search: string },
     category?: {$in: category[]},
     type?: {$in: ("SA" | "MCQ") []},
     date?: {
@@ -70,12 +84,13 @@ type mongoQuestionQuery = {
     }
 }
 
-export async function getQuestions({ author, categories, types, timeRange }: questionQuery) {
+export async function getQuestions({ author, keywords, categories, types, timeRange }: questionQuery) {
     console.log(author)
     let collection = db.collection("submittedQuestions")
     
     let mongoQuery: mongoQuestionQuery = {}
     if (author) mongoQuery.author = author
+    if (keywords) mongoQuery.$text = { $search: keywords }
     if (categories?.length) mongoQuery.category = { $in: categories }
     if (types?.length) mongoQuery.type = {$in: types}
     if (timeRange && (timeRange.startDate || timeRange.endDate)) {
@@ -95,7 +110,14 @@ export async function getQuestionByID(id : string){
     return result || null
 }
 
-
+export async function searchByKeywords(input: string) {
+    let collection = db.collection("submittedQuestions")
+    let cursor = collection.find({
+        
+    })
+    let result = await cursor.toArray()
+    return result
+}
 
 
 function createID() {

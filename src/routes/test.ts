@@ -1,10 +1,8 @@
-import { createMemberID } from "$lib/functions/createId"
+import { searchByKeywords } from "../mongo"
 
-export async function get() {
+export async function get({ query }) {
     return {
-        headers: {
-            'Content-Type': "text/html"
-        },
-        body: `<h1>${createMemberID()}</h1>`
+        status: 302,
+        body: await searchByKeywords(query.get("search"))
     }
 }
