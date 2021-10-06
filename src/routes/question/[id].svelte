@@ -5,6 +5,7 @@
     import type {SaQuestion, McqQuestion} from 'src/mongo'
     import Question from '$lib/components/Question.svelte';
     import Cookie from 'js-cookie'
+import DatabaseHeader from '$lib/components/DatabaseHeader.svelte';
     let answerVisible = false
     let loaded = false
     let noMatch = false
@@ -14,8 +15,6 @@
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     let start,end
-
-
 
     onMount(async () => {
         let res = await fetch("/api/question/" + $page.params.id)
@@ -59,9 +58,7 @@
 }}></svelte:body>
 
 <main>
-    <h1>
-        Here is our ripoff of ScibowlDB
-    </h1>
+    <DatabaseHeader />
     <div id="page">
         <div id="query">
             <h2>Make a Query</h2>

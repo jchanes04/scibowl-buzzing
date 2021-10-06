@@ -1,12 +1,18 @@
 <script lang="ts">
     import QuestionPreview from "$lib/components/QuestionPreview.svelte";
+    import PageSwitcher from "$lib/components/PageSwitcher.svelte";
     import type { category } from "src/mongo";
     import type {SaQuestion, McqQuestion} from 'src/mongo'
     import Cookie from 'js-cookie'
-    import {onMount} from 'svelte'
+    import {onMount, tick} from 'svelte'
+    import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
+    import { page } from "$app/stores";
 
     let questions: (SaQuestion | McqQuestion)[] = []
-    
+    let pageNumber = 1
+    let resultsPerPage = 20
+    $: numPages = Math.ceil(questions.length / resultsPerPage)
+
     let author: string
     let keywords: string
     let types: ("MCQ" | "SA")[] = []
@@ -15,15 +21,15 @@
 
     $: console.log(types)
 
-    onMount(()=>{
-        let stored = Cookie.get('lastQuery')? JSON.parse(Cookie.get('lastQuery')):undefined
+    onMount(async ()=>{
+        let stored = Cookie.get('lastQuery')? JSON.parse(Cookie.get('lastQuery')) : undefined
         if (stored) {
             author = stored.author
             types = stored.types ? stored.types.split(',') : [] 
             categories = stored.categories ? stored.categories.split(",") : []
             start = stored.start ? stored.start : undefined
             end = stored.end ? stored.end : undefined
-            sendQuery()
+            await sendQuery()
         }
     })
     async function sendQuery() {
@@ -39,13 +45,13 @@
         let res = await fetch("/api/questions?" + params.toString())
         questions = await res.json()
         console.log(questions)
+        await tick()
+        window.scroll(0, 0)
     }
 </script>
 
 <main>
-    <h1>
-        Here is our ripoff of ScibowlDB
-    </h1>
+    <DatabaseHeader />
     <div id="page">
         <form id="query" on:submit={(e) => {
             e.preventDefault()
@@ -107,12 +113,23 @@
             </div>
             <br />            
             <button on:click={sendQuery}>Submit Query</button>
+            {#if questions.length}
+                <h3>{questions.length} questions matched your query</h3>
+            {/if}
         </form>
         <div id="results">
-            {#each questions as q}
-                <QuestionPreview question={q}/>
-            {/each}
+            {#if questions.length}
+                <div id="questions">
+                    {#each questions as q, i}
+                        {#if (i >= (pageNumber - 1) * resultsPerPage && i < pageNumber * resultsPerPage)}
+                            <QuestionPreview question={q}/>
+                        {/if}
+                    {/each}
+                </div>
+                <PageSwitcher bind:numPages={numPages} bind:pageNumber={pageNumber} on:pageChange={() => {window.scroll(0, 0)}} />
+            {/if}
         </div>
+        
     </div>
 </main>
 
@@ -121,6 +138,7 @@
         display: flex;
         flex-direction: row;
     }
+    
 
     input[type="date"] {
         padding: 0.3em;
@@ -223,14 +241,17 @@
         }
     }
 
-    #results {
+    #questions {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         row-gap: 20px;
         column-gap: 20px;
+       
+    }
+
+    #results {
         margin: 20px;
         height: 100%;
-        border-radius: 1em;
 
         @media (min-width: 600px) {
             width: 75vw;
