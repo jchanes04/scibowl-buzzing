@@ -4,12 +4,12 @@
     import { onMount } from 'svelte';
     import type {SaQuestion, McqQuestion} from 'src/mongo'
     import Question from '$lib/components/Question.svelte';
+    import Cookie from 'js-cookie'
     let answerVisible = false
     let loaded = false
     let noMatch = false
     let question: SaQuestion | McqQuestion
     let questionsSeen: string [] = []
-
     let author: string
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
@@ -21,6 +21,13 @@
         let res = await fetch("/api/question/" + $page.params.id)
         question = await res.json()
         loaded = true
+        let stored = JSON.parse(Cookie.get('lastQuery'))
+        console.dir(stored)
+        author = stored.author
+        types = !stored.types ? []: stored.types.split(',')
+        categories = !stored.categories ? [] : stored.categories.split(",")
+        start = stored.start==""? undefined : stored.start,
+        end = stored.end==""? undefined : stored.end
     })
 
     async function sendQuery() {

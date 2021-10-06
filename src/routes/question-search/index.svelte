@@ -2,6 +2,8 @@
     import QuestionPreview from "$lib/components/QuestionPreview.svelte";
     import type { category } from "src/mongo";
     import type {SaQuestion, McqQuestion} from 'src/mongo'
+    import Cookie from 'js-cookie'
+    import {onMount} from 'svelte'
 
     let questions: (SaQuestion | McqQuestion)[] = []
     
@@ -13,6 +15,17 @@
 
     $: console.log(types)
 
+    onMount(()=>{
+        let stored = Cookie.get('lastQuery')? JSON.parse(Cookie.get('lastQuery')):undefined
+        if (stored) {
+            author = stored.author
+            types = stored.types ? stored.types.split(',') : [] 
+            categories = stored.categories ? stored.categories.split(",") : []
+            start = stored.start ? stored.start : undefined
+            end = stored.end ? stored.end : undefined
+            sendQuery()
+        }
+    })
     async function sendQuery() {
         let inputs: Record<string, string> = {}
         if (author) inputs.author = author
@@ -21,6 +34,7 @@
         if (categories.length) inputs.categories = categories.join(",")
         if (start) inputs.start = start
         if (end) inputs.end = end 
+        Cookie.set('lastQuery', JSON.stringify(inputs),{path:"",expires:.01})
         let params = new URLSearchParams(inputs)
         let res = await fetch("/api/questions?" + params.toString())
         questions = await res.json()
@@ -33,7 +47,9 @@
         Here is our ripoff of ScibowlDB
     </h1>
     <div id="page">
-        <div id="query">
+        <form id="query" on:submit={(e) => {
+            e.preventDefault()
+        }}>
             <h2>Make a Query</h2>
             <div style="display: inline-block; text-allign: left;">
                 <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
@@ -56,7 +72,7 @@
                 </label>
             </div>
             <br />
-            <div id="checkbox-wrapper">
+            <div class="checkbox-wrapper">
                 <h3>Categories</h3>                
                 <label for="bio">
                     <input type="checkbox" id="bio" name="category" value="bio" bind:group={categories} />
@@ -91,7 +107,7 @@
             </div>
             <br />            
             <button on:click={sendQuery}>Submit Query</button>
-        </div>
+        </form>
         <div id="results">
             {#each questions as q}
                 <QuestionPreview question={q}/>
@@ -154,13 +170,6 @@
             visibility: hidden;
             width: 0;
             height: 0;
-        }
-
-        input[type="text"] {
-            padding: 0.2em 0.5em;
-            font-size: 20px;
-            text-align: left;
-            margin-left: 0.5em;
         }
 
         span {
