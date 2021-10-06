@@ -142,6 +142,7 @@
         width: 25ch;
         max-width: 80vw;
         text-align: center;
+        font-family: 'Ubuntu';
         position: relative;
 
         &:focus::placeholder {

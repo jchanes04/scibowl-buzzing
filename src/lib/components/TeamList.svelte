@@ -87,6 +87,7 @@
         box-sizing: border-box;
         width: 25ch;
         text-align: center;
+        font-family: 'Ubuntu';
         position: relative;
     }
 </style>
