@@ -3,6 +3,7 @@ type Resolve = (request: Request<Record<string, any>>) => Response | Promise<Res
 
 import { checkAuthenticated, gameExists, getGame, io } from './server'
 import { redirectTo } from "$lib/functions/redirectTo";
+import { getIDFromToken } from "./authentication";
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
     let endpoint = request.path.split("/")[1]
@@ -46,6 +47,12 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
         } else if (gameID !== '' && gameID !== undefined) {
             return redirectTo('/join')
         }
+    } else {
+        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
+        let userID = getIDFromToken(authToken)
+        request.locals = {
+            isLoggedIn: !!userID
+        }
     }
     
 
@@ -57,13 +64,7 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
 }
 
 export async function getSession(request: Request) {
-    let endpoint = request.path.split("/")[1]
-    
-    if (endpoint === "join") {
-        return {
-            ...request.locals
-        }
+    return {
+        ...request.locals
     }
-    
-    return {}
 }
