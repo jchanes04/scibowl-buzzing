@@ -6,7 +6,6 @@
     import Cookie from 'js-cookie'
     import {onMount, tick} from 'svelte'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
-    import { page } from "$app/stores";
 
     let questions: (SaQuestion | McqQuestion)[] = []
     let pageNumber = 1
@@ -18,6 +17,7 @@
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     let start,end
+    let menuOpen = true
 
     $: console.log(types)
 
@@ -32,6 +32,7 @@
             await sendQuery()
         }
     })
+
     async function sendQuery() {
         let inputs: Record<string, string> = {}
         if (author) inputs.author = author
@@ -47,76 +48,94 @@
         console.log(questions)
         await tick()
         window.scroll(0, 0)
+        closeMenu()
+    }
+
+    function openMenu() {
+        menuOpen = true
+    }
+
+    function closeMenu() {
+        menuOpen = false
     }
 </script>
 
 <main>
     <DatabaseHeader />
     <div id="page">
-        <form id="query" on:submit={(e) => {
-            e.preventDefault()
-        }}>
-            <h2>Make a Query</h2>
-            <div style="display: inline-block; text-allign: left;">
-                <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
-                <input type="text" name="keywords" placeholder="Keywords" id="keyword-input" bind:value={keywords} /><br />
-                <h3>Start Date:</h3><input type="date" name="start-date" bind:value={start}><br />
-                <h3>End Date:</h3><input type="date" name="end-date" bind:value={end}>
+        <div id="query-container" class:open={menuOpen}>
+            <div id="query-container-2">
+                <form id="query" on:submit={(e) => {
+                    e.preventDefault()
+                }}>
+                    <span id="close-menu" on:click={closeMenu}><span /></span>
+
+                    <h2>Make a Query</h2>
+                    <div style="display: inline-block; text-allign: left;">
+                        <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
+                        <input type="text" name="keywords" placeholder="Keywords" id="keyword-input" bind:value={keywords} /><br />
+                        <h3>Start Date:</h3><input type="date" name="start-date" bind:value={start}><br />
+                        <h3>End Date:</h3><input type="date" name="end-date" bind:value={end}>
+                    </div>
+                    <div class="radio-wrapper">
+                        <h3>Type</h3>
+                        <label for="multiple-choice">
+                            <input id="multiple-choice" type="checkbox" name="type" value="MCQ" bind:group={types} />
+                            <span />
+                            Multiple Choice
+                        </label>
+                        <br />
+                        <label for="short-answer">
+                            <input id="short-answer" type="checkbox" name="type" value="SA" bind:group={types} />
+                            <span />
+                            Short Answer 
+                        </label>
+                    </div>
+                    <br />
+                    <div class="checkbox-wrapper">
+                        <h3>Categories</h3>                
+                        <label for="bio">
+                            <input type="checkbox" id="bio" name="category" value="bio" bind:group={categories} />
+                            <span />
+                            Biology
+                        </label> <br />
+                        <label for="earth">
+                            <input type="checkbox" id="earth" name="category" value="earth" bind:group={categories} />
+                            <span />
+                            Earth and Space
+                        </label> <br />
+                        <label for="chem">
+                            <input type="checkbox" id="chem" name="category" value="chem" bind:group={categories} />
+                            <span />
+                            Chemistry
+                        </label> <br />
+                        <label for="physics">
+                            <input type="checkbox" id="physics" name="category" value="physics" bind:group={categories} />
+                            <span />
+                            Physics
+                        </label> <br />
+                        <label for="math">
+                            <input type="checkbox" id="math" name="category" value="math" bind:group={categories} />
+                            <span />
+                            Math
+                        </label> <br />
+                        <label for="energy">
+                            <input type="checkbox" id="energy" name="category" value="energy" bind:group={categories} />
+                            <span />
+                            Energy  
+                        </label> <br /> 
+                    </div>
+                    <br />            
+                    <button on:click={sendQuery}>Submit Query</button>
+                    {#if questions.length}
+                        <h3>{questions.length} questions matched your query</h3>
+                    {/if}
+                </form>
             </div>
-            <div class="radio-wrapper">
-                <h3>Type</h3>
-                <label for="multiple-choice">
-                    <input id="multiple-choice" type="checkbox" name="type" value="MCQ" bind:group={types} />
-                    <span />
-                    Multiple Choice
-                </label>
-                <br />
-                <label for="short-answer">
-                    <input id="short-answer" type="checkbox" name="type" value="SA" bind:group={types} />
-                    <span />
-                    Short Answer 
-                </label>
-            </div>
-            <br />
-            <div class="checkbox-wrapper">
-                <h3>Categories</h3>                
-                <label for="bio">
-                    <input type="checkbox" id="bio" name="category" value="bio" bind:group={categories} />
-                    <span />
-                    Biology
-                </label> <br />
-                <label for="earth">
-                    <input type="checkbox" id="earth" name="category" value="earth" bind:group={categories} />
-                    <span />
-                    Earth and Space
-                </label> <br />
-                <label for="chem">
-                    <input type="checkbox" id="chem" name="category" value="chem" bind:group={categories} />
-                    <span />
-                    Chemistry
-                </label> <br />
-                <label for="physics">
-                    <input type="checkbox" id="physics" name="category" value="physics" bind:group={categories} />
-                    <span />
-                    Physics
-                </label> <br />
-                <label for="math">
-                    <input type="checkbox" id="math" name="category" value="math" bind:group={categories} />
-                    <span />
-                    Math
-                </label> <br />
-                <label for="energy">
-                    <input type="checkbox" id="energy" name="category" value="energy" bind:group={categories} />
-                    <span />
-                    Energy  
-                </label> <br /> 
-            </div>
-            <br />            
-            <button on:click={sendQuery}>Submit Query</button>
-            {#if questions.length}
-                <h3>{questions.length} questions matched your query</h3>
-            {/if}
-        </form>
+        </div>
+        <div id="open-menu" class:opened={menuOpen} on:click={openMenu}>
+            <span><span /></span>
+        </div>
         <div id="results">
             {#if questions.length}
                 <div id="questions">
@@ -138,7 +157,6 @@
         display: flex;
         flex-direction: row;
     }
-    
 
     input[type="date"] {
         padding: 0.3em;
@@ -232,13 +250,20 @@
         margin: 20px;
         top: 50px;
         padding: 1em;
-        height: 100%;
         background-color: #EEE;
         border-radius: 1em;
 
-        @media (min-width: 600px) {
+        @media (min-width: 800px) {
             width: 25vw;
         }
+    }
+
+    #close-menu {
+        display: none;       
+    }
+
+    #open-menu {
+        display: none;
     }
 
     #questions {
@@ -253,7 +278,7 @@
         margin: 20px;
         height: 100%;
 
-        @media (min-width: 600px) {
+        @media (min-width: 800px) {
             width: 75vw;
         }
     }
@@ -272,5 +297,121 @@
         border-radius: 0.6em;
         border: solid black 3px;
         cursor: pointer;
+    }
+    
+    @media (max-width: 800px) {
+        
+        #query-container {
+            position: fixed;
+            z-index: 5;
+            top: 0;
+            right: 110vw;
+            width: 100vw;
+            height: 100vh;
+            background: #d4d9d9;
+            transition: right 0.4s ease-in-out;
+            overflow: visible;
+
+            &.open {
+                right: 0vw;
+            }
+        }
+
+        #query-container-2 {
+            height: 100vh;
+            overflow: auto;
+            margin-right: 10px;
+            overscroll-behavior: contain;
+
+            &::-webkit-scrollbar {
+                width: 7px;
+            }
+
+            &::-webkit-scrollbar-button {
+                display: none;
+            }
+
+            &::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: var(--green);
+                width: 7px;
+                border-radius: 7px;
+            }
+
+            &::-webkit-scrollbar-track-piece:start {
+                margin-top: 0.2em;
+                background: transparent;
+            }
+
+            &::-webkit-scrollbar-track-piece:end {
+                margin-bottom: 0.2em;
+                background: transparent;
+            }
+        }
+
+        #query {
+            position: relative;
+            margin-bottom: 20vh;
+        }
+
+        #close-menu {
+            display: block;
+            width: 40px;
+            height: 40px;
+            background: #EEE;
+            border-radius: 50%;
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            cursor: pointer;
+            
+            span {
+                background-image: url('/close-menu.svg');
+                background-position: cover;
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+        }
+
+        #open-menu {
+            display: grid;
+            position: fixed;
+            z-index: 5;
+            left: 0;
+            height: 100%;
+            width: 15vw;
+            place-content: center;
+            transition: left 0.4s ease-in-out;
+
+            span {
+                display: block;
+                width: 10vw;
+                height: 10vw;
+                background: #EEE;
+                border-radius: 50%;
+                cursor: pointer;
+
+                span {
+                    background-image: url('/open-menu.svg');
+                    background-position: cover;
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+
+            &.opened {
+                left: 100vw;
+            }
+        }
+
+        #questions {
+            margin-left: 15vw;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
     }
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { tick, createEventDispatcher } from "svelte";
+    import { createEventDispatcher } from "svelte";
     export let numPages : number 
     export let pageNumber : number 
     $: inputValue = pageNumber.toString()
@@ -42,7 +42,10 @@
             new: pageNumber - 1
         })
         pageNumber -= 1
-    }}}><span /></button>
+    }}}
+    disabled={pageNumber === 1}>
+        <span />
+    </button>
     <input type="text" bind:this={inputElement} bind:value={inputValue} on:input={handleInput} on:change={handleChange}/>
     <button on:click={() => {if(pageNumber<numPages){
         dispatch('pageChange', {
@@ -50,7 +53,10 @@
             new: pageNumber + 1
         })
         pageNumber += 1        
-    }}}><span style="transform: scaleX(-1)" /></button>
+    }}}
+    disabled={pageNumber === numPages}>
+        <span style="transform: scaleX(-1)" />
+    </button>
 </div>
 
 <style lang="scss">
@@ -96,6 +102,10 @@
             width: 100%;
             height: 100%;
             display: block;
+        }
+
+        &:disabled {
+            cursor: default;
         }
     }
 </style>
