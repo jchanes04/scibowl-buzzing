@@ -144,6 +144,9 @@
                             <QuestionPreview question={q}/>
                         {/if}
                     {/each}
+                    {#if !questions.length}
+                        <h1>No Questions Found</h1>
+                    {/if}
                 </div>
                 <PageSwitcher bind:numPages={numPages} bind:pageNumber={pageNumber} on:pageChange={() => {window.scroll(0, 0)}} />
             {/if}

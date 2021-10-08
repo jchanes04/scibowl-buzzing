@@ -2,8 +2,11 @@ import type { Request, Response } from "@sveltejs/kit";
 type Resolve = (request: Request<Record<string, any>>) => Response | Promise<Response>
 
 import { checkAuthenticated, gameExists, getGame, io } from './server'
+import { getUserFromID } from './mongo'
 import { redirectTo } from "$lib/functions/redirectTo";
 import { getIDFromToken } from "./authentication";
+
+const restrictedEndpoints = ["/write", "/edit", "/question-search"]
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
     let endpoint = request.path.split("/")[1]
@@ -47,15 +50,15 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
         } else if (gameID !== '' && gameID !== undefined) {
             return redirectTo('/join')
         }
-    } else {
+    } else if (restrictedEndpoints.includes(endpoint)) {
         let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
         let userID = getIDFromToken(authToken)
+        let userData = getUserFromID(userID)
         request.locals = {
-            isLoggedIn: !!userID
+            isLoggedIn: !!userID,
+            userID
         }
     }
-    
-
 
     const response = await resolve(request);
     return {

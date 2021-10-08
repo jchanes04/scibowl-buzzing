@@ -5,7 +5,7 @@
     import type {SaQuestion, McqQuestion} from 'src/mongo'
     import Question from '$lib/components/Question.svelte';
     import Cookie from 'js-cookie'
-import DatabaseHeader from '$lib/components/DatabaseHeader.svelte';
+    import DatabaseHeader from '$lib/components/DatabaseHeader.svelte';
     let answerVisible = false
     let loaded = false
     let noMatch = false

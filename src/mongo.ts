@@ -30,6 +30,11 @@ export interface SaQuestion extends SaBase {
     date: Date
 }
 
+export interface User {
+    id: string, 
+    username: string
+}
+
 import {Db, MongoClient} from 'mongodb'
 
 let client = new MongoClient("mongodb://45.32.217.67:27108")
@@ -51,6 +56,7 @@ export async function init() {
 
 export async function addQuestion(question: SaBase | McqBase) {
     let collection  = db.collection("submittedQuestions")
+    
     let searchString = question.questionText + " " + question.correctAnswer
     if (question.type === "MCQ") {
         searchString += " " + question.choices.W + " " + question.choices.X + " " + question.choices.Y + " " + question.choices.Z
@@ -104,19 +110,29 @@ export async function getQuestions({ author, keywords, categories, types, timeRa
     return <(SaQuestion | McqQuestion)[]>(await cursor.toArray())
 }
 
+export async function editQuestion(newQuestion: SaQuestion | McqQuestion) {
+    let collection  = db.collection("submittedQuestions")
+    let searchString = newQuestion.questionText + " " + newQuestion.correctAnswer
+    if (newQuestion.type === "MCQ") {
+        searchString += " " + newQuestion.choices.W + " " + newQuestion.choices.X + " " + newQuestion.choices.Y + " " + newQuestion.choices.Z
+    }
+    await collection.findOneAndReplace({ id: newQuestion.id }, {
+        ...newQuestion,
+        searchString,
+        date: new Date()
+    })
+}
+
 export async function getQuestionByID(id : string){
     let collection = db.collection("submittedQuestions")
-    let result = collection.findOne({ id })
+    let result = await collection.findOne({ id })
     return result || null
 }
 
-export async function searchByKeywords(input: string) {
-    let collection = db.collection("submittedQuestions")
-    let cursor = collection.find({
-        
-    })
-    let result = await cursor.toArray()
-    return result
+export async function getUserFromID(id: string) {
+    let collection = db.collection("users")
+    let result = await collection.findOne({ id })
+    return result || null
 }
 
 
