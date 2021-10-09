@@ -6,6 +6,7 @@
     import Cookie from 'js-cookie'
     import {onMount, tick} from 'svelte'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
+    import { session } from '$app/stores'
 
     let questions: (SaQuestion | McqQuestion)[] = []
     let pageNumber = 1
@@ -31,6 +32,9 @@
             end = stored.end ? stored.end : undefined
             await sendQuery()
         }
+        
+        console.log("Session: ")
+        console.dir($session)
     })
 
     async function sendQuery() {
@@ -61,7 +65,16 @@
 </script>
 
 <main>
-    <DatabaseHeader />
+    {#if $session.userData}
+    <DatabaseHeader>
+        {#if $session.isLoggedIn}
+            <h1 style="margin: 0;">{$session.userData?.username}</h1>
+        {:else}
+            <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth&response_type=code&scope=identify">
+                <button>Login</button>
+            </a>
+        {/if}
+    </DatabaseHeader>
     <div id="page">
         <div id="query-container" class:open={menuOpen}>
             <div id="query-container-2">
@@ -144,15 +157,18 @@
                             <QuestionPreview question={q}/>
                         {/if}
                     {/each}
-                    {#if !questions.length}
-                        <h1>No Questions Found</h1>
-                    {/if}
                 </div>
                 <PageSwitcher bind:numPages={numPages} bind:pageNumber={pageNumber} on:pageChange={() => {window.scroll(0, 0)}} />
+            {:else}
+                <div id="no-results">
+                    <h1>No Questions Found</h1>
+                    <div id="bensive"></div>
+                </div>
             {/if}
         </div>
         
     </div>
+    {/if}
 </main>
 
 <style lang="scss">
@@ -300,6 +316,22 @@
         border-radius: 0.6em;
         border: solid black 3px;
         cursor: pointer;
+    }
+
+    #no-results {
+        text-align: center;
+        font-size: 30px;
+    }
+
+    #bensive {
+        background: url('/bensive.svg');
+        background-size: cover;
+        width: 30vw;
+        height: 30vw;
+        max-width: 30em;
+        max-height: 30em;
+        margin: 1em 3em;
+        display: inline-block;
     }
     
     @media (max-width: 800px) {

@@ -6,7 +6,7 @@ import { getUserFromID } from './mongo'
 import { redirectTo } from "$lib/functions/redirectTo";
 import { getIDFromToken } from "./authentication";
 
-const restrictedEndpoints = ["/write", "/edit", "/question-search"]
+const restrictedEndpoints = ["write", "edit", "question-search", undefined]
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
     let endpoint = request.path.split("/")[1]
@@ -53,10 +53,13 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
     } else if (restrictedEndpoints.includes(endpoint)) {
         let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
         let userID = getIDFromToken(authToken)
-        let userData = getUserFromID(userID)
+        let userData = await getUserFromID(userID)
+        console.log(userData)
+        console.dir(userData)
         request.locals = {
             isLoggedIn: !!userID,
-            userID
+            userID,
+            userData: {...userData}
         }
     }
 
@@ -67,6 +70,7 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
 }
 
 export async function getSession(request: Request) {
+    console.dir(request.locals)
     return {
         ...request.locals
     }

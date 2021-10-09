@@ -129,10 +129,14 @@ export async function getQuestionByID(id : string){
     return result || null
 }
 
-export async function getUserFromID(id: string) {
+export async function getUserFromID(id: string): Promise<User | null> {
     let collection = db.collection("users")
     let result = await collection.findOne({ id })
-    return result || null
+    console.log(result)
+    return result ? {
+        id: result.id,
+        username: result.username
+    } : null
 }
 
 

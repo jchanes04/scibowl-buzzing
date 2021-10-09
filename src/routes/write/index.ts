@@ -5,6 +5,9 @@ import { addQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion } from 
 
 export async function post(request: Request) {
     try {
+        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
+        console.log("token: " + authToken)
+
         let formData = <ReadOnlyFormData>request.body
         let author = formData.get("author")
         let type= <"MCQ" | "SA">formData.get("type")
@@ -16,7 +19,6 @@ export async function post(request: Request) {
             X: formData.get("X"),
             Y: formData.get("Y"),
             Z: formData.get("Z")
-            
         }
         let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
         let answer = formData.get("answer")
