@@ -6,6 +6,8 @@
     import Cookie from 'js-cookie'
     import {onMount, tick} from 'svelte'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
+    import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
+    import NotAuthorized from "$lib/components/NotAuthorized.svelte";
     import { session } from '$app/stores'
 
     let questions: (SaQuestion | McqQuestion)[] = []
@@ -47,12 +49,20 @@
         if (end) inputs.end = end 
         Cookie.set('lastQuery', JSON.stringify(inputs),{path:"",expires:.01})
         let params = new URLSearchParams(inputs)
-        let res = await fetch("/api/questions?" + params.toString())
-        questions = await res.json()
-        console.log(questions)
-        await tick()
-        window.scroll(0, 0)
-        closeMenu()
+        let res = await fetch("/api/questions?" + params.toString(), {
+            headers: {
+                'Authorization': Cookie.get('authToken')
+            }
+        })
+        if (res.status === 401){
+            $session.isLoggedIn=false
+        } else {
+            questions = await res.json()
+            console.log(questions)
+            await tick()
+            window.scroll(0, 0)
+            closeMenu()
+        }
     }
 
     function openMenu() {
@@ -66,108 +76,116 @@
 
 <main>
     {#if $session.userData}
-    <DatabaseHeader>
-        {#if $session.isLoggedIn}
-            <h1 style="margin: 0;">{$session.userData?.username}</h1>
-        {:else}
-            <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth&response_type=code&scope=identify">
-                <button>Login</button>
-            </a>
-        {/if}
-    </DatabaseHeader>
-    <div id="page">
-        <div id="query-container" class:open={menuOpen}>
-            <div id="query-container-2">
-                <form id="query" on:submit={(e) => {
-                    e.preventDefault()
-                }}>
-                    <span id="close-menu" on:click={closeMenu}><span /></span>
-
-                    <h2>Make a Query</h2>
-                    <div style="display: inline-block; text-allign: left;">
-                        <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
-                        <input type="text" name="keywords" placeholder="Keywords" id="keyword-input" bind:value={keywords} /><br />
-                        <h3>Start Date:</h3><input type="date" name="start-date" bind:value={start}><br />
-                        <h3>End Date:</h3><input type="date" name="end-date" bind:value={end}>
-                    </div>
-                    <div class="radio-wrapper">
-                        <h3>Type</h3>
-                        <label for="multiple-choice">
-                            <input id="multiple-choice" type="checkbox" name="type" value="MCQ" bind:group={types} />
-                            <span />
-                            Multiple Choice
-                        </label>
-                        <br />
-                        <label for="short-answer">
-                            <input id="short-answer" type="checkbox" name="type" value="SA" bind:group={types} />
-                            <span />
-                            Short Answer 
-                        </label>
-                    </div>
-                    <br />
-                    <div class="checkbox-wrapper">
-                        <h3>Categories</h3>                
-                        <label for="bio">
-                            <input type="checkbox" id="bio" name="category" value="bio" bind:group={categories} />
-                            <span />
-                            Biology
-                        </label> <br />
-                        <label for="earth">
-                            <input type="checkbox" id="earth" name="category" value="earth" bind:group={categories} />
-                            <span />
-                            Earth and Space
-                        </label> <br />
-                        <label for="chem">
-                            <input type="checkbox" id="chem" name="category" value="chem" bind:group={categories} />
-                            <span />
-                            Chemistry
-                        </label> <br />
-                        <label for="physics">
-                            <input type="checkbox" id="physics" name="category" value="physics" bind:group={categories} />
-                            <span />
-                            Physics
-                        </label> <br />
-                        <label for="math">
-                            <input type="checkbox" id="math" name="category" value="math" bind:group={categories} />
-                            <span />
-                            Math
-                        </label> <br />
-                        <label for="energy">
-                            <input type="checkbox" id="energy" name="category" value="energy" bind:group={categories} />
-                            <span />
-                            Energy  
-                        </label> <br /> 
-                    </div>
-                    <br />            
-                    <button on:click={sendQuery}>Submit Query</button>
-                    {#if questions.length}
-                        <h3>{questions.length} questions matched your query</h3>
-                    {/if}
-                </form>
-            </div>
-        </div>
-        <div id="open-menu" class:opened={menuOpen} on:click={openMenu}>
-            <span><span /></span>
-        </div>
-        <div id="results">
-            {#if questions.length}
-                <div id="questions">
-                    {#each questions as q, i}
-                        {#if (i >= (pageNumber - 1) * resultsPerPage && i < pageNumber * resultsPerPage)}
-                            <QuestionPreview question={q}/>
-                        {/if}
-                    {/each}
-                </div>
-                <PageSwitcher bind:numPages={numPages} bind:pageNumber={pageNumber} on:pageChange={() => {window.scroll(0, 0)}} />
+        <DatabaseHeader>
+            {#if $session.isLoggedIn}
+                <h1 style="margin: 0;">{$session.userData?.username}</h1>
             {:else}
-                <div id="no-results">
-                    <h1>No Questions Found</h1>
-                    <div id="bensive"></div>
-                </div>
+                <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth&response_type=code&scope=identify">
+                    <button>Login</button>
+                </a>
             {/if}
-        </div>
-        
-    </div>
+        </DatabaseHeader>
+        {#if $session.isLoggedIn}
+            {#if $session.userData?.username}
+                <div id="page">
+                    <div id="query-container" class:open={menuOpen}>
+                        <div id="query-container-2">
+                            <form id="query" on:submit={(e) => {
+                                e.preventDefault()
+                            }}>
+                                <span id="close-menu" on:click={closeMenu}><span /></span>
+
+                                <h2>Make a Query</h2>
+                                <div style="display: inline-block; text-allign: left;">
+                                    <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
+                                    <input type="text" name="keywords" placeholder="Keywords" id="keyword-input" bind:value={keywords} /><br />
+                                    <h3>Start Date:</h3><input type="date" name="start-date" bind:value={start}><br />
+                                    <h3>End Date:</h3><input type="date" name="end-date" bind:value={end}>
+                                </div>
+                                <div class="radio-wrapper">
+                                    <h3>Type</h3>
+                                    <label for="multiple-choice">
+                                        <input id="multiple-choice" type="checkbox" name="type" value="MCQ" bind:group={types} />
+                                        <span />
+                                        Multiple Choice
+                                    </label>
+                                    <br />
+                                    <label for="short-answer">
+                                        <input id="short-answer" type="checkbox" name="type" value="SA" bind:group={types} />
+                                        <span />
+                                        Short Answer 
+                                    </label>
+                                </div>
+                                <br />
+                                <div class="checkbox-wrapper">
+                                    <h3>Categories</h3>                
+                                    <label for="bio">
+                                        <input type="checkbox" id="bio" name="category" value="bio" bind:group={categories} />
+                                        <span />
+                                        Biology
+                                    </label> <br />
+                                    <label for="earth">
+                                        <input type="checkbox" id="earth" name="category" value="earth" bind:group={categories} />
+                                        <span />
+                                        Earth and Space
+                                    </label> <br />
+                                    <label for="chem">
+                                        <input type="checkbox" id="chem" name="category" value="chem" bind:group={categories} />
+                                        <span />
+                                        Chemistry
+                                    </label> <br />
+                                    <label for="physics">
+                                        <input type="checkbox" id="physics" name="category" value="physics" bind:group={categories} />
+                                        <span />
+                                        Physics
+                                    </label> <br />
+                                    <label for="math">
+                                        <input type="checkbox" id="math" name="category" value="math" bind:group={categories} />
+                                        <span />
+                                        Math
+                                    </label> <br />
+                                    <label for="energy">
+                                        <input type="checkbox" id="energy" name="category" value="energy" bind:group={categories} />
+                                        <span />
+                                        Energy  
+                                    </label> <br /> 
+                                </div>
+                                <br />            
+                                <button on:click={sendQuery}>Submit Query</button>
+                                {#if questions.length}
+                                    <h3>{questions.length} questions matched your query</h3>
+                                {/if}
+                            </form>
+                        </div>
+                    </div>
+                    <div id="open-menu" class:opened={menuOpen} on:click={openMenu}>
+                        <span><span /></span>
+                    </div>
+                    <div id="results">
+                        {#if questions.length}
+                            <div id="questions">
+                                {#each questions as q, i}
+                                    {#if (i >= (pageNumber - 1) * resultsPerPage && i < pageNumber * resultsPerPage)}
+                                        <QuestionPreview question={q}/>
+                                    {/if}
+                                {/each}
+                            </div>
+                            <PageSwitcher bind:numPages={numPages} bind:pageNumber={pageNumber} on:pageChange={() => {window.scroll(0, 0)}} />
+                        {:else}
+                            <div id="no-results">
+                                <h1>No Questions Found</h1>
+                                <div id="bensive"></div>
+                            </div>
+                        {/if}
+                    </div>
+                    
+                </div>
+            {:else}
+                <NotAuthorized />
+            {/if}
+        {:else}
+            <NotLoggedIn />
+        {/if}
     {/if}
 </main>
 
@@ -326,12 +344,13 @@
     #bensive {
         background: url('/bensive.svg');
         background-size: cover;
-        width: 30vw;
-        height: 30vw;
-        max-width: 30em;
-        max-height: 30em;
+        width: 25vw;
+        height: 25vw;
+        max-width: 25em;
+        max-height: 25em;
         margin: 1em 3em;
         display: inline-block;
+        opacity: 0.7;
     }
     
     @media (max-width: 800px) {

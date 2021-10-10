@@ -3,7 +3,8 @@ export interface McqBase {
     type: "MCQ",
     category: category,
     questionText: string,
-    author: string,
+    authorName: string,
+    authorId?: string,
     choices: {
         W: string,
         X: string,
@@ -17,7 +18,8 @@ export interface SaBase {
     type: "SA",
     category: category,
     questionText: string,
-    author: string,
+    authorName: string,
+    authorId?: string,
     correctAnswer: string
 }
 
@@ -133,7 +135,7 @@ export async function getUserFromID(id: string): Promise<User | null> {
     let collection = db.collection("users")
     let result = await collection.findOne({ id })
     console.log(result)
-    return result ? {
+    return result?.id ? {
         id: result.id,
         username: result.username
     } : null

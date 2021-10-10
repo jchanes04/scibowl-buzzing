@@ -1,7 +1,15 @@
 import type { Request } from "@sveltejs/kit";
+import { getIDFromToken } from "../../authentication";
 import { category, getQuestions } from "../../mongo";
 
-export async function get({ query }: { query: URLSearchParams }) {
+export async function get({ query, headers }: { query: URLSearchParams, headers: Record<string, string> }) {
+    let authToken = headers.authorization
+    let authorized = !!getIDFromToken(authToken)
+    
+    if (!authorized) return {
+        status: 401
+    }
+
     let author = query.get("author")
     let keywords = query.get("keywords")
     let categories = <category[]>query.get("categories")?.split(",")

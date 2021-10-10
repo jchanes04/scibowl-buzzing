@@ -1,7 +1,7 @@
 import { redirectTo } from "$lib/functions/redirectTo";
 import type { Request } from "@sveltejs/kit";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
-import { addQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion } from "../../mongo";
+import { addQuestion, category, getUserFromID, McqBase, McqQuestion, SaBase, SaQuestion } from "../../mongo";
 
 export async function post(request: Request) {
     try {
@@ -9,7 +9,9 @@ export async function post(request: Request) {
         console.log("token: " + authToken)
 
         let formData = <ReadOnlyFormData>request.body
-        let author = formData.get("author")
+        let userId = formData.get("user-id")
+        let ownQuestion = formData.get("own-question")
+        let authorName = formData.get("author-name")
         let type= <"MCQ" | "SA">formData.get("type")
         let category = <category>formData.get("category")
         let questionText = formData.get("question-text")
@@ -22,23 +24,39 @@ export async function post(request: Request) {
         }
         let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
         let answer = formData.get("answer")
+
+        let question: any = {}
+        if (ownQuestion && userId) {
+            let userData = await getUserFromID(userId)
+            if (userData) {
+                question = {
+                    authorName: userData.username,
+                    authorId: userId
+                }
+            } else {
+                return redirectTo("error/invalid-question")
+            }
+        } else {
+            question = {
+                authorName: authorName
+            }
+        }
+        question = {
+            ...question,
+            type,
+            category,
+            questionText
+        }
         
-        let question: SaBase | McqBase
         if (type == "MCQ") {
             question = {
-                author,
-                type,
-                category,
-                questionText,
+                ...question,
                 choices,
                 correctAnswer
             }
         } else if (type === "SA") {
             question = {
-                author,
-                type,
-                category,
-                questionText,
+                ...question,
                 correctAnswer: answer
             }
         }

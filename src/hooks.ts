@@ -51,7 +51,7 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
             return redirectTo('/join')
         }
     } else if (restrictedEndpoints.includes(endpoint)) {
-        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
+        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
         let userID = getIDFromToken(authToken)
         let userData = await getUserFromID(userID)
         console.log(userData)

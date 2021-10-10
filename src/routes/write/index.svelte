@@ -1,15 +1,15 @@
 <script lang="ts">
     import type { category } from "src/mongo";
     import { session } from '$app/stores'
-import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
-
+    import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
+    let ownQuestion: boolean = true
     let author: string
     let type: "MCQ" | "SA"
     let category: category
     let optionW, optionX, optionY, optionZ: string
     let questionText,answer: string
     let correctAnswer: "W" | "X" | "Y" | "Z"
-    $: submitEnabled = author && type && category && questionText && (answer || correctAnswer) && (type !== "MCQ" || (optionW && optionX && optionY && optionZ))
+    $: submitEnabled = (author || ownQuestion) && type && category && questionText && (answer || correctAnswer) && (type !== "MCQ" || (optionW && optionX && optionY && optionZ))
 </script>
 
 <svelte:head>
@@ -29,15 +29,28 @@ import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
     <form id="form" action="/write" method="POST" autocomplete="off">
         <h1>Submit Questions</h1>
         <input type="hidden" name="user-id" value={$session.userID} />
-        <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} />
+        {#if $session.isLoggedIn}
+            <label for="own-question" class="checkbox-label">
+                <input id="own-question" type="checkbox" name="own-question" bind:checked={ownQuestion} />
+                <span />    
+                This is my own question
+            </label>
+            
+            {#if !ownQuestion}
+                <input type="text" name="author-name" placeholder="Author" id="author-input" bind:value={author} />
+            {/if}
+        {:else}
+            <input type="text" name="author-name" placeholder="Author" id="author-input" bind:value={author} />
+        {/if}
+        
         <div class="radio-wrapper">
-            <label for="multiple-choice">
+            <label for="multiple-choice" class="radio-label">
                 <input id="multiple-choice" type="radio" name="type" value="MCQ" bind:group={type} />
                 <span />
                 Multiple Choice
             </label>
             <br />
-            <label for="short-answer">
+            <label for="short-answer" class="radio-label">
                 <input id="short-answer" type="radio" name="type" value="SA" bind:group={type} />
                 <span />
                 Short Answer 
@@ -55,28 +68,28 @@ import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
         <textarea name="question-text" placeholder="Question" id="question-input" bind:value={questionText} style="height: 4em; min-height: 4em;" />
         {#if type === "MCQ"}    
             <div class="radio-wrapper">
-                <label>
+                <label class="radio-label">
                     <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
                     <span />
                     <p>W)</p>
                     <textarea class="choice" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
                 </label>
                 <br />
-                <label>
+                <label class="radio-label">
                     <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
                     <span />
                     <p>X)</p>
                     <textarea class="choice" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
                 </label>
                 <br />
-                <label>
+                <label class="radio-label">
                     <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
                     <span />
                     <p>Y)</p>
                     <textarea class="choice" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
                 </label>
                 <br />
-                <label>
+                <label class="radio-label">
                     <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
                     <span />
                     <p>Z)</p>
@@ -157,7 +170,7 @@ import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
         }
     }
 
-    label {
+    .radio-label {
         cursor: pointer;
         padding-top: 0.3em;
         padding-bottom: 0.3em;
@@ -169,13 +182,6 @@ import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
             visibility: hidden;
             width: 0;
             height: 0;
-        }
-
-        input[type="text"] {
-            padding: 0.2em 0.5em;
-            font-size: 20px;
-            text-align: left;
-            margin-left: 0.5em;
         }
 
         .choice {
@@ -224,6 +230,53 @@ import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
         }
     }
 
+    .checkbox-label {
+        cursor: pointer;
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
+        font-size: 20px;
+        display: inline-block;
+
+        input[type="checkbox"] {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        span {
+            width: 1em;
+            height: 1em;
+            border-radius: 0.2em;
+            border: #CCC 2px solid;
+            display: inline-block;
+            position: relative;
+            background: #FFF;
+            vertical-align: text-top;
+            margin-right: 0.3em;
+
+            &::after {
+                content: '';
+                position: absolute;
+                display: none;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 0.7em;
+                height: 0.7em;
+                border-radius: 0.1em;
+                background: var(--blue);
+            }
+        }
+
+        &:hover > span {
+            border-color: var(--green);
+        }
+
+        input:checked ~ span::after {
+            display: inline-block;
+        }
+    }
+
     button {
         padding: 0.5em;
         color: #EEE;
@@ -231,7 +284,7 @@ import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
         border-radius: 0.3em;
         font-weight: bold;
         border: solid black 3px;
-        font-size: 18px;
+        font-size: 30px;
         cursor: pointer;
         margin-top: 1em;
 
