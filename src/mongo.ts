@@ -117,10 +117,10 @@ export async function editQuestion(newQuestion: Partial<SaQuestion | McqQuestion
     if (newQuestion.type === "MCQ") {
         searchString += " " + newQuestion.choices.W + " " + newQuestion.choices.X + " " + newQuestion.choices.Y + " " + newQuestion.choices.Z
     }
-    await collection.updateOne({ id: newQuestion.id }, {
+    await collection.updateOne({ id: newQuestion.id }, { $set: {
         ...newQuestion,
         searchString
-    })
+    }})
 }
 
 export async function getQuestionByID(id : string){

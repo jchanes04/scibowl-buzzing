@@ -6,6 +6,7 @@ import { editQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion, getQu
 export async function post(request: Request) {
     try {
         let formData = <ReadOnlyFormData>request.body
+        console.dir(formData)
         let id = request.params.id
         let userId = formData.get('user-id')
         let type= <"MCQ" | "SA">formData.get("type")
@@ -17,7 +18,6 @@ export async function post(request: Request) {
             X: formData.get("X"),
             Y: formData.get("Y"),
             Z: formData.get("Z")
-            
         }
         let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
         let answer = formData.get("answer")
@@ -51,9 +51,9 @@ export async function post(request: Request) {
 
         await editQuestion(updatedInfo)
         
-        return redirectTo("question-submitted")
+        return redirectTo("/question-submitted")
     } catch (e) {
         console.error(e)
-        return redirectTo("error/invalid-question")
+        return redirectTo("/error/invalid-question")
     }
 }

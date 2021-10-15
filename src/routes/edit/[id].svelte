@@ -57,7 +57,7 @@
     {:else if $session.userID !== authorId}
         <NotAuthorized page="edit" />
     {:else}
-        <form id="form" action="/edit" method="POST" autocomplete="off">
+        <form id="form" action={`/edit/${$page.params.id}`} method="POST" autocomplete="off">
             <input type="hidden" name="user-id" value={$session.userID} />
             <h1>Edit Question</h1>
             <div class="radio-wrapper">
