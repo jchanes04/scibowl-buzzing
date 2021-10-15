@@ -37,7 +37,7 @@
         <h3>   Y) {question.choices.Y}</h3>
         <h3>   Z) {question.choices.Z}</h3>
     {/if}   
-    <p>Author - {question.author} <i>({dateString})</i></p>
+    <p>Author - {question.authorName} <i>({dateString})</i></p>
     <button on:click={showAnswer}>Show Answer</button>
     {#if answerVisible}
         <h3 id={question.id+"-answer"}>Answer: {question.correctAnswer}</h3> 
