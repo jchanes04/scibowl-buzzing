@@ -34,7 +34,7 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
                     client_secret: "58RYXZozmWiqGPvlhODBi26fhzau8zX4",
                     code,
                     grant_type: 'authorization_code',
-                    redirect_uri: `http://localhost:3000/auth/${params.path}`,
+                    redirect_uri: `http://45.32.217.67/auth/${params.path}`,
                     scope: 'identify',
                 }).toString())
             })

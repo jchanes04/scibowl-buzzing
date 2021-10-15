@@ -23,7 +23,7 @@
 <div id="preview" class={question.category} on:click={accessQuestion}>
     <h2>{categoryNames[question.category]}</h2>
     <h3>{truncatedQuestion}</h3>       
-    <p>Author - {question.author} <i>({dateString})</i></p>
+    <p>Author - {question.authorName} <i>({dateString})</i></p>
 </div>
 
 <style lang="scss">
