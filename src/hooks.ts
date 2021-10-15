@@ -34,8 +34,6 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
             
             request.locals.authenticated = true
         } else {
-            console.log(gameID)
-            console.log(memberIdCookie)
             return redirectTo(gameExists(gameID) ? "/join/" + gameID : "/join")
         }
     } else if (endpoint === "join") {
@@ -54,8 +52,6 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
         let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
         let userID = getIDFromToken(authToken)
         let userData = await getUserFromID(userID)
-        console.log(userData)
-        console.dir(userData)
         request.locals = {
             isLoggedIn: !!userID,
             userID,
@@ -70,7 +66,6 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
 }
 
 export async function getSession(request: Request) {
-    console.dir(request.locals)
     return {
         ...request.locals
     }

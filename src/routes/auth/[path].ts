@@ -1,9 +1,9 @@
 import {XMLHttpRequest} from 'xmlhttprequest'
 import * as dotenv from 'dotenv'
-import { generateToken } from '../authentication'
+import { generateToken } from '../../authentication'
 dotenv.config({path: '../.env'})
 
-export async function get({ query }) {
+export async function get({ query, params }: { query: URLSearchParams, params: Record<string, string> }) {
     let code = query.get("code")
     if (code) {
         try {
@@ -12,7 +12,6 @@ export async function get({ query }) {
                 xhr.open("POST", "https://discord.com/api/oauth2/token")
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
                 xhr.onload = async () => {
-                    console.log(xhr.responseText)
                     let res = JSON.parse(xhr.responseText)
                     if (res.error) {
                         resolve({
@@ -24,8 +23,8 @@ export async function get({ query }) {
                         resolve({
                             status: 302,
                             headers: {
-                                'Location': "/question-search",
-                                'Set-Cookie': "authToken=" + generateToken(id)
+                                'Location': "/" + params.path,
+                                'Set-Cookie': "authToken=" + generateToken(id) + ";Path=/"
                             }
                         })
                     }
@@ -35,7 +34,7 @@ export async function get({ query }) {
                     client_secret: "58RYXZozmWiqGPvlhODBi26fhzau8zX4",
                     code,
                     grant_type: 'authorization_code',
-                    redirect_uri: `http://localhost:3000/auth`,
+                    redirect_uri: `http://localhost:3000/auth/${params.path}`,
                     scope: 'identify',
                 }).toString())
             })
@@ -45,7 +44,7 @@ export async function get({ query }) {
 			console.error(error);
             return  {
                 status: 302,
-                body: "boo"
+                body: "boo, either you have done something bad or we have done something bad. Either way you are bad"
             }
 		}
     }
@@ -59,7 +58,6 @@ async function getUserID(token: string, type: string): Promise<string> {
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
         xhr.onload = () => {
             let res = JSON.parse(xhr.responseText)
-            console.dir(res)
             resolve(res.id)
         }
         xhr.send()

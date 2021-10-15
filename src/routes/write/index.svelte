@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { category } from "src/mongo";
-    import { session } from '$app/stores'
+    import { page, session } from '$app/stores'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
     let ownQuestion: boolean = true
     let author: string
@@ -21,8 +21,8 @@
         {#if $session.isLoggedIn}
             <h1 style="margin: 0;">{$session.userData?.username}</h1>
         {:else}
-            <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth&response_type=code&scope=identify">
-                <button>Login</button>
+            <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fwrite&response_type=code&scope=identify">
+                <button id="login-button">Login</button>
             </a>
         {/if}
     </DatabaseHeader>
@@ -275,6 +275,18 @@
         input:checked ~ span::after {
             display: inline-block;
         }
+    }
+
+    #login-button {
+        color: #EEE;
+        background: var(--green);
+        font-size: 20px;
+        font-weight: bold;
+        padding: 0.6em;
+        border-radius: 0.6em;
+        border: solid black 3px;
+        cursor: pointer;
+        margin-top: 0;
     }
 
     button {

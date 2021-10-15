@@ -1,13 +1,13 @@
 import { redirectTo } from "$lib/functions/redirectTo";
 import type { Request } from "@sveltejs/kit";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
-import { editQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion } from "../../mongo";
+import { editQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion, getQuestionByID } from "../../mongo";
 
 export async function post(request: Request) {
     try {
         let formData = <ReadOnlyFormData>request.body
         let id = request.params.id
-        let author = formData.get("author")
+        let userId = formData.get('user-id')
         let type= <"MCQ" | "SA">formData.get("type")
         let category = <category>formData.get("category")
         let questionText = formData.get("question-text")
@@ -21,11 +21,15 @@ export async function post(request: Request) {
         }
         let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
         let answer = formData.get("answer")
+
+        let currentQuestion = await getQuestionByID(id)
+        if (userId !== currentQuestion.authorId) {
+            return redirectTo("error/no-edit-permission")
+        }
         
-        let question: SaQuestion | McqQuestion
+        let updatedInfo: Partial<SaQuestion | McqQuestion>
         if (type == "MCQ") {
-            question = {
-                author,
+            updatedInfo = {
                 type,
                 category,
                 questionText,
@@ -33,11 +37,9 @@ export async function post(request: Request) {
                 correctAnswer,
                 date,
                 id
-
             }
         } else if (type === "SA") {
-            question = {
-                author,
+            updatedInfo = {
                 type,
                 category,
                 questionText,
@@ -47,7 +49,7 @@ export async function post(request: Request) {
             }
         }
 
-        await editQuestion(question)
+        await editQuestion(updatedInfo)
         
         return redirectTo("question-submitted")
     } catch (e) {

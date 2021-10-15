@@ -1,27 +1,30 @@
 <script lang="ts">
     import type { category } from "src/mongo";
     import type {SaQuestion, McqQuestion} from 'src/mongo'
+    import { session } from '$app/stores'
     import { onMount } from 'svelte';
     import { page } from '$app/stores'
-    let author: string
+    import Cookie from 'js-cookie'
+    import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
+    import NotAuthorized from "$lib/components/NotAuthorized.svelte";
+    import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
     let type: "MCQ" | "SA"
     let category: category
-    let optionW, optionX, optionY, optionZ: string
-    let questionText,answer: string
+    let optionW: string, optionX: string, optionY: string, optionZ: string
+    let questionText: string, answer: string
     let correctAnswer: "W" | "X" | "Y" | "Z"
-    $: submitEnabled = author && type && category && questionText && (answer || correctAnswer) && (type !== "MCQ" || (optionW && optionX && optionY && optionZ))
-    
-    let loaded = false
+    let authorId: string
+    $: submitEnabled = type && category && questionText && (answer || correctAnswer) && (type !== "MCQ" || (optionW && optionX && optionY && optionZ))
 
     onMount(async () => {
-        let res = await fetch("/api/question/" + $page.params.id)
-        let question = await res.json()
-        loaded = true
-        author = question.author
-        type = question.Type
-        questionText = question.questionText
-        category = question.category
-        if (type === "MCQ"){
+        let res = await fetch("/api/question/" + $page.params.id, {
+            headers: {
+                'Authorization': Cookie.get('authToken')
+            }
+        })
+        let question = <McqQuestion | SaQuestion>await res.json();
+        ({authorId, type, questionText, category} = question)
+        if (question.type === "MCQ"){
             optionW = question.choices.W
             optionX = question.choices.X
             optionY = question.choices.Y
@@ -38,68 +41,85 @@
 <svelte:head>
     <title>Edit Question</title>
 </svelte:head>
+<main>
+    <DatabaseHeader>
+        {#if $session.isLoggedIn}
+            <h1 style="margin: 0;">{$session.userData?.username}</h1>
+        {:else}
+            <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fedit&response_type=code&scope=identify">
+                <button>Login</button>
+            </a>
+        {/if}
+    </DatabaseHeader>
 
-<form id="form" action="/write" method="POST" autocomplete="off">
-    <h1>Edit Question</h1>
-    <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} />
-    <div class="radio-wrapper">
-        <label for="multiple-choice">
-            <input id="multiple-choice" type="radio" name="type" value="MCQ" bind:group={type} />
-            <span />
-            Multiple Choice
-        </label>
-        <br />
-        <label for="short-answer">
-            <input id="short-answer" type="radio" name="type" value="SA" bind:group={type} />
-            <span />
-            Short Answer 
-        </label>
-    </div>
-    <select name="category" id="category" bind:value={category}>
-            <option value="" hidden default></option>
-            <option value="earth">Earth and Space</option>
-            <option value="bio">Biology</option>
-            <option value="chem">Chemistry</option>
-            <option value="physics">Physics</option>
-            <option value="math">Math</option>
-            <option value="energy">Energy</option>
-    </select>
-    <textarea name="question-text" placeholder="Question" id="question-input" bind:value={questionText} style="height: 4em; min-height: 4em;" />
-    {#if type === "MCQ"}    
-        <div class="radio-wrapper">
-            <label>
-                <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
-                <span />
-                <p>W)</p>
-                <textarea class="choice" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
-            </label>
-            <br />
-            <label>
-                <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
-                <span />
-                <p>X)</p>
-                <textarea class="choice" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
-            </label>
-            <br />
-            <label>
-                <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
-                <span />
-                <p>Y)</p>
-                <textarea class="choice" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
-            </label>
-            <br />
-            <label>
-                <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
-                <span />
-                <p>Z)</p>
-                <textarea class="choice" name="Z" placeholder="Option Z" id="Z-input" bind:value={optionZ} />
-            </label>          
-        </div>
-    {:else if type === "SA"}
-        <input type="text" name="answer" placeholder="Answer" id="answer-input" bind:value={answer} />
+    {#if !$session.isLoggedIn}
+        <NotLoggedIn page="edit"/>
+    {:else if $session.userID !== authorId}
+        <NotAuthorized page="edit" />
+    {:else}
+        <form id="form" action="/edit" method="POST" autocomplete="off">
+            <input type="hidden" name="user-id" value={$session.userID} />
+            <h1>Edit Question</h1>
+            <div class="radio-wrapper">
+                <label for="multiple-choice">
+                    <input id="multiple-choice" type="radio" name="type" value="MCQ" bind:group={type} />
+                    <span />
+                    Multiple Choice
+                </label>
+                <br />
+                <label for="short-answer">
+                    <input id="short-answer" type="radio" name="type" value="SA" bind:group={type} />
+                    <span />
+                    Short Answer 
+                </label>
+            </div>
+            <select name="category" id="category" bind:value={category}>
+                    <option value="" hidden default></option>
+                    <option value="earth">Earth and Space</option>
+                    <option value="bio">Biology</option>
+                    <option value="chem">Chemistry</option>
+                    <option value="physics">Physics</option>
+                    <option value="math">Math</option>
+                    <option value="energy">Energy</option>
+            </select>
+            <textarea name="question-text" placeholder="Question" id="question-input" bind:value={questionText} style="height: 4em; min-height: 4em;" />
+            {#if type === "MCQ"}    
+                <div class="radio-wrapper">
+                    <label>
+                        <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
+                        <span />
+                        <p>W)</p>
+                        <textarea class="choice" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
+                    </label>
+                    <br />
+                    <label>
+                        <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
+                        <span />
+                        <p>X)</p>
+                        <textarea class="choice" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
+                    </label>
+                    <br />
+                    <label>
+                        <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
+                        <span />
+                        <p>Y)</p>
+                        <textarea class="choice" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
+                    </label>
+                    <br />
+                    <label>
+                        <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
+                        <span />
+                        <p>Z)</p>
+                        <textarea class="choice" name="Z" placeholder="Option Z" id="Z-input" bind:value={optionZ} />
+                    </label>          
+                </div>
+            {:else if type === "SA"}
+                <input type="text" name="answer" placeholder="Answer" id="answer-input" bind:value={answer} />
+            {/if}
+            <button type="submit" disabled={!submitEnabled}>Submit Question</button>
+        </form>
     {/if}
-    <button type="submit" disabled={!submitEnabled}>Submit Question</button>
-</form>
+</main>
 
 <style lang="scss">
     form {
@@ -180,13 +200,6 @@
             visibility: hidden;
             width: 0;
             height: 0;
-        }
-
-        input[type="text"] {
-            padding: 0.2em 0.5em;
-            font-size: 20px;
-            text-align: left;
-            margin-left: 0.5em;
         }
 
         .choice {

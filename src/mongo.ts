@@ -72,7 +72,7 @@ export async function addQuestion(question: SaBase | McqBase) {
 }
 
 type questionQuery = {
-    author?: string,
+    authorName?: string,
     keywords?: string,
     categories?: category[],
     types?: ("SA" | "MCQ") [],
@@ -82,7 +82,7 @@ type questionQuery = {
     }
 }
 type mongoQuestionQuery = {
-    author?: string,
+    authorName?: string,
     $text?: { $search: string },
     category?: {$in: category[]},
     type?: {$in: ("SA" | "MCQ") []},
@@ -92,12 +92,11 @@ type mongoQuestionQuery = {
     }
 }
 
-export async function getQuestions({ author, keywords, categories, types, timeRange }: questionQuery) {
-    console.log(author)
+export async function getQuestions({ authorName, keywords, categories, types, timeRange }: questionQuery) {
     let collection = db.collection("submittedQuestions")
     
     let mongoQuery: mongoQuestionQuery = {}
-    if (author) mongoQuery.author = author
+    if (authorName) mongoQuery.authorName = authorName
     if (keywords) mongoQuery.$text = { $search: keywords }
     if (categories?.length) mongoQuery.category = { $in: categories }
     if (types?.length) mongoQuery.type = {$in: types}
@@ -106,22 +105,21 @@ export async function getQuestions({ author, keywords, categories, types, timeRa
         if (timeRange.startDate) mongoQuery.date.$gte = timeRange.startDate
         if (timeRange.endDate) mongoQuery.date.$lt = timeRange.endDate
     }
+    console.log("Mongo Query:")
     console.dir(mongoQuery)
-    
     let cursor = collection.find(mongoQuery)
     return <(SaQuestion | McqQuestion)[]>(await cursor.toArray())
 }
 
-export async function editQuestion(newQuestion: SaQuestion | McqQuestion) {
+export async function editQuestion(newQuestion: Partial<SaQuestion | McqQuestion>) {
     let collection  = db.collection("submittedQuestions")
     let searchString = newQuestion.questionText + " " + newQuestion.correctAnswer
     if (newQuestion.type === "MCQ") {
         searchString += " " + newQuestion.choices.W + " " + newQuestion.choices.X + " " + newQuestion.choices.Y + " " + newQuestion.choices.Z
     }
-    await collection.findOneAndReplace({ id: newQuestion.id }, {
+    await collection.updateOne({ id: newQuestion.id }, {
         ...newQuestion,
-        searchString,
-        date: new Date()
+        searchString
     })
 }
 
@@ -134,7 +132,6 @@ export async function getQuestionByID(id : string){
 export async function getUserFromID(id: string): Promise<User | null> {
     let collection = db.collection("users")
     let result = await collection.findOne({ id })
-    console.log(result)
     return result?.id ? {
         id: result.id,
         username: result.username

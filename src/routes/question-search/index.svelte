@@ -15,19 +15,17 @@
     let resultsPerPage = 20
     $: numPages = Math.ceil(questions.length / resultsPerPage)
 
-    let author: string
+    let authorName: string
     let keywords: string
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     let start,end
     let menuOpen = true
 
-    $: console.log(types)
-
     onMount(async ()=>{
         let stored = Cookie.get('lastQuery')? JSON.parse(Cookie.get('lastQuery')) : undefined
         if (stored) {
-            author = stored.author
+            authorName = stored.author
             types = stored.types ? stored.types.split(',') : [] 
             categories = stored.categories ? stored.categories.split(",") : []
             start = stored.start ? stored.start : undefined
@@ -41,7 +39,7 @@
 
     async function sendQuery() {
         let inputs: Record<string, string> = {}
-        if (author) inputs.author = author
+        if (authorName) inputs.authorName = authorName
         if (keywords) inputs.keywords = keywords
         if (types.length) inputs.types = types.join(",")
         if (categories.length) inputs.categories = categories.join(",")
@@ -58,7 +56,6 @@
             $session.isLoggedIn=false
         } else {
             questions = await res.json()
-            console.log(questions)
             await tick()
             window.scroll(0, 0)
             closeMenu()
@@ -80,7 +77,7 @@
             {#if $session.isLoggedIn}
                 <h1 style="margin: 0;">{$session.userData?.username}</h1>
             {:else}
-                <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth&response_type=code&scope=identify">
+                <a href="https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fquestion-search&response_type=code&scope=identify">
                     <button>Login</button>
                 </a>
             {/if}
@@ -96,8 +93,8 @@
                                 <span id="close-menu" on:click={closeMenu}><span /></span>
 
                                 <h2>Make a Query</h2>
-                                <div style="display: inline-block; text-allign: left;">
-                                    <input type="text" name="author" placeholder="Author" id="author-input" bind:value={author} /><br />
+                                <div style="display: inline-block; text-align: left;">
+                                    <input type="text" name="author-name" placeholder="Author" id="author-input" bind:value={authorName} /><br />
                                     <input type="text" name="keywords" placeholder="Keywords" id="keyword-input" bind:value={keywords} /><br />
                                     <h3>Start Date:</h3><input type="date" name="start-date" bind:value={start}><br />
                                     <h3>End Date:</h3><input type="date" name="end-date" bind:value={end}>
@@ -181,10 +178,10 @@
                     
                 </div>
             {:else}
-                <NotAuthorized />
+                <NotAuthorized page="question-search" />
             {/if}
         {:else}
-            <NotLoggedIn />
+            <NotLoggedIn page="question-search" />
         {/if}
     {/if}
 </main>
