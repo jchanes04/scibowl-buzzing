@@ -19,7 +19,10 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
                             body: "boo"
                         })
                     } else {
+                        console.log("token response:")
+                        console.dir(res)
                         let id = await getUserID(res.access_token, res.token_type)
+                        console.log("Fetched id: " + id)
                         resolve({
                             status: 302,
                             headers: {
@@ -34,7 +37,7 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
                     client_secret: "58RYXZozmWiqGPvlhODBi26fhzau8zX4",
                     code,
                     grant_type: 'authorization_code',
-                    redirect_uri: `http://45.32.217.67/auth/${params.path}`,
+                    redirect_uri: `http://${import.meta.env.VITE_HOST_URL}/auth/${params.path}`,
                     scope: 'identify',
                 }).toString())
             })
@@ -58,6 +61,8 @@ async function getUserID(token: string, type: string): Promise<string> {
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
         xhr.onload = () => {
             let res = JSON.parse(xhr.responseText)
+            console.log("user response: ")
+            console.dir(res)
             resolve(res.id)
         }
         xhr.send()
