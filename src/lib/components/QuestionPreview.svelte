@@ -2,9 +2,11 @@
     import { goto } from "$app/navigation";
     import type { McqQuestion, SaQuestion } from "src/mongo";
     export let question: SaQuestion | McqQuestion
-    $: truncatedQuestion = question.questionText.length > 70 ? question.questionText.slice(0, 70) + "…" : question.questionText
+    $: truncatedQuestion = question.questionText.length > numCharacters ? question.questionText.slice(0, numCharacters) + "…" : question.questionText
     $: dateObject = new Date(question.date)
     $: dateString = dateObject.toDateString() + " " + dateObject.toTimeString().split(" ")[0]
+    let previewWidth: number
+    $: numCharacters = previewWidth / 3 - 20
 
     let categoryNames = {
         bio: "Biology",
@@ -20,14 +22,14 @@
     }
 </script>
 
-<div id="preview" class={question.category} on:click={accessQuestion}>
+<div class={"preview " + question.category} on:click={accessQuestion} bind:clientWidth={previewWidth}>
     <h2>{categoryNames[question.category]}</h2>
     <h3>{truncatedQuestion}</h3>       
     <p>Author - {question.authorName} <i>({dateString})</i></p>
 </div>
 
 <style lang="scss">
-    #preview {
+    .preview {
         cursor: pointer;
         position: relative;
         background-color: #EEE;
