@@ -10,13 +10,19 @@
 </div>
 
 <style lang="scss">
+    #header {
+        text-align: left;
+        position: relative;
+    }
+    
     h1 {
         display: inline-block;
     }
     
     #right {
-        float: right;
-        margin: 1em;
+        position: absolute;
+        top: 1em;
+        right: 1em;
     }
 
     button {

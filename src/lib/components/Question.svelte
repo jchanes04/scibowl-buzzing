@@ -29,19 +29,21 @@
 
 <div id="question" class={question.category}>
     <h1>{categoryNames[question.category]}</h1>
-    <h3>{question.questionText}</h3>     
+    <h3 class="question-text">{question.questionText}</h3>     
           
     {#if question.type === "MCQ"}
-        <h3>   W) {question.choices.W}</h3>
-        <h3>   X) {question.choices.X}</h3>
-        <h3>   Y) {question.choices.Y}</h3>
-        <h3>   Z) {question.choices.Z}</h3>
+        <h3 class="question-text">   W) {question.choices.W}</h3>
+        <h3 class="question-text">   X) {question.choices.X}</h3>
+        <h3 class="question-text">   Y) {question.choices.Y}</h3>
+        <h3 class="question-text">   Z) {question.choices.Z}</h3>
     {/if}   
     <p>Author - {question.authorName} <i>({dateString})</i></p>
-    <button on:click={showAnswer}>Show Answer</button>
+    <div id="button-wrapper">
+        <button on:click={showAnswer}>{answerVisible ? "Hide" : "Show"} Answer</button>
+    </div>
     {#if answerVisible}
-        <h3 id={question.id+"-answer"}>Answer: {question.correctAnswer}</h3> 
-    {/if}   
+        <h3 id={"correct-answer"}>{question.correctAnswer}</h3> 
+    {/if}
 </div>
 
 
@@ -50,8 +52,14 @@
         margin-top: 0.5em;
     }
 
-    h3 {
+    .question-text {
         font-weight: 500;
+    }
+
+    #correct-answer {
+        display: inline-block;
+        text-decoration: underline;
+        font-size: 20px;
     }
 
     p {
@@ -67,6 +75,7 @@
         border-radius: 1em;
         overflow: hidden;
         width: 100%;
+        max-width: 100ch;
 
         &::before {
             content: '';
@@ -88,6 +97,14 @@
         border-radius: 0.6em;
         border: solid black 3px;
         cursor: pointer;
+        box-sizing: border-box;
+        width: 15ch;
+    }
+
+    #button-wrapper {
+        width: 20ch;
+        display: inline-block;
+        text-align: left;
     }
 
     .bio {
