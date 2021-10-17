@@ -1,21 +1,26 @@
 import type { Request } from "@sveltejs/kit";
+import { getIDFromToken } from "../../authentication";
 import { category, getQuestions } from "../../mongo";
 
-export async function get({ query }: { query: URLSearchParams }) {
-    let author = query.get("author")
+export async function get({ query, headers }: { query: URLSearchParams, headers: Record<string, string> }) {
+    let authToken = headers.authorization
+    let authorized = !!getIDFromToken(authToken)
+    
+    if (!authorized) return {
+        status: 401
+    }
+
+    let authorName = query.get("authorName")
     let keywords = query.get("keywords")
     let categories = <category[]>query.get("categories")?.split(",")
     let types = <("MCQ" | "SA")[]>query.get("types")?.split(",")
-    let start = parseInt(query.get("start"))
-    let end = parseInt(query.get("end"))
+    let startDate = new Date(query.get("start") || "")
+    let endDate = new Date(query.get("end") || "")
 
-    if (isNaN(start)) start = undefined
-    if (isNaN(end)) end = undefined
-
-    let startDate = typeof start === "number" ? new Date(start) : undefined
-    let endDate = typeof end === "number" ? new Date(end) : undefined
+    if (isNaN(startDate.getTime())) startDate = undefined
+    if (isNaN(endDate.getTime())) endDate = undefined
     
-    let result = await getQuestions({ author, keywords, categories, types, timeRange: { startDate, endDate } })
+    let result = await getQuestions({ authorName, keywords, categories, types, timeRange: { startDate, endDate } })
     return {
         status: 302,
         body: result

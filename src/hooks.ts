@@ -2,7 +2,11 @@ import type { Request, Response } from "@sveltejs/kit";
 type Resolve = (request: Request<Record<string, any>>) => Response | Promise<Response>
 
 import { checkAuthenticated, gameExists, getGame, io } from './server'
+import { getUserFromID } from './mongo'
 import { redirectTo } from "$lib/functions/redirectTo";
+import { getIDFromToken } from "./authentication";
+
+const restrictedEndpoints = ["write", "edit", "question-search", "question", undefined]
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
     let endpoint = request.path.split("/")[1]
@@ -30,8 +34,6 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
             
             request.locals.authenticated = true
         } else {
-            console.log(gameID)
-            console.log(memberIdCookie)
             return redirectTo(gameExists(gameID) ? "/join/" + gameID : "/join")
         }
     } else if (endpoint === "join") {
@@ -46,9 +48,20 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
         } else if (gameID !== '' && gameID !== undefined) {
             return redirectTo('/join')
         }
+    } else if (restrictedEndpoints.includes(endpoint)) {
+        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        console.log(authToken)
+        let userID = getIDFromToken(authToken)
+        console.log(userID)
+        let userData = await getUserFromID(userID)
+        console.log("User data:")
+        console.dir(userData)
+        request.locals = {
+            isLoggedIn: !!userID,
+            userID,
+            userData: {...userData}
+        }
     }
-    
-
 
     const response = await resolve(request);
     return {
@@ -57,13 +70,7 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
 }
 
 export async function getSession(request: Request) {
-    let endpoint = request.path.split("/")[1]
-    
-    if (endpoint === "join") {
-        return {
-            ...request.locals
-        }
+    return {
+        ...request.locals
     }
-    
-    return {}
 }
