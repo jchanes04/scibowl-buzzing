@@ -2,6 +2,7 @@
     import type { category } from "src/mongo";
     import { page, session } from '$app/stores'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
+import { HOST_URL } from "$lib/variables";
     let ownQuestion: boolean = true
     let author: string
     let type: "MCQ" | "SA"
@@ -21,7 +22,7 @@
         {#if $session.isLoggedIn}
             <h1 style="margin: 0;">{$session.userData?.username}</h1>
         {:else}
-            <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(import.meta.env.VITE_HOST_URL)}%2Fauth%2Fwrite&response_type=code&scope=identify`}>
+            <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fwrite&response_type=code&scope=identify`}>
                 <button id="login-button">Login</button>
             </a>
         {/if}

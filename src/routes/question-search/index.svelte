@@ -9,6 +9,7 @@
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
     import { session } from '$app/stores'
+import { HOST_URL } from "$lib/variables";
 
     let questions: (SaQuestion | McqQuestion)[] = []
     let pageNumber = 1
@@ -76,7 +77,7 @@
         {#if $session.isLoggedIn}
             <h1 style="margin: 0;">{$session.userData?.username}</h1>
         {:else}
-            <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(import.meta.env.VITE_HOST_URL)}%2Fauth%2Fquestion-search&response_type=code&scope=identify`}>
+            <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fquestion-search&response_type=code&scope=identify`}>
                 <button>Login</button>
             </a>
         {/if}
