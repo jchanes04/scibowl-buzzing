@@ -126,6 +126,16 @@ export async function editQuestion(newQuestion: Partial<SaQuestion | McqQuestion
 export async function getQuestionByID(id : string){
     let collection = db.collection("submittedQuestions")
     let result = await collection.findOne({ id })
+    console.log("mabey its erroring?")
+    result.questions = await getQuestions({authorName: result.authorName})
+    console.dir(result.questions)
+    console.log("what")
+    return result || null
+}
+
+export async function getUserByID(id: string){
+    let collection = db.collection("users")
+    let result = await collection.findOne({ id })
     return result || null
 }
 

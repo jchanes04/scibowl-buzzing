@@ -18,7 +18,6 @@
     let resultsPerPage = 20
     $: numPages = Math.ceil(questions.length / resultsPerPage)
     let menuOpen = true
-
     async function sendQuery(queryBox: Record<string, any>) {
         let inputs: Record<string, string> = {}
         if (queryBox.authorName) inputs.authorName = queryBox.authorName

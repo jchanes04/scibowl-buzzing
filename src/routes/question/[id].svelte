@@ -8,7 +8,7 @@
     import DatabaseHeader from '$lib/components/DatabaseHeader.svelte';
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
-import { HOST_URL } from '$lib/variables';
+    import { HOST_URL } from '$lib/variables';
     let answerVisible = false
     let loaded = false
     let noMatch = false
