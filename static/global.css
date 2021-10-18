@@ -1,14 +1,24 @@
 :root {
-    --blue: hsl(210, 100%, 38%);
+    --blue: #0061C2;
     --green: #2C8250;
     --red: #D14444;
     --orange: #F5C13D;
+    --purple: #623e98;
+    --light-gray: #EEE;
+    --med-gray: #dbd7c7;
+    --dark-gray: #13241a;
+    --color-1: #264E43;
+    --color-2: #2C8250;
+    --color-3: #8BB86D;
+    --color-4: #d8b012;
+    --color-5: #D6AC34;
 }
 
 html, body {
+    color: black;
     margin: 0;
     font-family: 'Ubuntu';
-    background-color: #d4d9d9;
+    background-color: var(--color-1);
 }
 
 input {
@@ -41,17 +51,17 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-    background: var(--green);
+    background: var(--color-5);
     width: 7px;
     border-radius: 7px;
 }
 
 body::-webkit-scrollbar-track-piece:start {
-    margin-top: 0.2em;
+    margin-top: -0.1em;
     background: transparent;
 }
 
 body::-webkit-scrollbar-track-piece:end {
-    margin-bottom: 0.2em;
+    margin-bottom: -0.1em;
     background: transparent;
 }

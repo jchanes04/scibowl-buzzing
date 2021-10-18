@@ -279,7 +279,7 @@ import { HOST_URL } from "$lib/variables";
     }
 
     #login-button {
-        color: #EEE;
+        color: var(--color-3);
         background: var(--green);
         font-size: 20px;
         font-weight: bold;
@@ -292,7 +292,7 @@ import { HOST_URL } from "$lib/variables";
 
     button {
         padding: 0.5em;
-        color: #EEE;
+        color: var(--color-3);
         background: var(--green);
         border-radius: 0.3em;
         font-weight: bold;

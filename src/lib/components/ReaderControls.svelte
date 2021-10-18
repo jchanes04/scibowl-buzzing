@@ -139,11 +139,11 @@
         grid-area: control-panel;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: var(--color-3);
     }
 
     button {
-        color: #EEE;
+        color: var(--color-3);
         background: var(--green);
         font-size: 20px;
         font-weight: bold;

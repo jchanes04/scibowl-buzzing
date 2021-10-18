@@ -23,7 +23,7 @@ import { HOST_URL } from "$lib/variables";
     }
 
     button {
-        color: #EEE;
+        color: var(--color-3);
         background: var(--green);
         font-size: 30px;
         font-weight: bold;

@@ -32,7 +32,7 @@
         place-content: center;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: var(--color-3);
         padding: 2em;
     }
 

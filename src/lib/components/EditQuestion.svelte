@@ -79,7 +79,7 @@
 <style lang="scss">
     #question {
         position: relative;
-        background-color: #EEE;
+        background-color: var(--color-3);
         padding: 1em;
         margin: 20px 0;
         border-radius: 1em;
@@ -155,7 +155,7 @@
     }
 
     button {
-        color: #EEE;
+        color: var(--color-3);
         background: var(--green);
         font-size: 20px;
         font-weight: bold;
@@ -170,31 +170,31 @@
 
     .bio {
         &::before {
-            background-color: #2C8250;
+            background-color: var(--green);
         }
     }
 
     .earth {
         &::before {
-            background-color: #F5C13D;
+            background-color: var(--orange);
         }
     }
 
     .chem {
         &::before {
-            background-color: #D14444;
+            background-color: var(--red);
         }
     }
 
     .physics {
         &::before {
-            background-color: #623e98;
+            background-color: var(--purple);
         }
     }
     
     .math {
         &::before {
-            background-color: #0061C2;
+            background-color: var(--blue);
         }
     }
     

@@ -23,6 +23,6 @@
         position: absolute;
         top: -0.6em;
         left: 1em;
-        background: #EEE;
+        background: var(--color-3);
     }
 </style>

@@ -245,7 +245,7 @@
         top: 50px;
         padding: 1em;
         height: 100%;
-        background-color: #EEE;
+        background-color: var(--color-3);
         border-radius: 1em;
 
         @media (min-width: 600px) {
@@ -254,7 +254,7 @@
     }
     
     button {
-        color: #EEE;
+        color: var(--color-3);
         background: var(--green);
         font-size: 20px;
         font-weight: bold;

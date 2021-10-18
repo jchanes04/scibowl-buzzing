@@ -30,7 +30,7 @@
         padding: 1em;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: var(--color-3);
 
         &::-webkit-scrollbar {
             width: 5px;

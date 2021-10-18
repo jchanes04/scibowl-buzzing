@@ -85,7 +85,7 @@
     }
     
     button {
-        background: #EEE;
+        background: var(--color-3);
         border-radius: 50%;
         font-size: inherit;
         outline: none;

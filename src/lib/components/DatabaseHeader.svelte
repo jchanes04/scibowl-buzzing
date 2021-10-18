@@ -24,16 +24,4 @@
         top: 1em;
         right: 1em;
     }
-
-    button {
-        color: #EEE;
-        background: var(--green);
-        margin: 1em;
-        font-size: 20px;
-        font-weight: bold;
-        padding: 0.6em;
-        border-radius: 0.6em;
-        border: solid black 3px;
-        cursor: pointer;
-    }
 </style>
