@@ -38,7 +38,9 @@ export interface User {
 }
 
 export interface UserSettings {
-    id: string
+    id: string,
+    colors: string[],
+    imgUrl?: string
 }
 
 import {Db, MongoClient} from 'mongodb'
@@ -77,6 +79,7 @@ export async function addQuestion(question: SaBase | McqBase) {
 
 type questionQuery = {
     authorName?: string,
+    authorId: string,
     keywords?: string,
     categories?: category[],
     types?: ("SA" | "MCQ") [],
@@ -87,6 +90,7 @@ type questionQuery = {
 }
 type mongoQuestionQuery = {
     authorName?: string,
+    authorId?: string,
     $text?: { $search: string },
     category?: {$in: category[]},
     type?: {$in: ("SA" | "MCQ") []},
@@ -96,11 +100,12 @@ type mongoQuestionQuery = {
     }
 }
 
-export async function getQuestions({ authorName, keywords, categories, types, timeRange }: questionQuery) {
+export async function getQuestions({ authorName, authorId, keywords, categories, types, timeRange }: questionQuery) {
     let collection = db.collection("submittedQuestions")
     
     let mongoQuery: mongoQuestionQuery = {}
     if (authorName) mongoQuery.authorName = authorName
+    if (authorId) mongoQuery.authorId = authorId
     if (keywords) mongoQuery.$text = { $search: keywords }
     if (categories?.length) mongoQuery.category = { $in: categories }
     if (types?.length) mongoQuery.type = {$in: types}
@@ -130,10 +135,7 @@ export async function editQuestion(newQuestion: Partial<SaQuestion | McqQuestion
 export async function getQuestionByID(id : string){
     let collection = db.collection("submittedQuestions")
     let result = await collection.findOne({ id })
-    console.log("mabey its erroring?")
-    result.questions = await getQuestions({authorName: result.authorName})
     console.dir(result.questions)
-    console.log("what")
     return result || null
 }
 

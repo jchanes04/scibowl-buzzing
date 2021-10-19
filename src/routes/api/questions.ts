@@ -11,6 +11,7 @@ export async function get({ query, headers }: { query: URLSearchParams, headers:
     }
 
     let authorName = query.get("authorName")
+    let authorId = query.get("authorId")
     let keywords = query.get("keywords")
     let categories = <category[]>query.get("categories")?.split(",")
     let types = <("MCQ" | "SA")[]>query.get("types")?.split(",")
@@ -20,7 +21,7 @@ export async function get({ query, headers }: { query: URLSearchParams, headers:
     if (isNaN(startDate.getTime())) startDate = undefined
     if (isNaN(endDate.getTime())) endDate = undefined
     
-    let result = await getQuestions({ authorName, keywords, categories, types, timeRange: { startDate, endDate } })
+    let result = await getQuestions({ authorName, authorId, keywords, categories, types, timeRange: { startDate, endDate } })
     return {
         status: 302,
         body: result
