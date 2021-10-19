@@ -77,10 +77,12 @@
         <NotAuthorized page="question-search" />
     {:else}
         <div id="page">
-            <div id="desktop-menu">
-                <QueryBox bind:numQuestions={questions.length} on:sendQuery={(event) => {
-                    sendQuery(event.detail.inputs)
-                }}/>
+            <div id="desktop-menu-wrapper">
+                <div id="desktop-menu">
+                    <QueryBox bind:numQuestions={questions.length} on:sendQuery={(event) => {
+                        sendQuery(event.detail.inputs)
+                    }}/>
+                </div>
             </div>
             <div id="mobile-menu" class:opened={menuOpen}>
                 <QueryBox bind:numQuestions={questions.length} on:sendQuery={(event) => {
@@ -170,12 +172,13 @@
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         row-gap: 20px;
         column-gap: 20px;
-       
     }
 
     #results {
         margin: 20px;
         height: 100%;
+        flex-grow: 1;
+        width: 100%;
 
         @media (min-width: 800px) {
             width: 75vw;
@@ -212,17 +215,57 @@
 
     #mobile-menu {
         width: 85vw;
+        max-width: 50ch;
         height: calc(100vh - 80px);
         display: none;
         position: fixed;
         left: -120vw;
         transition: left 0.4s ease-in-out;
         z-index: 3;
-        background: #FFF;
+        background: #EEE;
         overflow: auto;
+        border-top-right-radius: 1em;
+        border-bottom-right-radius: 1em;
+        box-shadow: 25px 0px 20px #666;
+
         &.opened {
             left: 0;
         }
+        &::-webkit-scrollbar {
+            width: 7px;
+        }
+        &::-webkit-scrollbar-button {
+            display: none;
+        }
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: var(--green);
+            width: 7px;
+            border-radius: 7px;
+        }
+        &::-webkit-scrollbar-track-piece:start {
+            margin-top: 1.2em;
+            background: transparent;
+        }
+        &::-webkit-scrollbar-track-piece:end {
+            margin-bottom: 1.2em;
+            background: transparent;
+        }
+    }
+
+    #desktop-menu-wrapper {
+        overflow: auto;
+        height: min-content;
+        max-height: calc(100vh - 50px);
+        position: sticky;
+        top: 20px;
+        width: min(40vw, 50ch);
+        flex-grow: 2;
+        border-radius: 1em;
+        margin-left: 1em;
+
         &::-webkit-scrollbar {
             width: 7px;
         }
@@ -247,6 +290,12 @@
         }
     }
 
+    #desktop-menu {
+        background: #EEE;
+        height: min-content;
+        border-radius: 1em;
+    }
+
     #mobile-header {
         display: none;
         width: 100%;
@@ -267,7 +316,7 @@
         #mobile-header {
             display: block;
         }
-        #desktop-menu {
+        #desktop-menu-wrapper {
             display: none;
         }
         #mobile-menu {

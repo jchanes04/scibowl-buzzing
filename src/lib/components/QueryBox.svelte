@@ -105,9 +105,6 @@
         display: flex;
         flex-direction: column;
         padding: 1em;
-        @media (min-width: 800px) {
-            width: 25vw;
-        }
     }
     input[type="date"] {
         padding: 0.3em;
@@ -196,5 +193,6 @@
         border-radius: 0.6em;
         border: solid black 3px;
         cursor: pointer;
+        max-width: 35ch;
     }
 </style>
