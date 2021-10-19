@@ -37,6 +37,10 @@ export interface User {
     username: string
 }
 
+export interface UserSettings {
+    id: string
+}
+
 import {Db, MongoClient} from 'mongodb'
 
 let client = new MongoClient("mongodb://45.32.217.67:27108")
@@ -146,6 +150,12 @@ export async function getUserFromID(id: string): Promise<User | null> {
         id: result.id,
         username: result.username
     } : null
+}
+
+export async function getUserSettings(id: string): Promise<UserSettings | null> {
+    let collection = db.collection("userSettings")
+    let result = await collection.findOne({ id })
+    return result?.id ? <UserSettings>result : null
 }
 
 

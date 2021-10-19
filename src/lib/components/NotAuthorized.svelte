@@ -1,8 +1,6 @@
 <script lang="ts">
-import { HOST_URL } from "$lib/variables";
-
- 
-    export let page: "write" | "edit" | "question-search"
+    import { HOST_URL } from "$lib/variables";
+    export let page: "write" | "edit" | "question-search" | "account"
 </script>
 
 <div>
