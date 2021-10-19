@@ -227,6 +227,7 @@
         border-top-right-radius: 1em;
         border-bottom-right-radius: 1em;
         box-shadow: 25px 0px 20px #666;
+        overscroll-behavior: contain;
 
         &.opened {
             left: 0;
@@ -265,6 +266,7 @@
         flex-grow: 2;
         border-radius: 1em;
         margin-left: 1em;
+        overscroll-behavior: contain;
 
         &::-webkit-scrollbar {
             width: 7px;
@@ -281,11 +283,11 @@
             border-radius: 7px;
         }
         &::-webkit-scrollbar-track-piece:start {
-            margin-top: 0.2em;
+            margin-top: 1.2em;
             background: transparent;
         }
         &::-webkit-scrollbar-track-piece:end {
-            margin-bottom: 0.2em;
+            margin-bottom: 1.2em;
             background: transparent;
         }
     }
