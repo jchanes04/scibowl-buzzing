@@ -1,5 +1,16 @@
+<script lang="ts" context="module">
+    import type { LoadInput, LoadOutput } from '@sveltejs/kit';
+    export async function load({ page, fetch }: LoadInput): Promise<LoadOutput> {
+        const res = await fetch(`/api/question/${page.params.id}`)
+        return {
+            props: {
+                question: await res.json()
+            }
+        }
+    }
+</script>
+
 <script lang="ts">
-    import type { category } from "src/mongo";
     import type {SaQuestion, McqQuestion} from 'src/mongo'
     import { session } from '$app/stores'
     import { onMount } from 'svelte';
@@ -11,7 +22,7 @@
     import { HOST_URL } from "$lib/variables";
     import EditQuestion from "$lib/components/EditQuestion.svelte";
 
-    let question = <McqQuestion | SaQuestion>{}
+    export let question: McqQuestion | SaQuestion
 
     onMount(async () => {
         let res = await fetch("/api/question/" + $page.params.id, {
@@ -60,115 +71,6 @@
         font-size: 44px;
         text-decoration: underline var(--blue) 3px;
         text-underline-offset: 0.2em;
-    }
-
-    .radio-wrapper {
-        text-align: left;
-        display: inline-block;
-    }
-
-    select {
-        margin: 1em auto 0.5em;
-        font-size: 18px;
-    }
-
-    input[type="text"] {
-        padding: 0.3em;
-        font-size: 24px;
-        margin: 0.5em auto;
-        border: none;
-        border-radius: 0.3em;
-        box-sizing: border-box;
-        width: 25ch;
-        max-width: 80vw;
-        text-align: center;
-        font-family: 'Ubuntu';
-        position: relative;
-
-        &:focus::placeholder {
-            color: transparent;
-        }
-    }
-
-    textarea {
-        padding: 0.3em;
-        font-size: 20px;
-        margin: 0.5em auto;
-        border: none;
-        border-radius: 0.3em;
-        box-sizing: border-box;
-        width: 40ch;
-        max-width: 80vw;
-        resize: vertical;
-        min-height: 1.8em;
-        height: 1.8em;
-        font-family: 'Ubuntu';
-        position: relative;
-        vertical-align: middle;
-
-        &:focus::placeholder {
-            color: transparent;
-        }
-    }
-
-    label {
-        cursor: pointer;
-        padding-top: 0.3em;
-        padding-bottom: 0.3em;
-        display: inline-block;
-        font-size: 20px;
-        vertical-align: middle;
-
-        input[type="radio"] {
-            visibility: hidden;
-            width: 0;
-            height: 0;
-        }
-
-        .choice {
-            width: 40ch;
-            height: 3em;
-            min-height: 3em;
-        }
-
-        p {
-            width: 2.5ch;
-            margin: 0;
-            display: inline-block;
-        }
-
-        span {
-            width: 1em;
-            height: 1em;
-            border-radius: 50%;
-            border: #CCC 2px solid;
-            display: inline-block;
-            position: relative;
-            background: #FFF;
-            vertical-align: text-top;
-            margin-right: 0.3em;
-
-            &::after {
-                content: '';
-                position: absolute;
-                display: none;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 0.7em;
-                height: 0.7em;
-                border-radius: 0.35em;
-                background: var(--blue);
-            }
-        }
-
-        &:hover > span {
-            border-color: var(--green);
-        }
-
-        input:checked ~ span::after {
-            display: inline-block;
-        }
     }
 
     button {

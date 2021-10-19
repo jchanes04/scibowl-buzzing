@@ -6,10 +6,12 @@ import { getUserFromID } from './mongo'
 import { redirectTo } from "$lib/functions/redirectTo";
 import { getIDFromToken } from "./authentication";
 
-const restrictedEndpoints = ["write", "edit", "question-search", "question", undefined]
+const restrictedEndpoints = ["write", "edit", "question-search", "question", "account", undefined]
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
     let endpoint = request.path.split("/")[1]
+    let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+    if (authToken) request.headers.authorization = authToken
 
     if (endpoint === 'game') {
         let gameID = request.path.split("/")[2]
@@ -49,7 +51,6 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
             return redirectTo('/join')
         }
     } else if (restrictedEndpoints.includes(endpoint)) {
-        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
         console.log(authToken)
         let userID = getIDFromToken(authToken)
         console.log(userID)

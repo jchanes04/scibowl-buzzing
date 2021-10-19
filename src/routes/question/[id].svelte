@@ -1,3 +1,15 @@
+<script lang="ts" context="module">
+    import type { LoadInput, LoadOutput } from '@sveltejs/kit';
+    export async function load({ page, fetch }: LoadInput): Promise<LoadOutput> {
+        const res = await fetch(`/api/question/${page.params.id}`)
+        return {
+            props: {
+                question: await res.json()
+            }
+        }
+    }
+</script>
+
 <script lang="ts">
     import { page, session } from '$app/stores'
     import type { category } from 'src/mongo';
@@ -9,10 +21,12 @@
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
     import { HOST_URL } from '$lib/variables';
+
+    export let question: SaQuestion | McqQuestion
+
     let answerVisible = false
-    let loaded = false
+    let loaded = true
     let noMatch = false
-    let question: SaQuestion | McqQuestion
     let questionsSeen: string [] = []
     let author: string
     let types: ("MCQ" | "SA")[] = []
@@ -22,19 +36,12 @@
     onMount(async () => {
         console.log("Session:")
         console.dir($session)
-        let res = await fetch("/api/question/" + $page.params.id, {
-            headers: {
-                'Authorization': Cookie.get('authToken')
-            }
-        })
-        question = await res.json()
-        loaded = true
         let stored = JSON.parse(Cookie.get('lastQuery') || "{}")
         author = stored.author
-        types = !stored.types ? []: stored.types.split(',')
-        categories = !stored.categories ? [] : stored.categories.split(",")
-        start = stored.start==""? undefined : stored.start,
-        end = stored.end==""? undefined : stored.end
+        types = !stored.types ? [] : stored.types
+        categories = !stored.categories ? [] : stored.categories
+        start = stored.start ? stored.start : undefined
+        end = stored.end ? stored.end : undefined
     })
 
     async function sendQuery() {
