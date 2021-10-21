@@ -18,6 +18,7 @@
     let resultsPerPage = 20
     $: numPages = Math.ceil(questions.length / resultsPerPage)
     let menuOpen = true
+    let querySent = false
     async function sendQuery(queryBox: Record<string, any>) {
         let inputs: Record<string, string> = {}
         if (queryBox.authorName) inputs.authorName = queryBox.authorName
@@ -39,6 +40,7 @@
             await tick()
             window.scroll(0, 0)
             closeMenu()
+            querySent = true
         }
     }
 
@@ -112,8 +114,10 @@
                     />
                 {:else}
                     <div id="no-results">
-                        <h1>No Questions Found</h1>
-                        <div id="bensive"></div>
+                        {#if querySent}
+                            <h1>No Questions Found</h1>
+                            <div id="bensive"></div>
+                        {/if}
                     </div>
                 {/if}
             </div>

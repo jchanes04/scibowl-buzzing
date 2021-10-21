@@ -2,7 +2,7 @@
     import { createEventDispatcher, onMount, tick } from "svelte";
     import type { category } from "src/mongo";
     import Cookie from 'js-cookie'
-import { parse } from "dotenv";
+
     let inputs: {
         authorName :string
         keywords : string
@@ -26,9 +26,16 @@ import { parse } from "dotenv";
     }
     onMount(async () => {
         let stored = Cookie.get('lastQuery')? JSON.parse(Cookie.get('lastQuery')) : undefined
-        if (stored) {
-            console.log(stored.types)
+        if (
+            stored?.authorName
+            || stored?.keywords
+            || stored?.start
+            || stored?.end
+            || stored?.types?.length
+            || stored?.categories?.length
+        ) {
             authorName = stored.authorName
+            keywords = stored.keywords
             types = stored.types ?? []
             categories = stored.categories ?? []
             start = stored.start ? stored.start : undefined
