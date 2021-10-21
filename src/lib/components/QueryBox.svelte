@@ -2,6 +2,7 @@
     import { createEventDispatcher, onMount, tick } from "svelte";
     import type { category } from "src/mongo";
     import Cookie from 'js-cookie'
+import { parse } from "dotenv";
     let inputs: {
         authorName :string
         keywords : string
@@ -16,9 +17,10 @@
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     $:inputs = {authorName, keywords, start, end, types, categories}
-    async function emitQuery() {
+    async function emitQuery(pageNumber?: number) {
         dispatch('sendQuery', {
-            inputs:inputs
+            inputs:inputs,
+            pageNumber
         })
         Cookie.set('lastQuery', JSON.stringify(inputs),{path:"",expires:.01})
     }
@@ -32,7 +34,8 @@
             start = stored.start ? stored.start : undefined
             end = stored.end ? stored.end : undefined
             await tick()
-            emitQuery()
+            let storedPageNumber = parseInt(Cookie.get('pageNumber'))
+            emitQuery(storedPageNumber)
         }
     })
 </script>
@@ -95,7 +98,7 @@
         </label> <br /> 
     </div>
     <br />            
-    <button on:click={emitQuery}>Submit Query</button>
+    <button on:click={() => emitQuery()}>Submit Query</button>
     {#if numQuestions}
         <h3>{numQuestions} questions matched your query</h3>
     {/if}

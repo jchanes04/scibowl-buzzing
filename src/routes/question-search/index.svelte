@@ -79,8 +79,11 @@
         <div id="page">
             <div id="desktop-menu-wrapper">
                 <div id="desktop-menu">
-                    <QueryBox bind:numQuestions={questions.length} on:sendQuery={(event) => {
-                        sendQuery(event.detail.inputs)
+                    <QueryBox bind:numQuestions={questions.length} on:sendQuery={async (event) => {
+                        await sendQuery(event.detail.inputs)
+                        await tick()
+                        if (event.detail.pageNumber && event.detail.pageNumber <= numPages) 
+                            pageNumber = event.detail.pageNumber
                     }}/>
                 </div>
             </div>
@@ -99,7 +102,14 @@
                             {/if}
                         {/each}
                     </div>
-                    <PageSwitcher bind:numPages={numPages} bind:pageNumber={pageNumber} on:pageChange={() => {window.scroll(0, 0)}} />
+                    <PageSwitcher
+                        bind:numPages={numPages}
+                        bind:pageNumber={pageNumber}
+                        on:pageChange={(event) => {
+                            window.scroll(0, 0)
+                            Cookie.set('pageNumber', event.detail.new)
+                        }}
+                    />
                 {:else}
                     <div id="no-results">
                         <h1>No Questions Found</h1>
