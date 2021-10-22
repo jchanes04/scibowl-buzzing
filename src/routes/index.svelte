@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-    <title>Scibowl Buzzing</title>
+    <title>Enloe Science Bowl</title>
 </svelte:head>
 
 <main>

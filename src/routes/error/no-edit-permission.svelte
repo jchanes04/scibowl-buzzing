@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-    <title>Invalid Submission</title>
+    <title>Missing Permission</title>
 </svelte:head>
 
 <div>

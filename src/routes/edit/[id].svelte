@@ -39,6 +39,7 @@
 <svelte:head>
     <title>Edit Question</title>
 </svelte:head>
+
 <main>
     <DatabaseHeader>
         {#if $session.isLoggedIn}

@@ -137,10 +137,10 @@
                     {/if}
                 </div>
             {:else}
-                <NotAuthorized />
+                <NotAuthorized page="account" />
             {/if}
         {:else}
-            <NotLoggedIn />
+            <NotLoggedIn page="account" />
         {/if}
     {/if}
 </main>

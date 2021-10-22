@@ -31,6 +31,10 @@
     export let userSettings: UserSettings
 </script>
 
+<svelte:head>
+    <title>Your Account</title>
+</svelte:head>
+
 <main>
     <DatabaseHeader>
         {#if $session.isLoggedIn}

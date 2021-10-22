@@ -66,6 +66,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>View Question</title>
+</svelte:head>
+
 <svelte:body on:keydown={(e) => {
     if (e.code === "Enter") {
         sendQuery()

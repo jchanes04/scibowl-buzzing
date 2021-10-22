@@ -14,7 +14,7 @@ import { HOST_URL } from "$lib/variables";
 </script>
 
 <svelte:head>
-    <title>Submit Questions</title>
+    <title>Write a Question</title>
 </svelte:head>
 
 <main>

@@ -29,6 +29,10 @@
     export let userData: User
 </script>
 
+<svelte:head>
+    <title>{userData.username}</title>
+</svelte:head>
+
 <main>
     <DatabaseHeader>
         {#if $session.isLoggedIn}

@@ -53,6 +53,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Question Search</title>
+</svelte:head>
+
 <main>
     <div id="desktop-header">
         <DatabaseHeader>
