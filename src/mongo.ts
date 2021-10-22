@@ -34,7 +34,8 @@ export interface SaQuestion extends SaBase {
 
 export interface User {
     id: string, 
-    username: string
+    username: string,
+    avatarHash?: string
 }
 
 export interface UserSettings {
@@ -63,7 +64,7 @@ export async function init() {
 }
 
 export async function addQuestion(question: SaBase | McqBase) {
-    let collection  = db.collection("submittedQuestions")
+    let collection = db.collection("submittedQuestions")
     
     let searchString = question.questionText + " " + question.correctAnswer
     if (question.type === "MCQ") {
@@ -158,6 +159,13 @@ export async function getUserSettings(id: string): Promise<UserSettings | null> 
     let collection = db.collection("userSettings")
     let result = await collection.findOne({ id })
     return result?.id ? <UserSettings>result : null
+}
+
+export async function updateAvatarHash(id: string, avatarHash: string) {
+    let collection = db.collection("users")
+    return await collection.updateOne({ id }, { $set: {
+        avatarHash
+    } })
 }
 
 

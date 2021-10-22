@@ -77,6 +77,7 @@
         row-gap: 20px;
         column-gap: 20px;
         margin: 5em;
+        width: 90vw;
         max-width: 1400px;
     }
 </style>

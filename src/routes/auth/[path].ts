@@ -1,6 +1,7 @@
 import {XMLHttpRequest} from 'xmlhttprequest'
 import * as dotenv from 'dotenv'
 import { generateToken } from '../../authentication'
+import { updateAvatarHash } from '../../mongo'
 dotenv.config({path: '../.env'})
 
 export async function get({ query, params }: { query: URLSearchParams, params: Record<string, string> }) {
@@ -21,7 +22,7 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
                     } else {
                         console.log("token response:")
                         console.dir(res)
-                        let id = await getUserID(res.access_token, res.token_type)
+                        let { id } = await loginUser(res.access_token, res.token_type)
                         console.log("Fetched id: " + id)
                         resolve({
                             status: 302,
@@ -54,17 +55,31 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
 
 }
 
-async function getUserID(token: string, type: string): Promise<string> {
+async function loginUser(token: string, type: string): Promise<DiscordUserResponse> {
     return new Promise((resolve, reject) => {
         let xhr = new XMLHttpRequest()
         xhr.open("GET", "https://discord.com/api/users/@me")
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
-        xhr.onload = () => {
-            let res = JSON.parse(xhr.responseText)
-            console.log("user response: ")
-            console.dir(res)
-            resolve(res.id)
+        xhr.onload = async () => {
+            let userData: DiscordUserResponse = JSON.parse(xhr.responseText)
+            await updateAvatarHash(userData.id, userData.avatar)
+            resolve(userData)
         }
         xhr.send()
     })
+}
+
+type DiscordUserResponse = {
+    id: string;
+	username: string;
+	discriminator: string;
+	avatar: string | null;
+	bot?: boolean;
+	system?: boolean;
+	mfa_enabled?: boolean;
+	banner?: string | null;
+	accent_color?: number | null;
+	locale?: string;
+	verified?: boolean;
+	email?: string | null;
 }

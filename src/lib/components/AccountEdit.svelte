@@ -1,16 +1,20 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import Cookie from 'js-cookie'
     import type {SaQuestion, McqQuestion, User, UserSettings} from 'src/mongo'
-    import QuestionPreview from "./QuestionPreview.svelte";
 
     export let userData: User
     export let userSettings: UserSettings
     export let questions: (SaQuestion|McqQuestion)[]
 
-    onMount(()=>{
-        userSettings.colors = ["#EEEEEE","#AABBCC"]
-    })
+    let lastValidSettings = {
+        ...userSettings
+    }
+
+    let inputtedUsername: string = userData.username
+    let inputtedColors: string[] = [
+        ...(userSettings.colors || ["#EEEEEE","#AABBCC"])
+    ]
+
     function handleChange () {
         console.dir(userSettings.colors)
     }
@@ -18,9 +22,9 @@
 
 <div>
     <div id="card">
-        <div id="icon"></div>
-        <input type="" bind:value={userData.username} />
-        <p>{userData.id}<p>
+        <img id="icon" src={`https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatarHash}.png`} alt="Profile" />
+        <input id="username" type="text" bind:value={inputtedUsername} />
+        <p id="user-id">{userData.id}<p>
         {#if questions}
             <h3>Question Record</h3>
             <p>Total: {questions.length}</p>
@@ -31,31 +35,68 @@
             <p>Math: {questions.filter(question => question.category=="math").length}</p>
         {/if}
         <h3>Color Scheme</h3>
-        {#if userSettings.colors}
-            {#each userSettings.colors as color}
+        {#if inputtedColors}
+            {#each inputtedColors as color}
                 <input type="color" bind:value={color} on:change={handleChange} />
-                <input type="text" bind:value={color} /> <br />
+                <input class="color-input" type="text" bind:value={color} /> <br />
             {/each}
         {/if}
-        <button>Submit</button>
+        <button id="save-changes">Save Changes</button>
     </div>
 </div>
 
 
 <style lang="scss">
     h3{
-        margin:0;
-        font-size: xx-large;
+        margin-top:1em;
+        margin-bottom: 0.2em;
+        font-size: 30px;
     }
     p{
-        font-size: x-large;
+        font-size: 24px;
         margin-top: .4em;
-        margin-bottom: 1em;
+        margin-bottom: .4em;
+    }
+    #username {
+        font-size: 40px;
+        width: 20ch;
+        padding: 0.1em 0.3em;
+        margin-bottom: 0;
+        max-width: calc((100% - 3em) / 1.2);
+
+        @media (max-width: 600px) {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            min-width: 10ch;
+            max-width: calc((100% - 1em) / 1.2);
+        }
+    }
+    #user-id {
+        font-size: 16px;
+        font-style: italic;
+
+        @media (max-width: 600px) {
+            text-align: center;
+        }
     }
     input[type="color"] {
         width: 2em;
         height: 2em;
         border-radius: 1.5em;
+        border: none;
+        vertical-align: middle;
+    }
+    input[type="text"] {
+        font-size: 20px;
+        padding: 0.3em;
+        margin: 0.5em 0;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+    }
+    .color-input {
+        width: 10ch;
     }
     #icon{
         width:10em;
@@ -65,15 +106,41 @@
         right: 1em;
         border-radius: 2.5em;
         background-image: url("https://cdn.discordapp.com/avatars/453297392608083999/297d47dc844b600551f91a0d602bf4c5.webp?size=160");
+    
+        @media(max-width: 600px) {
+            position: static;
+            margin: 1em auto;
+        }
     }
     #card {
         position: relative;
         margin:auto;
-        width: 60em;
+        width: 80vw;
+        max-width: 60em;
         min-height: 30em;
         margin-bottom: 50px;
         background-color: #eee;
         border-radius: 2em;
         padding: 1em;
+    }
+    #save-changes {
+        position: absolute;
+        right: 1em;
+        bottom: 1em;
+        color: #EEE;
+        background: var(--green);
+        font-size: 20px;
+        font-weight: bold;
+        padding: 0.6em;
+        border-radius: 0.6em;
+        border: solid black 3px;
+        cursor: pointer;
+
+        @media (max-width: 600px) {
+            position: static;
+            display: block;
+            margin: 1em auto 0.5em;
+            width: 80%;
+        }
     }
 </style>
