@@ -1,7 +1,13 @@
 .DS_Store
 node_modules
-/.svelte-kit
+/db/.svelte-kit
+/buzzing/.svelte-kit
+/ocean/.svelte-kit
 /package
-/data
-/build
-.env
+/buzzing/data
+/db/build
+/buzzing/build
+/ocean/build
+/db/.env
+/buzzing/.env
+/ocean/.env

@@ -48,7 +48,7 @@ import {Db, MongoClient} from 'mongodb'
 
 let client = new MongoClient("mongodb://45.32.217.67:27108")
 var db: Db;
-export async function init() {
+async function init() {
     try {
         console.log("Connecting...")
         await client.connect()
@@ -62,6 +62,8 @@ export async function init() {
         return init();
     }
 }
+
+init();
 
 export async function addQuestion(question: SaBase | McqBase) {
     let collection = db.collection("submittedQuestions")

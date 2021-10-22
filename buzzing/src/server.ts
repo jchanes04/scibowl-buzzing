@@ -5,7 +5,6 @@ import * as http from 'http'
 import { Server } from 'socket.io'
 
 import fs from "fs"
-import { init } from './mongo'
 
 const httpServer = http.createServer()
 export const io = new Server(httpServer, {
@@ -166,11 +165,7 @@ io.on('connection', socket => {
     }
 });
 
-(async function() {
-    await init()
-    console.log("MongoDB connected")
-    httpServer.listen(3030)
-})()
+httpServer.listen(3030)
 
 export const games = new GameManager()
 
