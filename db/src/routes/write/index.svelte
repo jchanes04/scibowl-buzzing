@@ -18,15 +18,6 @@ import { HOST_URL } from "$lib/variables";
 </svelte:head>
 
 <main>
-    <DatabaseHeader>
-        {#if $session.isLoggedIn}
-            <h1 style="margin: 0;">{$session.userData?.username}</h1>
-        {:else}
-            <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fwrite&response_type=code&scope=identify`}>
-                <button id="login-button">Login</button>
-            </a>
-        {/if}
-    </DatabaseHeader>
     <form id="form" action="/write" method="POST" autocomplete="off">
         <h1>Submit Questions</h1>
         <input type="hidden" name="user-id" value={$session.userID} />
@@ -276,18 +267,6 @@ import { HOST_URL } from "$lib/variables";
         input:checked ~ span::after {
             display: inline-block;
         }
-    }
-
-    #login-button {
-        color: #EEE;
-        background: var(--green);
-        font-size: 20px;
-        font-weight: bold;
-        padding: 0.6em;
-        border-radius: 0.6em;
-        border: solid black 3px;
-        cursor: pointer;
-        margin-top: 0;
     }
 
     button {

@@ -62,7 +62,9 @@ async function loginUser(token: string, type: string): Promise<DiscordUserRespon
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
         xhr.onload = async () => {
             let userData: DiscordUserResponse = JSON.parse(xhr.responseText)
-            await updateAvatarHash(userData.id, userData.avatar)
+            console.log("User data:")
+            console.dir(userData)
+            console.log(await updateAvatarHash(userData.id, userData.avatar))
             resolve(userData)
         }
         xhr.send()

@@ -153,7 +153,8 @@ export async function getUserFromID(id: string): Promise<User | null> {
     let result = await collection.findOne({ id })
     return result?.id ? {
         id: result.id,
-        username: result.username
+        username: result.username,
+        avatarHash: result.avatarHash
     } : null
 }
 

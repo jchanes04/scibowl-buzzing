@@ -13,6 +13,7 @@
     #header {
         text-align: left;
         position: relative;
+        overflow: hidden;
     }
     
     h1 {

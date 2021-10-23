@@ -4,7 +4,7 @@
 </script>
 
 <div>
-    <p>There has either been an error with your request or you are not logged in</p>
+    <p>You are not logged in, log in to view this content</p>
     <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2F${page}&response_type=code&scope=identify`}>
         <button>Login</button>
     </a>

@@ -61,7 +61,7 @@
     <div id="desktop-header">
         <DatabaseHeader>
             {#if $session.isLoggedIn}
-                <h1 style="margin: 0;">{$session.userData?.username}</h1>
+                <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
             {:else}
                 <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fquestion-search&response_type=code&scope=identify`}>
                     <button>Login</button>
@@ -71,15 +71,30 @@
     </div>
     <div id="mobile-header">
         <MobileDatabaseHeader>
-            <div id="open-menu" slot="left" class:opened={menuOpen} on:click={openMenu}>
-                <span><span /></span>
-            </div>
-            <div slot="right" class="icon"></div>
+            <svelte:fragment slot="left">
+                {#if $session.isLoggedIn}
+                    <div id="open-menu" class:opened={menuOpen} on:click={openMenu}>
+                        <span><span /></span>
+                    </div>
+                {/if}
+            </svelte:fragment>
+
+            <svelte:fragment slot="right">
+                {#if $session.isLoggedIn}
+                    <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
+                {:else}
+                    <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fquestion-search&response_type=code&scope=identify`}>
+                        <button>Login</button>
+                    </a>
+                {/if}
+            </svelte:fragment>
         </MobileDatabaseHeader>
     </div>
     {#if !$session.isLoggedIn}
+        <div class="spacer"></div>
         <NotLoggedIn page="question-search" />
     {:else if !$session.userData?.username}
+        <div class="spacer"></div>
         <NotAuthorized page="question-search" />
     {:else}
         <div id="page">
@@ -135,6 +150,17 @@
         display: flex;
         flex-direction: row;
         position: relative;
+    }
+
+    .icon {
+        width: 2em;
+        height: 2em;
+        border-radius: 50%;
+        background-size: cover;
+    }
+
+    .spacer {
+        height: 80px;
     }
 
     #close-menu {

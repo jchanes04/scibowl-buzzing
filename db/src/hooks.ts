@@ -17,8 +17,6 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
         let userID = getIDFromToken(authToken)
         console.log(userID)
         let userData = await getUserFromID(userID)
-        console.log("User data:")
-        console.dir(userData)
         request.locals = {
             isLoggedIn: !!userID,
             userID,
