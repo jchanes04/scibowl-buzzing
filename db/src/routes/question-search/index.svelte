@@ -1,21 +1,48 @@
+<script lang="ts" context="module">
+    import type { LoadInput, LoadOutput } from '@sveltejs/kit';
+    
+    export async function load({ session, fetch }: LoadInput): Promise<LoadOutput> {
+        console.dir(session)
+        
+        let inputs: Record<string, string> = {}
+        if (session.previousQuery?.authorName) inputs.authorName = session.previousQuery.authorName
+        if (session.previousQuery?.keywords) inputs.keywords = session.previousQuery.keywords
+        if (session.previousQuery?.types.length) inputs.types = (session.previousQuery.types ?? []).join(",")
+        if (session.previousQuery?.categories.length) inputs.categories = (session.previousQuery.categories ?? []).join(",")
+        if (session.previousQuery?.start) inputs.start = session.previousQuery.start
+        if (session.previousQuery?.end) inputs.end = session.previousQuery.end
+        let params = new URLSearchParams(inputs)
+        let questionsRes = await fetch("/api/questions?" + params.toString(), {
+            headers: {
+                'Authorization': Cookie.get('authToken')
+            }
+        })
+        return {
+            props: {
+                questions: await questionsRes.json()
+            }
+        }
+    }
+</script>
+
+
 <script lang="ts">
     import QuestionPreview from "$lib/components/QuestionPreview.svelte";
     import PageSwitcher from "$lib/components/PageSwitcher.svelte";
     import QueryBox from '$lib/components/QueryBox.svelte'
     import MobileDatabaseHeader from "$lib/components/MobileDatabaseHeader.svelte";
-    import type { category } from "src/mongo";
     import type {SaQuestion, McqQuestion} from 'src/mongo'
     import Cookie from 'js-cookie'
-    import {onMount, tick} from 'svelte'
+    import {tick} from 'svelte'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
     import { session } from '$app/stores'
     import { HOST_URL } from "$lib/variables";
 
-    let questions: (SaQuestion | McqQuestion)[] = []
-    let pageNumber = 1
+    export let questions: (SaQuestion | McqQuestion)[] = []
     let resultsPerPage = 20
+    let pageNumber = Cookie.get('pageNumber') <= Math.ceil(questions.length / resultsPerPage) ? Cookie.get('pageNumber') : 1
     $: numPages = Math.ceil(questions.length / resultsPerPage)
     let menuOpen = true
     let querySent = false

@@ -24,27 +24,6 @@
         })
         Cookie.set('lastQuery', JSON.stringify(inputs),{path:"",expires:.01})
     }
-    onMount(async () => {
-        let stored = Cookie.get('lastQuery')? JSON.parse(Cookie.get('lastQuery')) : undefined
-        if (
-            stored?.authorName
-            || stored?.keywords
-            || stored?.start
-            || stored?.end
-            || stored?.types?.length
-            || stored?.categories?.length
-        ) {
-            authorName = stored.authorName
-            keywords = stored.keywords
-            types = stored.types ?? []
-            categories = stored.categories ?? []
-            start = stored.start ? stored.start : undefined
-            end = stored.end ? stored.end : undefined
-            await tick()
-            let storedPageNumber = parseInt(Cookie.get('pageNumber'))
-            emitQuery(storedPageNumber)
-        }
-    })
 </script>
 <form id="query" on:submit={(e) => {
     e.preventDefault()

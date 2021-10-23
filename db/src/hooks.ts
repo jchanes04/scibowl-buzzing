@@ -21,6 +21,16 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
             isLoggedIn: !!userID,
             userID,
             userData: {...userData}
+            
+        }
+    }
+
+    if (endpoint === 'question-search') {
+        let previousQueryString = decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "lastQuery")?.split("=")[1])
+        
+        if (previousQueryString) {
+            let previousQueryObject = JSON.parse(previousQueryString)
+            if (previousQueryObject) request.locals.previousQuery = previousQueryObject
         }
     }
 
