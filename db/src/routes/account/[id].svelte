@@ -20,10 +20,7 @@
     import QuestionPreview from '$lib/components/QuestionPreview.svelte';
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
-    import DatabaseHeader from '$lib/components/DatabaseHeader.svelte';
     import Account from '$lib/components/Account.svelte'
-    import AccountEdit from '$lib/components/AccountEdit.svelte'
-    import { HOST_URL } from "$lib/variables";
     import type { McqQuestion, SaQuestion, User, UserSettings } from 'src/mongo';
     export let questions: (SaQuestion|McqQuestion)[]
     export let userData: User
@@ -64,11 +61,13 @@
     }
 
     #questions {
+        margin: auto;
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         row-gap: 20px;
         column-gap: 20px;
         margin: 5em;
-        max-width: 1199px;
+        width: 90vw;
+        max-width: 1400px;
     }
 </style>

@@ -13,7 +13,6 @@
             }
         }
     }
-
 </script>
 
 <script lang="ts">
@@ -21,9 +20,7 @@
     import QuestionPreview from '$lib/components/QuestionPreview.svelte';
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
-    import DatabaseHeader from '$lib/components/DatabaseHeader.svelte';
     import AccountEdit from '$lib/components/AccountEdit.svelte'
-    import { HOST_URL } from "$lib/variables";
     import type { McqQuestion, SaQuestion, User, UserSettings } from 'src/mongo';
     export let questions: (SaQuestion|McqQuestion)[]
     export let userData: User
@@ -40,9 +37,12 @@
     {:else if !$session.userID}
         <NotAuthorized page="account" />
     {:else}
-    
         <div id="account">
-            <AccountEdit {userData} {userSettings} {questions} />
+            <AccountEdit
+                bind:userData={userData}
+                bind:userSettings={userSettings}
+                bind:questions={questions}
+            />
         </div>
     
         <div id="questions-wrapper">

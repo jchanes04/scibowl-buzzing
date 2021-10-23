@@ -1,23 +1,36 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import type {SaQuestion, McqQuestion, User, UserSettings} from 'src/mongo'
+import { createEventDispatcher } from 'svelte';
 
     export let userData: User
     export let userSettings: UserSettings
     export let questions: (SaQuestion|McqQuestion)[]
 
-    let lastValidSettings = {
-        ...userSettings
-    }
+    let usernameRegex = /[\S]+/
 
     let inputtedUsername: string = userData.username
     let inputtedColors: string[] = [
         ...(userSettings.colors || ["#EEEEEE","#AABBCC"])
     ]
+    $: validChanges = usernameRegex.test(inputtedUsername)
 
-    function handleChange () {
-        console.dir(userSettings.colors)
+    async function submitChanges() {
+        let reqBody = new URLSearchParams({
+            username: inputtedUsername
+        })
+
+        let res = await fetch('/api/account', {
+            method: 'POST',
+            body: reqBody
+        })
+        let resBody = await res.json()
+        if (resBody.user?.username) {
+            userData.username = resBody.user.username
+            inputtedUsername = resBody.user.username
+            questions = questions.map(q => ({ ...q, authorName: resBody.user.username }))
+        }
     }
+
 </script>
 
 <div>
@@ -34,29 +47,31 @@
             <p>Physics: {questions.filter(question => question.category=="physics").length}</p>
             <p>Math: {questions.filter(question => question.category=="math").length}</p>
         {/if}
-        <h3>Color Scheme</h3>
+        <!-- <h3>Color Scheme</h3>
         {#if inputtedColors}
             {#each inputtedColors as color}
-                <input type="color" bind:value={color} on:change={handleChange} />
+                <input type="color" bind:value={color} />
                 <input class="color-input" type="text" bind:value={color} /> <br />
             {/each}
-        {/if}
-        <button id="save-changes">Save Changes</button>
+        {/if} -->
+        <button id="save-changes" disabled={!validChanges} on:click={submitChanges}> Save Changes</button>
     </div>
 </div>
 
 
 <style lang="scss">
-    h3{
+    h3 {
         margin-top:1em;
         margin-bottom: 0.2em;
         font-size: 30px;
     }
-    p{
+
+    p {
         font-size: 24px;
-        margin-top: .4em;
-        margin-bottom: .4em;
+        margin-top: 0.4em;
+        margin-bottom: 0.4em;
     }
+
     #username {
         font-size: 40px;
         width: 20ch;
@@ -72,6 +87,7 @@
             max-width: calc((100% - 1em) / 1.2);
         }
     }
+
     #user-id {
         font-size: 16px;
         font-style: italic;
@@ -80,6 +96,7 @@
             text-align: center;
         }
     }
+
     input[type="color"] {
         width: 2em;
         height: 2em;
@@ -87,6 +104,7 @@
         border: none;
         vertical-align: middle;
     }
+
     input[type="text"] {
         font-size: 20px;
         padding: 0.3em;
@@ -95,23 +113,26 @@
         border-radius: 0.3em;
         box-sizing: border-box;
     }
+
     .color-input {
         width: 10ch;
     }
-    #icon{
+
+    #icon {
         width:10em;
         height:10em;
         position: absolute;
         display: block;
         right: 1em;
         border-radius: 2.5em;
-        background-image: url("https://cdn.discordapp.com/avatars/453297392608083999/297d47dc844b600551f91a0d602bf4c5.webp?size=160");
+        // background-image: url("https://cdn.discordapp.com/avatars/453297392608083999/297d47dc844b600551f91a0d602bf4c5.webp?size=160");
     
         @media(max-width: 600px) {
             position: static;
             margin: 1em auto;
         }
     }
+
     #card {
         position: relative;
         margin:auto;
@@ -123,6 +144,7 @@
         border-radius: 2em;
         padding: 1em;
     }
+
     #save-changes {
         position: absolute;
         right: 1em;
@@ -135,6 +157,13 @@
         border-radius: 0.6em;
         border: solid black 3px;
         cursor: pointer;
+
+        &:disabled {
+            border: solid var(--green) 3px;
+            background: transparent;
+            color: #444;
+            cursor: default;
+        }
 
         @media (max-width: 600px) {
             position: static;

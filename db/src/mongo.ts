@@ -158,6 +158,16 @@ export async function getUserFromID(id: string): Promise<User | null> {
     } : null
 }
 
+export async function updateUser(id: string, data: Partial<User>) {
+    let collection = db.collection('users')
+    return await collection.updateOne({ id }, { $set: data })
+}
+
+export async function updateNameOnQuestions(authorId: string, authorName: string) {
+    let collection = db.collection('submittedQuestions')
+    return await collection.updateMany({ authorId }, { $set: { authorName } });
+}
+
 export async function getUserSettings(id: string): Promise<UserSettings | null> {
     let collection = db.collection("userSettings")
     let result = await collection.findOne({ id })
