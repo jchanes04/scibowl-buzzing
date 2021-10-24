@@ -20,10 +20,7 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
                             body: "boo"
                         })
                     } else {
-                        console.log("token response:")
-                        console.dir(res)
                         let { id } = await loginUser(res.access_token, res.token_type)
-                        console.log("Fetched id: " + id)
                         resolve({
                             status: 302,
                             headers: {
@@ -62,9 +59,7 @@ async function loginUser(token: string, type: string): Promise<DiscordUserRespon
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
         xhr.onload = async () => {
             let userData: DiscordUserResponse = JSON.parse(xhr.responseText)
-            console.log("User data:")
-            console.dir(userData)
-            console.log(await updateAvatarHash(userData.id, userData.avatar))
+            await updateAvatarHash(userData.id, userData.avatar)
             resolve(userData)
         }
         xhr.send()

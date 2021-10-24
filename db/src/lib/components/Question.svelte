@@ -75,7 +75,7 @@
         border-radius: 1em;
         overflow: hidden;
         width: 100%;
-        max-width: 100ch;
+        max-width: min(100ch, 60vw);
 
         &::before {
             content: '';
@@ -84,6 +84,10 @@
             top: -20px;
             width: 0.4em;
             height: 150%;
+        }
+
+        @media (max-width: 800px) {
+            max-width: min(100ch, 90vw);
         }
     }
 

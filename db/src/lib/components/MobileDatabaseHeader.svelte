@@ -27,7 +27,11 @@
     }
     #right {
         position: absolute;
-        top: 0.75em;
+        top: 0.57em;
         right: 0.75em;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        font-size: 32px;
     }
 </style>

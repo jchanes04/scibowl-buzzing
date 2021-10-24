@@ -88,6 +88,7 @@
     <div id="desktop-header">
         <DatabaseHeader>
             {#if $session.isLoggedIn}
+                <h1>{$session.userData.username}</h1>
                 <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
             {:else}
                 <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fquestion-search&response_type=code&scope=identify`}>
@@ -108,6 +109,7 @@
 
             <svelte:fragment slot="right">
                 {#if $session.isLoggedIn}
+                    <h1>{$session.userData.username}</h1>
                     <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
                 {:else}
                     <a href={`https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=http%3A%2F%2F${encodeURIComponent(HOST_URL)}%2Fauth%2Fquestion-search&response_type=code&scope=identify`}>
@@ -173,6 +175,12 @@
 </main>
 
 <style lang="scss">
+    h1 {
+        display: inline-block;
+        margin: 0 1ch;
+        font-size: 1em;
+    }
+
     #page {
         display: flex;
         flex-direction: row;
@@ -180,8 +188,8 @@
     }
 
     .icon {
-        width: 2em;
-        height: 2em;
+        width: 1.5em;
+        height: 1.5em;
         border-radius: 50%;
         background-size: cover;
     }

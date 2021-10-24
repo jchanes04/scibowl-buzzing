@@ -6,7 +6,6 @@ import { addQuestion, category, getUserFromID, McqBase, McqQuestion, SaBase, SaQ
 export async function post(request: Request) {
     try {
         let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
-        console.log("token: " + authToken)
 
         let formData = <ReadOnlyFormData>request.body
         let userId = formData.get("user-id")

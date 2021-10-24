@@ -2,6 +2,7 @@
     import { createEventDispatcher, onMount, tick } from "svelte";
     import type { category } from "src/mongo";
     import Cookie from 'js-cookie'
+import { page } from "$app/stores";
 
     let inputs: {
         authorName :string
@@ -25,6 +26,15 @@
         Cookie.set('lastQuery', JSON.stringify(inputs),{path:"",expires:.01})
     }
 </script>
+
+<svelte:body on:keydown={(e) => {
+    if (e.code === "Enter" && $page.path.split("/")[1] === "question") {
+        dispatch('sendQuery', {
+            inputs:inputs
+        })
+    }
+}}></svelte:body>
+
 <form id="query" on:submit={(e) => {
     e.preventDefault()
 }}>
@@ -102,7 +112,7 @@
         border: none;
         border-radius: 0.3em;
         box-sizing: border-box;
-        max-width: 80vw;
+        max-width: min(80vw, 90%);
         text-align: left;
         position: relative;
         &:focus::placeholder {

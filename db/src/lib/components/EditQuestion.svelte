@@ -4,7 +4,6 @@
 
     let textareaWidth: number
     $: textareaHeight = Math.ceil((questionText.length + 15) * 11.25 / textareaWidth) * 18
-    $: console.log(textareaWidth)
 
     let category: category = question.category
     let type: "MCQ" | "SA" = question.type

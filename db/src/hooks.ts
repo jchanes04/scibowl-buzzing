@@ -13,9 +13,7 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
     if (authToken) request.headers.authorization = authToken
 
     if (restrictedEndpoints.includes(endpoint)) {
-        console.log(authToken)
         let userID = getIDFromToken(authToken)
-        console.log(userID)
         let userData = await getUserFromID(userID)
         request.locals = {
             isLoggedIn: !!userID,
@@ -29,8 +27,10 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
         let previousQueryString = decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "lastQuery")?.split("=")[1])
         
         if (previousQueryString) {
-            let previousQueryObject = JSON.parse(previousQueryString)
-            if (previousQueryObject) request.locals.previousQuery = previousQueryObject
+            try {
+                let previousQueryObject = JSON.parse(previousQueryString)
+                if (previousQueryObject) request.locals.previousQuery = previousQueryObject
+            } catch {}
         }
     }
 

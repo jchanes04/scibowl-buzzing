@@ -82,7 +82,7 @@ export async function addQuestion(question: SaBase | McqBase) {
 
 type questionQuery = {
     authorName?: string,
-    authorId: string,
+    authorId?: string,
     keywords?: string,
     categories?: category[],
     types?: ("SA" | "MCQ") [],
@@ -117,8 +117,6 @@ export async function getQuestions({ authorName, authorId, keywords, categories,
         if (timeRange.startDate) mongoQuery.date.$gte = timeRange.startDate
         if (timeRange.endDate) mongoQuery.date.$lt = timeRange.endDate
     }
-    console.log("Mongo Query:")
-    console.dir(mongoQuery)
     let cursor = collection.find(mongoQuery)
     return <(SaQuestion | McqQuestion)[]>(await cursor.toArray())
 }
@@ -181,6 +179,14 @@ export async function updateAvatarHash(id: string, avatarHash: string) {
     } })
 }
 
+export async function getRandomQuestionId () {
+    let questions = await getQuestions({})
+    if (!(questions.length == 0)) {
+        return questions[Math.floor(Math.random() * questions.length)].id
+    } else {
+        return null
+    }
+}
 
 function createID() {
     let time = Date.now()
