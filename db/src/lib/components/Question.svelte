@@ -1,5 +1,9 @@
 <script lang="ts">
-    import type { McqQuestion, SaQuestion } from "src/mongo";
+import { page } from "$app/stores";
+
+    import { redirectTo } from "$lib/functions/redirectTo"; 
+
+    import type { McqQuestion, SaQuestion } from "../../mongo";
     export let question: SaQuestion | McqQuestion
     export let answerVisible: boolean = false
     $: dateObject = new Date(question.date)
@@ -17,6 +21,7 @@
     function showAnswer() {
         answerVisible = !answerVisible
     }
+
 
     function keyHandler(e: KeyboardEvent) {
         if (e.code === "Space"){
@@ -39,15 +44,48 @@
     {/if}   
     <p>Author - {question.authorName} <i>({dateString})</i></p>
     <div id="button-wrapper">
-        <button on:click={showAnswer}>{answerVisible ? "Hide" : "Show"} Answer</button>
+        {#if answerVisible}
+            <h3 id={"correct-answer"}>{question.correctAnswer}</h3> 
+        {/if}
+        <button id="showanswer" on:click={showAnswer}>{answerVisible ? "Hide" : "Show"} Answer</button>
+        <a id="editbutton" href="/edit/{question.id}">
+            <span />
+        </a>
     </div>
-    {#if answerVisible}
-        <h3 id={"correct-answer"}>{question.correctAnswer}</h3> 
-    {/if}
+    
 </div>
 
 
 <style lang="scss">
+
+    #editbutton {
+        position: absolute;
+        right: 2em;
+        bottom: 2em;
+        background: var(--color-6);
+        border-radius: 50%;
+        font-size: inherit;
+        outline: none;
+        border: none;
+        width: 2.5em;
+        height: 2.5em;
+        padding: 0.2em;
+        vertical-align: middle;
+        cursor: pointer;
+
+        span {
+            background-image: url('/pencil.png');
+            background-size: cover;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        &:disabled {
+            cursor: default;
+        }
+    }
+
     h1 {
         margin-top: 0.5em;
     }
@@ -91,7 +129,7 @@
         }
     }
 
-    button {
+    #showanswer {
         color: #EEE;
         background: var(--color-2);
         font-size: 20px;

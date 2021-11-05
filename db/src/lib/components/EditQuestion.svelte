@@ -39,28 +39,28 @@
     <br />
     {#if type === "MCQ"}    
         <div class="radio-wrapper">
-            <label>
+            <label class="radio-label">
                 <input id="option-w-selected" type="radio" name="correct-answer" value="W" bind:group={correctAnswer} />
                 <span />
                 <p>W)</p>
                 <textarea class="choice" name="W" placeholder="Option W" id="W-input" bind:value={optionW} />
             </label>
             <br />
-            <label>
+            <label class="radio-label">
                 <input id="option-x-selected" type="radio" name="correct-answer" value="X" bind:group={correctAnswer} />
                 <span />
                 <p>X)</p>
                 <textarea class="choice" name="X" placeholder="Option X" id="X-input" bind:value={optionX} />
             </label>
             <br />
-            <label>
+            <label class="radio-label">
                 <input id="option-y-selected" type="radio" name="correct-answer" value="Y" bind:group={correctAnswer} />
                 <span />
                 <p>Y)</p>
                 <textarea class="choice" name="Y" placeholder="Option Y" id="Y-input" bind:value={optionY} />
             </label>
             <br />
-            <label>
+            <label class="radio-label">
                 <input id="option-z-selected" type="radio" name="correct-answer" value="Z" bind:group={correctAnswer} />
                 <span />
                 <p>Z)</p>
@@ -98,6 +98,113 @@
         }
     }
     
+    .radio-label {
+        cursor: pointer;
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
+        display: inline-block;
+        font-size: 20px;
+        vertical-align: middle;
+
+        input[type="radio"] {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        .choice {
+            width: 40ch;
+            height: 3em;
+            min-height: 3em;
+        }
+
+        p {
+            width: 2.5ch;
+            margin: 0;
+            display: inline-block;
+        }
+
+        span {
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            border: #CCC 2px solid;
+            display: inline-block;
+            position: relative;
+            background: #FFF;
+            vertical-align: text-top;
+            margin-right: 0.3em;
+
+            &::after {
+                content: '';
+                position: absolute;
+                display: none;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 0.7em;
+                height: 0.7em;
+                border-radius: 0.35em;
+                background: var(--blue);
+            }
+        }
+
+        &:hover > span {
+            border-color: var(--color-2);
+        }
+
+        input:checked ~ span::after {
+            display: inline-block;
+        }
+    }
+
+    .checkbox-label {
+        cursor: pointer;
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
+        font-size: 20px;
+        display: inline-block;
+
+        input[type="checkbox"] {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        span {
+            width: 1em;
+            height: 1em;
+            border-radius: 0.2em;
+            display: inline-block;
+            position: relative;
+            background: var(--color-3);
+            vertical-align: text-top;
+            margin-right: 0.3em;
+
+            &::after {
+                content: '';
+                position: absolute;
+                display: none;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 0.65em;
+                height: 0.65em;
+                border-radius: 0.1em;
+                background: var(--blue);
+            }
+        }
+
+        &:hover > span {
+            border-color: var(--color-2);
+        }
+
+        input:checked ~ span::after {
+            display: inline-block;
+        }
+    }
+
+
     select {
         margin: 0.5em 0;
         font-size: 2em;
