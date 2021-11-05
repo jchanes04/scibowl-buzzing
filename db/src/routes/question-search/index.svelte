@@ -266,7 +266,7 @@
     
     button {
         color: #EEE;
-        background: var(--green);
+        background: var(--color-2);
         font-size: 20px;
         font-weight: bold;
         padding: 0.6em;
@@ -321,7 +321,7 @@
             background: transparent;
         }
         &::-webkit-scrollbar-thumb {
-            background: var(--green);
+            background: var(--color-2);
             width: 7px;
             border-radius: 7px;
         }
@@ -345,6 +345,7 @@
         flex-grow: 2;
         border-radius: 1em;
         margin-left: 1em;
+        margin-top: 1.2em;
         overscroll-behavior: contain;
 
         &::-webkit-scrollbar {
@@ -357,7 +358,7 @@
             background: transparent;
         }
         &::-webkit-scrollbar-thumb {
-            background: var(--green);
+            background: var(--color-2);
             width: 7px;
             border-radius: 7px;
         }
@@ -372,7 +373,7 @@
     }
 
     #desktop-menu {
-        background: #EEE;
+        background:var(--color-6);
         height: min-content;
         border-radius: 1em;
     }

@@ -46,7 +46,7 @@ export interface UserSettings {
 
 import {Db, MongoClient} from 'mongodb'
 
-let client = new MongoClient("mongodb://45.32.217.67:27108")
+let client = new MongoClient("mongodb://40.117.128.184:27017")
 var db: Db;
 async function init() {
     try {

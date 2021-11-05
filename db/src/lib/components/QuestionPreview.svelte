@@ -32,7 +32,7 @@
     .preview {
         cursor: pointer;
         position: relative;
-        background-color: #EEE;
+        background-color:var(--color-6);
         padding: 1em;
         border-radius: 1em;
         overflow: hidden;
@@ -63,37 +63,37 @@
 
     .bio {
         &::before {
-            background-color: #2C8250;
+            background-color: var(--bio);
         }
     }
 
     .earth {
         &::before {
-            background-color: #F5C13D;
+            background-color: var(--earth);
         }
     }
 
     .chem {
         &::before {
-            background-color: #D14444;
+            background-color: var(--chem);
         }
     }
 
     .physics {
         &::before {
-            background-color: #623e98;
+            background-color: var(--physics);
         }
     }
     
     .math {
         &::before {
-            background-color: #0061C2;
+            background-color: var(--math);
         }
     }
     
     .energy {
         &::before {
-            background-color: #00EFEF;
+            background-color: var(--energy);
         }
     }
 </style>

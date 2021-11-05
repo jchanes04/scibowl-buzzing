@@ -11,6 +11,7 @@
 
 <style lang="scss">
     #header {
+        background: var(--color-5);
         text-align: left;
         position: relative;
         overflow: hidden;

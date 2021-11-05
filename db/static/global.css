@@ -1,14 +1,23 @@
 :root {
     --blue: hsl(210, 100%, 38%);
-    --green: #2C8250;
-    --red: #D14444;
-    --orange: #F5C13D;
+    --bio: #2C8250;
+    --physics: #623e98;
+    --math: #0061C2;
+    --earth: #F5C13D;
+    --chem: #D14444; 
+    --energy: #00EFEF; 
+    --color-1: #274F36;
+    --color-2: #458749;
+    --color-3: #8BB86D;
+    --color-4: #E0B329;
+    --color-5: #E9BE49;
+    --color-6: #F6E6B7;
 }
 
 html, body {
     margin: 0;
     font-family: 'Ubuntu';
-    background-color: #d4d9d9;
+    background-color: var(--color-1);
 }
 
 input {

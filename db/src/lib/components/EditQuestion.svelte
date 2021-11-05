@@ -2,8 +2,8 @@
     import type { category, McqQuestion, SaQuestion } from "src/mongo";
     export let question: SaQuestion | McqQuestion
 
-    let textareaWidth: number
-    $: textareaHeight = Math.ceil((questionText.length + 15) * 11.25 / textareaWidth) * 18
+    let textareaWidth: number 
+    $: textareaHeight = Math.ceil((questionText.length + 12) * 24 / textareaWidth) * 18
 
     let category: category = question.category
     let type: "MCQ" | "SA" = question.type
@@ -78,7 +78,7 @@
 <style lang="scss">
     #question {
         position: relative;
-        background-color: #EEE;
+        background-color: var(--color-6);
         padding: 1em;
         margin: 20px 0;
         border-radius: 1em;
@@ -109,15 +109,6 @@
     }
 
     textarea {
-        resize: vertical;
-        width: 100%;
-        max-width: 60ch;
-        height: min-content;
-        font-family: 'Ubuntu';
-        font-size: 18px;
-        font-weight: 500;
-        outline: none;
-        display: inline-block;
 
         &::-webkit-scrollbar {
             width: 7px;
@@ -132,7 +123,7 @@
         }
 
         &::-webkit-scrollbar-thumb {
-            background: var(--green);
+            background: var(--color-2);
             width: 7px;
             border-radius: 7px;
         }
@@ -147,6 +138,59 @@
             background: transparent;
         }
     }
+    
+    select {
+        padding: 0.3em;
+        font-size: 24px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 25ch;
+        max-width: 80vw;
+        text-align: center;
+        font-family: 'Ubuntu';
+        position: relative;
+    }
+
+    input[type="text"] {
+        padding: 0.3em;
+        font-size: 24px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 25ch;
+        max-width: 80vw;
+        text-align: center;
+        font-family: 'Ubuntu';
+        position: relative;
+
+        &:focus::placeholder {
+            color: transparent;
+        }
+    }
+
+    textarea {
+        padding: 0.3em;
+        font-size: 20px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 30em;
+        max-width: 80vw;
+        resize: vertical;
+        min-height: 1.8em;
+        height: 1.8em;
+        font-family: 'Ubuntu';
+        position: relative;
+        vertical-align: middle;
+
+        &:focus::placeholder {
+            color: transparent;
+        }
+    }
 
     p {
         font-weight: 400;
@@ -155,7 +199,7 @@
 
     button {
         color: #EEE;
-        background: var(--green);
+        background: var(--color-2);
         font-size: 20px;
         font-weight: bold;
         padding: 0.6em;
@@ -169,37 +213,37 @@
 
     .bio {
         &::before {
-            background-color: #2C8250;
+            background-color: var(--bio);
         }
     }
 
     .earth {
         &::before {
-            background-color: #F5C13D;
+            background-color: var(--earth);
         }
     }
 
     .chem {
         &::before {
-            background-color: #D14444;
+            background-color: var(--chem);
         }
     }
 
     .physics {
         &::before {
-            background-color: #623e98;
+            background-color: var(--physics);
         }
     }
     
     .math {
         &::before {
-            background-color: #0061C2;
+            background-color: var(--math);
         }
     }
     
     .energy {
         &::before {
-            background-color: #00EFEF;
+            background-color: var(--energy);
         }
     }
 </style>

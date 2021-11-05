@@ -22,7 +22,7 @@
 
     button {
         color: #EEE;
-        background: var(--green);
+        background: var(--color-2);
         font-size: 30px;
         font-weight: bold;
         padding: 0.6em;

@@ -16,7 +16,7 @@
         height: 80px;
         width: min(100vw, calc(100% + 7px));
         z-index: 5;
-        background: #d4d9d9;
+        background: var(--color-4);
         overflow: hidden;
     }
     

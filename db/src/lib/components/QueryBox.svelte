@@ -157,10 +157,10 @@ import { page } from "$app/stores";
             width: 1em;
             height: 1em;
             border-radius: 0.2em;
-            border: #CCC 2px solid;
+            border: #CCC 0px solid;
             display: inline-block;
             position: relative;
-            background: #FFF;
+            background: var(--color-3);
             vertical-align: text-top;
             margin-right: 0.3em;
             &::after {
@@ -170,14 +170,14 @@ import { page } from "$app/stores";
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: 0.7em;
-                height: 0.7em;
+                width: 0.6em;
+                height: 0.6em;
                 border-radius: 0.1em;
                 background: var(--blue);
             }
         }
         &:hover > span {
-            border-color: var(--green);
+            border-color: var(--color-2);
         }
         input:checked ~ span::after {
             display: inline-block;
@@ -185,7 +185,7 @@ import { page } from "$app/stores";
     }
     button {
         color: #EEE;
-        background: var(--green);
+        background: var(--color-2);
         font-size: 20px;
         font-weight: bold;
         padding: 0.6em;

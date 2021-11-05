@@ -1,8 +1,6 @@
 <script lang="ts">
     import type { category } from "src/mongo";
     import { page, session } from '$app/stores'
-    import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
-import { HOST_URL } from "$lib/variables";
     let ownQuestion: boolean = true
     let author: string
     let type: "MCQ" | "SA"
@@ -105,6 +103,8 @@ import { HOST_URL } from "$lib/variables";
         display: flex;
         flex-direction: column;
         align-items: center;
+        background-color: var(--color-6);
+        width: 50em;
     }
 
     h1 {
@@ -122,7 +122,19 @@ import { HOST_URL } from "$lib/variables";
         margin: 1em auto 0.5em;
         font-size: 18px;
     }
-
+    select {
+        padding: 0.3em;
+        font-size: 24px;
+        margin: 0.5em auto;
+        border: none;
+        border-radius: 0.3em;
+        box-sizing: border-box;
+        width: 25ch;
+        max-width: 80vw;
+        text-align: center;
+        font-family: 'Ubuntu';
+        position: relative;
+    }
     input[type="text"] {
         padding: 0.3em;
         font-size: 24px;
@@ -214,7 +226,7 @@ import { HOST_URL } from "$lib/variables";
         }
 
         &:hover > span {
-            border-color: var(--green);
+            border-color: var(--color-2);
         }
 
         input:checked ~ span::after {
@@ -239,10 +251,9 @@ import { HOST_URL } from "$lib/variables";
             width: 1em;
             height: 1em;
             border-radius: 0.2em;
-            border: #CCC 2px solid;
             display: inline-block;
             position: relative;
-            background: #FFF;
+            background: var(--color-3);
             vertical-align: text-top;
             margin-right: 0.3em;
 
@@ -253,15 +264,15 @@ import { HOST_URL } from "$lib/variables";
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: 0.7em;
-                height: 0.7em;
+                width: 0.65em;
+                height: 0.65em;
                 border-radius: 0.1em;
                 background: var(--blue);
             }
         }
 
         &:hover > span {
-            border-color: var(--green);
+            border-color: var(--color-2);
         }
 
         input:checked ~ span::after {
@@ -272,7 +283,7 @@ import { HOST_URL } from "$lib/variables";
     button {
         padding: 0.5em;
         color: #EEE;
-        background: var(--green);
+        background: var(--color-2);
         border-radius: 0.3em;
         font-weight: bold;
         border: solid black 3px;
@@ -282,7 +293,7 @@ import { HOST_URL } from "$lib/variables";
 
         &:disabled {
             padding: calc(0.5em - 3px);
-            border: solid var(--green) 3px;
+            border: solid var(--color-2) 3px;
             background: transparent;
             color: #444;
             cursor: default;

@@ -140,7 +140,7 @@ import { createEventDispatcher } from 'svelte';
         max-width: 60em;
         min-height: 30em;
         margin-bottom: 50px;
-        background-color: #eee;
+        background-color: var(--color-6);
         border-radius: 2em;
         padding: 1em;
     }
@@ -150,7 +150,7 @@ import { createEventDispatcher } from 'svelte';
         right: 1em;
         bottom: 1em;
         color: #EEE;
-        background: var(--green);
+        background: var(--color-2);
         font-size: 20px;
         font-weight: bold;
         padding: 0.6em;
@@ -159,7 +159,7 @@ import { createEventDispatcher } from 'svelte';
         cursor: pointer;
 
         &:disabled {
-            border: solid var(--green) 3px;
+            border: solid var(--color-2) 3px;
             background: transparent;
             color: #444;
             cursor: default;

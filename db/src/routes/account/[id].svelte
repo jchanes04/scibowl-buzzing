@@ -54,6 +54,9 @@
 </main>
 
 <style lang="scss">
+    #account { 
+        margin-top: 1.2em;
+    }
     #questions-wrapper {
         width: 100%;
         display: grid;
