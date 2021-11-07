@@ -2,7 +2,7 @@ import type { TeamScoreboard } from "./TeamScoreboard"
 
 type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
 type catScore = { correct: number, incorrect: number }
-type catScores = Record<category, catScore>
+export type catScores = Record<category, catScore>
 
 export interface MemberScoreboard {
     score: number,
@@ -11,9 +11,9 @@ export interface MemberScoreboard {
 }
 
 export class MemberScoreboard {
-    constructor(teamScoreboard?: TeamScoreboard) {
-        this.score = 0
-        this.catScores = emptyCatScores()
+    constructor({teamScoreboard, score, catScores}: {teamScoreboard?: TeamScoreboard, score?:number, catScores?: catScores }) {
+        this.score = score || 0
+        this.catScores = catScores || emptyCatScores()
         this.teamScoreboard = teamScoreboard || null
     }
 

@@ -244,6 +244,14 @@
             state.questionState = 'idle'
             playerControls?.disableBuzzing()
         }
+
+        Cookie.set("memberInfo",{
+            name: myMember.name,
+            id: myMemberID,
+            score: myMember.scoreboard.score,
+            catScores: myMember.scoreboard.catScores,
+            teamID: myMember.teamID
+        }, {path:"/",expires:0.1})
     })
 
     $socket.on('scoresClear', () => {

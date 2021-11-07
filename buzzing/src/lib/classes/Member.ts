@@ -1,7 +1,7 @@
 import { createMemberID } from "$lib/functions/createId";
 import type { Socket } from "socket.io";
 import { IndividualTeam } from "./IndividualTeam";
-import { MemberScoreboard } from "./MemberScoreboard";
+import { catScores, MemberScoreboard } from "./MemberScoreboard";
 import type { Team } from "./Team";
 
 export interface Member {
@@ -23,11 +23,11 @@ export interface MemberClean {
 }
 
 export class Member {
-    constructor({ name, team, reader }: { name: string, team?: Team, reader: boolean }) {
-        this.id = createMemberID()
+    constructor({ name, id, team, reader, score, catScores }: { name: string, id?: string, team?: Team, reader: boolean, score?: number, catScores?: catScores }) {
+        this.id = id || createMemberID() 
         this.name = name
         this.reader = reader
-        this.scoreboard = new MemberScoreboard(team?.scoreboard)
+        this.scoreboard = new MemberScoreboard({ teamScoreboard: team?.scoreboard, score, catScores })
         this.team = team || new IndividualTeam(this.id, this)
         if (team) team.addMember(this)
     }

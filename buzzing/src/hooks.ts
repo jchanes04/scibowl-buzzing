@@ -3,13 +3,32 @@ type Resolve = (request: Request<Record<string, any>>) => Response | Promise<Res
 
 import { checkAuthenticated, gameExists, getGame, io } from './server'
 import { redirectTo } from "$lib/functions/redirectTo";
+import type { catScores } from "$lib/classes/MemberScoreboard";
+import { Member } from "$lib/classes/Member";
+import { Team } from "$lib/classes/Team";
 
 const restrictedEndpoints = ["write", "edit", "question-search", "question", "account", undefined]
+
+type MemberInfo = {
+    name: string,
+    id: string,
+    score: number,
+    catScores: catScores,
+    teamID: string
+}
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
     let endpoint = request.path.split("/")[1]
     let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
     if (authToken) request.headers.authorization = authToken
+    let memberCookie: MemberInfo | null = await new Promise(res => {
+        try {
+            let member = JSON.parse(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberInfo")?.split("=")[1])
+            res(member as MemberInfo)
+        } catch {
+            res(null)
+        }
+    })
 
     if (endpoint === 'game') {
         let gameID = request.path.split("/")[2]
@@ -20,15 +39,25 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
 
         if (checkAuthenticated(gameID, memberIdCookie)) {
             let game = getGame(gameID)
-            if (game.leftPlayers.some(x => x.id === memberIdCookie)) {
-                let member = game.rejoinMember(memberIdCookie)
+            if (memberCookie && !game.members.some(m => m.id === memberCookie?.id)) {
+                let memberTeam = game.teams.find((x) => {return x.id === memberCookie.teamID})
+                if (!memberTeam) return redirectTo('/join/' + gameID)
+                let newMember = new Member({
+                    name: memberCookie.name,
+                    id: memberCookie.id,
+                    reader: game.owner.id === memberIdCookie,
+                    score: memberCookie.score,
+                    catScores: memberCookie.catScores
+                })
+                let member = game.addMember(newMember)
+
                 game.addChatMessage({
-                    text: member.name + ' has joined the game',
+                    text: newMember.name + ' has joined the game',
                     type: 'notification'
                 })
                 io.to(gameID).emit('memberJoin', {
-                    member: member.self,
-                    team: member.team.self
+                    member: newMember.self,
+                    team: newMember.team.self
                 })
             }
             

@@ -108,9 +108,12 @@ export class Game {
 
     removeMember(id: string) {
         let member = this.members.find(x => x.id === id)
-        this.members = this.members.filter(x => x.id !== id)
-        this.leftPlayers.push(member)
-        return member || null
+        if (member) {
+            this.members = this.members.filter(x => x.id !== id)
+            this.leftPlayers.push(member)
+            return member
+        }
+        return null
     }
 
     rejoinMember(id: string) {
