@@ -1,13 +1,16 @@
 import { GameManager } from '$lib/classes/GameManager'
 import { Member } from '$lib/classes/Member'
 
-import * as http from 'http'
+import * as https from 'https'
 import { Server } from 'socket.io'
 
 import fs from "fs"
 
-const httpServer = http.createServer()
-export const io = new Server(httpServer, {
+const httpsServer = https.createServer({
+    key: fs.readFileSync('localhost-key.pem'),
+    cert: fs.readFileSync('localhost.pem')
+})
+export const io = new Server(httpsServer, {
     cors: {
         origin: '*'
     }
@@ -39,7 +42,7 @@ io.on('connection', socket => {
 
         socket.on('buzz', () => {
             console.log('buzz received')
-            if (game.state === 'open') {
+            if (game.state.questionState === 'open') {
                 let buzzed = game.buzz(memberID)
                 if (buzzed) {
                     game.timer.pause()
@@ -66,12 +69,12 @@ io.on('connection', socket => {
         })
 
         socket.on('startTimer', () => {
-            if (game.state === "open") {
-                let serverLength = game.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+            if (game.state.questionState === "open") {
+                let serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
                 game.timer.start(serverLength)
 
 
-                let clientLength = game.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
+                let clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
                 socket.to(gameID).emit('timerStart', clientLength)
                 socket.emit('timerStart', clientLength)
 
@@ -82,7 +85,7 @@ io.on('connection', socket => {
         })
 
         socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
-            if (game.state === "buzzed") {
+            if (game.state.questionState === "buzzed") {
                 let { scoredMember, scoredTeam, open } = game.scoreQ(score)
                 
                 socket.to(gameID).emit('scoreChange', {
@@ -165,7 +168,7 @@ io.on('connection', socket => {
     }
 });
 
-httpServer.listen(3030)
+httpsServer.listen(3030)
 
 export const games = new GameManager()
 

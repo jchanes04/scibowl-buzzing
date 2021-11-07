@@ -14,7 +14,7 @@
     export let socket: Writable<Socket>
     export let messages: Writable<Message[]>
     export let teamList: Array<TeamClean | IndividualTeamClean>
-    export let state: 'idle' | 'open' | 'buzzed'
+    export let questionState: 'idle' | 'open' | 'buzzed'
     
     let categorySelect: HTMLSelectElement
     let teamSelect: HTMLSelectElement
@@ -33,7 +33,7 @@
             text: 'New question opened'
         }]
 
-        state = 'open'
+        questionState = 'open'
 
         categorySelect.selectedIndex = 0
         teamSelect.selectedIndex = 0;
@@ -100,23 +100,23 @@
         <button on:click={newQ} disabled={!questionType || !selectedCategory}>New Question</button>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
-        <button on:click={startTimer} id="start-timer" disabled={state !== "open"}>Start Timer</button>
+        <button on:click={startTimer} id="start-timer" disabled={questionState !== "open"}>Start Timer</button>
         <br />
-        <div id="score-wrapper" class:disabled={state !== "buzzed"}>
+        <div id="score-wrapper" class:disabled={questionState !== "buzzed"}>
             <label for="correct-radio">
-                <input type="radio" id="correct-radio" name="selected-score" value="correct" bind:group={selectedScore} disabled={state !== "buzzed"}>
+                <input type="radio" id="correct-radio" name="selected-score" value="correct" bind:group={selectedScore} disabled={questionState !== "buzzed"}>
                 <span>Correct</span>
             </label>
             <label for="incorrect-radio">
-                <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect" bind:group={selectedScore} disabled={state !== "buzzed"}>
+                <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect" bind:group={selectedScore} disabled={questionState !== "buzzed"}>
                 <span>Incorrect</span>
             </label>
             <label for="penalty-radio">
-                <input type="radio" id="penalty-radio" name="selected-score" value="penalty" bind:group={selectedScore} disabled={state !== "buzzed"}>
+                <input type="radio" id="penalty-radio" name="selected-score" value="penalty" bind:group={selectedScore} disabled={questionState !== "buzzed"}>
                 <span>Penalty</span>
             </label>
         </div>
-        <button on:click={scoreQuestion} disabled={state !== "buzzed" || !selectedScore}>Score</button> 
+        <button on:click={scoreQuestion} disabled={questionState !== "buzzed" || !selectedScore}>Score</button> 
     </ControlSection>
     <ControlSection title="Scoreboard">
         <button on:click={clearScores}>Clear Scores</button>

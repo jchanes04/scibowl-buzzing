@@ -7,9 +7,12 @@
             let json = await res.json()
             return {
                 props: {
-                    ...json,
-                    gameID: page.params.id,
-                    host: page.host
+                    gameInfo: {
+                        ...json?.gameInfo,
+                        gameID: page.params.id
+                    },
+                    memberList: json.memberList,
+                    teamList: json.teamList
                 }
             }
         }
@@ -19,23 +22,33 @@
 </script>
 
 <script lang="ts">
+    export let gameInfo: GameInfo
     export let memberList: MemberClean[]
     export let teamList: Array<TeamClean | IndividualTeamClean>
-    export let gameName: string
-    export let gameID: string
-    export let joinCode: string
-    export let chatMessages: Message[]
-    export let teamFormat: 'any' | 'individuals' | 'teams'
-    export let host: string
     let reader: boolean
-    let buzzedTeamIDs: string[] = []
-    let state: 'idle' | 'open' | 'buzzed' = 'idle'
+    let state: GameState = {
+        questionState: 'idle',
+        buzzedTeamIDs: []
+    }
+    let chatMessages: Message[] = []
 
     let windowWidth: number
 
     type Message = {
         text: string
         type: 'buzz' | 'notification' | 'warning' | 'success'
+    }
+
+    type GameInfo = {
+        gameName: string,
+        gameID: string,
+        joinCode: string,
+        teamFormat: 'any' | 'individuals' | 'teams'
+    }
+
+    type GameState = {
+        questionState: 'idle' | 'open' | 'buzzed',
+        buzzedTeamIDs: string[]
     }
 
     import { writable } from 'svelte/store'
@@ -56,13 +69,13 @@
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
     import { emptyCatScores } from '$lib/classes/TeamScoreboard'
-    import type { Message, Question } from "$lib/classes/Game"
+    import type { Game, Message, Question } from "$lib/classes/Game"
     import { io } from 'socket.io-client'
     import Cookie from 'js-cookie'
     import { browser } from '$app/env'
 
-    import { time } from "$lib/components/Timer.svelte"
     import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
     let timer
 
     let buzzAudio = browser ? new Audio('/buzz.mp3') : null
@@ -72,12 +85,13 @@
     const myMember = memberList.find(m => m.id === myMemberID)
     const myTeam = teamList.find(x => x.id === myMember?.teamID)
 
-    const socket = writable(io(host.split(":")[0] + ":3030", {
+    const socket = writable(io($page.host?.split(":")[0] + ":3030", {
         auth: {
             memberID: myMemberID,
-            gameID
+            gameID: gameInfo.gameID
         },
-        autoConnect: false
+        autoConnect: false,
+        secure: true
     }))
     if (browser) {
         $socket.connect()
@@ -89,7 +103,7 @@
     })
 
     $socket.on('authFailed', () => {
-        goto('/join/' + gameID)
+        goto('/join/' + gameInfo.gameID)
     })
 
     $socket.on('memberJoin', ({ member, team }: { member: MemberClean, team: TeamClean | IndividualTeamClean }) => {
@@ -109,7 +123,7 @@
     $socket.on('memberLeave', id => {
         let member = memberList.find(x => x.id === id)
         let team = teamList.find(t => t.id === member.teamID)
-        if (team.members.length === 1 && teamFormat !== 'teams') {
+        if (team.members.length === 1 && gameInfo.teamFormat !== 'teams') {
             teamList = teamList.filter(t => t.id !== team.id)
         } else {
             team.members = team.members.filter(x => x.id !== id)
@@ -129,11 +143,11 @@
     $socket.on('buzz', (id) => {
         let member = memberList.find(x => x.id === id);
         playerControls?.disableBuzzing()
-        state = 'buzzed'
+        state.questionState = 'buzzed'
 
         buzzAudio.play()
 
-        buzzedTeamIDs = [...buzzedTeamIDs, member.teamID]
+        state.buzzedTeamIDs = [...state.buzzedTeamIDs, member.teamID]
 
         $messages = [...$messages, {
             type: 'buzz',
@@ -145,13 +159,13 @@
 
     $socket.on('questionOpen', (question: Question) => {
         if (question.team && question.team !== myTeam.id) {
-            buzzedTeamIDs = [myTeam.id]
+            state.buzzedTeamIDs = [myTeam.id]
             playerControls?.disableBuzzing()
         } else {
-            buzzedTeamIDs = []
+            state.buzzedTeamIDs = []
             playerControls?.enableBuzzing()
         }
-        state = 'open'
+        state.questionState = 'open'
         $messages = [...$messages, {
             type: 'notification',
             text: 'New question opened' + (teamList.find(x => x.id === question.team) ? " for " + teamList.find(x => x.id === question.team)?.name : "")
@@ -164,12 +178,12 @@
 
     $socket.on('timerStart', (length: number) => {
         timer.start(length)
-        if (!buzzedTeamIDs.includes(myTeam.id)) {
+        if (!state.buzzedTeamIDs.includes(myTeam.id)) {
             playerControls?.enableBuzzing()
         } else {
             playerControls?.disableBuzzing()
         }
-        state = 'open'
+        state.questionState = 'open'
     })
 
     $socket.on('timerEnd', () => {
@@ -182,7 +196,7 @@
         }
 
         playerControls?.disableBuzzing()
-        state = 'idle'
+        state.questionState = 'idle'
     })
 
     $socket.on('scoreChange', (
@@ -219,15 +233,15 @@
 
         if (open) {
             timer.resume()
-            state = 'open'
-            if (buzzedTeamIDs.includes(myTeam.id)) {
+            state.questionState = 'open'
+            if (state.buzzedTeamIDs.includes(myTeam.id)) {
                playerControls?.disableBuzzing()
             } else {
                 playerControls?.enableBuzzing()
             }
         } else {
             timer.reset()
-            state = 'idle'
+            state.questionState = 'idle'
             playerControls?.disableBuzzing()
         }
     })
@@ -268,10 +282,10 @@
         buzzAudio.play()
 
         playerControls?.disableBuzzing()
-        buzzedTeamIDs.push(myTeam.id)
+        state.buzzedTeamIDs.push(myTeam.id)
 
         timer.pause()
-        state = 'buzzed'
+        state.questionState = 'buzzed'
 
         $messages = [...$messages, {
             type: 'buzz',
@@ -281,7 +295,7 @@
 </script>
 
 <svelte:head>
-    <title>{gameName}</title>
+    <title>{gameInfo.gameName}</title>
 </svelte:head>
 
 <svelte:body on:keydown={(e) => {
@@ -299,15 +313,15 @@
 
 <div id="game">
     {#if joined}
-        <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameName} joinCode={joinCode}>
+        <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode={gameInfo.joinCode}>
             <Timer bind:this={timer} on:end={() => playerControls?.disableBuzzing()} />
         </svelte:component>
         <MemberList memberList={memberList} />
-        <Scoreboard teamList={teamList} buzzedTeamIDs={buzzedTeamIDs} />
+        <Scoreboard teamList={teamList} buzzedTeamIDs={state.buzzedTeamIDs} />
         <Chatbox messages={messages} />
 
         {#if reader}
-            <ReaderControls socket={socket} messages={messages} bind:state={state} teamList={teamList} />
+            <ReaderControls socket={socket} messages={messages} bind:questionState={state.questionState} teamList={teamList} />
         {:else}
             <PlayerControls buzz={buzz} bind:this={playerControls} />
         {/if}

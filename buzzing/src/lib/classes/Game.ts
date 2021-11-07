@@ -39,13 +39,15 @@ export interface Game {
         bonus: [number, number]
     }
 
-    state: 'idle' | 'open' | 'buzzed',
-    currentBuzzer: Member | null,
-    currentQuestion: {
-        category: Category,
-        bonus: boolean
-    } | null
-    buzzedTeams: Array<Team | IndividualTeam>
+    state: {
+        questionState: 'idle' | 'open' | 'buzzed'
+        currentBuzzer: Member | null,
+        currentQuestion: {
+            category: Category,
+            bonus: boolean
+        } | null
+        buzzedTeams: Array<Team | IndividualTeam>
+    }
 
     leftPlayers: Member[]
 }
@@ -76,20 +78,20 @@ export class Game {
             bonus: times?.bonus || [20, 2]
         }
         // time format: [client side time, extra time allowed for latency]
-
-        this.state = 'idle'
+        
         /*
             idle: no question opened, nobody can buzz
             open: a question has been opened and players can buzz in
             buzzed: a player has buzzed and their answer has not been scored
         */
-
-        this.currentBuzzer = null   // the player that has buzzed in
-        this.currentQuestion = null     // the current question information (category, is bonus)
-        this.buzzedTeams = []   // the teams who have buzzed, prevents different players on the same team from buzzing again
+        this.state = {
+            questionState: 'idle',
+            currentBuzzer: null,        // the player that has buzzed in
+            currentQuestion: null,      // the current question information (category, is bonus)
+            buzzedTeams: []     // the teams who have buzzed, prevents different players on the same team from buzzing again
+        }
+        
         this.leftPlayers = []   // players who have left the game, used for players to rejoin
-
-
     }
 
     addMember(member: Member) {
@@ -133,10 +135,10 @@ export class Game {
 
     buzz(memberID: string) {
         let member = this.members.find(x => x.id === memberID)
-        if (!this.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed
-            this.buzzedTeams.push(member.team)
-            this.currentBuzzer = member
-            this.state = 'buzzed'
+        if (!this.state.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed
+            this.state.buzzedTeams.push(member.team)
+            this.state.currentBuzzer = member
+            this.state.questionState = 'buzzed'
             return member
         } else {
             return false
@@ -145,10 +147,10 @@ export class Game {
 
     newQ(memberID: string, question: Question ) {
         if (this.members.find(x => x.id === memberID) === this.owner) {     // only allow new questions to be made by the owner/reader
-            this.currentBuzzer = null
-            this.currentQuestion = question
-            this.state = 'open'
-            this.buzzedTeams = []
+            this.state.currentBuzzer = null
+            this.state.currentQuestion = question
+            this.state.questionState = 'open'
+            this.state.buzzedTeams = []
             return true
         } else {
 
@@ -156,38 +158,38 @@ export class Game {
     }
 
     scoreQ(score: 'correct' | 'incorrect' | 'penalty') {
-        let scoredMember = this.currentBuzzer
+        let scoredMember = this.state.currentBuzzer
 
-        if (this.currentQuestion.bonus) {
+        if (this.state.currentQuestion.bonus) {
             if (score === "correct") {
-                this.scoreboard.correctBonus(scoredMember, this.currentQuestion.category)
+                this.scoreboard.correctBonus(scoredMember, this.state.currentQuestion.category)
             } else if (score === 'incorrect') {
-                this.scoreboard.incorrectBonus(scoredMember, this.currentQuestion.category)
+                this.scoreboard.incorrectBonus(scoredMember, this.state.currentQuestion.category)
             } else if (score === 'penalty') {
-                this.scoreboard.penalty(scoredMember, this.currentQuestion.category)
+                this.scoreboard.penalty(scoredMember, this.state.currentQuestion.category)
             }
         } else {
             if (score === "correct") {
-                this.scoreboard.correctTossup(scoredMember, this.currentQuestion.category)
+                this.scoreboard.correctTossup(scoredMember, this.state.currentQuestion.category)
             } else if (score === 'incorrect') {
-                this.scoreboard.incorrectTossup(scoredMember, this.currentQuestion.category)
+                this.scoreboard.incorrectTossup(scoredMember, this.state.currentQuestion.category)
             } else if (score === 'penalty') {
-                this.scoreboard.penalty(scoredMember, this.currentQuestion.category)
+                this.scoreboard.penalty(scoredMember, this.state.currentQuestion.category)
             }
         }
 
-        this.currentBuzzer = null
+        this.state.currentBuzzer = null
         
-        let open = !this.currentQuestion.bonus && 
-            this.buzzedTeams.length < 3 && 
-            this.buzzedTeams.length < this.teams.length - 1 && 
+        let open = !this.state.currentQuestion.bonus && 
+            this.state.buzzedTeams.length < 3 && 
+            this.state.buzzedTeams.length < this.teams.length - 1 && 
             score !== 'correct'
 
         if (!open) {
-            this.currentQuestion = null
-            this.state = 'idle'
+            this.state.currentQuestion = null
+            this.state.questionState = 'idle'
         } else {
-            this.state = 'open'
+            this.state.questionState = 'open'
         }
 
         return {

@@ -11,12 +11,13 @@ export function get({ params }: Request) {
 
     return {
         body: {
+            gameInfo: {
+                gameName: game.name,
+                joinCode: game.joinCode,
+                teamFormat: game.teamFormat
+            },
             memberList,
             teamList,
-            gameName: game.name,
-            joinCode: game.joinCode,
-            chatMessages: game.chatMessages.map(x => { return {...x} }),
-            teamFormat: game.teamFormat
         }
     }
 }

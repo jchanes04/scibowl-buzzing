@@ -11,3 +11,5 @@ node_modules
 /db/.env
 /buzzing/.env
 /ocean/.env
+localhost.pem
+localhost-key.pem
