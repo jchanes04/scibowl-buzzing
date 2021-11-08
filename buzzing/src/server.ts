@@ -24,7 +24,6 @@ io.on('connection', socket => {
     if (checkAuthenticated(gameID, memberID)) {
         socket.join(gameID)
 
-        let member = game.members.find(x => x.id === memberID)
         socket.emit('authenticated', {
             reader: memberID === game.owner.id
         })
@@ -163,7 +162,6 @@ io.on('connection', socket => {
             games.deleteGame(gameID)
         })
     } else {
-        console.dir(socket.handshake.auth)
         socket.emit('authFailed')
     }
 });
@@ -185,7 +183,7 @@ export function getGame(id: string) {
 
 export function checkAuthenticated(gameID: string, memberID: string) {
     let game = games.get(gameID)
-    return game?.members.some(x => x.id === memberID) || game?.leftPlayers.some(x => x.id === memberID)
+    return game?.members.some(x => x.id === memberID) || game?.leftPlayers.some(x => x === memberID)
 }
 
 export function gameExists(id: string) {

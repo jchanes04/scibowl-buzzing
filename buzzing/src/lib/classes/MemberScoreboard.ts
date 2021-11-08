@@ -18,7 +18,6 @@ export class MemberScoreboard {
     }
 
     correctAnswer(category: category, value: number) {
-        console.log(category)
         this.score += value
         this.catScores[category].correct += 1
 

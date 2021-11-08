@@ -2,7 +2,7 @@ import { createGameID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
 import type { IndividualTeam } from "./IndividualTeam"
 import type { Member } from "./Member"
-import type { Team } from "./Team"
+import { Team } from "./Team"
 import { Timer } from "./Timer"
 
 export type Message = {
@@ -49,7 +49,7 @@ export interface Game {
         buzzedTeams: Array<Team | IndividualTeam>
     }
 
-    leftPlayers: Member[]
+    leftPlayers: string[]
 }
 
 export class Game {
@@ -96,6 +96,7 @@ export class Game {
 
     addMember(member: Member) {
         if (this.members.some(x => x.id === member.id)) throw new Error("Member is already in the game")
+        if (this.leftPlayers.includes(member.id)) this.leftPlayers = this.leftPlayers.filter(m => m !== member.id)
         this.members = [...this.members, member]
 
         if (!this.teams.some(t => t.id === member.team.id)) {   // if player's team is not already in the list of teams
@@ -103,33 +104,17 @@ export class Game {
         }
         
         return this.members
-
     }
 
     removeMember(id: string) {
         let member = this.members.find(x => x.id === id)
         if (member) {
             this.members = this.members.filter(x => x.id !== id)
-            this.leftPlayers.push(member)
+            if (member.team instanceof Team) member.team.removeMember(member.id)
+            this.leftPlayers.push(member.id)
             return member
         }
         return null
-    }
-
-    rejoinMember(id: string) {
-        let member = this.leftPlayers.find(x => x?.id === id)
-        if (member) {
-            this.members = [...this.members, member]
-            this.leftPlayers = this.leftPlayers.filter(x => x?.id !== id)
-
-            if (!this.teams.some(t => t?.id === member.team.id)) {   // if player's team is not already in the list of teams
-                this.teams.push(member.team)
-            }
-
-            return member
-        } else {
-            return null
-        }
     }
 
     addChatMessage(message: Message) {
@@ -138,7 +123,7 @@ export class Game {
 
     buzz(memberID: string) {
         let member = this.members.find(x => x.id === memberID)
-        if (!this.state.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed
+        if (member && !this.state.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed
             this.state.buzzedTeams.push(member.team)
             this.state.currentBuzzer = member
             this.state.questionState = 'buzzed'

@@ -3,16 +3,10 @@
     let disabled = true
 
     export function enableBuzzing() {
-        console.log('enable')
         disabled = false
-        setTimeout(() => {
-            console.log(disabled)
-            console.log((<HTMLInputElement>document.getElementById("buzz")).disabled)
-        }, 100)
     }
 
     export function disableBuzzing() {
-        console.log('disable')
         disabled = true
     }
 

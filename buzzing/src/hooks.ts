@@ -23,7 +23,7 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
     if (authToken) request.headers.authorization = authToken
     let memberCookie: MemberInfo | null = await new Promise(res => {
         try {
-            let member = JSON.parse(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberInfo")?.split("=")[1])
+            let member = JSON.parse(decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberInfo")?.split("=")[1]))
             res(member as MemberInfo)
         } catch {
             res(null)
@@ -39,17 +39,20 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
 
         if (checkAuthenticated(gameID, memberIdCookie)) {
             let game = getGame(gameID)
-            if (memberCookie && !game.members.some(m => m.id === memberCookie?.id)) {
+            
+            if (memberCookie && !game.members.some(m => m.id === memberIdCookie)) {
                 let memberTeam = game.teams.find((x) => {return x.id === memberCookie.teamID})
                 if (!memberTeam) return redirectTo('/join/' + gameID)
+                
                 let newMember = new Member({
                     name: memberCookie.name,
                     id: memberCookie.id,
                     reader: game.owner.id === memberIdCookie,
                     score: memberCookie.score,
-                    catScores: memberCookie.catScores
+                    catScores: memberCookie.catScores,
+                    team: memberTeam
                 })
-                let member = game.addMember(newMember)
+                game.addMember(newMember)
 
                 game.addChatMessage({
                     text: newMember.name + ' has joined the game',
@@ -59,6 +62,8 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
                     member: newMember.self,
                     team: newMember.team.self
                 })
+            } else if (!game.members.some(m => m.id === memberCookie?.id)) {
+
             }
             
             request.locals.authenticated = true
