@@ -126,6 +126,7 @@ io.on('connection', socket => {
             let postfix: "" | number = ""
 
             let fullName = await findOpenFile(filename, postfix)
+            console.log("filename: " + fullName)
 
             let data = {
                 teams: {},
@@ -196,13 +197,17 @@ export function getGameFromCode(code: string) {
 
 async function findOpenFile(filename: string, postfix: "" | number) {
     let p = new Promise((res, rej) => {
-        fs.stat(process.cwd() + "/data/" + filename + postfix + '.json', (err) => {
-            if (err === null) {
-                res(findOpenFile(filename, postfix === "" ? 1 : postfix + 1))
-            } else {
-                res(filename + postfix)
-            }
-        })
+        try {
+            fs.stat(process.cwd() + "/data/" + filename + postfix + '.json', (err) => {
+                if (err === null) {
+                    res(findOpenFile(filename, postfix === "" ? 1 : postfix + 1))
+                } else {
+                    res(filename + postfix)
+                }
+            })
+        } catch (e) {
+            res(filename + postfix)   
+        }
     })
     return p
 }

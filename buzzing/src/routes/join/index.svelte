@@ -2,7 +2,7 @@
     export function load({ fetch }) {
         return {}
     }
-</script>
+</script> 
 
 <script lang="ts">
     function handleFormInput() {

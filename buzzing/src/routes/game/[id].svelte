@@ -85,7 +85,7 @@
     const myMember = memberList.find(m => m.id === myMemberID)
     const myTeam = teamList.find(x => x.id === myMember?.teamID)
 
-    const socket = writable(io($page.host?.split(":")[0] + ":3030", {
+    const socket = writable(io(import.meta.env.VITE_WS_URL as string, {
         auth: {
             memberID: myMemberID,
             gameID: gameInfo.gameID

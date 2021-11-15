@@ -18,7 +18,7 @@ import { page } from "$app/stores";
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     $:inputs = {authorName, keywords, start, end, types, categories}
-    async function emitQuery(pageNumber?: number) {
+    async function emitQuery(pageNumber: number = 1) {
         dispatch('sendQuery', {
             inputs:inputs,
             pageNumber
