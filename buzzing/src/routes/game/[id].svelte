@@ -69,13 +69,14 @@
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
     import { emptyCatScores } from '$lib/classes/TeamScoreboard'
-    import type { Game, Message, Question } from "$lib/classes/Game"
+    import type { Question } from "$lib/classes/Game"
     import { io } from 'socket.io-client'
     import Cookie from 'js-cookie'
     import { browser } from '$app/env'
 
     import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
+    import Debugger from '$lib/classes/Debugger';
+import { setContext } from 'svelte';
     let timer
 
     let buzzAudio = browser ? new Audio('/buzz.mp3') : null
@@ -93,6 +94,8 @@
         autoConnect: false,
         secure: true
     }))
+    const debug = new Debugger(gameInfo.gameID, gameInfo.gameName, myMember, $socket)
+    setContext('debug', debug)
     if (browser) {
         $socket.connect()
     }
@@ -293,6 +296,8 @@
     let playerControls
     function buzz() {
         $socket.emit('buzz');
+
+        debug.addEvent('buzz', {})
 
         buzzAudio.play()
 

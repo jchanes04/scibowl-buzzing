@@ -5,6 +5,7 @@ import * as https from 'https'
 import { Server } from 'socket.io'
 
 import fs from "fs"
+import type Debugger from '$lib/classes/Debugger'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem'),
@@ -161,6 +162,15 @@ io.on('connection', socket => {
             socket.emit('gameEnd')
             game.timer.end()
             games.deleteGame(gameID)
+        })
+
+        socket.on('logDump', (data: Omit<Debugger, 'socket'>) => {
+            const fileData = fs.readFileSync(process.cwd() + '/debugLogs.json').toString()
+            const currentLogs = JSON.parse(fileData)
+            fs.writeFileSync(process.cwd() + '/debugLogs.json', JSON.stringify([
+                ...currentLogs,
+                data
+            ], null, '\t'))
         })
     } else {
         socket.emit('authFailed')

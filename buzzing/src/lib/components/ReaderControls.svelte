@@ -11,6 +11,9 @@
     import type Timer from './Timer.svelte'
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
+    import type { Category } from '$lib/classes/Game';
+    import { getContext } from 'svelte';
+    import type Debugger from '$lib/classes/Debugger';
     export let socket: Writable<Socket>
     export let messages: Writable<Message[]>
     export let teamList: Array<TeamClean | IndividualTeamClean>
@@ -18,9 +21,12 @@
     
     let categorySelect: HTMLSelectElement
     let teamSelect: HTMLSelectElement
-    let selectedCategory
-    let selectedTeam
-    let questionType
+    let selectedCategory: Category | ""
+    let selectedTeam: string
+    let questionType: "tossup" | "bonus" | ""
+
+    const debug: Debugger = getContext('debug')
+
     function newQ() {
         $socket.emit('newQ', {
             category: selectedCategory,
@@ -45,21 +51,26 @@
     
     function startTimer() {
         $socket.emit('startTimer')
+        debug.addEvent('startTimer', {})
     }
     function endGame() {
         $socket.emit('endGame')
+        debug.addEvent('endGame', {})
     }
     function clearScores() {
         $socket.emit('clearScores')
+        debug.addEvent('clearScores', {})
     }
     function saveScores() {
         $socket.emit('saveScores')
+        debug.addEvent('saveScores', {})
     }
 
-    let selectedScore
+    let selectedScore: "correct" | "incorrect" | "penalty" | ""
     function scoreQuestion() {
         $socket.emit('scoreQuestion', selectedScore)
         selectedScore = ""
+        debug.addEvent('scoreQuestion', { selectedScore })
     }
 </script>
 
