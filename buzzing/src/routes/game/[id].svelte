@@ -76,7 +76,7 @@
 
     import { goto } from '$app/navigation';
     import Debugger from '$lib/classes/Debugger';
-import { setContext } from 'svelte';
+    import { setContext } from 'svelte';
     let timer
 
     let buzzAudio = browser ? new Audio('/buzz.mp3') : null
@@ -345,6 +345,9 @@ import { setContext } from 'svelte';
         {:else}
             <PlayerControls buzz={buzz} bind:this={playerControls} />
         {/if}
+
+        <div on:click={() => debug.openDebugLog()}
+            style="position: absolute; right: 10px; bottom: 10px;">Open Debug Log</div>
     {:else}
         <h1>Joining...</h1>
     {/if}

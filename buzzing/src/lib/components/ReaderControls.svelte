@@ -8,7 +8,6 @@
 
     import type { Socket } from 'socket.io-client';
     import type { Writable } from 'svelte/store'
-    import type Timer from './Timer.svelte'
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
     import type { Category } from '$lib/classes/Game';
