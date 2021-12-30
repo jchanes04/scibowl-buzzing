@@ -1,6 +1,7 @@
 import * as preprocess from 'svelte-preprocess';
 import node from '@sveltejs/adapter-node'
-import fs from 'fs'
+import key from './localhost-key.js'
+import cert from './localhost.js'
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -18,8 +19,8 @@ const config = {
 		vite: {
 			server: {
 				https: {
-					key: fs.readFileSync('./localhost-key.pem'),
-					cert: fs.readFileSync('./localhost.pem')   
+					key,
+					cert   
 				}
 			}
 		}

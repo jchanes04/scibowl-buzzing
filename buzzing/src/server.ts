@@ -3,13 +3,15 @@ import { Member } from '$lib/classes/Member'
 
 import * as https from 'https'
 import { Server } from 'socket.io'
+import key from '../localhost-key'
+import cert from '../localhost'
 
-import fs from "fs"
+import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
 
 const httpsServer = https.createServer({
-    key: fs.readFileSync('localhost-key.pem'),
-    cert: fs.readFileSync('localhost.pem')
+    key,
+    cert
 })
 export const io = new Server(httpsServer, {
     cors: {
@@ -165,6 +167,7 @@ io.on('connection', socket => {
         })
 
         socket.on('logDump', (data: Omit<Debugger, 'socket'>) => {
+            console.log(`Dumping log data from game id ${data.gameId} and name ${data.gameName}`)
             const fileData = fs.readFileSync(process.cwd() + '/debugLogs.json').toString()
             const currentLogs = JSON.parse(fileData)
             fs.writeFileSync(process.cwd() + '/debugLogs.json', JSON.stringify([

@@ -94,7 +94,8 @@
         autoConnect: false,
         secure: true
     }))
-    const debug = new Debugger(gameInfo.gameID, gameInfo.gameName, myMember, $socket)
+    console.log(myMember)
+    const debug = browser ? new Debugger(gameInfo.gameID, gameInfo.gameName, myMember, $socket) : null
     setContext('debug', debug)
     if (browser) {
         $socket.connect()
@@ -347,7 +348,7 @@
         {/if}
 
         <div on:click={() => debug.openDebugLog()}
-            style="position: absolute; right: 10px; bottom: 10px;">Open Debug Log</div>
+            style="position: absolute; right: 10px; bottom: 10px; cursor: pointer;">Open Debug Log</div>
     {:else}
         <h1>Joining...</h1>
     {/if}

@@ -33,6 +33,12 @@
             team: questionType === "bonus" ? selectedTeam : null
         })
 
+        debug.addEvent('newQ', {
+            category: selectedCategory,
+            bonus: questionType === "bonus",
+            team: questionType === "bonus" ? selectedTeam : null
+        })
+
         $messages = [...$messages, {
             type: 'notification',
             text: 'New question opened'

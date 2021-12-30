@@ -15,7 +15,7 @@ export default interface Debugger {
     clientEvents: Event[],
     websocketEvents: Event[],
     socket: Socket<DefaultEventsMap, DefaultEventsMap>,
-    openWindows: Window[]
+    openWindow: Window | null
 }
 
 export default class Debugger {
@@ -27,29 +27,36 @@ export default class Debugger {
         this.clientEvents = []
         this.websocketEvents = []
         this.socket = socket
-        this.openWindows = []
+        this.openWindow = null
 
         socket.onAny((event: string, ...args: any[]) => {
             this.websocketEvents.push({ name: event, data: args })
-            this.openWindows.forEach(w => {
-                const newMessageElement = w.document.createElement('p')
+
+            if (this.openWindow) {
+                const newMessageElement = this.openWindow.document.createElement('p')
                 newMessageElement.classList.add('ws-message')
-                const newContent = w.document.createTextNode(`[WS]     ${event.padEnd(14, " ")} | ${JSON.stringify(args)}`)
+                const newContent = this.openWindow.document.createTextNode(`[WS]     ${event.padEnd(14, " ")} | ${JSON.stringify(args)}`)
                 newMessageElement.appendChild(newContent)
-                w.document.getElementById('event-container').appendChild(newMessageElement)
-            })
+                this.openWindow.document.getElementById('event-container').appendChild(newMessageElement)
+            }
+        })
+
+        window.addEventListener("message", (m) => {
+            console.dir(m)
+            if (m.data === "reportBug") this.reportError()
         })
     }
 
     addEvent(name: string, data: Record<string, unknown> | unknown[]) {
         this.clientEvents.push({ name, data })
-        this.openWindows.forEach(w => {
-            const newMessageElement = w.document.createElement('p')
+
+        if (this.openWindow) {
+            const newMessageElement = this.openWindow.document.createElement('p')
             newMessageElement.classList.add('client-message')
-            const newContent = w.document.createTextNode(`[Client] ${name.padEnd(14, " ")} | ${JSON.stringify(data)}`)
+            const newContent = this.openWindow.document.createTextNode(`[Client] ${name.padEnd(14, " ")} | ${JSON.stringify(data)}`)
             newMessageElement.appendChild(newContent)
-            w.document.getElementById('event-container').appendChild(newMessageElement)
-        })
+            this.openWindow.document.getElementById('event-container').appendChild(newMessageElement)
+        }
     }
 
     reportError() {
@@ -65,10 +72,26 @@ export default class Debugger {
 
     openDebugLog() {
         const newWindow = window.open("", this.gameName + " Debug Log", "width=800,height=600")
-        this.openWindows.push(newWindow)
+        this.openWindow = newWindow
         newWindow.document.write(
-            `<style> .ws-message { color: black; }  .client-message { color: red; } </style>
-            <div id="event-container"></div>`
+            `<script>function reportBug() {window.opener.postMessage("reportBug", "${import.meta.env.VITE_HOST_URL}")}</script>
+            <style> .ws-message { color: black; }  .client-message { color: red; }
+                .report {
+                    position: absolute;
+                    bottom: 30px;
+                    right: 30px;
+                    color: #EEE;
+                    background: #2C8250;
+                    font-size: 20px;
+                    font-weight: bold;
+                    padding: 0.6em;
+                    border-radius: 0.6em;
+                    border: solid black 3px;
+                    cursor: pointer;
+                }
+            </style>
+            <div id="event-container"></div>
+            <button onclick="reportBug()" class="report">Report Bug</button>`
         )
     }
 }
