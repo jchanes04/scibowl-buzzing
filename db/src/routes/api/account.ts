@@ -4,10 +4,10 @@ import { getIDFromToken } from "../../authentication";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
 
 export async function post({ body, headers }: Request) {
-    let authToken = headers.authorization
-    let userId = getIDFromToken(authToken)
-    let formData = <ReadOnlyFormData>body
-    let username = formData.get('username')
+    const authToken = headers.authorization
+    const userId = getIDFromToken(authToken)
+    const formData = <ReadOnlyFormData>body
+    const username = formData.get('username')
     
     if (username) {
         await updateUser(userId, { username: username.trim() })

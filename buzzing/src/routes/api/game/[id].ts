@@ -2,12 +2,12 @@ import type { Request } from "@sveltejs/kit";
 import { getGame } from "../../../server";
 
 export function get({ params }: Request) {
-    let { id } = params
+    const { id } = params
 
-    let game = getGame(id)
+    const game = getGame(id)
 
-    let memberList = game.members.map(m => m.self)
-    let teamList = game.teams.map(x => x.self)
+    const memberList = game.members.map(m => m.self)
+    const teamList = game.teams.map(x => x.self)
 
     return {
         body: {

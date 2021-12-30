@@ -32,7 +32,7 @@ export class Team {
     }
 
     removeMember(id: string) {
-        let member = this.members.find(x => x.id === id)
+        const member = this.members.find(x => x.id === id)
         this.members = this.members.filter(x => x.id !== id)
         return member || null
     }

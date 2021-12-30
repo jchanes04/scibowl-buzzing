@@ -44,15 +44,19 @@ export interface UserSettings {
     imgUrl?: string
 }
 
-import {Db, MongoClient} from 'mongodb'
+import {Collection, Db, MongoClient} from 'mongodb'
 
-let client = new MongoClient("mongodb://40.117.128.184:27017")
+const collections: Record<string, Collection> = {}
+const client = new MongoClient("mongodb://40.117.128.184:27017")
 var db: Db;
 async function init() {
     try {
         console.log("Connecting...")
         await client.connect()
         db = client.db("scibowl")
+        collections.submittedQuestions = db.collection('submittedQuestions')
+        collections.users = db.collection('users')
+        collections.userSettings = db.collection('userSettings')
         return true
     } catch (e) {
         console.log(e)
@@ -66,13 +70,11 @@ async function init() {
 init();
 
 export async function addQuestion(question: SaBase | McqBase) {
-    let collection = db.collection("submittedQuestions")
-    
     let searchString = question.questionText + " " + question.correctAnswer
     if (question.type === "MCQ") {
         searchString += " " + question.choices.W + " " + question.choices.X + " " + question.choices.Y + " " + question.choices.Z
     }
-    await collection.insertOne({
+    await collections.submittedQuestions.insertOne({
         id: createID(),
         ...question,
         searchString,
@@ -103,10 +105,8 @@ type mongoQuestionQuery = {
     }
 }
 
-export async function getQuestions({ authorName, authorId, keywords, categories, types, timeRange }: questionQuery) {
-    let collection = db.collection("submittedQuestions")
-    
-    let mongoQuery: mongoQuestionQuery = {}
+export async function getQuestions({ authorName, authorId, keywords, categories, types, timeRange }: questionQuery) {    
+    const mongoQuery: mongoQuestionQuery = {}
     if (authorName) mongoQuery.authorName = authorName
     if (authorId) mongoQuery.authorId = authorId
     if (keywords) mongoQuery.$text = { $search: keywords }
@@ -117,38 +117,33 @@ export async function getQuestions({ authorName, authorId, keywords, categories,
         if (timeRange.startDate) mongoQuery.date.$gte = timeRange.startDate
         if (timeRange.endDate) mongoQuery.date.$lt = timeRange.endDate
     }
-    let cursor = collection.find(mongoQuery)
+    const cursor = collections.submittedQuestions.find(mongoQuery)
     return <(SaQuestion | McqQuestion)[]>(await cursor.toArray())
 }
 
 export async function editQuestion(newQuestion: Partial<SaQuestion | McqQuestion>) {
-    let collection  = db.collection("submittedQuestions")
     let searchString = newQuestion.questionText + " " + newQuestion.correctAnswer
     if (newQuestion.type === "MCQ") {
         searchString += " " + newQuestion.choices.W + " " + newQuestion.choices.X + " " + newQuestion.choices.Y + " " + newQuestion.choices.Z
     }
-    await collection.updateOne({ id: newQuestion.id }, { $set: {
+    await collections.submittedQuestions.updateOne({ id: newQuestion.id }, { $set: {
         ...newQuestion,
         searchString
     }})
 }
 
 export async function getQuestionByID(id : string){
-    let collection = db.collection("submittedQuestions")
-    let result = await collection.findOne({ id })
-    console.dir(result.questions)
+    const result = await collections.submittedQuestions.findOne({ id })
     return result || null
 }
 
 export async function getUserByID(id: string){
-    let collection = db.collection("users")
-    let result = await collection.findOne({ id })
+    const result = await collections.users.findOne({ id })
     return result || null
 }
 
 export async function getUserFromID(id: string): Promise<User | null> {
-    let collection = db.collection("users")
-    let result = await collection.findOne({ id })
+    const result = await collections.users.findOne({ id })
     return result?.id ? {
         id: result.id,
         username: result.username,
@@ -157,30 +152,26 @@ export async function getUserFromID(id: string): Promise<User | null> {
 }
 
 export async function updateUser(id: string, data: Partial<User>) {
-    let collection = db.collection('users')
-    return await collection.updateOne({ id }, { $set: data })
+    return await collections.users.updateOne({ id }, { $set: data })
 }
 
 export async function updateNameOnQuestions(authorId: string, authorName: string) {
-    let collection = db.collection('submittedQuestions')
-    return await collection.updateMany({ authorId }, { $set: { authorName } });
+    return await collections.submittedQuestions.updateMany({ authorId }, { $set: { authorName } });
 }
 
 export async function getUserSettings(id: string): Promise<UserSettings | null> {
-    let collection = db.collection("userSettings")
-    let result = await collection.findOne({ id })
+    const result = await collections.userSettings.findOne({ id })
     return result?.id ? <UserSettings>result : null
 }
 
 export async function updateAvatarHash(id: string, avatarHash: string) {
-    let collection = db.collection("users")
-    return await collection.updateOne({ id }, { $set: {
+    return await collections.users.updateOne({ id }, { $set: {
         avatarHash
     } })
 }
 
 export async function getRandomQuestionId () {
-    let questions = await getQuestions({})
+    const questions = await getQuestions({})
     if (!(questions.length == 0)) {
         return questions[Math.floor(Math.random() * questions.length)].id
     } else {
@@ -189,11 +180,11 @@ export async function getRandomQuestionId () {
 }
 
 function createID() {
-    let time = Date.now()
-    let time1 = time.toString(16).slice(0, 4)
-    let time2 = time.toString(16).slice(4, 8)
-    let random1 = Math.floor(Math.random() * 16).toString(16)
-    let random2 = Math.floor(Math.random() * 16).toString(16)
-    let id = time2 + random1 + time1 + random2
+    const time = Date.now()
+    const time1 = time.toString(16).slice(0, 4)
+    const time2 = time.toString(16).slice(4, 8)
+    const random1 = Math.floor(Math.random() * 16).toString(16)
+    const random2 = Math.floor(Math.random() * 16).toString(16)
+    const id = time2 + random1 + time1 + random2
     return id
 }

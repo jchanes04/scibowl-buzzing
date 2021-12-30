@@ -4,10 +4,10 @@
 
     export async function load({ page, fetch }: LoadInput) {
 
-        let res = await fetch(`/api/join/${page.params.id}`)
+        const res = await fetch(`/api/join/${page.params.id}`)
 
         if (res.ok) {
-            let json = await res.json()
+            const json = await res.json()
             return {
                 props: {
                     ...json,
@@ -30,9 +30,9 @@
     import type { TeamClean } from "$lib/classes/Team";
 
     let memberName = ''
-    let teamOrIndiv
-    let teamID
-    let newTeamName
+    let teamOrIndiv: "any" | "team" | "new-team" | ""
+    let teamID: string
+    let newTeamName: string
 
     function handleSubmit() {
         $session.memberName = memberName

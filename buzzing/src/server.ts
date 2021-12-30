@@ -21,7 +21,7 @@ io.on('connection', socket => {
     console.log("Socket connected")
     const { gameID, memberID } = socket.handshake.auth
 
-    let game = getGame(gameID)
+    const game = getGame(gameID)
     if (checkAuthenticated(gameID, memberID)) {
         socket.join(gameID)
 
@@ -30,7 +30,7 @@ io.on('connection', socket => {
         })
 
         socket.on('disconnect', () => {
-            let removed = game.removeMember(memberID)
+            const removed = game.removeMember(memberID)
             if (removed !== null) {
                 socket.to(gameID).emit('memberLeave', memberID)
                 game.addChatMessage({
@@ -43,7 +43,7 @@ io.on('connection', socket => {
         socket.on('buzz', () => {
             console.log('buzz received')
             if (game.state.questionState === 'open') {
-                let buzzed = game.buzz(memberID)
+                const buzzed = game.buzz(memberID)
                 if (buzzed) {
                     game.timer.pause()
                     game.addChatMessage({
@@ -70,11 +70,11 @@ io.on('connection', socket => {
 
         socket.on('startTimer', () => {
             if (game.state.questionState === "open") {
-                let serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+                const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
                 game.timer.start(serverLength)
 
 
-                let clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
+                const clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
                 socket.to(gameID).emit('timerStart', clientLength)
                 socket.emit('timerStart', clientLength)
 
@@ -86,7 +86,7 @@ io.on('connection', socket => {
 
         socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
             if (game.state.questionState === "buzzed") {
-                let { scoredMember, scoredTeam, open } = game.scoreQ(score)
+                const { scoredMember, scoredTeam, open } = game.scoreQ(score)
                 
                 socket.to(gameID).emit('scoreChange', {
                     open,
@@ -121,15 +121,15 @@ io.on('connection', socket => {
 
         socket.on('saveScores', async () => {
             console.log('saving scores')
-            let filename = game.name
+            const filename = game.name
                 .replace(/[^a-zA-Z0-9-_\(\)]/g, "")
                 .replace(/\s/g, "_")
-            let postfix: "" | number = ""
+            const postfix: "" | number = ""
 
-            let fullName = await findOpenFile(filename, postfix)
+            const fullName = await findOpenFile(filename, postfix)
             console.log("filename: " + fullName)
 
-            let data = {
+            const data = {
                 teams: {},
                 members: {}
             }
@@ -182,18 +182,18 @@ httpsServer.listen(3030)
 export const games = new GameManager()
 
 export function createNewGame(ownerData: { name: string, reader: boolean }, gameData: { name: string, teamFormat: 'any' | 'individuals' | 'teams', teamNames: string[] }) {
-    let ownerMember = new Member(ownerData)
-    let game = games.createGame({ ...gameData, ownerMember })
+    const ownerMember = new Member(ownerData)
+    const game = games.createGame({ ...gameData, ownerMember })
     return game
 }
 
 export function getGame(id: string) {
-    let game = games.get(id)
+    const game = games.get(id)
     return game
 }
 
 export function checkAuthenticated(gameID: string, memberID: string) {
-    let game = games.get(gameID)
+    const game = games.get(gameID)
     return game?.members.some(x => x.id === memberID) || game?.leftPlayers.some(x => x === memberID)
 }
 
@@ -206,7 +206,7 @@ export function getGameFromCode(code: string) {
 }
 
 async function findOpenFile(filename: string, postfix: "" | number) {
-    let p = new Promise((res, rej) => {
+    const p = new Promise((res, rej) => {
         try {
             fs.stat(process.cwd() + "/data/" + filename + postfix + '.json', (err) => {
                 if (err === null) {

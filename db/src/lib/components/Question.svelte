@@ -1,15 +1,11 @@
 <script lang="ts">
-import { page } from "$app/stores";
-
-    import { redirectTo } from "$lib/functions/redirectTo"; 
-
     import type { McqQuestion, SaQuestion } from "../../mongo";
     export let question: SaQuestion | McqQuestion
     export let answerVisible: boolean = false
     $: dateObject = new Date(question.date)
     $: dateString = dateObject.toDateString() + " " + dateObject.toTimeString().split(" ")[0]
 
-    let categoryNames = {
+    const categoryNames = {
         bio: "Biology",
         earth: "Earth and Space",
         chem: "Chemistry",

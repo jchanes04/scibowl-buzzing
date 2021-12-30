@@ -1,10 +1,10 @@
 <script context="module" lang="ts">
     export async function load({ page, fetch }: LoadInput) {
 
-        let res = await fetch(`/api/game/${page.params.id}`)
+        const res = await fetch(`/api/game/${page.params.id}`)
 
         if (res.ok) {
-            let json = await res.json()
+            const json = await res.json()
             return {
                 props: {
                     gameInfo: {
@@ -79,7 +79,7 @@
     import { setContext } from 'svelte';
     let timer
 
-    let buzzAudio = browser ? new Audio('/buzz.mp3') : null
+    const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
     let joined = false
     const myMemberID = Cookie.get('memberID')
@@ -131,8 +131,8 @@
     })
 
     $socket.on('memberLeave', id => {
-        let member = memberList.find(x => x.id === id)
-        let team = teamList.find(t => t.id === member.teamID)
+        const member = memberList.find(x => x.id === id)
+        const team = teamList.find(t => t.id === member.teamID)
         if (team.members.length === 1 && gameInfo.teamFormat !== 'teams') {
             teamList = teamList.filter(t => t.id !== team.id)
         } else {
@@ -151,7 +151,7 @@
     })
 
     $socket.on('buzz', (id) => {
-        let member = memberList.find(x => x.id === id);
+        const member = memberList.find(x => x.id === id);
         playerControls?.disableBuzzing()
         state.questionState = 'buzzed'
 
@@ -213,8 +213,8 @@
         { open, score, memberID, memberScore, teamID, teamScore }: 
         { open: boolean, score: 'correct' | 'incorrect' | 'penalty', memberID: string, memberScore: number, teamID: string, teamScore: number }
     ) => {
-        let team = teamList.find(t => t.id === teamID)
-        let member = memberList.find(m => m.id === memberID)
+        const team = teamList.find(t => t.id === teamID)
+        const member = memberList.find(m => m.id === memberID)
         if (member) {
             member.scoreboard.score = memberScore
             memberList = memberList
@@ -319,7 +319,7 @@
 </svelte:head>
 
 <svelte:body on:keydown={(e) => {
-    let { code, keyCode } = e
+    const { code, keyCode } = e
     if ((code === "Space" || code === "Enter") && playerControls?.buzzingEnabled()) {
         buzz()
     } else if (code === null || code === undefined) {

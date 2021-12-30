@@ -18,12 +18,12 @@ type MemberInfo = {
 }
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
-    let endpoint = request.path.split("/")[1]
-    let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+    const endpoint = request.path.split("/")[1]
+    const authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
     if (authToken) request.headers.authorization = authToken
-    let memberCookie: MemberInfo | null = await new Promise(res => {
+    const memberCookie: MemberInfo | null = await new Promise(res => {
         try {
-            let member = JSON.parse(decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberInfo")?.split("=")[1]))
+            const member = JSON.parse(decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberInfo")?.split("=")[1]))
             res(member as MemberInfo)
         } catch {
             res(null)
@@ -31,20 +31,20 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
     })
 
     if (endpoint === 'game') {
-        let gameID = request.path.split("/")[2]
+        const gameID = request.path.split("/")[2]
 
-        let memberIdCookie = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberID").split("=")[1]
+        const memberIdCookie = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberID").split("=")[1]
 
         if (gameID === "" || gameID === undefined) return redirectTo('/create')
 
         if (checkAuthenticated(gameID, memberIdCookie)) {
-            let game = getGame(gameID)
+            const game = getGame(gameID)
             
             if (memberCookie && !game.members.some(m => m.id === memberIdCookie)) {
-                let memberTeam = game.teams.find((x) => {return x.id === memberCookie.teamID})
+                const memberTeam = game.teams.find((x) => {return x.id === memberCookie.teamID})
                 if (!memberTeam) return redirectTo('/join/' + gameID)
                 
-                let newMember = new Member({
+                const newMember = new Member({
                     name: memberCookie.name,
                     id: memberCookie.id,
                     reader: game.owner.id === memberIdCookie,
@@ -71,10 +71,10 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
             return redirectTo(gameExists(gameID) ? "/join/" + gameID : "/join")
         }
     } else if (endpoint === "join") {
-        let gameID = request.path.split("/")[2]
+        const gameID = request.path.split("/")[2]
 
         if (gameExists(gameID)) {
-            let game = getGame(gameID)
+            const game = getGame(gameID)
             request.locals = {
                 gameID,
                 gameName: game.name

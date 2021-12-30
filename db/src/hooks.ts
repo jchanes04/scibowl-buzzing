@@ -8,13 +8,13 @@ import { getIDFromToken } from "./authentication";
 const restrictedEndpoints = ["write", "edit", "question-search", "question", "account", undefined]
 
 export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
-    let endpoint = request.path.split("/")[1]
-    let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+    const endpoint = request.path.split("/")[1]
+    const authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
     if (authToken) request.headers.authorization = authToken
 
     if (restrictedEndpoints.includes(endpoint)) {
-        let userID = getIDFromToken(authToken)
-        let userData = await getUserFromID(userID)
+        const userID = getIDFromToken(authToken)
+        const userData = await getUserFromID(userID)
         request.locals = {
             isLoggedIn: !!userID,
             userID,
@@ -24,11 +24,11 @@ export async function handle({ request, resolve }: { request: Request, resolve: 
     }
 
     if (endpoint === 'question-search') {
-        let previousQueryString = decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "lastQuery")?.split("=")[1])
+        const previousQueryString = decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "lastQuery")?.split("=")[1])
         
         if (previousQueryString) {
             try {
-                let previousQueryObject = JSON.parse(previousQueryString)
+                const previousQueryObject = JSON.parse(previousQueryString)
                 if (previousQueryObject) request.locals.previousQuery = previousQueryObject
             } catch {}
         }

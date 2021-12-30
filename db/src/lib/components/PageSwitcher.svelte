@@ -5,7 +5,7 @@
     $: inputValue = pageNumber.toString()
     let previousInput = pageNumber.toString()
 
-    let inputElement
+    let inputElement: HTMLInputElement
 
     const dispatch = createEventDispatcher()
 

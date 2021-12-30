@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-    import { page, session } from '$app/stores'
+    import { session } from '$app/stores'
     import type { category } from 'src/mongo';
     import { onMount } from 'svelte';
     import type {SaQuestion, McqQuestion} from 'src/mongo'
@@ -22,9 +22,9 @@
     import { HOST_URL } from '$lib/variables';
     import DatabaseHeader from '$lib/components/DatabaseHeader.svelte'
     import MobileDatabaseHeader from '$lib/components/MobileDatabaseHeader.svelte'
-import QueryBox from '$lib/components/QueryBox.svelte';
+    import QueryBox from '$lib/components/QueryBox.svelte';
     export let question: SaQuestion | McqQuestion
-    let menuOpen :boolean = false
+    let menuOpen: boolean = false
     let answerVisible = false
     let loaded = true
     let noMatch = false
@@ -35,19 +35,26 @@ import QueryBox from '$lib/components/QueryBox.svelte';
     let start,end
 
     onMount(async () => {
-        let stored = JSON.parse(Cookie.get('lastQuery') || "{}")
+        const stored = JSON.parse(Cookie.get('lastQuery') || "{}")
         author = stored.author
         types = !stored.types ? [] : stored.types
         categories = !stored.categories ? [] : stored.categories
-        start = stored.start ? stored.start : undefined
-        end = stored.end ? stored.end : undefined
+        start = stored.start || undefined
+        end = stored.end || undefined
+        sendQuery({
+            author,
+            types: types.join(","),
+            categories: categories.join(","),
+            start,
+            end
+        })
     })
 
     async function sendQuery(inputs: Record<string, string>) {
         answerVisible = false
-        let params = new URLSearchParams(inputs)
-        let res = await fetch("/api/random?" + params.toString())
-        let returnedQuestion = await res.json()
+        const params = new URLSearchParams(inputs)
+        const res = await fetch("/api/random?" + params.toString())
+        const returnedQuestion = await res.json()
         if (returnedQuestion.error) {
             noMatch = true
         } else {

@@ -5,28 +5,28 @@ import { addQuestion, category, getUserFromID, McqBase, McqQuestion, SaBase, SaQ
 
 export async function post(request: Request) {
     try {
-        let authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
+        const authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
 
-        let formData = <ReadOnlyFormData>request.body
-        let userId = formData.get("user-id")
-        let ownQuestion = formData.get("own-question")
-        let authorName = formData.get("author-name")
-        let type= <"MCQ" | "SA">formData.get("type")
-        let category = <category>formData.get("category")
-        let questionText = formData.get("question-text")
+        const formData = <ReadOnlyFormData>request.body
+        const userId = formData.get("user-id")
+        const ownQuestion = formData.get("own-question")
+        const authorName = formData.get("author-name")
+        const type= <"MCQ" | "SA">formData.get("type")
+        const category = <category>formData.get("category")
+        const questionText = formData.get("question-text")
         
-        let choices = {
+        const choices = {
             W: formData.get("W"),
             X: formData.get("X"),
             Y: formData.get("Y"),
             Z: formData.get("Z")
         }
-        let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
-        let answer = formData.get("answer")
+        const correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
+        const answer = formData.get("answer")
 
         let question: any = {}
         if (ownQuestion && userId) {
-            let userData = await getUserFromID(userId)
+            const userData = await getUserFromID(userId)
             if (userData) {
                 question = {
                     authorName: userData.username,

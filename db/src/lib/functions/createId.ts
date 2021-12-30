@@ -1,7 +1,7 @@
 let seed = Math.floor(Math.random() * 1296).toString(36).toUpperCase()
 console.log("Seed: " + seed)
 
-let joinCodes: string[] = []
+const joinCodes: string[] = []
 
 /*
     Why am I creating such a complicated ID system? IDFK man I think it's cool
@@ -20,9 +20,9 @@ let joinCodes: string[] = []
 */
 
 export function createGameID(): string {
-    let timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
-    let seedComponent = incrementSeed()
-    let body: string = seedComponent + timeComponent
+    const timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
+    const seedComponent = incrementSeed()
+    const body: string = seedComponent + timeComponent
     return body + getSumDigit("G", body)
 }
 
@@ -35,23 +35,23 @@ export function createJoinCode(): string {
 }
 
 export function createMemberID(): string {
-    let timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
-    let seedComponent = incrementSeed()
-    let body: string = seedComponent + timeComponent
+    const timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
+    const seedComponent = incrementSeed()
+    const body: string = seedComponent + timeComponent
     return body + getSumDigit("M", body)
 }
 
 export function createMessageID(): string {
-    let timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
-    let seedComponent = incrementSeed()
-    let body: string = seedComponent + timeComponent
+    const timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
+    const seedComponent = incrementSeed()
+    const body: string = seedComponent + timeComponent
     return body + getSumDigit("S", body)
 }
 
 export function createTeamID(): string {
-    let timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
-    let seedComponent = incrementSeed()
-    let body: string = seedComponent + timeComponent
+    const timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
+    const seedComponent = incrementSeed()
+    const body: string = seedComponent + timeComponent
     return body + getSumDigit("T", body)
 }
 
@@ -61,13 +61,13 @@ function getSumDigit(targetSum: string, body: string) {
     for (let i = 0; i < body.length; i++) {
         sum += parseInt(body[i], 36)
     }
-    let lastNumber: number = ((parseInt(targetSum, 36) - sum % 36) + 36) % 36
+    const lastNumber: number = ((parseInt(targetSum, 36) - sum % 36) + 36) % 36
     return lastNumber.toString(36)
 }
 
 function incrementSeed() {
-    let num = parseInt(seed, 36)
-    let newNum = (num + 1) % 1296
+    const num = parseInt(seed, 36)
+    const newNum = (num + 1) % 1296
     seed = newNum.toString(36)
     return seed
 }
