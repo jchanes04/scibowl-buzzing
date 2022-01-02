@@ -3,15 +3,13 @@ import { Member } from '$lib/classes/Member'
 
 import * as https from 'https'
 import { Server } from 'socket.io'
-import key from '../localhost-key'
-import cert from '../localhost'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
 
 const httpsServer = https.createServer({
-    key,
-    cert
+    key: fs.readFileSync('localhost-key.pem').toString(),
+    cert: fs.readFileSync('localhost.pem').toString()
 })
 export const io = new Server(httpsServer, {
     cors: {

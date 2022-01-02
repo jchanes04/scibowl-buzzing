@@ -348,7 +348,7 @@
         {/if}
 
         <div on:click={() => debug.openDebugLog()}
-            style="position: absolute; right: 10px; bottom: 10px; cursor: pointer;">Open Debug Log</div>
+            style="position: fixed; right: 10px; bottom: 10px; cursor: pointer;">Open Debug Log</div>
     {:else}
         <h1>Joining...</h1>
     {/if}
