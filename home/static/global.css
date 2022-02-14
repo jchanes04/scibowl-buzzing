@@ -1,0 +1,70 @@
+:root {
+    --blue: hsl(210, 100%, 38%);
+    --bio: #2C8250;
+    --physics: #623e98;
+    --math: #0061C2;
+    --earth: #F5C13D;
+    --chem: #D14444; 
+    --energy: #00EFEF; 
+    --color-4: #274F36;
+    --color-2: #006242;
+    --color-3: #e6d266;
+    --color-5: #FFFFFF;
+    --color-1: #ECECEC;
+    --color-6: #F5C13D;
+}
+
+html, body {
+    margin: 0;
+    font-family: 'Ubuntu';
+    background-color: var(--color-1);
+}
+
+* {
+    font-family: 'Ubuntu';
+}
+
+input {
+    outline: none;
+    font-family: 'Ubuntu';
+}
+
+input:focus {
+    outline: none;
+}
+
+button:focus {
+    outline: none;
+}
+
+select:focus {
+    outline: none;
+}
+
+body::-webkit-scrollbar {
+    width: 7px;
+}
+
+body::-webkit-scrollbar-button {
+    display: none;
+}
+
+body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+    background: var(--green);
+    width: 7px;
+    border-radius: 7px;
+}
+
+body::-webkit-scrollbar-track-piece:start {
+    margin-top: 0.2em;
+    background: transparent;
+}
+
+body::-webkit-scrollbar-track-piece:end {
+    margin-bottom: 0.2em;
+    background: transparent;
+}
