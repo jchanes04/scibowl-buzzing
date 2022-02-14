@@ -8,37 +8,37 @@ import { io } from '../../server'
 
 export async function post(request: Request) {
     try {
-        let formData = <ReadOnlyFormData>request.body
-        let name = formData.get('name')
-        let joinCode = formData.get('join-code')
-        let gameID = formData.get('gameID')
+        const formData = <ReadOnlyFormData>request.body
+        const name = formData.get('name')
+        const joinCode = formData.get('join-code')
+        const gameID = formData.get('gameID')
 
-        let game = joinCode ? getGameFromCode(joinCode) : getGame(gameID)
+        const game = joinCode ? getGameFromCode(joinCode) : getGame(gameID)
 
         if (joinCode && game) {
             return redirectTo('/join/' + game.id)
         } else if (game) {
-            let { teamFormat } = game
+            const { teamFormat } = game
             if (teamFormat === "individuals") {
                 var newMember = new Member({ name, reader: false })
             } else if (teamFormat === "teams") {
-                let teamID = formData.get('team-id')
-                let team = <Team>game.teams.find(t => t.id === teamID)
+                const teamID = formData.get('team-id')
+                const team = <Team>game.teams.find(t => t.id === teamID)
 
                 var newMember = new Member({ name, team, reader: false })
             } else if (teamFormat === "any") {
-                let teamOrIndiv = formData.get('team-or-indiv')
+                const teamOrIndiv = formData.get('team-or-indiv')
 
                 if (teamOrIndiv === "indiv") {
                     var newMember = new Member({ name, reader: false })
                 } else if (teamOrIndiv === "team") {
-                    let teamID = formData.get('team-id')
-                    let team = <Team>game.teams.find(t => t.id === teamID)
+                    const teamID = formData.get('team-id')
+                    const team = <Team>game.teams.find(t => t.id === teamID)
 
                     var newMember = new Member({ name, team, reader: false })
                 } else if (teamOrIndiv === "new-team") {
-                    let teamName = formData.get('new-team-name')
-                    let team = new Team(teamName)
+                    const teamName = formData.get('new-team-name')
+                    const team = new Team(teamName)
                     
                     var newMember = new Member({ name, team, reader: false })
                 }

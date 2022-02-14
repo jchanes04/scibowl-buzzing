@@ -26,7 +26,7 @@ export class GameManager {
     }
 
     find(func: (game: Game) => boolean) {
-        for (let id in this.games) {
+        for (const id in this.games) {
             if (func(this.games[id])) {
                 return this.games[id]
             }
@@ -36,11 +36,11 @@ export class GameManager {
     }
 
     createGame(options: { name: string, teamFormat: 'any' | 'individuals' | 'teams', teamNames: string[], ownerMember: Member }) {
-        let joinCode = createJoinCode()
+        const joinCode = createJoinCode()
         this.joinCodes.push(joinCode)
-        let teams = options.teamNames.map(n => new Team(n))
+        const teams = options.teamNames.map(n => new Team(n))
 
-        let game = new Game({ ...options, teams, joinCode })
+        const game = new Game({ ...options, teams, joinCode })
         this.games[game.id] = game
         
         return game

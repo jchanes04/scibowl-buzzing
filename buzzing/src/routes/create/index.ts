@@ -4,23 +4,23 @@ import { createNewGame } from "../../server";
 
 export async function post(request: Request) {
     try {
-        let formData = <ReadOnlyFormData>request.body
-        let ownerName = formData.get("owner-name")
-        let gameName = formData.get("game-name")
-        let teamFormat = <'any' | 'individuals' | 'teams'>formData.get("team-format")
-        let teamNames = JSON.parse(formData.get('teams') || "[]")
+        const formData = <ReadOnlyFormData>request.body
+        const ownerName = formData.get("owner-name")
+        const gameName = formData.get("game-name")
+        const teamFormat = <'any' | 'individuals' | 'teams'>formData.get("team-format")
+        const teamNames = JSON.parse(formData.get('teams') || "[]")
 
-        let ownerData = {
+        const ownerData = {
             name: ownerName,
             reader: true
         }
-        let gameData = {
+        const gameData = {
             name: gameName,
             teamFormat,
             teamNames
         }
 
-        let game = createNewGame(ownerData, gameData)
+        const game = createNewGame(ownerData, gameData)
 
         return {
             headers: {

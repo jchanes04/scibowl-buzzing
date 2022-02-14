@@ -1,17 +1,17 @@
 import type { Request } from "@sveltejs/kit";
 import { getIDFromToken } from "../../../authentication";
-import { category, getQuestionByID } from "../../../mongo";
+import { getQuestionByID } from "../../../mongo";
 
-export async function get({ params, headers }: { params: Record<string, string>, headers: Record<string, string> }) {
-    let authToken = headers.authorization
-    let { id } = params
-    let authorized = !!getIDFromToken(authToken)
+export async function get({ params, headers }: Request) {
+    const authToken = headers.authorization
+    const { id } = params
+    const authorized = !!getIDFromToken(authToken)
 
     if (!authorized) return {
         status: 401
     }
 
-    let result = await getQuestionByID(id)
+    const result = await getQuestionByID(id)
     if (result) {
         return {
             status: 302,

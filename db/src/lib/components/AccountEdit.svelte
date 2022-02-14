@@ -1,12 +1,12 @@
 <script lang="ts">
     import type {SaQuestion, McqQuestion, User, UserSettings} from 'src/mongo'
-import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
 
     export let userData: User
     export let userSettings: UserSettings
     export let questions: (SaQuestion|McqQuestion)[]
 
-    let usernameRegex = /[\S]+/
+    const usernameRegex = /[\S]+/
 
     let inputtedUsername: string = userData.username
     let inputtedColors: string[] = [
@@ -15,15 +15,15 @@ import { createEventDispatcher } from 'svelte';
     $: validChanges = usernameRegex.test(inputtedUsername)
 
     async function submitChanges() {
-        let reqBody = new URLSearchParams({
+        const reqBody = new URLSearchParams({
             username: inputtedUsername
         })
 
-        let res = await fetch('/api/account', {
+        const res = await fetch('/api/account', {
             method: 'POST',
             body: reqBody
         })
-        let resBody = await res.json()
+        const resBody = await res.json()
         if (resBody.user?.username) {
             userData.username = resBody.user.username
             inputtedUsername = resBody.user.username

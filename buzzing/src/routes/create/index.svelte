@@ -1,10 +1,10 @@
 <script lang="ts">
     import { session } from "$app/stores"
-    let teamFormat
-    let ownerName
-    let gameName
-    let teams = []
-    let newTeamName
+    let teamFormat: "any" | "individuals" | "teams"
+    let ownerName: string
+    let gameName: string
+    let teams: string[] = []
+    let newTeamName: string
     $: submitEnabled = ownerName && gameName && teamFormat && (teamFormat !== "teams" || teams.length !== 0)
 
     import TeamList from '$lib/components/TeamList.svelte'

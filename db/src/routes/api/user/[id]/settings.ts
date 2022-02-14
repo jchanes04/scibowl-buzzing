@@ -3,15 +3,15 @@ import { getIDFromToken } from "../../../../authentication";
 import { getUserSettings } from "../../../../mongo";
 
 export async function get({ params, headers }: Request) {
-    let authToken = headers.authorization
-    let { id } = params
-    let authorized = !!getIDFromToken(authToken)
+    const authToken = headers.authorization
+    const { id } = params
+    const authorized = !!getIDFromToken(authToken)
 
     if (!authorized) return {
         status: 401
     }
 
-    let result = await getUserSettings(id)
+    const result = await getUserSettings(id)
     if (result) {
         return {
             status: 302,

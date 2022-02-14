@@ -8,7 +8,7 @@
     let previewWidth: number
     $: numCharacters = previewWidth / 3 - 20
 
-    let categoryNames = {
+    const categoryNames = {
         bio: "Biology",
         earth: "Earth and Space",
         chem: "Chemistry",

@@ -1,10 +1,10 @@
 <script context="module" lang="ts">
     export async function load({ page, fetch }: LoadInput) {
 
-        let res = await fetch(`/api/game/${page.params.id}`)
+        const res = await fetch(`/api/game/${page.params.id}`)
 
         if (res.ok) {
-            let json = await res.json()
+            const json = await res.json()
             return {
                 props: {
                     gameInfo: {
@@ -69,16 +69,17 @@
     import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
     import type { TeamClean } from '$lib/classes/Team'
     import { emptyCatScores } from '$lib/classes/TeamScoreboard'
-    import type { Game, Message, Question } from "$lib/classes/Game"
+    import type { Question } from "$lib/classes/Game"
     import { io } from 'socket.io-client'
     import Cookie from 'js-cookie'
     import { browser } from '$app/env'
 
     import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
+    import Debugger from '$lib/classes/Debugger';
+    import { setContext } from 'svelte';
     let timer
 
-    let buzzAudio = browser ? new Audio('/buzz.mp3') : null
+    const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
     let joined = false
     const myMemberID = Cookie.get('memberID')
@@ -93,6 +94,9 @@
         autoConnect: false,
         secure: true
     }))
+    console.log(myMember)
+    const debug = browser ? new Debugger(gameInfo.gameID, gameInfo.gameName, myMember, $socket) : null
+    setContext('debug', debug)
     if (browser) {
         $socket.connect()
     }
@@ -128,8 +132,8 @@
     })
 
     $socket.on('memberLeave', id => {
-        let member = memberList.find(x => x.id === id)
-        let team = teamList.find(t => t.id === member.teamID)
+        const member = memberList.find(x => x.id === id)
+        const team = teamList.find(t => t.id === member.teamID)
         if (team.members.length === 1 && gameInfo.teamFormat !== 'teams') {
             teamList = teamList.filter(t => t.id !== team.id)
         } else {
@@ -148,7 +152,7 @@
     })
 
     $socket.on('buzz', (id) => {
-        let member = memberList.find(x => x.id === id);
+        const member = memberList.find(x => x.id === id);
         playerControls?.disableBuzzing()
         state.questionState = 'buzzed'
 
@@ -210,8 +214,8 @@
         { open, score, memberID, memberScore, teamID, teamScore }: 
         { open: boolean, score: 'correct' | 'incorrect' | 'penalty', memberID: string, memberScore: number, teamID: string, teamScore: number }
     ) => {
-        let team = teamList.find(t => t.id === teamID)
-        let member = memberList.find(m => m.id === memberID)
+        const team = teamList.find(t => t.id === teamID)
+        const member = memberList.find(m => m.id === memberID)
         if (member) {
             member.scoreboard.score = memberScore
             memberList = memberList
@@ -294,6 +298,8 @@
     function buzz() {
         $socket.emit('buzz');
 
+        debug.addEvent('buzz', {})
+
         buzzAudio.play()
 
         playerControls?.disableBuzzing()
@@ -314,7 +320,7 @@
 </svelte:head>
 
 <svelte:body on:keydown={(e) => {
-    let { code, keyCode } = e
+    const { code, keyCode } = e
     if ((code === "Space" || code === "Enter") && playerControls?.buzzingEnabled()) {
         buzz()
     } else if (code === null || code === undefined) {
@@ -340,6 +346,9 @@
         {:else}
             <PlayerControls buzz={buzz} bind:this={playerControls} />
         {/if}
+
+        <div on:click={() => debug.openDebugLog()}
+            style="position: fixed; right: 10px; bottom: 10px; cursor: pointer;">Open Debug Log</div>
     {:else}
         <h1>Joining...</h1>
     {/if}

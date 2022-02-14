@@ -2,25 +2,26 @@ import {XMLHttpRequest} from 'xmlhttprequest'
 import * as dotenv from 'dotenv'
 import { generateToken } from '../../authentication'
 import { updateAvatarHash } from '../../mongo'
+import type { Request } from '@sveltejs/kit'
 dotenv.config({path: '../.env'})
 
-export async function get({ query, params }: { query: URLSearchParams, params: Record<string, string> }) {
-    let code = query.get("code")
+export async function get({ query, params }: Request) {
+    const code = query.get("code")
     if (code) {
         try {
             return await new Promise((resolve, reject) => {
-                let xhr = new XMLHttpRequest()
+                const xhr = new XMLHttpRequest()
                 xhr.open("POST", "https://discord.com/api/oauth2/token")
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
                 xhr.onload = async () => {
-                    let res = JSON.parse(xhr.responseText)
+                    const res = JSON.parse(xhr.responseText)
                     if (res.error) {
                         resolve({
                             status: 302,
                             body: "boo"
                         })
                     } else {
-                        let { id } = await loginUser(res.access_token, res.token_type)
+                        const { id } = await loginUser(res.access_token, res.token_type)
                         resolve({
                             status: 302,
                             headers: {
@@ -54,11 +55,11 @@ export async function get({ query, params }: { query: URLSearchParams, params: R
 
 async function loginUser(token: string, type: string): Promise<DiscordUserResponse> {
     return new Promise((resolve, reject) => {
-        let xhr = new XMLHttpRequest()
+        const xhr = new XMLHttpRequest()
         xhr.open("GET", "https://discord.com/api/users/@me")
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
         xhr.onload = async () => {
-            let userData: DiscordUserResponse = JSON.parse(xhr.responseText)
+            const userData: DiscordUserResponse = JSON.parse(xhr.responseText)
             await updateAvatarHash(userData.id, userData.avatar)
             resolve(userData)
         }

@@ -23,7 +23,7 @@
     export let question: McqQuestion | SaQuestion
 
     onMount(async () => {
-        let res = await fetch("/api/question/" + $page.params.id, {
+        const res = await fetch("/api/question/" + $page.params.id, {
             headers: {
                 'Authorization': Cookie.get('authToken')
             }

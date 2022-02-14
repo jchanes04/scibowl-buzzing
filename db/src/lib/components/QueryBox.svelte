@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { createEventDispatcher, onMount, tick } from "svelte";
+    import { createEventDispatcher } from "svelte";
     import type { category } from "src/mongo";
     import Cookie from 'js-cookie'
-import { page } from "$app/stores";
+    import { page } from "$app/stores";
 
     let inputs: {
         authorName :string
@@ -14,7 +14,7 @@ import { page } from "$app/stores";
     }
     export let numQuestions : number
     const dispatch = createEventDispatcher()
-    let authorName, keywords, start, end : string
+    let authorName: string, keywords: string, start: string, end: string
     let types: ("MCQ" | "SA")[] = []
     let categories: category[] = []
     $:inputs = {authorName, keywords, start, end, types, categories}

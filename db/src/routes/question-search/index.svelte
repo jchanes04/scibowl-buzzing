@@ -4,15 +4,15 @@
     export async function load({ session, fetch }: LoadInput): Promise<LoadOutput> {
         console.dir(session)
         
-        let inputs: Record<string, string> = {}
+        const inputs: Record<string, string> = {}
         if (session.previousQuery?.authorName) inputs.authorName = session.previousQuery.authorName
         if (session.previousQuery?.keywords) inputs.keywords = session.previousQuery.keywords
         if (session.previousQuery?.types.length) inputs.types = (session.previousQuery.types ?? []).join(",")
         if (session.previousQuery?.categories.length) inputs.categories = (session.previousQuery.categories ?? []).join(",")
         if (session.previousQuery?.start) inputs.start = session.previousQuery.start
         if (session.previousQuery?.end) inputs.end = session.previousQuery.end
-        let params = new URLSearchParams(inputs)
-        let questionsRes = await fetch("/api/questions?" + params.toString(), {
+        const params = new URLSearchParams(inputs)
+        const questionsRes = await fetch("/api/questions?" + params.toString(), {
             headers: {
                 'Authorization': Cookie.get('authToken')
             }
@@ -41,7 +41,7 @@
     import { HOST_URL } from "$lib/variables";
 
     export let questions: (SaQuestion | McqQuestion)[] = []
-    let resultsPerPage = 20
+    const resultsPerPage = 20
     let pageNumber = Cookie.get('pageNumber') <= Math.ceil(questions.length / resultsPerPage) ? Cookie.get('pageNumber') : 1
     $: numPages = Math.ceil(questions.length / resultsPerPage)
     let menuOpen = true
@@ -54,8 +54,8 @@
         if (queryBox.categories.length) inputs.categories = queryBox.categories.join(",")
         if (queryBox.start) inputs.start = queryBox.start
         if (queryBox.end) inputs.end = queryBox.end
-        let params = new URLSearchParams(inputs)
-        let res = await fetch("/api/questions?" + params.toString(), {
+        const params = new URLSearchParams(inputs)
+        const res = await fetch("/api/questions?" + params.toString(), {
             headers: {
                 'Authorization': Cookie.get('authToken')
             }

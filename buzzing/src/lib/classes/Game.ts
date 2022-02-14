@@ -107,7 +107,7 @@ export class Game {
     }
 
     removeMember(id: string) {
-        let member = this.members.find(x => x.id === id)
+        const member = this.members.find(x => x.id === id)
         if (member) {
             this.members = this.members.filter(x => x.id !== id)
             if (member.team instanceof Team) member.team.removeMember(member.id)
@@ -122,7 +122,7 @@ export class Game {
     }
 
     buzz(memberID: string) {
-        let member = this.members.find(x => x.id === memberID)
+        const member = this.members.find(x => x.id === memberID)
         if (member && !this.state.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed
             this.state.buzzedTeams.push(member.team)
             this.state.currentBuzzer = member
@@ -146,7 +146,7 @@ export class Game {
     }
 
     scoreQ(score: 'correct' | 'incorrect' | 'penalty') {
-        let scoredMember = this.state.currentBuzzer
+        const scoredMember = this.state.currentBuzzer
 
         if (this.state.currentQuestion.bonus) {
             if (score === "correct") {
@@ -168,7 +168,7 @@ export class Game {
 
         this.state.currentBuzzer = null
         
-        let open = !this.state.currentQuestion.bonus && 
+        const open = !this.state.currentQuestion.bonus && 
             this.state.buzzedTeams.length < 3 && 
             this.state.buzzedTeams.length < this.teams.length - 1 && 
             score !== 'correct'

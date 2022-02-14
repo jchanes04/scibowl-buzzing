@@ -1,12 +1,12 @@
 <script lang="ts">
     import type { category } from "src/mongo";
-    import { page, session } from '$app/stores'
+    import { session } from '$app/stores'
     let ownQuestion: boolean = true
     let author: string
     let type: "MCQ" | "SA"
     let category: category
-    let optionW, optionX, optionY, optionZ: string
-    let questionText,answer: string
+    let optionW: string, optionX: string, optionY: string, optionZ: string
+    let questionText: string, answer: string
     let correctAnswer: "W" | "X" | "Y" | "Z"
     $: submitEnabled = (author || ownQuestion) && type && category && questionText && (answer || correctAnswer) && (type !== "MCQ" || (optionW && optionX && optionY && optionZ))
 </script>

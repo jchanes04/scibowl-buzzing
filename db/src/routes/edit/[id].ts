@@ -3,26 +3,25 @@ import type { Request } from "@sveltejs/kit";
 import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
 import { editQuestion, category, McqBase, McqQuestion, SaBase, SaQuestion, getQuestionByID } from "../../mongo";
 
-export async function post(request: Request) {
+export async function post({ body, params }: Request) {
     try {
-        let formData = <ReadOnlyFormData>request.body
-        console.dir(formData)
-        let id = request.params.id
-        let userId = formData.get('user-id')
-        let type= <"MCQ" | "SA">formData.get("type")
-        let category = <category>formData.get("category")
-        let questionText = formData.get("question-text")
-        let date = new Date()
-        let choices = {
+        const formData = <ReadOnlyFormData>body
+        const { id } = params
+        const userId = formData.get('user-id')
+        const type= <"MCQ" | "SA">formData.get("type")
+        const category = <category>formData.get("category")
+        const questionText = formData.get("question-text")
+        const date = new Date()
+        const choices = {
             W: formData.get("W"),
             X: formData.get("X"),
             Y: formData.get("Y"),
             Z: formData.get("Z")
         }
-        let correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
-        let answer = formData.get("answer")
+        const correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
+        const answer = formData.get("answer")
 
-        let currentQuestion = await getQuestionByID(id)
+        const currentQuestion = await getQuestionByID(id)
         if (userId !== currentQuestion.authorId) {
             return redirectTo("error/no-edit-permission")
         }
