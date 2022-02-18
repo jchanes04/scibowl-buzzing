@@ -1,11 +1,11 @@
 <script lang="ts">
-
+    export let loggedIn: boolean
 </script>
 
 <div id="header">
     <h1 id="title">ESBOT</h1>
     <div id="right">
-        <slot></slot>
+        
     </div>
 </div>
 
