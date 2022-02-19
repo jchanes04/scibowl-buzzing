@@ -9,21 +9,21 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
     const authToken = event.request.headers.get('cookie')?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
     event.locals.userData = await getUserFromToken(authToken || event.request.headers.get('authorization'))
 
-    if (event.request.url.startsWith('/register') && event.locals.userData) {
+    if (event.url.pathname.startsWith('/register') && event.locals.userData) {
         return new Response(null, {
             headers: {
                 'Location': '/edit'
             },
             status: 302
         })
-    } else if (event.request.url.startsWith('/edit') && !event.locals.userData) {
+    } else if (event.url.pathname.startsWith('/edit') && !event.locals.userData) {
         return new Response(null, {
             headers: {
                 'Location': '/register'
             },
             status: 302
         })
-    } else if (restrictedEndpoints.some(e => event.request.url.startsWith(e))) {
+    } else if (restrictedEndpoints.some(e => event.url.pathname.startsWith(e))) {
         return new Response(null, {
             status: 403
         })
