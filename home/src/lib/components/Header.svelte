@@ -1,11 +1,66 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
+
     export let loggedIn: boolean
+
+    let loginMenuVisible = false
+    let loginMenuWrapper: HTMLElement
+
+    let username = ""
+    let password = ""
+    let error = null
+
+    function handleWindowClick(e: MouseEvent) {
+        if (loginMenuWrapper && !loginMenuWrapper.contains(e.target as Node)) {
+            loginMenuVisible = false
+        }
+    }
+
+    async function login() {
+        const res = await fetch('/api/login', {
+            body: new URLSearchParams({
+                username,
+                password
+            }),
+            method: "POST"
+        })
+
+        if ((await res.json()).correct) {
+            window.location.href = "/edit"
+        } else {
+            error = "Username or password is incorrect"
+        }
+    }
 </script>
+
+<svelte:window on:click={handleWindowClick}></svelte:window>
 
 <div id="header">
     <h1 id="title">ESBOT</h1>
     <div id="right">
-        
+        {#if loggedIn}
+            <nav>
+                <a href="/edit" sveltekit:prefetch>Edit Team</a>
+                <a href="/api/logout" rel="external">Logout</a>
+            </nav>
+        {:else}
+            <nav>
+                <a href="/register">Register Now</a>
+                <div class="login-menu-wrapper" bind:this={loginMenuWrapper}>
+                    <span on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</span>
+                    <div class="login-menu" class:visible={loginMenuVisible}>
+                        {#if error}
+                            <p class="error">{error}</p>
+                        {/if}
+                        <label for="username">Username</label>
+                        <input id="username" type="text" bind:value={username} />
+                        <label for="password">Password</label>
+                        <input id="password" type="password" bind:value={password} />
+                        <button on:click={login}>Login</button>
+                    </div>
+                </div>
+            </nav>
+        {/if}
     </div>
 </div>
 
@@ -13,8 +68,11 @@
     #header {
         background: var(--color-5);
         text-align: left;
-        position: relative;
-        overflow: hidden;
+        position: sticky;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 5;
     }
     
     h1 {
@@ -35,5 +93,43 @@
         flex-direction: row;
         align-items: center;
         font-size: 32px;
+    }
+
+    nav {
+        display: flex;
+        flex-direction: row;
+        gap: 1em;
+    }
+    
+    a {
+        text-decoration: none;
+        color: inherit;
+        transition: color 0.3s;
+
+        &:hover {
+            color: var(--color-2)
+        }
+    }
+
+    .login-menu-wrapper {
+        position: relative;
+    }
+
+    .error {
+        color: red;
+    }
+
+    .login-menu {
+        position: absolute;
+        top: 1.25em;
+        right: 0;
+        background: white;
+        border-radius: 10px;
+        padding: 0.75em;
+        display: none;
+
+        &.visible {
+            display: block;
+        }
     }
 </style>
