@@ -12,6 +12,7 @@
                         gameID: params.id,
                     } as GameInfo,
                     teamList: json.teamList,
+                    moderatorList: json.moderatorList,
                     moderator: json.gameInfo.myMember.moderator
                 }
             }
@@ -23,11 +24,12 @@
 
 <script lang="ts">
     export let moderator: boolean
+    export let moderatorList : MemberData[]
     export let gameInfo: GameInfo
     export let teamList: TeamData[]
     $gameInfoStore = gameInfo
     $teamsStore = teamList
-    
+    $moderatorStore = moderatorList
 
     let windowWidth: number
 
@@ -54,6 +56,8 @@
     import teamsStore from "$lib/stores/teams";
     import timerStore from "$lib/stores/timer"
     import gameStateStore from "$lib/stores/gameState";
+    import type { MemberData } from "$lib/classes/Member";
+    import moderatorStore from "$lib/stores/moderators";
 
     const debug = browser ? new Debugger($gameInfoStore.gameID, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
     setContext('debug', debug)
@@ -81,7 +85,7 @@
     <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode={gameInfo.joinCode}>
         <Timer bind:this={$timerStore} on:end={() => $gameStateStore = { ...$gameStateStore, buzzingDisabled: true }} />
     </svelte:component>
-    <MemberList memberList={$membersStore} />
+    <MemberList />
     <Scoreboard teamList={teamList} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
     <Chatbox />
 
