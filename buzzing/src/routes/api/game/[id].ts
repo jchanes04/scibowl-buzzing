@@ -7,7 +7,8 @@ export function get({ params, locals }: RequestEvent) {
     
     const memberList = game.members.map(m => m.data)
     const teamList = game.teams.map(x => x.data)
-
+    const moderatorList = game.moderators.map(m => m.data)
+    console.dir(moderatorList)
     return new Response(
         JSON.stringify({
             gameInfo: {
@@ -19,6 +20,7 @@ export function get({ params, locals }: RequestEvent) {
             },
             memberList,
             teamList,
+            moderatorList
         })
     )
 }

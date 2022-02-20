@@ -1,13 +1,16 @@
 <script lang="ts">
-    import type { MemberData } from "$lib/classes/Member";
-
-    export let memberList: MemberData[] = []
+    import membersStore from "$lib/stores/members";
+    import moderatorStore from "$lib/stores/moderators";
+    
 </script>
 
 <div>
     <h3>Members</h3>
     <ul>
-        {#each memberList as member}
+        {#each $moderatorStore as member}
+            <li class="reader">{member.name}</li>
+        {/each}
+        {#each $membersStore as member}
             <li class:reader={member.moderator}>{member.name}</li>
         {/each}
     </ul>

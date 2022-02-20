@@ -1,29 +1,13 @@
 <script lang="ts">
     import type Debugger from "$lib/classes/Debugger";
-
     import buzzAudioStore from "$lib/stores/buzzAudio";
     import chatMessagesStore from "$lib/stores/chatMessages";
-import gameInfoStore from "$lib/stores/gameInfo";
+    import gameInfoStore from "$lib/stores/gameInfo";
     import gameStateStore from "$lib/stores/gameState";
-
     import socketStore from "$lib/stores/socket";
     import timerStore from "$lib/stores/timer";
     import { getContext } from "svelte";
     const debug: Debugger = getContext('debug')
-
-    let disabled = true
-
-    export function enableBuzzing() {
-        disabled = false
-    }
-
-    export function disableBuzzing() {
-        disabled = true
-    }
-
-    export function buzzingEnabled() {
-        return !disabled
-    }
 
     function buzz() {
         $socketStore.emit('buzz');
@@ -56,7 +40,7 @@ import gameInfoStore from "$lib/stores/gameInfo";
 }} />
 
 <div>
-    <button id="buzz" on:click={buzz} disabled={disabled}>buzz</button>
+    <button id="buzz" on:click={buzz} disabled={$gameStateStore.buzzingDisabled}>buzz</button>
 </div>
 
 <style>

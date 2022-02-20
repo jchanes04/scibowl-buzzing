@@ -17,6 +17,7 @@ import type { SvelteComponentTyped } from "svelte"
 import type { TimerMethods } from "./timer"
 import timerStore from "./timer"
 import type { Question } from "$lib/classes/Game"
+import moderatorStore from "./moderators"
 
 const socketStore: Writable<Socket> = writable(io(import.meta.env.VITE_WS_URL as string, {
     auth: {
@@ -35,6 +36,9 @@ teamsStore.subscribe(value => teams = value)
 
 let members: MemberData[]
 membersStore.subscribe(value => members = value)
+
+let moderators : MemberData[]
+moderatorStore.subscribe(value => moderators = value)
 
 let chatMessages: ChatMessage[]
 chatMessagesStore.subscribe(value => chatMessages = value)
@@ -60,6 +64,11 @@ socket.onAny((event: string, ...args: any[]) => {
 })
 
 socket.on('memberJoin', ({ member, team }: { member: MemberData, team: TeamData }) => {
+    if (member.moderator){
+        moderatorStore.set([...moderators,
+            member
+        ])
+    }
     teamsStore.set([
         ...teams.filter(t => t.id !== team.id),
         team
