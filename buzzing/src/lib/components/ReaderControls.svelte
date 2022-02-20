@@ -1,21 +1,14 @@
 <script lang="ts">
     import ControlSection from '$lib/components/ControlSection.svelte'
-
-    type Message = {
-        text: string
-        type: 'buzz' | 'notification' | 'warning' | 'success'
-    }
-
     import type { Socket } from 'socket.io-client';
     import type { Writable } from 'svelte/store'
-    import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
-    import type { TeamClean } from '$lib/classes/Team'
+    import type { TeamData } from '$lib/classes/Team'
     import type { Category } from '$lib/classes/Game';
     import { getContext } from 'svelte';
     import type Debugger from '$lib/classes/Debugger';
+    import chatMessagesStore from '$lib/stores/chatMessages';
     export let socket: Writable<Socket>
-    export let messages: Writable<Message[]>
-    export let teamList: Array<TeamClean | IndividualTeamClean>
+    export let teamList: TeamData[]
     export let questionState: 'idle' | 'open' | 'buzzed'
     
     let categorySelect: HTMLSelectElement
@@ -39,7 +32,7 @@
             team: questionType === "bonus" ? selectedTeam : null
         })
 
-        $messages = [...$messages, {
+        $chatMessagesStore = [...$chatMessagesStore, {
             type: 'notification',
             text: 'New question opened'
         }]
@@ -96,7 +89,7 @@
             <select name="target-team" id="target-team" bind:this={teamSelect} bind:value={selectedTeam}>
                 <option value="" hidden default></option>
                 {#each teamList as team}
-                    {#if team.members.length !== 1 || !team.members[0].reader}
+                    {#if team.members.length !== 1 || !team.members[0].moderator}
                         <option value={team.id}>{team.name}</option>
                     {/if}
                 {/each}

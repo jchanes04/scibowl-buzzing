@@ -1,97 +1,55 @@
-import type { Request, Response } from "@sveltejs/kit";
-type Resolve = (request: Request<Record<string, any>>) => Response | Promise<Response>
+import type { RequestEvent, ResolveOpts } from "@sveltejs/kit";
 
-import { checkAuthenticated, gameExists, getGame, io } from './server'
+type MaybePromise<T> = T | Promise<T>
+
+import { gameExists, getGame } from '$lib/server'
 import { redirectTo } from "$lib/functions/redirectTo";
-import type { catScores } from "$lib/classes/MemberScoreboard";
-import { Member } from "$lib/classes/Member";
-import { Team } from "$lib/classes/Team";
+import { getUserFromToken } from "$lib/authentication";
 
-const restrictedEndpoints = ["write", "edit", "question-search", "question", "account", undefined]
-
-type MemberInfo = {
-    name: string,
-    id: string,
-    score: number,
-    catScores: catScores,
-    teamID: string
-}
-
-export async function handle({ request, resolve }: { request: Request, resolve: Resolve }) {
-    const endpoint = request.path.split("/")[1]
-    const authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
-    if (authToken) request.headers.authorization = authToken
-    const memberCookie: MemberInfo | null = await new Promise(res => {
-        try {
-            const member = JSON.parse(decodeURIComponent(request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberInfo")?.split("=")[1]))
-            res(member as MemberInfo)
-        } catch {
-            res(null)
-        }
-    })
-
-    if (endpoint === 'game') {
-        const gameID = request.path.split("/")[2]
-
-        const memberIdCookie = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "memberID").split("=")[1]
-
-        if (gameID === "" || gameID === undefined) return redirectTo('/create')
-
-        if (checkAuthenticated(gameID, memberIdCookie)) {
-            const game = getGame(gameID)
-            
-            if (memberCookie && !game.members.some(m => m.id === memberIdCookie)) {
-                const memberTeam = game.teams.find((x) => {return x.id === memberCookie.teamID})
-                if (!memberTeam) return redirectTo('/join/' + gameID)
-                
-                const newMember = new Member({
-                    name: memberCookie.name,
-                    id: memberCookie.id,
-                    reader: game.owner.id === memberIdCookie,
-                    score: memberCookie.score,
-                    catScores: memberCookie.catScores,
-                    team: memberTeam
-                })
-                game.addMember(newMember)
-
-                game.addChatMessage({
-                    text: newMember.name + ' has joined the game',
-                    type: 'notification'
-                })
-                io.to(gameID).emit('memberJoin', {
-                    member: newMember.self,
-                    team: newMember.team.self
-                })
-            } else if (!game.members.some(m => m.id === memberCookie?.id)) {
-
-            }
-            
-            request.locals.authenticated = true
+export async function handle({ event, resolve }: { event: RequestEvent, resolve: (event: RequestEvent, opts?: ResolveOpts) => MaybePromise<Response> }) {
+    if (event.url.pathname.startsWith('/game')) {
+        const gameID = event.url.pathname.slice("/game/".length)
+        const authToken = event.request.headers.get('Cookie')?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        const tokenMember = await getUserFromToken(authToken)
+        if (tokenMember) {
+            event.locals.authenticated = true
+            event.locals.memberData = tokenMember.data
         } else {
             return redirectTo(gameExists(gameID) ? "/join/" + gameID : "/join")
         }
-    } else if (endpoint === "join") {
-        const gameID = request.path.split("/")[2]
+    } else if (event.url.pathname.startsWith('/join')) {
+        const gameID = event.url.pathname.slice("/join/".length)
+        console.log(gameID)
 
         if (gameExists(gameID)) {
             const game = getGame(gameID)
-            request.locals = {
+            event.locals = {
                 gameID,
                 gameName: game.name
             }
         } else if (gameID !== '' && gameID !== undefined) {
             return redirectTo('/join')
         }
+    } else if (event.url.pathname.startsWith('/api/game')) {
+        const gameID = event.url.pathname.slice("/game/".length)
+        const authToken = event.request.headers.get('Cookie')?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        const tokenMember = await getUserFromToken(authToken)
+        if (tokenMember) {
+            event.locals.authenticated = true
+            event.locals.memberData = tokenMember.data
+        } else {
+            return new Response(null, {
+                status: 404
+            })
+        }
     }
 
-    const response = await resolve(request);
-    return {
-        ...response
-    }
+    const response = await resolve(event);
+    return response
 }
 
-export async function getSession(request: Request) {
+export async function getSession(event: RequestEvent) {
     return {
-        ...request.locals
+        ...event.locals
     }
 }

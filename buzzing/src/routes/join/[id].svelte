@@ -1,17 +1,16 @@
 <script lang="ts" context="module">
     import type { LoadInput } from "@sveltejs/kit";
 
+    export async function load({ params, fetch }: LoadInput) {
 
-    export async function load({ page, fetch }: LoadInput) {
-
-        const res = await fetch(`/api/join/${page.params.id}`)
+        const res = await fetch(`/api/join/${params.id}`)
 
         if (res.ok) {
             const json = await res.json()
             return {
                 props: {
                     ...json,
-                    gameID: page.params.id
+                    gameID: params.id
                 }
             }
         }
@@ -21,31 +20,22 @@
 </script>
 
 <script lang="ts">
-    export let memberNames: string[], gameName: string, gameID: string, teamFormat: TeamFormat, teams: TeamClean[]
+    export let memberNames: string[], gameName: string, gameID: string, teamSettings: TeamSettings, teams: TeamData[]
 
     import { session } from "$app/stores"
     
     import JoinMemberList from '$lib/components/JoinMemberList.svelte'
-    import type { TeamFormat } from "$lib/classes/Game";
-    import type { TeamClean } from "$lib/classes/Team";
+    import type { TeamData } from "$lib/classes/Team";
+    import type { TeamSettings } from "$lib/classes/Game";
 
     let memberName = ''
-    let teamOrIndiv: "any" | "team" | "new-team" | ""
+    let teamOrIndiv: "indiv" | "team" | "new-team" | ""
     let teamID: string
     let newTeamName: string
 
-    function handleSubmit() {
-        $session.memberName = memberName
-    }
-
     $: disabled = 
-        memberName === '' || 
-        (teamFormat === "any" &&
-            !teamOrIndiv || 
-            (teamOrIndiv === "team" && !teamID) ||
-            (teamOrIndiv === "new-team" && !newTeamName)
-        ) ||
-        (teamFormat === "teams" && !teamID)
+        memberName === '' || !teamOrIndiv
+        
 </script>
 
 <svelte:head>
@@ -53,20 +43,24 @@
 </svelte:head>
 
 <div>
-    <form action={`/join`} method="POST" on:submit={handleSubmit} autocomplete="off">
+    <form action="/api/join" method="POST" autocomplete="off">
         <h1>Join {gameName}</h1>
         <div>
             <input type="hidden" name="gameID" value={gameID} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
-            <br />
-            {#if teamFormat === "any"}
+            <br />                
+            {#if teamSettings.individualsAllowed}
                 <div class="radio-wrapper">
                     <label for="indiv">
                         <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
                         <span />
                         Play on my own
                     </label>
-                    <br />
+                </div>
+                <br />
+            {/if}
+            {#if teamSettings.newTeamsAllowed}
+                <div class="radio-wrapper">
                     <label for="new-team">
                         <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
                         <span />
@@ -76,16 +70,20 @@
                 <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
                     <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} />
                 </div>
-                {#if teams.length > 0}
-                    <br />
-                    <div class="radio-wrapper">
-                            <label for="team">
-                                <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
-                                <span />
-                                Play with an existing team:
-                            </label>
-                    </div>
-                {/if}
+                <br />
+            {/if} 
+            {#if teams.length > 0}
+                <div class="radio-wrapper">
+                    <label for="team">
+                        <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
+                        <span />
+                        {#if (teamSettings.individualsAllowed || teamSettings.newTeamsAllowed )}
+                            Play with an existing team:
+                        {:else}
+                            Team:
+                        {/if}
+                    </label>
+                </div>
                 <div style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
                     <select name="team-id" bind:value={teamID}>
                         <option value="" hidden default></option>
@@ -95,17 +93,8 @@
                     </select>
                 </div>
                 <br />
-            {:else if teamFormat === "teams"}
-                <label for="team-id">Team: </label>
-                <select id="team-id" name="team-id" bind:value={teamID}>
-                    <option value="" hidden default></option>
-                    {#each teams as team}
-                        <option value={team.id}>{team.name}</option>
-                    {/each}
-                </select>
                 <br />
             {/if}
-            <br />
             <button id="join-game" disabled={disabled}>Join</button>
         </div>
         <JoinMemberList memberNames={memberNames} />

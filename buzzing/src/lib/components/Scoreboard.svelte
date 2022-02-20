@@ -1,9 +1,7 @@
 <script lang="ts">
-    import type { IndividualTeamClean } from '$lib/classes/IndividualTeam';
-    import type { TeamClean } from '$lib/classes/Team'
-import { afterUpdate } from 'svelte';
+    import type { TeamData } from '$lib/classes/Team'
 
-    export let teamList: Array<TeamClean | IndividualTeamClean>
+    export let teamList: TeamData[]
     export let buzzedTeamIDs: string[]
 </script>
 
@@ -11,7 +9,7 @@ import { afterUpdate } from 'svelte';
     <h3>Scoreboard</h3>
     <ul>
         {#each teamList as team}
-            {#if team.members.length !== 1 || !team.members[0].reader}
+            {#if team.members.length !== 1 || !team.members[0].moderator}
                 <li class:buzzed={buzzedTeamIDs.includes(team.id)}>
                     {team.name + ": " + team.scoreboard.score}
                     {#if !team.individual}

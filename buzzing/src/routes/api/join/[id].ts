@@ -1,7 +1,7 @@
-import type { Request } from "@sveltejs/kit";
-import { getGame } from "../../../server";
+import type { RequestEvent } from "@sveltejs/kit";
+import { getGame } from "$lib/server";
 
-export function get({ params }: Request) {
+export function get({ params }: RequestEvent) {
     const { id } = params
 
     const game = getGame(id)
@@ -11,15 +11,15 @@ export function get({ params }: Request) {
     }
     
     const memberNames = game.members.map(x => x.name)
-    const teamFormat = game.teamFormat
-    const teams = game.teams.map(t => t.self).filter(t => !t.individual)
+    const teamSettings = game.teamSettings
+    const teams = game.teams.map(t => t.data).filter(t => !t.individual)
 
-    return {
-        body: {
+    return new Response(
+        JSON.stringify({
             memberNames,
             gameName: game.name,
-            teamFormat,
+            teamSettings,
             teams
-        }
-    }
+        })
+    )
 }

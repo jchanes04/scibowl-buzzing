@@ -1,18 +1,18 @@
 <script lang="ts">
-    import { session } from "$app/stores"
-    let teamFormat: "any" | "individuals" | "teams"
+    let newTeamsAllowed: boolean = false
+    let individualTeamsAllowed: boolean
     let ownerName: string
     let gameName: string
-    let teams: string[] = []
+    let defaultTeams: string[] = []
     let newTeamName: string
-    $: submitEnabled = ownerName && gameName && teamFormat && (teamFormat !== "teams" || teams.length !== 0)
+    $: submitEnabled = ownerName && gameName && !(!individualTeamsAllowed && !newTeamsAllowed && defaultTeams.length === 0)
 
     import TeamList from '$lib/components/TeamList.svelte'
 
     function handleSubmit() {
-        teams = [...teams, newTeamName]
+        if (newTeamName)
+            defaultTeams = [...defaultTeams, newTeamName]
         newTeamName = ''
-        $session.memberName = ownerName
     }
 </script>
 
@@ -20,38 +20,32 @@
     <title>Create Game</title>
 </svelte:head>
 
-<form id="form" action="/create" method="POST" autocomplete="off" on:submit={handleSubmit}>
+<form id="form" action="/api/create" method="POST" autocomplete="off" on:submit={handleSubmit}>
     <h1>Create Game</h1>
     <input type="text" placeholder="Game Name" name="game-name" id="game-name-input" bind:value={gameName} />
     <br />
     <input type="text" placeholder="Your Name" name="owner-name" id="owner-name-input" bind:value={ownerName} />
     <br />
 
-    <h2>Teams</h2>
-    <div class="radio-wrapper">
-        <label for="any-teams">
-            <input id="any-teams" type="radio" name="team-format" value="any" bind:group={teamFormat} />
+    <h2>Team Settings</h2>
+    <div class="checkbox-wrapper">
+        <label for="new-teams">
+            <input id="new-teams" type="checkbox" name="new-teams-allowed" bind:checked={newTeamsAllowed} />
             <span />
-            Individuals or Teams
+            Members can create their own teams that others can join
         </label>
         <br />
         <label for="individual-teams">
-            <input id="individual-teams" type="radio" name="team-format" value="individuals" bind:group={teamFormat} />
+            <input id="individual-teams" type="checkbox" name="individual-teams-allowed" bind:checked={individualTeamsAllowed} />
             <span />
-            Only Individuals
+            Members can join the game on a team of just themselves
         </label>
         <br />
-        <label for="group-teams">
-            <input id="group-teams" type="radio" name="team-format" value="teams" bind:group={teamFormat} />
-            <span />
-            Only Teams
-        </label>
         <br />
     </div>
     <br />
-    {#if teamFormat === "teams"}
-        <TeamList bind:teams={teams} bind:newTeamName={newTeamName} />
-    {/if}
+    <label for="default-team-name"><h2>Default Teams</h2></label>
+    <TeamList bind:teams={defaultTeams} bind:newTeamName={newTeamName} />
     <br />
     <button type="submit" disabled={!submitEnabled}>Create Game</button>
 </form>
@@ -77,7 +71,7 @@
         text-underline-offset: 0.1em;
     }
 
-    .radio-wrapper {
+    .checkbox-wrapper {
         text-align: left;
         display: inline-block;
     }
@@ -106,6 +100,10 @@
         padding-bottom: 0.3em;
         display: inline-block;
 
+        h2 {
+            margin: 0;
+        }
+
         input {
             visibility: hidden;
             width: 0;
@@ -115,7 +113,7 @@
         span {
             width: 1em;
             height: 1em;
-            border-radius: 50%;
+            border-radius: 0.2em;
             border: #CCC 2px solid;
             display: inline-block;
             position: relative;
@@ -130,9 +128,9 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: 0.7em;
-                height: 0.7em;
-                border-radius: 0.35em;
+                width: 0.6em;
+                height: 0.6em;
+                border-radius: 0.1em;
                 background: var(--blue);
             }
         }

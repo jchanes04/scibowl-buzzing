@@ -1,14 +1,14 @@
 <script lang="ts">
-    import type { MemberClean } from "$lib/classes/Member";
+    import type { MemberData } from "$lib/classes/Member";
 
-    export let memberList: MemberClean[] = []
+    export let memberList: MemberData[] = []
 </script>
 
 <div>
     <h3>Members</h3>
     <ul>
         {#each memberList as member}
-            <li class:reader={member.reader}>{member.name}</li>
+            <li class:reader={member.moderator}>{member.name}</li>
         {/each}
     </ul>
 </div>

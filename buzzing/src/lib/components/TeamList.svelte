@@ -1,6 +1,6 @@
 <script lang="ts">
-    export let teams = []
-    export let newTeamName
+    export let teams: string[] = []
+    export let newTeamName: string
     $: teamsJSON = JSON.stringify(teams)
 
     function addTeam() {
@@ -13,7 +13,6 @@
 
 <div>
     <input type="hidden" name="teams" value={teamsJSON} />
-    <h4>Team List</h4>
     <ul>
         {#each teams as team}
             <li>
@@ -24,7 +23,7 @@
             </li>
         {/each}
         <li>
-            <input type="text" id="new-team" bind:value={newTeamName} />
+            <input type="text" id="default-team-name" bind:value={newTeamName} />
             <span on:click={addTeam}>
                 <span class="add" />
             </span>
@@ -33,17 +32,13 @@
 </div>
 
 <style lang="scss">
-    div {
-        margin-top: 1.5em;
-    }
-
-    h4 {
-        margin: 0;
-    }
 
     ul {
         list-style: none;
-        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0;
     }
 
     li {

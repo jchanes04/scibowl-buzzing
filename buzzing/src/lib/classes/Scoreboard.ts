@@ -1,17 +1,15 @@
-import type { TeamScoreboard } from "./TeamScoreboard"
-
 type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
 type catScore = { correct: number, incorrect: number }
 export type catScores = Record<category, catScore>
 
-export interface MemberScoreboard {
+export interface Scoreboard {
     score: number,
     catScores: catScores,
-    teamScoreboard: TeamScoreboard | null
+    teamScoreboard: Scoreboard | null
 }
 
-export class MemberScoreboard {
-    constructor({teamScoreboard, score, catScores}: {teamScoreboard?: TeamScoreboard, score?:number, catScores?: catScores }) {
+export class Scoreboard {
+    constructor({teamScoreboard, score, catScores}: {teamScoreboard?: Scoreboard, score?:number, catScores?: catScores }) {
         this.score = score || 0
         this.catScores = catScores || emptyCatScores()
         this.teamScoreboard = teamScoreboard || null
@@ -50,9 +48,21 @@ export class MemberScoreboard {
         this.score = 0
         this.catScores = emptyCatScores()
     }
+
+    setScore(score: number) {
+        this.score = score
+    }
+
+    get data() {
+        return {
+            score: this.score,
+            catScores: this.catScores,
+            teamScoreboard: this.teamScoreboard?.data || null
+        }
+    }
 }
 
-function emptyCatScores(): catScores {
+export function emptyCatScores(): catScores {
     return {
         earth: {correct: 0, incorrect: 0},
         chem: {correct: 0, incorrect: 0},

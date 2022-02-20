@@ -1,6 +1,5 @@
 import type { Member } from "./Member";
 type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
-type catScore = Record<category, number>
 
 export interface GameScoreboard {
     pointValues: {
@@ -8,15 +7,6 @@ export interface GameScoreboard {
         bonus: number,
         penalty: number
     }
-}
-
-const emptyCatScores: catScore = {
-    earth: 0,
-    chem: 0,
-    math: 0,
-    bio: 0,
-    physics: 0,
-    energy: 0
 }
 
 // main purpose is to keep track of point values for the game

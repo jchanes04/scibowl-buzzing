@@ -1,34 +1,32 @@
 import { createMemberID } from "$lib/functions/createId";
 import type { Socket } from "socket.io";
-import { IndividualTeam } from "./IndividualTeam";
-import { catScores, MemberScoreboard } from "./MemberScoreboard";
+import { catScores, Scoreboard } from "./Scoreboard";
 import { Team } from "./Team";
 
 export interface Member {
     name: string,
     id: string,
-    team: Team | IndividualTeam,
-    reader: boolean,
-    scoreboard: MemberScoreboard,
+    team?: Team,
+    moderator: boolean,
+    scoreboard: Scoreboard,
     socket?: Socket
 }
 
-export interface MemberClean {
+export interface MemberData {
     name: string,
     id: string,
-    reader: boolean,
+    moderator: boolean,
     teamID: string,
-    scoreboard: MemberScoreboard,
-    socket?: Socket
+    scoreboard: Scoreboard
 }
 
 export class Member {
-    constructor({ name, id, team, reader, score, catScores }: { name: string, id?: string, team?: Team | IndividualTeam, reader: boolean, score?: number, catScores?: catScores }) {
+    constructor({ name, id, team, moderator, score, catScores }: { name: string, id?: string, team?: Team, moderator: boolean, score?: number, catScores?: catScores }) {
         this.id = id || createMemberID() 
         this.name = name
-        this.reader = reader
-        this.scoreboard = new MemberScoreboard({ teamScoreboard: team?.scoreboard, score, catScores })
-        this.team = team || new IndividualTeam(this.id, this)
+        this.moderator = moderator
+        this.scoreboard = new Scoreboard({ teamScoreboard: team?.scoreboard, score, catScores })
+        this.team = team || (moderator ? null : new Team(this.id, true, [this]))
         if (team instanceof Team) team.addMember(this)
     }
 
@@ -36,14 +34,13 @@ export class Member {
         this.socket = socket
     }
 
-    get self(): MemberClean {
+    get data(): MemberData {
         return {
             name: this.name,
             id: this.id,
-            reader: this.reader,
-            scoreboard: this.scoreboard,
-            socket: this.socket,
-            teamID: this.team.id
+            moderator: this.moderator,
+            scoreboard: this.scoreboard.data,
+            teamID: this.team?.id ?? null
         }
     }
 }

@@ -1,30 +1,30 @@
 import { createTeamID } from "$lib/functions/createId";
-import type { Member, MemberClean } from "./Member";
-import { TeamScoreboard } from "./TeamScoreboard";
+import type { Member, MemberData } from "./Member";
+import { Scoreboard } from "./Scoreboard";
 
 export interface Team {
     id: string,
     name: string,
     members: Member[],
-    scoreboard: TeamScoreboard,
-    individual: false
+    scoreboard: Scoreboard,
+    individual: boolean
 }
 
-export interface TeamClean {
+export interface TeamData {
     id: string,
     name: string,
-    members: MemberClean[],
-    scoreboard: TeamScoreboard,
-    individual: false
+    members: MemberData[],
+    scoreboard: Scoreboard,
+    individual: boolean
 }
 
 export class Team {
-    constructor(name: string) {
+    constructor(name: string, individual?: boolean, members?: Member[]) {
         this.id = createTeamID()
         this.name = name
-        this.members = []
-        this.scoreboard = new TeamScoreboard()
-        this.individual = false
+        this.members = members ?? []
+        this.scoreboard = new Scoreboard({})
+        this.individual = individual ?? false
     }
 
     addMember(member: Member) {
@@ -37,12 +37,12 @@ export class Team {
         return member || null
     }
 
-    get self(): TeamClean {
+    get data(): TeamData {
         return {
             id: this.id,
             name: this.name,
-            members: this.members.map(m => m.self),
-            scoreboard: this.scoreboard,
+            members: this.members.map(m => m.data),
+            scoreboard: this.scoreboard.data,
             individual: this.individual
         }
     }

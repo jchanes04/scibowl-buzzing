@@ -1,19 +1,15 @@
  <script lang="ts">
-    import type { Message } from "$lib/classes/Game"
-    import type { Writable } from 'svelte/store';
+    import chatMessagesStore from '$lib/stores/chatMessages';
     import { afterUpdate } from 'svelte'
 
-    export let messages: Writable<Message[]>
-
     let div: HTMLElement
-    
     afterUpdate(() => {
         div.scrollTo(0, div.scrollHeight)
     })
 </script>
 
 <div id="chatbox" class="gamediv" bind:this={div}>
-    {#each $messages as message}
+    {#each $chatMessagesStore as message}
         <p class={message.type}>{message.text}</p>
     {/each}
 </div>

@@ -1,6 +1,6 @@
 import type { Socket } from "socket.io-client"
 import type { DefaultEventsMap } from "socket.io-client/build/typed-events"
-import type { MemberClean } from "./Member"
+import type { MemberData } from "./Member"
 
 export type Event = {
     name: string,
@@ -19,7 +19,7 @@ export default interface Debugger {
 }
 
 export default class Debugger {
-    constructor(gameId: string, gameName: string, member: MemberClean, socket: Socket<DefaultEventsMap, DefaultEventsMap>) {
+    constructor(gameId: string, gameName: string, member: MemberData, socket: Socket<DefaultEventsMap, DefaultEventsMap>) {
         this.memberId = member.id,
         this.memberName = member.name
         this.gameId = gameId
