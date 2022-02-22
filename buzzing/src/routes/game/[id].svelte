@@ -9,7 +9,7 @@
                 props: {
                     gameInfo: {
                         ...json?.gameInfo,
-                        gameID: params.id,
+                        gameId: params.id,
                     } as GameInfo,
                     teamList: json.teamList,
                     moderatorList: json.moderatorList,
@@ -59,7 +59,7 @@
     import type { MemberData } from "$lib/classes/Member";
     import moderatorStore from "$lib/stores/moderators";
 
-    const debug = browser ? new Debugger($gameInfoStore.gameID, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
+    const debug = browser ? new Debugger($gameInfoStore.gameId, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
     setContext('debug', debug)
     
 
@@ -67,7 +67,7 @@
     })
 
     $socket.on('authFailed', () => {
-        goto('/join/' + $gameInfoStore.gameID)
+        goto('/join/' + $gameInfoStore.gameId)
     })
 
     $socket.on('gameEnd', () => {
@@ -81,28 +81,28 @@
 
 <svelte:window bind:innerWidth={windowWidth}></svelte:window>
 
-<div id="game">
+<main>
     <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode={gameInfo.joinCode}>
         <Timer bind:this={$timerStore} on:end={() => $gameStateStore = { ...$gameStateStore, buzzingDisabled: true }} />
     </svelte:component>
     <MemberList />
-    <Scoreboard teamList={teamList} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
+    <Scoreboard teamList={$teamsStore} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
     <Chatbox />
 
     {#if moderator}
-        <ReaderControls socket={socket} bind:questionState={$gameStateStore.questionState} teamList={teamList} />
+        <ReaderControls socket={socket} bind:questionState={$gameStateStore.questionState} />
     {:else}
         <PlayerControls />
     {/if}
 
     <div on:click={() => debug.openDebugLog()}
-        style="position: fixed; right: 10px; bottom: 10px; cursor: pointer;">Open Debug Log</div>
-</div>
+        style="position: fixed; right: 10px; bottom: 10px; cursor: pointer; background:grey; border-radius:1em; padding:.2em;">Open Debug Log</div>
+</main>
 
 
 
 <style lang="scss">
-    #game {
+    main {
         display: grid;
         grid-template-columns: .1fr 1fr 1fr 1fr .1fr;
         grid-template-rows: max(10vh, 80px) auto auto;
@@ -112,7 +112,7 @@
             ". control-panel control-panel control-panel .";
         column-gap: 1em;
         row-gap: 1em;
-        min-height: 95vh;
+        justify-self: stretch;
 
         @media (max-width: 800px) {
             grid-template-columns: .1fr 1fr 1fr .1fr;
@@ -122,8 +122,6 @@
                 ". chat-box chat-box ."
                 ". control-panel control-panel ."
                 ". member-list scoreboard .";
-            min-height: 130vh;
-            margin-bottom: 1em;
         }
 
         @media (max-width: 500px) {

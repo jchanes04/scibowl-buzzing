@@ -5,8 +5,8 @@
     export let buzzedTeamIDs: string[]
 </script>
 
-<div>
-    <h3>Scoreboard</h3>
+<div class="scoreboard">
+    <h2>Scoreboard</h2>
     <ul>
         {#each teamList as team}
             {#if team.members.length !== 1 || !team.members[0].moderator}
@@ -26,7 +26,7 @@
 </div>
 
 <style lang="scss">
-    div {
+    .scoreboard {
         height: 100%;
         min-height: 10em;
         max-height: 25em;
@@ -66,6 +66,12 @@
             margin-bottom: 1.2em;
             background: transparent;
         }
+    }
+
+    h2 {
+        font-size: 26px;
+        margin-top: 0.25em;
+        margin-left: 0.5em;
     }
 
     ul {

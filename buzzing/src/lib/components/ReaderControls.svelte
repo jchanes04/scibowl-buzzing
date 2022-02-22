@@ -1,5 +1,6 @@
 <script lang="ts">
     import ControlSection from '$lib/components/ControlSection.svelte'
+    import Select from 'svelte-select'
     import type { Socket } from 'socket.io-client';
     import type { Writable } from 'svelte/store'
     import type { TeamData } from '$lib/classes/Team'
@@ -7,8 +8,8 @@
     import { getContext } from 'svelte';
     import type Debugger from '$lib/classes/Debugger';
     import chatMessagesStore from '$lib/stores/chatMessages';
+    import teamsStore from '$lib/stores/teams';
     export let socket: Writable<Socket>
-    export let teamList: TeamData[]
     export let questionState: 'idle' | 'open' | 'buzzed'
     
     let categorySelect: HTMLSelectElement
@@ -16,7 +17,17 @@
     let selectedCategory: Category | ""
     let selectedTeam: string
     let questionType: "tossup" | "bonus" | ""
-
+    const categories: { id: Category, value: string }[] = [
+        {id:"earth", value:"Earth and Space"},
+        {id:"bio", value:"Biology"},
+        {id:"chem", value:"Chemistry"},
+        {id:"physics", value:"Physics"},
+        {id:"math", value:"Math"},
+        {id:"energy", value:"Energy"}
+    ]
+        
+    
+    
     const debug: Debugger = getContext('debug')
 
     function newQ() {
@@ -70,6 +81,14 @@
         selectedScore = ""
         debug.addEvent('scoreQuestion', { selectedScore })
     }
+
+    function handleTeamSelect(e: CustomEvent<TeamData>) {
+        selectedTeam = e.detail.id
+    }
+    function handleSubjectSelect(e: CustomEvent<{ id: Category, value: string }>) {
+        selectedCategory = e.detail.id
+        
+    }
 </script>
 
 <div id="buttons">
@@ -85,26 +104,11 @@
             </label>
         </div>
         <br />
-        <div id="target-team-wrapper" class:hidden={questionType !== 'bonus'}>
-            <select name="target-team" id="target-team" bind:this={teamSelect} bind:value={selectedTeam}>
-                <option value="" hidden default></option>
-                {#each teamList as team}
-                    {#if team.members.length !== 1 || !team.members[0].moderator}
-                        <option value={team.id}>{team.name}</option>
-                    {/if}
-                {/each}
-            </select>
+        <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus'}>
+            <div class="select-wrapper"><Select items={$teamsStore} optionIdentifier="id" labelIdentifier="name" placeholder="Bonus for" on:select={handleTeamSelect}/></div>
         </div>
         <br />
-        <select name="categories" id="category" bind:this={categorySelect} bind:value={selectedCategory}>
-            <option value="" hidden default></option>
-            <option value="earth">Earth and Space</option>
-            <option value="bio">Biology</option>
-            <option value="chem">Chemistry</option>
-            <option value="physics">Physics</option>
-            <option value="math">Math</option>
-            <option value="energy">Energy</option>
-        </select>
+            <div class="select-wrapper"><Select items={categories} optionIdentifier="id" labelIdentifier="value" placeholder="Category" on:select={handleSubjectSelect}/></div>
         <br />
         <button on:click={newQ} disabled={!questionType || !selectedCategory}>New Question</button>
     </ControlSection>
@@ -167,6 +171,14 @@
         background: transparent;
         color: #444;
         cursor: default;
+    }
+
+    .select-wrapper {
+        min-width: 10em;
+        --background:white;
+        --border: .1em solid green;
+        --border-radius: .5em;
+        
     }
 
     #question-type-wrapper label {

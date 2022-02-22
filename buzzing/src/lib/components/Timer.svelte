@@ -76,7 +76,7 @@
 
 <style lang="scss">
     h1 {
-        display: grid;
-        place-content: center;
+        margin: 0;
+        text-align: right;
     }
 </style>

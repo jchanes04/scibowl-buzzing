@@ -7,8 +7,8 @@ export async function post({ request }: RequestEvent) {
         const body = await request.formData()
         const ownerName = body.get("owner-name") as string
         const gameName = body.get("game-name") as string
-        const individualsAllowed = body.get("individual-teams-allowed") as string === "checked"
-        const newTeamsAllowed = body.get("individual-teams-allowed") as string === "checked"
+        const individualsAllowed = body.get("individual-teams-allowed") as string === "on"
+        const newTeamsAllowed = body.get("new-teams-allowed") as string === "on"
         const teamNames = JSON.parse(body.get('teams') as string || "[]")
         const gameData = {
             name: gameName,
@@ -18,6 +18,7 @@ export async function post({ request }: RequestEvent) {
             },
             teamNames
         }
+        console.dir(gameData)
 
         const game = createNewGame(ownerName, gameData)
 

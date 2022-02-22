@@ -5,7 +5,7 @@ import { Writable, writable } from "svelte/store";
 
 export type GameInfo = {
     gameName: string,
-    gameID: string,
+    gameId: string,
     joinCode: string,
     teamSettings: TeamSettings,
     myTeam: TeamData,

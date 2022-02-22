@@ -5,7 +5,7 @@
 declare namespace App {
 	interface Locals {
 		authenticated?: boolean,
-        gameID?: string,
+        gameId?: string,
         gameName?: string,
 		memberData?: import('$lib/classes/Member').MemberData
 	}
@@ -14,7 +14,7 @@ declare namespace App {
 
 	interface Session {
 		authenticated: boolean,
-        gameID?: string,
+        gameId?: string,
         gameName?: string
 	}
 

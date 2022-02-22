@@ -1,7 +1,7 @@
 import { createGameID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
-import type { Member } from "./Member"
-import { Team } from "./Team"
+import { Member, MemberData } from "./Member"
+import type { Team } from "./Team"
 import { Timer } from "./Timer"
 
 export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
@@ -48,7 +48,7 @@ export interface Game {
     }
 
     //stores ids of all players that have left 
-    leftPlayers: string[]
+    leftPlayers: MemberData[]
 }
 
 export class Game {
@@ -94,11 +94,14 @@ export class Game {
         this.leftPlayers = []   // players who have left the game, used for players to rejoin
     }
 
+    get people() {
+        return [...this.members, ...this.moderators]
+    }
+
     addMember(member: Member) {
         //error if they are already in the game
-        if (this.members.some(x => x.id === member.id)) throw new Error("Member is already in the game")
-        //if they are in leftPlayers then remove them and add them into the memberlist
-        if (this.leftPlayers.includes(member.id)) this.leftPlayers = this.leftPlayers.filter(m => m !== member.id)
+        if ([...this.people, ...this.leftPlayers].some(x => x.id === member.id)) throw new Error("Member is already in the game")
+        
         this.members = [...this.members, member]
 
         // if player's team is not already in the list of teams add their team to the list
@@ -107,12 +110,47 @@ export class Game {
         return this.members
     }
 
+    rejoinMember(memberId: string) {
+        if (this.leftPlayers.some(p => p.id === memberId)) {
+            const rejoiningPlayerData = this.leftPlayers.find(p => p.id === memberId)
+            const team = this.teams.find(t => t.id === rejoiningPlayerData.teamID)
+
+            if (!team && !rejoiningPlayerData.moderator)
+                throw new Error("Could not find team")
+
+            const newMember = new Member({
+                name: rejoiningPlayerData.name,
+                id: rejoiningPlayerData.id,
+                team,
+                moderator: rejoiningPlayerData.moderator,
+                score: rejoiningPlayerData.scoreboard.score,
+                catScores: rejoiningPlayerData.scoreboard.catScores
+            })
+            if (newMember.moderator){
+                this.moderators = [
+                    ...this.moderators,
+                    newMember
+                ]
+            } else {
+                this.members = [
+                    ...this.members,
+                    newMember
+                ]
+            }
+
+            return newMember
+        } else {
+            return null
+        }
+    }
+
     removeMember(id: string) {
-        const member = this.members.find(x => x.id === id)
+        const member = this.people.find(x => x.id === id)
         if (member) {
             this.members = this.members.filter(x => x.id !== id)
-            if (member.team instanceof Team) member.team.removeMember(member.id)
-            this.leftPlayers.push(member.id)
+            this.moderators = this.moderators.filter(x => x.id !== id)
+            if (member.team) member.team.removeMember(member.id)
+            this.leftPlayers.push(member.data)
             return member
         }
         return null
@@ -165,10 +203,9 @@ export class Game {
 
         this.state.currentBuzzer = null
         
-        const open = !this.state.currentQuestion.bonus && 
-            this.state.buzzedTeams.length < 3 && 
-            this.state.buzzedTeams.length < this.teams.length - 1 && 
-            score !== 'correct'
+        const open = !this.state.currentQuestion.bonus
+            && this.state.buzzedTeams.length < Math.min(3, this.teams.length)
+            && score !== 'correct'
 
         if (!open) {
             this.state.currentQuestion = null

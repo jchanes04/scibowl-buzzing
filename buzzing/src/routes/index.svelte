@@ -17,7 +17,7 @@
 
 <style lang="scss">
     h1  {
-        font-size: 120pt;
+        font-size: 80px;
         margin: .2em .0em .1em 0;
     }
     
@@ -61,7 +61,7 @@
 
     .bubble {
         border-radius: 15px;
-        background-color: var(--color-2);
+        background-color: #006242;
         padding: 3em;
         color:white;
         margin: 2em 0;

@@ -31,7 +31,8 @@ io.on('connection', async socket => {
     
     const { gameId, memberId } = tokenData
     const game = getGame(gameId)
-    if (!game.members.some(m=> m.id === memberId) && !game.moderators.some(m => m.id === memberId)) {
+    
+    if (!game || !game.people.some(m=> m.id === memberId)) {
         socket.emit('authFailed')
         return socket.disconnect()
     }
@@ -165,7 +166,7 @@ io.on('connection', async socket => {
         games.deleteGame(gameId)
     })
 
-    socket.on('logDump', (data: Omit<Debugger, 'socket'>) => {
+    socket.on('logDump', (data: Omit<Debugger, 'socket' | 'openWindow'>) => {
         console.log(`Dumping log data from game id ${data.gameId} and name ${data.gameName}`)
         const fileData = fs.readFileSync(process.cwd() + '/debugLogs.json').toString()
         const currentLogs = JSON.parse(fileData)
@@ -189,11 +190,6 @@ export function createNewGame(ownerName: string, gameData: { name: string, teamS
 export function getGame(id: string) {
     const game = games.get(id)
     return game
-}
-
-export function checkAuthenticated(gameId: string, memberId: string) {
-    const game = games.get(gameId)
-    return game?.members.some(x => x.id === memberId) || game?.leftPlayers.some(x => x === memberId)
 }
 
 export function gameExists(id: string) {

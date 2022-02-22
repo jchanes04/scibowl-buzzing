@@ -2,6 +2,12 @@ type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
 type catScore = { correct: number, incorrect: number }
 export type catScores = Record<category, catScore>
 
+export type ScoreboardData = {
+    score: number,
+    catScores: catScores,
+    teamScoreboard: ScoreboardData | null
+}
+
 export interface Scoreboard {
     score: number,
     catScores: catScores,
@@ -53,7 +59,7 @@ export class Scoreboard {
         this.score = score
     }
 
-    get data() {
+    get data(): ScoreboardData {
         return {
             score: this.score,
             catScores: this.catScores,

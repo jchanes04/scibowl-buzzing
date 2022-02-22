@@ -14,8 +14,8 @@
         $buzzAudioStore.play()
 
         $gameStateStore = ({
-            questionState: 'open',
-            buzzingDisabled: false,
+            questionState: 'buzzed',
+            buzzingDisabled: true,
             buzzedTeamIDs: [...$gameStateStore.buzzedTeamIDs, $gameInfoStore.myTeam.id ]
         })
         $timerStore.pause()

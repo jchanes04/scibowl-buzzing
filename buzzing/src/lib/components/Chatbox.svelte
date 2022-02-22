@@ -2,31 +2,38 @@
     import chatMessagesStore from '$lib/stores/chatMessages';
     import { afterUpdate } from 'svelte'
 
-    let div: HTMLElement
+    let chatMessagesElement: HTMLElement
     afterUpdate(() => {
-        div.scrollTo(0, div.scrollHeight)
+        chatMessagesElement.scrollTo(0, chatMessagesElement.scrollHeight)
     })
 </script>
 
-<div id="chatbox" class="gamediv" bind:this={div}>
-    {#each $chatMessagesStore as message}
-        <p class={message.type}>{message.text}</p>
-    {/each}
+<div class="chatbox">
+    <h2>Chat</h2>
+    <div class="chat-messages" bind:this={chatMessagesElement}>
+        {#each $chatMessagesStore as message}
+            <p class={message.type}>{message.text}</p>
+        {/each}
+    </div>
 </div>
 
 <style lang="scss">
-    #chatbox {
+    .chatbox {
         grid-area: chat-box;
-        display: flex;
-        flex-direction: column;
-        overflow-y: scroll;
-        height: 100%;
-        min-height: 10em;
-        max-height: 25em;
+        display: grid;
+        grid-template-rows: auto 1fr;
         padding: 1em;
         box-sizing: border-box;
         border-radius: 1em;
         background: #EEE;
+        min-height: 10em;
+        max-height: 25em;
+    }
+
+    .chat-messages {
+        display: flex;
+        flex-direction: column;
+        overflow-y: scroll;
 
         &::-webkit-scrollbar {
             width: 5px;
@@ -55,6 +62,12 @@
             margin-bottom: 1.2em;
             background: transparent;
         }
+    }
+
+    h2 {
+        font-size: 26px;
+        margin-top: 0.25em;
+        margin-left: 0.5em;
     }
 
     p {

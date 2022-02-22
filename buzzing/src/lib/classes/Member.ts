@@ -1,6 +1,6 @@
 import { createMemberID } from "$lib/functions/createId";
 import type { Socket } from "socket.io";
-import { catScores, Scoreboard } from "./Scoreboard";
+import { catScores, Scoreboard, ScoreboardData } from "./Scoreboard";
 import { Team } from "./Team";
 
 export interface Member {
@@ -17,7 +17,7 @@ export interface MemberData {
     id: string,
     moderator: boolean,
     teamID: string,
-    scoreboard: Scoreboard
+    scoreboard: ScoreboardData
 }
 
 export class Member {
@@ -27,7 +27,7 @@ export class Member {
         this.moderator = moderator
         this.scoreboard = new Scoreboard({ teamScoreboard: team?.scoreboard, score, catScores })
         this.team = team || (moderator ? null : new Team(this.id, true, [this]))
-        if (team instanceof Team) team.addMember(this)
+        if (team) team.addMember(this)
     }
 
     setSocket(socket: Socket) {

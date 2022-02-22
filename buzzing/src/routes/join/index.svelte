@@ -28,7 +28,7 @@
 
 <style lang="scss">
     form {
-        margin: 3em auto;
+        margin: 0em auto;
         border-radius: 1em;
         text-align: center;
         padding: 1em;

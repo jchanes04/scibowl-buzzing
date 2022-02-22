@@ -9,8 +9,8 @@ export async function post({ request }: RequestEvent) {
     try {
         const body = await request.formData()
         const joinCode = body.get('join-code') as string
-        const gameID = body.get('gameID') as string
-        const game = joinCode ? getGameFromCode(joinCode) : getGame(gameID)
+        const gameId = body.get('gameId') as string
+        const game = joinCode ? getGameFromCode(joinCode) : getGame(gameId)
         
         if (joinCode && game) {
             return redirectTo('/join/' + game.id)

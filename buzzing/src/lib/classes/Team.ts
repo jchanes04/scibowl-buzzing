@@ -1,6 +1,6 @@
 import { createTeamID } from "$lib/functions/createId";
 import type { Member, MemberData } from "./Member";
-import { Scoreboard } from "./Scoreboard";
+import { Scoreboard, ScoreboardData } from "./Scoreboard";
 
 export interface Team {
     id: string,
@@ -14,7 +14,7 @@ export interface TeamData {
     id: string,
     name: string,
     members: MemberData[],
-    scoreboard: Scoreboard,
+    scoreboard: ScoreboardData,
     individual: boolean
 }
 

@@ -16,14 +16,3 @@ export async function getDataFromToken(token: string): Promise<{ memberId: strin
         return null
     }
 }
-
-export async function getUserFromToken(token: string) {
-    try {
-        const tokenPayload = jwt.verify(token, privateKey, { algorithms: [ 'RS256' ] }) as jwt.JwtPayload & { memberId: string, gameId: string }
-        const game = games.get(tokenPayload.gameId)
-        let userData = game.members.find(m => m.id === tokenPayload.memberId) || game.moderators.find(m => m.id === tokenPayload.memberId)
-        return userData || null
-    } catch (e) {
-        return null
-    }
-}

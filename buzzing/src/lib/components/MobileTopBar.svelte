@@ -21,7 +21,7 @@
         padding: 0 0.5em;
         width: 100%;
         box-sizing: border-box;
-        background: var(--color-1);
+        background: #d4d9d9;
         z-index: 5;
 
         > div {

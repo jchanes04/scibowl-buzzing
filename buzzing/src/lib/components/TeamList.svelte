@@ -9,6 +9,12 @@
         }
         newTeamName = ''
     }
+
+    function handleKeydown(e: KeyboardEvent) {
+        if (e.code === "Enter" || e.keyCode === 13) {
+            addTeam()
+        }
+    }
 </script>
 
 <div>
@@ -30,6 +36,8 @@
         </li>
     </ul>
 </div>
+
+<svelte:body on:keydown={handleKeydown}></svelte:body>
 
 <style lang="scss">
 

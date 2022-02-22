@@ -68,30 +68,54 @@ socket.on('memberJoin', ({ member, team }: { member: MemberData, team: TeamData 
         moderatorStore.set([...moderators,
             member
         ])
+    } else {
+        teamsStore.set([
+            ...teams.filter(t => t.id !== team.id),
+            team
+        ])  
     }
-    teamsStore.set([
-        ...teams.filter(t => t.id !== team.id),
-        team
-    ])
     chatMessagesStore.set([...chatMessages, {
         type: 'notification',
         text: member.name + ' has joined the game'
     }])
 })
 
-socket.on('memberLeave', id => {
-    const member = members.find(x => x.id === id)
-    const team = teams.find(t => t.id === member.teamID)
-    if (team.members.length === 1 && !gameInfo.teamSettings.newTeamsAllowed) {
-        teamsStore.set(teams.filter(t => t.id !== team.id))
+socket.on('memberRejoin', ({ member, team }: { member: MemberData, team: TeamData })=>{
+    if (member.moderator){
+        moderatorStore.set([...moderators,
+            member
+        ])
     } else {
         teamsStore.set([
             ...teams.filter(t => t.id !== team.id),
-            {
-                ...team,
-                members: team.members.filter(m => m.id !== member.id)
-            }
+            team
         ])
+    }
+    chatMessagesStore.set([...chatMessages, {
+        type: 'notification',
+        text: member.name + ' has rejoined the game'
+    }])
+})
+
+socket.on('memberLeave', id => {
+    const member = [...members, ...moderators].find(x => x.id === id)
+    const team = teams.find(t => t.id === member.teamID)
+    if (member.moderator){
+        moderatorStore.set([
+            ...moderators.filter(m => m.id !== member.id)
+        ])
+    } else {
+        if (team.members.length === 1 && !gameInfo.teamSettings.newTeamsAllowed) {
+            teamsStore.set(teams.filter(t => t.id !== team.id))
+        } else {
+            teamsStore.set([
+                ...teams.filter(t => t.id !== team.id),
+                {
+                    ...team,
+                    members: team.members.filter(m => m.id !== member.id)
+                }
+            ])
+        }
     }
     chatMessagesStore.set([...chatMessages, {
         type: 'notification',
@@ -126,10 +150,10 @@ socket.on('scoresSaved', () => {
 
 socket.on('scoresClear', () => {
     teams.forEach(t => {
-        t.scoreboard.clear()
+        t.scoreboard.score = 0 
     })
     members.forEach(m => {
-        m.scoreboard.clear()
+        m.scoreboard.score = 0  
     })
     teamsStore.set(teams)
     
@@ -146,11 +170,11 @@ socket.on('scoreChange', (
     const team = teams.find(t => t.id === teamID)
     const member = members.find(m => m.id === memberID)
     if (member) {
-        member.scoreboard.setScore(memberScore)
+        member.scoreboard.score = memberScore
         teamsStore.set(teams)
     }
     if (team) {
-        team.scoreboard.setScore(teamScore)
+        team.scoreboard.score = teamScore
         teamsStore.set(teams)
     }
 
@@ -173,7 +197,7 @@ socket.on('scoreChange', (
 
     if (open) {
         timer.resume()
-        if (gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
+        if (gameInfo.myTeam && gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
             gameStateStore.set({
                ...gameState,
                questionState: 'open',
@@ -206,7 +230,7 @@ socket.on('questionOpen', (question: Question) => {
     } else {
         gameStateStore.set({
             questionState: 'open',
-            buzzedTeamIDs: [gameInfo.myTeam.id],
+            buzzedTeamIDs: [],
             buzzingDisabled: false
         })
     }
@@ -217,8 +241,9 @@ socket.on('questionOpen', (question: Question) => {
 })
 
 socket.on('timerStart', (length: number) => {
+    console.log(gameState.buzzedTeamIDs)
     timer.start(length)
-    if (!gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
+    if (gameInfo.myTeam && !gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
         gameStateStore.set({
             ...gameState,
             questionState:'open',

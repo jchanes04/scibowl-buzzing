@@ -10,7 +10,7 @@
             return {
                 props: {
                     ...json,
-                    gameID: params.id
+                    gameId: params.id
                 }
             }
         }
@@ -20,7 +20,7 @@
 </script>
 
 <script lang="ts">
-    export let memberNames: string[], gameName: string, gameID: string, teamSettings: TeamSettings, teams: TeamData[]
+    export let memberNames: string[], gameName: string, gameId: string, teamSettings: TeamSettings, teams: TeamData[]
 
     import { session } from "$app/stores"
     
@@ -29,10 +29,16 @@
     import type { TeamSettings } from "$lib/classes/Game";
 
     let memberName = ''
-    let teamOrIndiv: "indiv" | "team" | "new-team" | ""
+    let teamOrIndiv: "indiv" | "team" | "new-team" | "" = ""
     let teamID: string
     let newTeamName: string
-
+    let showRadio: boolean = true
+    if (teamSettings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv"
+    if (teamSettings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team"
+    if (!(teamSettings.individualsAllowed || teamSettings.newTeamsAllowed)) teamOrIndiv = "team"
+    console.log(teamOrIndiv)
+    console.dir(teamSettings)
+    if (teamOrIndiv != "") showRadio = false
     $: disabled = 
         memberName === '' || !teamOrIndiv
         
@@ -46,10 +52,10 @@
     <form action="/api/join" method="POST" autocomplete="off">
         <h1>Join {gameName}</h1>
         <div>
-            <input type="hidden" name="gameID" value={gameID} />
+            <input type="hidden" name="gameId" value={gameId} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
             <br />                
-            {#if teamSettings.individualsAllowed}
+            {#if teamSettings.individualsAllowed && showRadio}
                 <div class="radio-wrapper">
                     <label for="indiv">
                         <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
@@ -60,6 +66,7 @@
                 <br />
             {/if}
             {#if teamSettings.newTeamsAllowed}
+                {#if showRadio}
                 <div class="radio-wrapper">
                     <label for="new-team">
                         <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
@@ -67,23 +74,25 @@
                         Create a new team:
                     </label>
                 </div>
+                {/if}
                 <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
                     <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} />
                 </div>
                 <br />
             {/if} 
             {#if teams.length > 0}
+                {#if showRadio}
                 <div class="radio-wrapper">
                     <label for="team">
                         <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
                         <span />
-                        {#if (teamSettings.individualsAllowed || teamSettings.newTeamsAllowed )}
-                            Play with an existing team:
-                        {:else}
-                            Team:
-                        {/if}
+                            Play with an existing team:                        
                     </label>
                 </div>
+                {:else}
+                    <label>Team:</label>
+                {/if}
+
                 <div style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
                     <select name="team-id" bind:value={teamID}>
                         <option value="" hidden default></option>
@@ -103,7 +112,7 @@
 
 <style lang="scss">
     form {
-        margin: 3em auto;
+        margin: 0em auto;
         border-radius: 1em;
         text-align: center;
         padding: 1em;
@@ -157,19 +166,15 @@
             height: 1em;
             border-radius: 50%;
             border: #CCC 2px solid;
-            display: inline-block;
-            position: relative;
+            display: inline-grid;
+            place-content: center;
             background: #FFF;
             vertical-align: text-top;
             margin-right: 0.3em;
 
             &::after {
                 content: '';
-                position: absolute;
                 display: none;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
                 width: 0.7em;
                 height: 0.7em;
                 border-radius: 0.35em;

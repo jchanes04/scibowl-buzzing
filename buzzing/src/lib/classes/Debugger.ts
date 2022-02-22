@@ -4,7 +4,8 @@ import type { MemberData } from "./Member"
 
 export type Event = {
     name: string,
-    data: Record<string, unknown> | unknown[]
+    data: Record<string, unknown> | unknown[],
+    type: "Client" | "WS"
 }
 
 export default interface Debugger {
@@ -12,8 +13,7 @@ export default interface Debugger {
     gameName: string,
     memberId: string,
     memberName: string,
-    clientEvents: Event[],
-    websocketEvents: Event[],
+    events: Event[],
     socket: Socket<DefaultEventsMap, DefaultEventsMap>,
     openWindow: Window | null
 }
@@ -24,13 +24,12 @@ export default class Debugger {
         this.memberName = member.name
         this.gameId = gameId
         this.gameName = gameName
-        this.clientEvents = []
-        this.websocketEvents = []
+        this.events = []
         this.socket = socket
         this.openWindow = null
 
         socket.onAny((event: string, ...args: any[]) => {
-            this.websocketEvents.push({ name: event, data: args })
+            this.events.push({ name: event, data: args, type: "WS" })
 
             if (this.openWindow) {
                 const newMessageElement = this.openWindow.document.createElement('p')
@@ -48,7 +47,7 @@ export default class Debugger {
     }
 
     addEvent(name: string, data: Record<string, unknown> | unknown[]) {
-        this.clientEvents.push({ name, data })
+        this.events.push({ name, data, type: 'Client' })
 
         if (this.openWindow) {
             const newMessageElement = this.openWindow.document.createElement('p')
@@ -61,8 +60,7 @@ export default class Debugger {
 
     reportError() {
         this.socket.emit('logDump', {
-            clientEvents: this.clientEvents,
-            websocketEvents: this.websocketEvents,
+            events: this.events,
             gameId: this.gameId,
             gameName: this.gameName,
             memberId: this.memberId,
@@ -90,7 +88,9 @@ export default class Debugger {
                     cursor: pointer;
                 }
             </style>
-            <div id="event-container"></div>
+            <div id="event-container">
+                ${this.events.map(e => `<p>${("[" + e.type + "]").padEnd(8, " ")} ${e.name.padEnd(14, " ")} | ${JSON.stringify(e.data)}</p>`)}
+            </div>
             <button onclick="reportBug()" class="report">Report Bug</button>`
         )
     }
