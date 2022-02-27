@@ -30,12 +30,14 @@ export type Member = {
 }
 
 import { Collection, Db, MongoClient } from 'mongodb'
+import dotenv from 'dotenv';
+dotenv.config()
 
 const collections: {
     users?: Collection<User>,
     teams?: Collection<Team>
 } = {}
-const client = new MongoClient("mongodb://40.117.128.184:27017", { directConnection: true })
+const client = new MongoClient(process.env.DATABASE_URL, { directConnection: true })
 var db: Db;
 async function init() {
     try {
