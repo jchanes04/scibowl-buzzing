@@ -2,13 +2,20 @@
     import type { LoadInput, LoadOutput } from '@sveltejs/kit'
     import TeamSelect from "$lib/components/TeamSelect.svelte";
     export async function load({ session, fetch }: LoadInput): Promise<LoadOutput> {
-        const teamsRes = await Promise.all(session.userData.teamIds.map(t => fetch('/api/teams/' + t)))
-        const resolvedTeams = teamsRes.filter(t => t.status === 200)
-        const teams = await Promise.all(resolvedTeams.map(t => t.json() as Promise<Team>))
+        if (!session.loggedIn) {
+            return {
+                status: 302,
+                redirect: "/register"
+            }
+        } else {   
+            const teamsRes = await Promise.all(session.userData.teamIds.map(t => fetch('/api/teams/' + t)))
+            const resolvedTeams = teamsRes.filter(t => t.status === 200)
+            const teams = await Promise.all(resolvedTeams.map(t => t.json() as Promise<Team>))
 
-        return {
-            props: {
-                teams
+            return {
+                props: {
+                    teams
+                }
             }
         }
     }

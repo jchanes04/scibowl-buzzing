@@ -15,7 +15,7 @@ export async function post({ request }: RequestEvent) {
         passwordHash
     })
 
-    if (await argon2.verify(passwordHash, password)) {
+    if (passwordHash && await argon2.verify(passwordHash, password)) {
         const userData = await getUserFromUsername(username)
         const authToken = generateToken(userData.id)
         return new Response(JSON.stringify({ correct: true }), {

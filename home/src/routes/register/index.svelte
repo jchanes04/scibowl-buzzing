@@ -11,9 +11,9 @@
     <label for='username'>Username</label><br />
     <input type='text' name='username' /><br />
     <label for='password'>Password</label><br />
-    <input type='text' name='password' /><br />
+    <input type='text' name='password' autocomplete="new-password" /><br />
     <label for='confirm-password'>Confirm Password</label><br />
-    <input type="text" name='confirm-password' /><br />
+    <input type="text" name='confirm-password' autocomplete="new-password" /><br />
 
     <button type="submit">Submit</button>
 </form>

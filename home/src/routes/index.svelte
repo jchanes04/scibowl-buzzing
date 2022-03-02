@@ -1,12 +1,6 @@
 <script lang="ts">
-import SubjectMenu from "$lib/components/SubjectMenu.svelte";
-
-
-    let displayTab: string = 'bio'
-    
-    function switchTab(element,category) {
-        displayTab= category
-    }
+    import SubjectMenu from "$lib/components/SubjectMenu.svelte";
+    import StaffCard from "$lib/components/StaffCard.svelte";
 </script>
 
 <main>    
@@ -21,46 +15,61 @@ import SubjectMenu from "$lib/components/SubjectMenu.svelte";
         <p>Say goodbye to shitty latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers. With integrated scoring, challenge and moderation tools, the enloe science bowl online buzzing system is perfect for all online science bowl gameplay. This is the closest we've ever gotten to emulateing real, in-person science bowl.</p>
     </section>
     <section class='bubble'>
-        <h2>Skilled Writers and Testsolvers</h2>
-        <SubjectMenu>
-            <div slot="bio">
-                <p>bio sample</p>
-            </div>
-            <div slot="earth">
-                <p>earth sample</p>
-            </div>
-            <div slot="chem">
-                <p>chem sample</p>
-            </div>
-            <div slot="physics">
-                <p>physics sample</p>
-            </div>
-            <div slot="math">
-                <p>math sample</p>
-            </div>
-        </SubjectMenu>
+        <h2>Skilled Writers</h2>
+        <div id="staff">
+            <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">USAPhO Semifinalist<br />USNCO Semifinalist <br/>Science Olympiad National Medalist<br/>USACO Silver</StaffCard>
+            <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">US Team: International Earth Science Olympiad<br />USNCO Honorable Mention<br/>AIME Qualifer</StaffCard>
+            <StaffCard name="Brian Zhang" grade="Sophomore" categories="Math, Physics, Earth and Space">US Team: International Astronomy Olympiad<br/>AIME Qualifer</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Thanush Patlolla" grade="Freshman" categories="Physics, Math">AIME Qualifier<br/>USACO Silver</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+        </div>
     </section>
     <section class='bubble'>
         <h2>Samples</h2>
         <SubjectMenu>
             <div slot="bio">
-                <p>bio sample</p>
+                <p>Colin and Rohini want to have a child and seek genetic counseling because they are concerned about their child having disease Z. Rohini is unaffected by disease Z but Colin is. If their first child is a son, order the following mechanisms of disease Z inheritance in increasing likeliness of their son having disease Z.</p><br />
+                <p>1) hollandric</p>
+                <p>2) maternal effect</p>
+                <p>3) X-linked recessive</p>
+                <p>4) autosomal dominant</p><br />
+                <p>ANSWER: <span class="answer">2, 3, 4, 1</span></p>
             </div>
             <div slot="earth">
-                <p>earth sample</p>
+                <p>Order the following minerals in increasing order by their susceptibility to chemical weathering:</p><br />
+                <p>1) Olivine</p>
+                <p>2) Hematite</p>
+                <p>3) Calcite</p>
+                <p>4) Quartz</p><br />
+                <p>ANSWER: <span class="answer">2, 4, 1, 3</span></p>
             </div>
             <div slot="chem">
-                <p>chem sample</p>
+                <p>Which of the following reagents would result in the formation of an alcohol when reacted with pentone in ethanol solution?</p><br />
+                <p>W) NaBH₄</p>
+                <p>X) H₂SO₄</p>
+                <p>Y) KMnO₄</p>
+                <p>Z) Methlyamine</p><br />
+                <p>ANSWER: <span class="answer">W) NaBH₄</span></p>
             </div>
             <div slot="physics">
-                <p>physics sample</p>
+                <p>Consider a 1 kg mass at position x = 1. If the potential energy as a function of x is equal to -x<sup>3</sup> + 4x<sup>2</sup> - 5x + 2, what is the angular frequency of small oscillations around the point x = 1?</p><br />
+                <p>ANSWER: <span class="answer">sqrt(2)</span></p>
             </div>
             <div slot="math">
-                <p>math sample</p>
+                <p>Brian and Rishabh take turns playing Russian Roulette using a nerf revolver with 6 spaces for darts and one actual dart in it. However, Rishabh cheated using magic that makes himself half as likely as usual to pick the slot that has the dart in it. if Rishabh goes first, what is the probability that he dies on his second turn?</p><br />
+                <p id="mathfractionanswer">ANSWER: <span class="answer">⁵⁵⁄₈₆₄</span></p>
             </div>
         </SubjectMenu>
     </section>
-    <a href='https://science.osti.gov/wdts/nsb/Regional-Competitions/Resources/HS-Sample-Questions#set13'><h2 class="info">Rules</h2></a>
+    <a href='https://docs.google.com/document/d/1oibtrtJf7PxFfmF18t379Z9g2Bvv820_-snMUyBx1oM/edit?usp=sharing' target="_blank"><h2 class="info">Rules</h2></a>
 </main>
 
 
@@ -82,7 +91,12 @@ import SubjectMenu from "$lib/components/SubjectMenu.svelte";
     .info {
         margin: .5em;
     }
-    
+    #staff {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+    }
 
     .info::before {
         content: '';
@@ -95,18 +109,30 @@ import SubjectMenu from "$lib/components/SubjectMenu.svelte";
         margin-right: 0.5em;
     }
     
+    .answer {
+        display: inline-block;
+        background-color: black;
+        height: 100%;
+        cursor: default;
+
+        &:hover {
+            background-color: transparentize($color: black, $amount: 0.8);
+        }
+    }
+
+
     #hero {
         position: relative;
         padding: 0 5em;
-
     }
+
     main {
         margin: 0 5vw;
     }
 
     p {
         font-size: 20px;
-        margin: 0;
+        margin: .1em 0;
     }
 
     .bubble {
@@ -115,5 +141,9 @@ import SubjectMenu from "$lib/components/SubjectMenu.svelte";
         padding: 3em;
         color:white;
         margin: 2em 0;
-     }
+    }
+
+    a {
+        color: blue;
+    }
 </style>

@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-
     export let loggedIn: boolean
 
     let loginMenuVisible = false
@@ -36,7 +34,7 @@
 <svelte:window on:click={handleWindowClick}></svelte:window>
 
 <div id="header">
-    <h1 id="title">ESBOT</h1>
+    <a href="/"><h1 id="title">ESBOT</h1></a>
     <div id="right">
         {#if loggedIn}
             <nav>
@@ -53,9 +51,9 @@
                             <p class="error">{error}</p>
                         {/if}
                         <label for="username">Username</label>
-                        <input id="username" type="text" bind:value={username} />
+                        <input id="username" type="text" bind:value={username} autocomplete="off" />
                         <label for="password">Password</label>
-                        <input id="password" type="password" bind:value={password} />
+                        <input id="password" type="password" bind:value={password} autocomplete="off" />
                         <button on:click={login}>Login</button>
                     </div>
                 </div>
@@ -99,15 +97,16 @@
         display: flex;
         flex-direction: row;
         gap: 1em;
-    }
-    
-    a {
-        text-decoration: none;
-        color: inherit;
-        transition: color 0.3s;
 
-        &:hover {
-            color: var(--color-2)
+        span, a {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+            cursor: pointer;
+
+            &:hover {
+                color: var(--color-2)
+            }
         }
     }
 
@@ -130,6 +129,22 @@
 
         &.visible {
             display: block;
+        }
+    }
+
+    label {
+        font-size: 18px;
+    }
+
+    input {
+        padding: 0.3em;
+        border-radius: 0.5em;
+        outline: none;
+        border: 2px solid black;
+        transition: border-color 0.3s;
+        
+        &:hover, &:focus {
+            border-color: var(--color-2);
         }
     }
 </style>
