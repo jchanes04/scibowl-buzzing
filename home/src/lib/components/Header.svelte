@@ -98,7 +98,7 @@
         width: min-content;
         float: right;
 
-        @media (max-width: 550px) {
+        @media (max-width: 600px) {
             width: 100%;
             justify-content: center;
             font-size: 24px;
@@ -144,7 +144,7 @@
     }
 
     .title-anchor {
-        @media (max-width: 550px) {
+        @media (max-width: 600px) {
             display: none;
         }
         color: black;

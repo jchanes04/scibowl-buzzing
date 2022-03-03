@@ -4,19 +4,23 @@ export interface User {
     passwordHash: string,
     schoolName: string,
     teamIds: string[],
+    transactionIDs: number[],
+    paymentAmount: number,
     createdAt: Date
 }
 
 export type UserClean = Omit<User, 'passwordHash'>
+
 
 export type Team = {
     id: string,
     teamName: string,
     userId: string,
     members: Member[],
-    transactionId?: string,
     createdAt: Date
 }
+
+
 
 export type Grade = "8th and under" | "9th" | "10th" | "11th" | "12th"
 
@@ -94,11 +98,25 @@ export async function createUser(data: Omit<User, 'id' | 'createdAt'>) {
     const newUser = {
         ...data,
         id: createID(),
-        createdAt: new Date()
+        createdAt: new Date(),
+        transactionIDs:[],
+        paymentAmount:0
     }
     await collections.users.insertOne(newUser)
     return newUser
 }
+
+export async function addTransaction(amount:number,transactionID:number,userId: string) {
+    const fetchedUser = await collections.users.findOne({ id: userId })
+    amount += fetchedUser.paymentAmount    
+    return await collections.users.updateOne({ id: userId }, { $set: { transactionIDs:fetchedUser.transactionIDs.concat(transactionID), paymentAmount: amount } })
+}
+
+export async function getTransactionsFromUser(userId: string) {
+    const fetchedUser = await collections.users.findOne({ id: userId })
+    return fetchedUser.transactionIDs
+}
+
 
 export async function addTeamToUser(userId: string, teamId: string) {
     return await collections.users.updateOne({ id: userId }, { $push: { teamIds: teamId } })

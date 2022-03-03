@@ -85,33 +85,44 @@
                 <p>+ Add New Team</p>
             </div>
         {/if}
+        <div class='team' on:click={()=>{teamSelect(null)}}>
+            <h1 id="price">Payment</h1>
+        </div>
     </div>
 </div>
 
 <style lang="scss">
     .team-select {
         border-radius: 0px 15px 0 0;
-        padding: 1em;
+        padding: 1em 0em;
         background-color: white;
         width: 100%;
         height: 100%;
         box-sizing: border-box;
 
     }
-
+    h1 {
+        margin: .3em .4em;
+        #pricing {
+            margin-left: .1em;
+        }
+    }
+    
     .team-list {
         display: flex;
         flex-direction: column;
     }
     p{
         display:inline-block;
-        padding: 0 0.5em;
+        padding: 0 .8em;
+        
     }
     .team {
         padding: .6em;
         cursor: pointer;
+        transition: .4s;
         &:hover {
-            background-color: grey;
+            background-color: var(--color-3);
         }
     }
 </style>

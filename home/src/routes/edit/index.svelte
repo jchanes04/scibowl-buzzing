@@ -22,13 +22,15 @@
 </script>
 
 <script lang="ts">
+    import HelpBox from '$lib/components/HelpBox.svelte';
     import MemberMenu from '$lib/components/MemberMenu.svelte';
+    import Payment from '$lib/components/Payment.svelte';
     import Warn from '$lib/components/Warn.svelte';
     import type { Team } from '$lib/mongo';
-import warnStore from '$lib/stores/Warn';
+    import warnStore from '$lib/stores/Warn';
 
     export let teams: Team[]
-    let selectedTeam: Team = null
+    let selectedTeam: Team = teams[0]
     let editingTeamName = false
     let teamNameWrapper: HTMLElement
     let mobileMenuOpen = false    
@@ -80,16 +82,28 @@ import warnStore from '$lib/stores/Warn';
                 </div>
                 <MemberMenu teamData={selectedTeam} />
             </div>
-        {:else}
+        {:else} 
+            {#if selectedTeam==null}
+                <Payment bind:teams></Payment>
+            {:else}
             <div>
                 <h2>No team selected</h2>
             </div>
+            {/if}
+        
         {/if}
         
     </main>
 </div>
 <style lang="scss">
-
+    
+    h2{
+        display: inline-block;
+        margin: .5em 0em;
+        margin-right: .2em;
+    }
+    
+    
     #teamSelect {
         width: 100%;
         box-sizing: border-box;
@@ -97,11 +111,12 @@ import warnStore from '$lib/stores/Warn';
             display: none;
         }        
     }
+    
 
     #open {
         position: relative;
         font-size: 24px;
-        left: 12em;
+        left: min(12em,70vw);
         top:-96vh;
         background-color: white;
         padding: .4em .6em;
@@ -123,8 +138,8 @@ import warnStore from '$lib/stores/Warn';
         position: fixed;
         display: none;
         height: 100%;
-        width: 18em;
-        top:40px;left: -18em;
+        width: min(18em,70vw);
+        top:40px;left: max(-18em,-70vw);
         transition: .5s;
         @media (max-width:600px) {
             display: block;
