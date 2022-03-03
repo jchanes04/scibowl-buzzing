@@ -79,6 +79,10 @@ export async function getUserFromUsername(username: string) {
     }
 }
 
+export async function getUserFromSchoolName(schoolName: string) {
+    return await collections.users.findOne({ schoolName })
+}
+
 export async function getUserPasswordHash(username: string): Promise<string> {
     const fetchedUser = await collections.users.findOne({ username })
     if (fetchedUser)

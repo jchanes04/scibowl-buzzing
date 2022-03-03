@@ -26,6 +26,7 @@
         margin:auto;
     }
     h2 {
+        color: var(--color-3);
         margin:auto;
     }
     h3 {

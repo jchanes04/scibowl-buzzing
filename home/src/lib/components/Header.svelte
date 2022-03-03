@@ -29,12 +29,18 @@
             error = "Username or password is incorrect"
         }
     }
+
+    function handleKeypress(e: KeyboardEvent) {
+        if (e.code === 'Enter') {
+            login()
+        }
+    }
 </script>
 
 <svelte:window on:click={handleWindowClick}></svelte:window>
 
 <div id="header">
-    <a href="/"><h1 id="title">ESBOT</h1></a>
+    <a href="/" class="title-anchor"><h1 id="title">ESBOT</h1></a>
     <div id="right">
         {#if loggedIn}
             <nav>
@@ -47,14 +53,15 @@
                 <div class="login-menu-wrapper" bind:this={loginMenuWrapper}>
                     <span on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</span>
                     <div class="login-menu" class:visible={loginMenuVisible}>
+                        
+                        <label for="username">Username</label>
+                        <input id="username" type="text" bind:value={username} autocomplete="off" on:keypress={handleKeypress} />
+                        <label for="password">Password</label>
+                        <input id="password" type="password" bind:value={password} autocomplete="off" on:keypress={handleKeypress} />
+                        <button on:click={login}>Login</button>
                         {#if error}
                             <p class="error">{error}</p>
                         {/if}
-                        <label for="username">Username</label>
-                        <input id="username" type="text" bind:value={username} autocomplete="off" />
-                        <label for="password">Password</label>
-                        <input id="password" type="password" bind:value={password} autocomplete="off" />
-                        <button on:click={login}>Login</button>
                     </div>
                 </div>
             </nav>
@@ -65,32 +72,57 @@
 <style lang="scss">
     #header {
         background: var(--color-5);
-        text-align: left;
         position: sticky;
         top: 0;
         left: 0;
         width: 100%;
         z-index: 5;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
     
     h1 {
         display: inline-block;
         margin-left: 0.75em;
         margin-top: 0.75em;
-
-        @media (max-width: 800px) {
-            visibility: hidden;
-        }
     }
     
     #right {
-        position: absolute;
-        top: .57em;
-        right: 1em;
-        display: flex;
+        margin: 0.5em 1em 0.5em 0;
+        display: inline-flex;
         flex-direction: row;
         align-items: center;
         font-size: 32px;
+        width: min-content;
+        float: right;
+
+        @media (max-width: 550px) {
+            width: 100%;
+            justify-content: center;
+            font-size: 24px;
+        }
+    }
+    button {
+        padding: 0.5em;
+        margin: .5em auto;
+        width: 100%;
+        color: #EEE;
+        background: var(--color-2);
+        border-radius: 0.3em;
+        font-weight: bold;
+        border: solid black 3px;
+        font-size: 18px;
+        cursor: pointer;
+        
+
+        &:disabled {
+            border: solid var(--color-2) 3px;
+            background: transparent;
+            color: #444;
+            cursor: default;
+        }
     }
 
     nav {
@@ -103,10 +135,22 @@
             color: inherit;
             transition: color 0.3s;
             cursor: pointer;
+            white-space: nowrap;
 
             &:hover {
                 color: var(--color-2)
             }
+        }
+    }
+
+    .title-anchor {
+        @media (max-width: 550px) {
+            display: none;
+        }
+        color: black;
+        transition: color 0.3s;
+        &:hover {
+            color: var(--color-2)
         }
     }
 
@@ -116,6 +160,8 @@
 
     .error {
         color: red;
+        font-size: 12pt;
+        margin: 0em
     }
 
     .login-menu {

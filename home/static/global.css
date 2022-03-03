@@ -8,10 +8,13 @@
     --energy: #00EFEF; 
     --color-4: #274F36;
     --color-2: #006242;
-    --color-3: #CFB53B;
+     
+    
     --color-5: #FFFFFF;
     --color-1: #ECECEC;
-    --color-6: #daab36;
+      
+    /*--color-3: #CD9900;--color-6: #db8e1e;*/
+    --color-3: #CFB53B;--color-6: #008447;
 }
 
 html, body {

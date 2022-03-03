@@ -10,7 +10,7 @@
     <div class="tab" class:active={displayTab=='earth'} on:click={() => displayTab='earth'}><p>Earth And Space</p></div>
     <div class="tab" class:active={displayTab=='math'} on:click={() => displayTab='math'}><p>Math</p></div>
 </div>
-<div>
+<div class="subject-tabs">
     {#if displayTab=='bio'}
         <div class='displayedTab'><slot name="bio" /></div>
     {:else if displayTab=='chem'}
@@ -30,14 +30,19 @@
         padding: 0;
         margin: 0;
     }
-
     .subject-menu {
         display: flex;
         gap: 2px;
         flex-direction: row;
         align-items: end;
-        height: 1.65em;
-        margin-bottom: 1px;
+        height: 2.7em;
+        margin-bottom: 0px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        
+        &::-webkit-scrollbar-thumb {
+            height: 1px; 
+        }
     }
 
     .tab {
@@ -46,6 +51,11 @@
         color: white;
         padding:.12em 1em;
         cursor: pointer;
+
+        p {
+            overflow: hidden;
+            white-space: nowrap;
+        }
     }
 
     .tab.active{
@@ -54,7 +64,10 @@
         padding-bottom: 0.2em;
         padding-top: 0.2em;
         transition: padding 0.1s ease-out;
-        margin-bottom: -1px;
+    }
+
+    .tab:not(.active) {
+        margin-bottom: 1px;
     }
 
     .displayedTab{

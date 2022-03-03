@@ -75,18 +75,41 @@
 
 <style lang="scss">
     h1  {
-        font-size: 120pt;
+        font-size: 180px;
         margin: .2em .0em .1em 0;
         letter-spacing: .1em;
+
+        @media (max-width: 900px) {
+            font-size: 120px;
+        }
+
+        @media (max-width: 700px) {
+            font-size: 100px;
+        }
+
+        @media (max-width: 550px) {
+            font-size: 80px;
+        }
+        @media (max-width: 350px) {
+            font-size: 60px;
+        }
     }
     
     
     h2 {
         font-size: 50px;
         margin: 0 0 .3em 0;
+        @media (max-width:700px) {
+            font-size: 40px;
+        }
     }
+    
     h3 {
        font-size: 40px;
+
+       @media (max-width: 550px) {
+           font-size: 32px;
+       }
     }
     .info {
         margin: .5em;
@@ -124,6 +147,10 @@
     #hero {
         position: relative;
         padding: 0 5em;
+
+        @media (max-width: 700px) {
+            padding: 0 1em;
+        }
     }
 
     main {
@@ -141,6 +168,10 @@
         padding: 3em;
         color:white;
         margin: 2em 0;
+
+        @media (max-width: 700px) {
+            padding: 2em 1em;
+        }
     }
 
     a {

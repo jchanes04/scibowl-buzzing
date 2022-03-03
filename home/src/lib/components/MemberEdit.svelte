@@ -32,11 +32,11 @@
 {#if shown}
 <div class="memberEdit">
         <label for='firstName'>First Name</label><br />
-        <input type='text' name='firstName' bind:value={tempPlayer.firstName} /><br />
+        <input type='text' placeholder='John' name='firstName' bind:value={tempPlayer.firstName} autocomplete="off" /><br />
         <label for='lastName'>Last Name</label><br />
-        <input type='text' name='lastName' bind:value={tempPlayer.lastName} /><br />
-        <label for='Discord' >Discord Username</label><br />
-        <input type='text' bind:value={tempPlayer.discordUsername} name='Discord' /><br />
+        <input type='text' placeholder='Doe' name='lastName' bind:value={tempPlayer.lastName} autocomplete="off" /><br />
+        <label for='Discord' >Discord Tag</label><br />
+        <input type='text' placeholder='JohntheDoe#1234' bind:value={tempPlayer.discordUsername} name='Discord' autocomplete="off" /><br />
         
         <label for='Grade'>Grade</label><br />
         <div class='select'>
@@ -54,7 +54,7 @@
         border: none;
         border-radius: 0.3em;
         box-sizing: border-box;
-        max-width: 80%;
+        width: min(80%,300px);
         text-align: left;
         font-family: 'Ubuntu';
         position: relative;
@@ -67,8 +67,14 @@
         border: solid 5px var(--color-3);
         box-sizing: border-box;
         border-radius: 0 15px 15px 15px;
-        padding: 3em;
+        padding-top: 1em;
+        padding-bottom: 1em;
+        padding-left: 3em;
+        
     }
+
+    
+
     .select {
         --input-font-size:20px;
         font-size: 20px;
@@ -76,7 +82,7 @@
         margin: .5em 0;
         --border-radius: .3em;
         box-sizing: border-box;
-        max-width: 21.6%;
+        max-width: min(300px,80%);
         position: relative;
         text-align: left;
         font-family: 'Ubuntu';
