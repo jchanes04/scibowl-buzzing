@@ -44,6 +44,24 @@
             height: 1px; 
         }
     }
+    
+    *::-webkit-scrollbar {
+        height: 4px;
+    }
+    * {
+        scrollbar-width: thin;
+    }
+    *::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.4);
+        border-radius: 2px;
+        height: 4px;
+        border: 0px solid rgba(0, 0, 0, 0);
+        background-clip: padding-box;
+    }
+
+    *::-webkit-scrollbar-corner {
+        display: none;
+    }
 
     .tab {
         border-radius: .6em .2em 0em 0em;

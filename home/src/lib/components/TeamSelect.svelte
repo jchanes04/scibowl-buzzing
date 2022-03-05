@@ -5,6 +5,8 @@
     import warnStore from "$lib/stores/Warn";
     import { createEventDispatcher } from "svelte";
     export let teams: Team[]
+    export let selectedTeamId: string
+    $: console.log(selectedTeamId)
 
     async function addteam(){
         const newId = Date.now()
@@ -45,7 +47,7 @@
 
     const dispatch = createEventDispatcher()
 
-    function  removeTeam() {   
+    function removeTeam() {   
         if ($warnStore.state=='accept' && $warnStore.type == 'teamRemove') { 
             const removedTeamIndex = teams.findIndex(e => e==$warnStore.object)
             teams = teams.filter(e => e != $warnStore.object) 
@@ -71,7 +73,7 @@
     <h1>Your Teams</h1>
     <div class="team-list">
         {#each teams as t}
-            <div class="team" on:click={()=>{teamSelect(t)}}>
+            <div class="team" class:selected={selectedTeamId === t.id} on:click={()=>{teamSelect(t)}}>
                 <p>{t.teamName}</p>
                 <span class="icon" on:click={() => {$warnStore = {
                     state:'open',
@@ -86,7 +88,7 @@
                 <p>+ Add New Team</p>
             </div>
         {/if}
-        <div class='team' on:click={()=>{teamSelect(null)}}>
+        <div class='team' class:selected={selectedTeamId === "payment"} on:click={()=>{teamSelect(null)}}>
             <h1 id="price">Payment</h1>
         </div>
     </div>
@@ -104,9 +106,6 @@
     }
     h1 {
         margin: .3em .4em;
-        #pricing {
-            margin-left: .1em;
-        }
     }
 
     .icon {
@@ -133,9 +132,21 @@
     .team {
         padding: .6em;
         cursor: pointer;
-        transition: .4s;
+        transition: .2s;
+        position: relative;
         &:hover {
             background-color: var(--color-3);
         }
+    }
+
+    .selected::before {
+        content:  '';
+        display: block;
+        height: 100%;
+        width: 8px;
+        background-color: var(--color-2);
+        position: absolute;
+        left: 5px;
+        top: 0;
     }
 </style>

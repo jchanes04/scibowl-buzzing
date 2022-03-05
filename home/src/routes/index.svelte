@@ -6,41 +6,37 @@
 <main>    
     <section id="hero">
         <h1>ESBOT</h1>
-        <h3>Enloe Sciece Bowl Online Tournament</h3>
-        <h3> Registration is Open! Register here.</h3>
+        <h3>Enloe Science Bowl Online Tournament</h3>
+        <h3>Registration is Open! Register here.</h3>
     </section>
 
     <section class='bubble'>
         <h2>Revolutionary Buzzing System</h2>
-        <p>Say goodbye to shitty latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers. With integrated scoring, challenge and moderation tools, the enloe science bowl online buzzing system is perfect for all online science bowl gameplay. This is the closest we've ever gotten to emulateing real, in-person science bowl.</p>
+        <p>Say goodbye to shitty latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers. With integrated scoring, challenge and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay. This is the closest we've ever gotten to emulating real, in-person Science Bowl.</p>
+        <p style="text-decoration: underline;" class="info">Publicly available soon</p>
     </section>
     <section class='bubble'>
         <h2>Skilled Writers</h2>
         <div id="staff">
-            <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">USAPhO Semifinalist<br />USNCO Semifinalist <br/>Science Olympiad National Medalist<br/>USACO Silver</StaffCard>
-            <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">US Team: International Earth Science Olympiad<br />USNCO Honorable Mention<br/>AIME Qualifer</StaffCard>
-            <StaffCard name="Brian Zhang" grade="Sophomore" categories="Math, Physics, Earth and Space">US Team: International Astronomy Olympiad<br/>AIME Qualifer</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Nikhil Vemuri" grade="Freshman" categories="Chemistry">National Science Olympiad Invitational Medalist</StaffCard>
-            <StaffCard name="Thanush Patlolla" grade="Freshman" categories="Physics, Math">AIME Qualifier<br/>USACO Silver</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">USABO Semifinalist<br/>Science Olympiad National Medalist<br/>AIME Qualifier</StaffCard>
+            <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">- USAPhO Semifinalist<br/>- USNCO Semifinalist <br/>- Science Olympiad National Medalist<br/>- USACO Silver division<br />- USABO Semifinalist</StaffCard>
+            <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honorable Mention<br/>- AIME Qualifer</StaffCard>
+            <StaffCard name="Brian Zhang" grade="Sophomore" categories="Math, Physics, Earth and Space">- US Team: International Astronomy Olympiad<br/>- AIME Qualifer</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">- USABO Semifinalist<br/>- Science Olympiad National Medalist<br/>- AIME Qualifier</StaffCard>
+            <StaffCard name="Nikhil Vemuri" grade="Freshman" categories="Chemistry">- National Science Olympiad Invitational Medalist</StaffCard>
+            <StaffCard name="Thanush Patlolla" grade="Freshman" categories="Physics, Math">- AIME Qualifier<br/>- USACO Silver</StaffCard>
+            <StaffCard name="Andrew Huang" grade="Senior" categories="Math, Biology">- USACO Gold division<br />- USABO Semifinalist<br/>- AIME Qualifer<br/>- National Science Olympiad Invitational Medalist</StaffCard>
+            <StaffCard name="Sukrith Velmineti" grade="Junior" categories="Earth and Space, Math">- AIME Qualifier<br/>- National Science Olympiad Invitational Medalist</StaffCard>
         </div>
     </section>
     <section class='bubble'>
         <h2>Samples</h2>
         <SubjectMenu>
             <div slot="bio">
-                <p>Colin and Rohini want to have a child and seek genetic counseling because they are concerned about their child having disease Z. Rohini is unaffected by disease Z but Colin is. If their first child is a son, order the following mechanisms of disease Z inheritance in increasing likeliness of their son having disease Z.</p><br />
-                <p>1) hollandric</p>
-                <p>2) maternal effect</p>
+                <p>Colin and Rohini want to have a child and seek genetic counseling because they are concerned about their child having disease Z. Rohini is unaffected by disease Z but Colin is. If their first child is a son, order the following four mechanisms of disease Z inheritance in increasing likeliness of their son having disease Z.</p><br />
+                <p>1) Hollandric</p>
+                <p>2) Maternal effect</p>
                 <p>3) X-linked recessive</p>
-                <p>4) autosomal dominant</p><br />
+                <p>4) Autosomal dominant</p><br />
                 <p>ANSWER: <span class="answer">2, 3, 4, 1</span></p>
             </div>
             <div slot="earth">
@@ -65,11 +61,12 @@
             </div>
             <div slot="math">
                 <p>Brian and Rishabh take turns playing Russian Roulette using a nerf revolver with 6 spaces for darts and one actual dart in it. However, Rishabh cheated using magic that makes himself half as likely as usual to pick the slot that has the dart in it. if Rishabh goes first, what is the probability that he dies on his second turn?</p><br />
-                <p id="mathfractionanswer">ANSWER: <span class="answer">⁵⁵⁄₈₆₄</span></p>
+                <p>ANSWER: <span class="answer"><sup>55</sup>⁄<sub>864</sub></span></p>
             </div>
         </SubjectMenu>
     </section>
     <a href='https://docs.google.com/document/d/1oibtrtJf7PxFfmF18t379Z9g2Bvv820_-snMUyBx1oM/edit?usp=sharing' target="_blank"><h2 class="info">Rules</h2></a>
+    <div style="height: min(150px, 20vh)"></div>
 </main>
 
 
@@ -101,6 +98,10 @@
         margin: 0 0 .3em 0;
         @media (max-width:700px) {
             font-size: 40px;
+        }
+
+        @media (max-width: 400px) {
+            font-size: 32px;
         }
     }
     
@@ -135,6 +136,8 @@
     .answer {
         display: inline-block;
         background-color: black;
+        border-radius: 0.1em;
+        padding: 0.1em 0.2em;
         height: 100%;
         cursor: default;
 

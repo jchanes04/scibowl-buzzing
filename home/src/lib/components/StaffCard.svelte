@@ -8,7 +8,7 @@
 <div>
     <h2>{name}</h2>
     <h3>{grade}</h3>
-    <h3>{categories}</h3>
+    <h4>{categories}</h4>
     <p><slot></slot></p>
 </div>
 
@@ -31,5 +31,12 @@
     }
     h3 {
         margin: auto;
+    }
+
+    h4 {
+        margin: auto;
+        font-weight: 500;
+        font-size: 16px;
+        margin-bottom: 0.5em;
     }
 </style>

@@ -1,19 +1,27 @@
 <script lang='ts'>
-    let helpBoxOpen :boolean 
+    let helpBoxOpen: boolean
+    let helpBoxElement: HTMLElement
+
+    function handleWindowClick(e: MouseEvent) {
+        if (helpBoxElement && !helpBoxElement.contains(e.target as Node)) {
+            helpBoxOpen = false
+        }
+    }
 </script>
 
-<span id="question-box-wrapper"><span id="questionMark" on:click={()=>{helpBoxOpen=!helpBoxOpen}}>?</span>
-    <div id="question-box" class:visible={helpBoxOpen}>
+<svelte:window on:click={handleWindowClick}></svelte:window>
+<span class="question-box-wrapper" bind:this={helpBoxElement}><span class="questionMark" on:click={()=>{helpBoxOpen=!helpBoxOpen}}>?</span>
+    <div class="question-box" class:visible={helpBoxOpen}>
         <slot></slot>
     </div>
 </span>
 
 <style lang="scss">
-    #question-box-wrapper{ 
+    .question-box-wrapper{ 
         position: relative;
     }
 
-    #question-box {
+    .question-box {
         z-index: 40;
         font-size: 16px;
         font-weight: 500;
@@ -33,15 +41,8 @@
         }
         
     }
-    *::selection {
-            color: none;
-            background: none;
-        }
-    *::-moz-selection {
-        color: none;
-        background: none;
-    }
-    #questionMark{
+
+    .questionMark{
         cursor: pointer;
         padding:.2em .6em;
         background-color: var(--color-3);
@@ -49,6 +50,8 @@
         color: white;
         font-size: 14px;
         font-weight: bold;
-        
+        position: relative;
+        bottom: 0.3em;
+        user-select: none;
     }
 </style>

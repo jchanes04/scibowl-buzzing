@@ -11,7 +11,7 @@
     export let teams : Team[]
     let transactionSuccess : boolean = false
 
-
+    
 
     function RepeatTransactionID(){
         return async (value: string) =>{
@@ -56,25 +56,25 @@
         <h2>If you think this is a mistake or need a refund please contact us privately.</h2>
         <h2>You are free to edit your registration until two days before the competition after which point you should contact us for any changes to be made.</h2>        
     {:else}
-        <h2>You've payed for {paidTeams} teams.<HelpBox>If you think this is a mistake or need a refund contact us.</HelpBox></h2>
+        <h2>You've paid for {paidTeams} teams. <HelpBox>If you think this is a mistake or need a refund, contact us.</HelpBox></h2>
         <h2>To register your {teams.length-paidTeams} remaining teams, your price is ${price} (${(teams.length-paidTeams)*15} base + ${Math.round((price-(teams.length-paidTeams)*15)*100)/100} transaction fee) <HelpBox>Price per team is $15 and the transaction fee is 2.97% plus a flat rate of $0.49</HelpBox></h2><br />
         <h2><a target="_blank" href="https://www.paypal.com/donate/?business=WCN9EFSTWAR4G&amount={price}&no_recurring=1&currency_code=USD">Pay here</a> then come back to input the transaction ID</h2><br/>
-        <label for='transaction-id'>Transaction ID <HelpBox>You will find a transaction ID after you pay near the bottom of the payment window. Contact us if you have any trouble.</HelpBox></label>  <br/> 
+        <label for='transaction-id'>Transaction ID</label> <HelpBox>You will find a transaction ID after you pay near the bottom of the payment window. Contact us if you have any trouble.</HelpBox>  <br/> 
         <input id="transaction-id" name='transaction-id' type='text' bind:value={$transactionID.value} /> 
         <button disabled={!$form.valid} on:click={()=>{handleSubmit(price)}}>Submit</button>
         <p id="error">{errorMessage ? errorMessage : ""}<p>
         {#if transactionSuccess}
-            <p id="success">Your pament has been sucessfully processed.<p>
+            <p id="success">Your payment has been sucessfully processed.<p>
         {/if}
         <br />
         <h1>Why are we using donate with Paypal?</h1><br/>
-        Due to issues with taxation and age restrictions (none of us are adults), we are unable to use integrated payment processors, leaving donate with paypal as the easiest option for payments that allows us to somewhat reliably track transactions. If you wish to send money through any other source (zelle, venmo, ect.) or your school is paying for you please contact us. 
+        Due to issues with taxation and age restrictions, we are unable to use integrated payment processors, leaving donate with Paypal as the easiest option for payments that allows us to somewhat reliably track transactions. If you wish to send money through any other source (Zelle, Venmo, etc.) or your school is paying for you, please contact us. 
     {/if}
 </div>
 
 <style lang="scss">
     #payment{
-        margin:.5em
+        margin: .5em 8vw;
     }
     p{
         margin: 0;

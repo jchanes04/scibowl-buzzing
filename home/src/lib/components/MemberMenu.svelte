@@ -9,15 +9,12 @@
     let displayTab: number  
     export let teamData: Team
 
+    let dirty = false
 
     let tabs: Member[] = teamData.members.filter(m => m)
     let tabWidths: number[] = []
-    let menuWidth: number
-    let pixelOffset = 0
     
-    $: $warnStore.state && removePlayer()
-    $: console.dir(tabs)
-    
+    $: $warnStore.state && removePlayer()    
     $: updateTabs(teamData)
 
     displayTab = tabs.length ? tabs[0].id : null
@@ -27,14 +24,16 @@
     function updateTabs(teamData) {
         tabs = teamData.members
         displayTab = tabs[0].id
+        dirty = false
     }
 
-    function saveTeamData() {
+    async function saveTeamData() {
         console.dir(tabComponents)
         const newMemberData: Member[] = tabComponents.map(c => c?.getMemberData())
         tabs = newMemberData.filter(d => d)
         teamData.members = newMemberData.filter(d => d)
-        updateTeam(teamData)
+        await updateTeam(teamData)
+        dirty = false
     }
 
     function newPlayer(){
@@ -50,6 +49,7 @@
             }
         ]
         displayTab = newId
+        dirty = true
     }
 
     function getNextPlayerName(tabs: Member[]) {
@@ -71,32 +71,23 @@
             }
             $warnStore.state = 'closed'
             $warnStore.object = null
+            dirty = true
         } else if ($warnStore.state=='decline') {
             $warnStore.state = 'closed'
             $warnStore.object = null
         }   
     }
-
-    function scrollRight() {
-        pixelOffset = Math.min(Math.max(tabWidths.reduce((s, w) => s + w, 0) - menuWidth, 0), pixelOffset + menuWidth * 0.8)
-        
-    }
-
-    function scrollLeft() {
-        pixelOffset = Math.max(Math.min(menuWidth- tabWidths.reduce((s, w) => s + w, 0), 0), pixelOffset - menuWidth * 0.8)
-    }
 </script>
 
-<div class="member-menu" bind:clientWidth={menuWidth}>
-    
-    <div class="tab-menu" style="left: -{pixelOffset}px;">
+<div class="member-menu">
+    <div class="tab-menu">
         {#each tabs as player, i}
             {#if player}
                 <div class="tab" class:active={displayTab == player.id} on:click={() => displayTab=player.id} bind:clientWidth={tabWidths[i]}>
                     <p>{player?.firstName ? player.firstName : "New Student"}</p>
                     <span class="icon" on:click={() => {$warnStore = {
                         state:'open',
-                        message:[`are you sure you want to remove ${player.firstName}`,`(this action will not be saved until you press save&submit)`],
+                        message:[`Are you sure you want to remove ${player.firstName}?`,`(This action will not be saved until you press "Save & Submit")`],
                         type:'memberRemove',
                         object:player
                     }}} />
@@ -113,7 +104,7 @@
         {#each tabs as player, i}
             {#if player}
                 <div>
-                    <MemberEdit shown={player.id==displayTab} bind:player={player} bind:this={tabComponents[i]}></MemberEdit>
+                    <MemberEdit shown={player.id==displayTab} bind:player={player} bind:this={tabComponents[i]} on:change={() => dirty = true} />
                 </div>
             {:else}
                 <p>{JSON.stringify(player)}</p>
@@ -121,7 +112,7 @@
         {/each}
     </div>
     <div>
-        <button on:click={saveTeamData}>Save & Submit</button>
+        <button on:click={saveTeamData} disabled={!dirty}>Save & Submit</button>
     </div>
 </div>
 
@@ -133,7 +124,7 @@
         @media (max-width:1200px) {
             max-width: calc(100vw - 5em - 300px)
         }
-        @media (max-width:600px) {
+        @media (max-width:650px) {
             max-width: calc(100vw - 2em)
         }
     }

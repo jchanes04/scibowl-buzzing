@@ -21,7 +21,6 @@
 </script>
 
 <script lang="ts">
-    import HelpBox from '$lib/components/HelpBox.svelte';
     import MemberMenu from '$lib/components/MemberMenu.svelte';
     import Payment from '$lib/components/Payment.svelte';
     import Warn from '$lib/components/Warn.svelte';
@@ -32,11 +31,12 @@
     let selectedTeam: Team = teams[0]
     let editingTeamName = false
     let teamNameWrapper: HTMLElement
-    let mobileMenuOpen = false    
-
+    let mobileMenuOpen = false
+    let mobileMenuElement: HTMLElement
 
     function handleTeamSelect(e: CustomEvent<Team>) {
         selectedTeam = e.detail
+        mobileMenuOpen = false
     }
 
     function toggleTeamNameEdit() {
@@ -57,6 +57,10 @@
             editingTeamName = false
             teams = teams
         }
+
+        if (mobileMenuElement && !mobileMenuElement.contains(e.target as Node) && mobileMenuElement !== e.target) {
+            mobileMenuOpen = false
+        }
     }
 </script>
 
@@ -68,8 +72,13 @@
         <Warn />
     {/if}
     <main>
-        <div id='teamSelect'><TeamSelect bind:teams={teams} on:select={handleTeamSelect} /></div>
-        <div id='mobileTeamSelect' class:open={mobileMenuOpen}><TeamSelect bind:teams={teams} on:select={handleTeamSelect} /><span id="open" on:click={()=>{mobileMenuOpen=!mobileMenuOpen}}>{mobileMenuOpen? '<':'>'}</span></div>
+        <div id='teamSelect'>
+            <TeamSelect bind:teams={teams} on:select={handleTeamSelect} selectedTeamId={selectedTeam?.id || "payment"} />
+        </div>
+        <div id='mobileTeamSelect' class:open={mobileMenuOpen} bind:this={mobileMenuElement}>
+            <TeamSelect bind:teams={teams} on:select={handleTeamSelect} selectedTeamId={selectedTeam?.id || "payment"} />
+            <span id="open" on:click={()=>{mobileMenuOpen=!mobileMenuOpen}}>{mobileMenuOpen? '<':'>'}</span>
+        </div>
         {#if selectedTeam}
             <div class="edit-menu" >
                 <div class="team-name" bind:this={teamNameWrapper}>
@@ -89,7 +98,6 @@
                 <h2>No team selected</h2>
             </div>
             {/if}
-        
         {/if}
         
     </main>
@@ -106,7 +114,7 @@
     #teamSelect {
         width: 100%;
         box-sizing: border-box;
-        @media (max-width:600px) {
+        @media (max-width:650px) {
             display: none;
         }        
     }
@@ -116,10 +124,13 @@
         position: relative;
         font-size: 24px;
         left: min(12em,70vw);
-        top:-96vh;
-        background-color: white;
+        top:-93vh;
+        background-color: var(--color-2);
+        color: white;
         padding: .4em .6em;
         border-radius: 0em .5em .5em 0em;
+        cursor: pointer;
+
         @media (max-height:650px) {
             top:-95vh  
         }
@@ -138,9 +149,12 @@
         display: none;
         height: 100%;
         width: min(18em,70vw);
-        top:40px;left: max(-18em,-70vw);
+        top: 0px;
+        left: max(-18em,-70vw);
+        border-top: 4px solid var(--color-2);
         transition: .5s;
-        @media (max-width:600px) {
+
+        @media (max-width:650px) {
             display: block;
         }
         &.open{
@@ -182,7 +196,7 @@
         padding-top: 2em;
         column-gap: 2em;
         box-sizing: border-box;
-        @media (max-width:600px) {
+        @media (max-width:650px) {
             grid-template-columns: 1fr;
         }
     }
@@ -204,6 +218,4 @@
     .edit {
         background-image: url('/pencil.png');
     }
-
-
 </style>

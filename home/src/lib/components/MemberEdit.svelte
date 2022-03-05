@@ -1,10 +1,13 @@
 <script lang="ts">
     import type { Member, Grade } from "$lib/mongo";
+    import { createEventDispatcher } from "svelte";
     import Select from 'svelte-select'
 
     export let player: Member
     export let shown : boolean
     
+    const dispatch = createEventDispatcher()
+
     const grades = [
         { id: 8, value: "8th and under" },
         { id: 9, value: "9th" },
@@ -30,20 +33,20 @@
     }
 </script>
 {#if shown}
-<div class="memberEdit">
-        <label for='firstName'>First Name</label><br />
-        <input type='text' placeholder='John' name='firstName' bind:value={tempPlayer.firstName} autocomplete="off" /><br />
-        <label for='lastName'>Last Name</label><br />
-        <input type='text' placeholder='Doe' name='lastName' bind:value={tempPlayer.lastName} autocomplete="off" /><br />
-        <label for='Discord' >Discord Tag</label><br />
-        <input type='text' placeholder='JohntheDoe#1234' bind:value={tempPlayer.discordUsername} name='Discord' autocomplete="off" /><br />
-        
-        <label for='Grade'>Grade</label><br />
-        <div class='select'>
-        <Select items={grades} optionIdentifier="id" labelIdentifier="value" on:select={handleGradeSelect}
-        value={grades.find(g => g.value === tempPlayer.grade) || null} />
-        </div>
-</div>
+<form class="memberEdit" on:input={() => dispatch('change')}>
+    <label for='firstName'>First Name</label><br />
+    <input type='text' placeholder='John' name='firstName' bind:value={tempPlayer.firstName} autocomplete="off" /><br />
+    <label for='lastName'>Last Name</label><br />
+    <input type='text' placeholder='Doe' name='lastName' bind:value={tempPlayer.lastName} autocomplete="off" /><br />
+    <label for='Discord' >Discord Tag</label><br />
+    <input type='text' placeholder='JohntheDoe#1234' bind:value={tempPlayer.discordUsername} name='Discord' autocomplete="off" /><br />
+    
+    <label for='Grade'>Grade</label><br />
+    <div class='select'>
+    <Select items={grades} optionIdentifier="id" labelIdentifier="value" on:select={handleGradeSelect}
+    value={grades.find(g => g.value === tempPlayer.grade) || null} />
+    </div>
+</form>
 {/if}
 
 <style lang="scss">
