@@ -12,7 +12,7 @@
     <section id="hero">
         <h1>ESBOT</h1>
         <h3>Enloe Science Bowl Online Tournament</h3>
-        <h3>Registration is Open! Register here.</h3>
+        <h3>Registration is Open! <a id=register href="/register">Register here.</a></h3>
     </section>
 
     <section class='bubble'>
@@ -97,7 +97,6 @@
         }
     }
     
-    
     h2 {
         font-size: 50px;
         margin: 0 0 .3em 0;
@@ -140,14 +139,14 @@
     
     .answer {
         display: inline-block;
-        background-color: black;
+        background-color: white;
         border-radius: 0.1em;
         padding: 0.1em 0.2em;
         height: 100%;
         cursor: default;
 
         &:hover {
-            background-color: transparentize($color: black, $amount: 0.8);
+            background-color: transparentize($color: white, $amount: 0.8);
         }
     }
 

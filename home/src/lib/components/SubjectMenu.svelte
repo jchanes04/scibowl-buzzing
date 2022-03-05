@@ -64,8 +64,10 @@
     }
 
     .tab {
+        font-size: 14pt;
+        font-weight: 600;
         border-radius: .6em .2em 0em 0em;
-        background-color: var(--color-6);
+        background-color: var(--color-3);
         color: white;
         padding:.12em 1em;
         cursor: pointer;
@@ -77,8 +79,9 @@
     }
 
     .tab.active{
-        color: black;
-        background-color: var(--color-3);
+        font-weight: 600;
+        color: var(--color-3);
+        background-color: var(--color-6);
         padding-bottom: 0.2em;
         padding-top: 0.2em;
         transition: padding 0.1s ease-out;
@@ -89,10 +92,16 @@
     }
 
     .displayedTab{
-        color: black;
+        color: white;
         padding: 1em;
         border-radius: 0 .5em .5em .5em;
-        background-color: var(--color-3);
+        background-color: var(--color-6);
+        @media (max-width: 808px) {
+            border-radius: 0 .25em .5em .5em;
+        }
+        @media (max-width: 804px) {
+            border-radius: 0 0 .5em .5em;
+        }
     }
     
 </style>
