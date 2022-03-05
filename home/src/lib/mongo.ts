@@ -107,9 +107,15 @@ export async function createUser(data: Omit<User, 'id' | 'createdAt'>) {
 }
 
 export async function addTransaction(amount:number,transactionID:number,userId: string) {
+    console.log(userId,amount,transactionID)
     const fetchedUser = await collections.users.findOne({ id: userId })
-    amount += fetchedUser.paymentAmount    
-    return await collections.users.updateOne({ id: userId }, { $set: { transactionIDs:fetchedUser.transactionIDs.concat(transactionID), paymentAmount: amount } })
+    amount += fetchedUser.paymentAmount 
+    console.log(transactionID) 
+    let transactionIDs =  [transactionID]
+    if (fetchedUser.transactionIDs){
+        transactionIDs = fetchedUser.transactionIDs.concat(transactionIDs)
+    }
+    return await collections.users.updateOne({ id: userId }, { $set: { "transactionIDs":transactionIDs, paymentAmount: amount } })
 }
 
 export async function getTransactionsFromUser(userId: string) {

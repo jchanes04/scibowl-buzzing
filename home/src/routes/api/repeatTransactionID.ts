@@ -7,6 +7,6 @@ export async function get({ url }: RequestEvent) {
     const userID = url.searchParams.get('userID')
     console.log(transactionID)
     const transactions = await getTransactionsFromUser(userID)
-    const repeat = transactions.find(e=>e==transactionID)
+    const repeat = !!(transactions?.find(e=>e==transactionID))
     return new Response(JSON.stringify({ repeat }))
 }

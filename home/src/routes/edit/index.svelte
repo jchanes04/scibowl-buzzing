@@ -11,7 +11,6 @@
             const teamsRes = await Promise.all(session.userData.teamIds.map(t => fetch('/api/teams/' + t)))
             const resolvedTeams = teamsRes.filter(t => t.status === 200)
             const teams = await Promise.all(resolvedTeams.map(t => t.json() as Promise<Team>))
-
             return {
                 props: {
                     teams

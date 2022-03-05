@@ -42,6 +42,7 @@
         background: none;
     }
     #questionMark{
+        cursor: pointer;
         padding:.2em .6em;
         background-color: var(--color-3);
         border-radius: 1em;

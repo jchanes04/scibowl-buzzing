@@ -5,7 +5,13 @@
     import { min, pattern } from 'svelte-forms/validators';
     import isRepeatTransactionID from '$lib/functions/isRepeatTransactionID';
     import { session } from '$app/stores';
+    
+    let paidTeams = Math.floor($session.userData.paymentAmount /15)
+    console.dir($session.userData)
     export let teams : Team[]
+    let transactionSuccess : boolean = false
+
+
 
     function RepeatTransactionID(){
         return async (value: string) =>{
@@ -19,25 +25,48 @@
 
     $: errorMessage = errorMessages[$form.errors[0]]
     $: console.log($form.errors)
+    $: price = Math.round(100*(teams.length-paidTeams)*15*1.0297+49)/100
+
     const errorMessages = {
         "transactionID.pattern":"Transaction ID should only contain arabic numberals.",
         "transactionID.min":"Transaction IDs are all really long",
         "transactionID.repeat":"We already have this transactionID from you."
     }
+
+    async function handleSubmit(amount:number){
+        console.log($transactionID.value,amount,$session.userData.id)
+        
+        let params = {transactionID: $transactionID.value,amount:amount.toString(), userID:$session.userData.id}
+        let urlParams = new URLSearchParams(params)
+        if(await fetch('api/addTransaction?'+ urlParams.toString())){
+            transactionSuccess = true
+        }
+    }
+
 </script>
 <div id="payment">
                     
     <h1>Payment</h1><br />
-    <h2>You've payed for ___ teams.</h2>
-    <h2>To register your {teams.length} remaining teams, your price is ${Math.round(100*teams.length*15*1.0297+49)/100} (${teams.length*15} base + ${Math.round(teams.length*15*2.97+49)/100} transaction fee) <HelpBox>Price per team is $15 and the transaction fee is 2.97% plus a flat rate of $0.49</HelpBox></h2><br />
-    <h2><a target="_blank" href="https://www.paypal.com/donate/?business=WCN9EFSTWAR4G&amount={teams.length*15*1.0297+.49}&no_recurring=1&currency_code=USD">Pay here</a> then come back to input the transaction ID</h2><br/>
-    <form>
-        <label for='TransactionID'>Transaction ID <HelpBox>You will find a transaction ID after you pay near the bottom of the payment window. Contact us if you have any trouble.</HelpBox></label>  <br/> 
-        <input name='TransactionID' type='text' bind:value={$transactionID.value} /> <button disabled={!$form.valid}>Submit</button><p id="error">{errorMessage ? errorMessage : ""}<p><br />
-    </form>
-    <h1>Why are we using donate with Paypal?</h1><br/>
-    Due to issues with taxation and age restrictions (none of us are adults), we are unable to use integrated payment processors, leaving donate with paypal as the easiest option for payments that allows us to somewhat reliably track transactions. If you wish to send money through any other source (zelle, venmo, ect.) or your school is paying for you please contact us. 
-    
+    <h2>You've payed for {paidTeams} teams.<HelpBox>If you think this is a mistake or need a refund contact us.</HelpBox></h2>
+    <h2>To register your {teams.length-paidTeams} remaining teams, your price is ${price} (${(teams.length-paidTeams)*15} base + ${Math.round((price-(teams.length-paidTeams)*15)*100)/100} transaction fee) <HelpBox>Price per team is $15 and the transaction fee is 2.97% plus a flat rate of $0.49</HelpBox></h2><br />
+    {#if paidTeams==teams.length}
+        <h2>Thanks! Unless you did something naughty<HelpBox>If you put in fake transactionIDs, we will know and will check, but please dont put fake transactionIDs.</HelpBox>, you've finished the payment process for ESBOT.</h2>
+        <h2>If you wish to register a new team, press the Add team button in the menu on the left.</h2>
+    {:else if paidTeams>teams.length}
+        You've paid for {paidTeams} teams<HelpBox>If you think this is a mistake or need a refund contact us.</HelpBox>, but have only registered {teams.length}. 
+    {:else}
+        <h2><a target="_blank" href="https://www.paypal.com/donate/?business=WCN9EFSTWAR4G&amount={price}&no_recurring=1&currency_code=USD">Pay here</a> then come back to input the transaction ID</h2><br/>
+        <label for='transaction-id'>Transaction ID <HelpBox>You will find a transaction ID after you pay near the bottom of the payment window. Contact us if you have any trouble.</HelpBox></label>  <br/> 
+        <input id="transaction-id" name='transaction-id' type='text' bind:value={$transactionID.value} /> 
+        <button disabled={!$form.valid} on:click={()=>{handleSubmit(price)}}>Submit</button>
+        <p id="error">{errorMessage ? errorMessage : ""}<p>
+        {#if transactionSuccess}
+            <p id="success">Your pament has been sucessfully processed.<p>
+        {/if}
+        <br />
+        <h1>Why are we using donate with Paypal?</h1><br/>
+        Due to issues with taxation and age restrictions (none of us are adults), we are unable to use integrated payment processors, leaving donate with paypal as the easiest option for payments that allows us to somewhat reliably track transactions. If you wish to send money through any other source (zelle, venmo, ect.) or your school is paying for you please contact us. 
+    {/if}
 </div>
 
 <style lang="scss">
@@ -49,6 +78,9 @@
     }
     #error{
         color:red;
+    }
+    #success{
+        color:green;
     }
     h1{
         margin:.5em 0em 0em 0em;   
