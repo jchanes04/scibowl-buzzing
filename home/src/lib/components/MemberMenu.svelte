@@ -94,12 +94,12 @@
             {#if player}
                 <div class="tab" class:active={displayTab == player.id} on:click={() => displayTab=player.id} bind:clientWidth={tabWidths[i]}>
                     <p>{player?.firstName ? player.firstName : "New Student"}</p>
-                    <span style="margin-left: 0.5em;" on:click={() => {$warnStore = {
+                    <span class="icon" on:click={() => {$warnStore = {
                         state:'open',
                         message:[`are you sure you want to remove ${player.firstName}`,`(this action will not be saved until you press save&submit)`],
                         type:'memberRemove',
                         object:player
-                    }}}>x</span>
+                    }}} />
                 </div>
             {/if}
         {/each}  
@@ -145,6 +145,17 @@
         margin: 0;
     }
     
+    .icon {
+        display: inline-block;
+        height: 0.75em;
+        width: 0.75em;
+        background-size: cover;
+        vertical-align: middle;
+        margin-left: 0em;
+        background-image: url('/close-menu.svg');
+        filter: brightness(0);
+    }
+
     *::-webkit-scrollbar {
         height: 4px;
     }

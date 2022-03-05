@@ -72,12 +72,13 @@
     <div class="team-list">
         {#each teams as t}
             <div class="team" on:click={()=>{teamSelect(t)}}>
-                <p>{t.teamName}</p><span on:click={() => {$warnStore = {
+                <p>{t.teamName}</p>
+                <span class="icon" on:click={() => {$warnStore = {
                     state:'open',
                     message:[`are you sure you want to remove ${t.teamName}`, `(This action cannot be undone)`],
                     type:'teamRemove',
                     object:t
-                }}}>-</span>
+                }}} />
             </div>
         {/each}
         {#if teams.length<3}
@@ -106,6 +107,18 @@
         #pricing {
             margin-left: .1em;
         }
+    }
+
+    .icon {
+        display: inline-block;
+        height: 0.8em;
+        width: 0.8em;
+        background-size: cover;
+        vertical-align: middle;
+        margin-left: -.3em;
+        margin-top: -.2em;
+        background-image: url('/close-menu.svg');
+        filter: brightness(0);
     }
     
     .team-list {
