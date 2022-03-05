@@ -64,6 +64,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Edit your teams</title>
+    <meta name="description" content="Edit your teams and register new ones to participate in ESBOT" />
+</svelte:head>
 
 <svelte:window on:click={handleWindowClick}></svelte:window>
 <div>

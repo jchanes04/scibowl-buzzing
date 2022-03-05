@@ -62,6 +62,11 @@
     }
 </script>
 
+<svelte:head>
+    <title>Register a school</title>
+    <meta name="description" content="Create an account for your school to manage and register your teams" />
+</svelte:head>
+
 <form action="/api/register" method="POST">
     <h1>Register your school</h1>
     <label for='schoolName'>School Name</label><br />

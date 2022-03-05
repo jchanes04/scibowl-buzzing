@@ -3,6 +3,11 @@
     import StaffCard from "$lib/components/StaffCard.svelte";
 </script>
 
+<svelte:head>
+    <title>Enloe Science Bowl Online Tournament</title>
+    <meta name="description" content="An online Science Bowl tournament hosted by Enloe High School. Registration is open now, sign up soon before spots run out!" />
+</svelte:head>
+
 <main>    
     <section id="hero">
         <h1>ESBOT</h1>
