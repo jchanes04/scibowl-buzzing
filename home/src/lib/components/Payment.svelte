@@ -34,12 +34,12 @@
     }
 
     async function handleSubmit(amount:number){
-        console.log($transactionID.value,amount,$session.userData.id)
-        
-        let params = {transactionID: $transactionID.value,amount:amount.toString(), userID:$session.userData.id}
-        let urlParams = new URLSearchParams(params)
-        if(await fetch('api/addTransaction?'+ urlParams.toString())){
+        const params = {transactionID: $transactionID.value,amount:amount.toString(), userID:$session.userData.id}
+        const urlParams = new URLSearchParams(params)
+        const res = await fetch('api/addTransaction?'+ urlParams.toString())
+        if(res){
             transactionSuccess = true
+            paidTeams =teams.length;
         }
     }
 
@@ -47,14 +47,17 @@
 <div id="payment">
                     
     <h1>Payment</h1><br />
-    <h2>You've payed for {paidTeams} teams.<HelpBox>If you think this is a mistake or need a refund contact us.</HelpBox></h2>
-    <h2>To register your {teams.length-paidTeams} remaining teams, your price is ${price} (${(teams.length-paidTeams)*15} base + ${Math.round((price-(teams.length-paidTeams)*15)*100)/100} transaction fee) <HelpBox>Price per team is $15 and the transaction fee is 2.97% plus a flat rate of $0.49</HelpBox></h2><br />
     {#if paidTeams==teams.length}
         <h2>Thanks! Unless you did something naughty<HelpBox>If you put in fake transactionIDs, we will know and will check, but please dont put fake transactionIDs.</HelpBox>, you've finished the payment process for ESBOT.</h2>
         <h2>If you wish to register a new team, press the Add team button in the menu on the left.</h2>
+        <h2>You are free to edit your registration until two days before the competition at which point, you should contact us.</h2>
     {:else if paidTeams>teams.length}
-        You've paid for {paidTeams} teams<HelpBox>If you think this is a mistake or need a refund contact us.</HelpBox>, but have only registered {teams.length}. 
+        <h2>You've paid for {paidTeams} teams, but have only signed up {teams.length}. </h2>
+        <h2>If you think this is a mistake or need a refund please contact us privately.</h2>
+        <h2>You are free to edit your registration until two days before the competition after which point you should contact us for any changes to be made.</h2>        
     {:else}
+        <h2>You've payed for {paidTeams} teams.<HelpBox>If you think this is a mistake or need a refund contact us.</HelpBox></h2>
+        <h2>To register your {teams.length-paidTeams} remaining teams, your price is ${price} (${(teams.length-paidTeams)*15} base + ${Math.round((price-(teams.length-paidTeams)*15)*100)/100} transaction fee) <HelpBox>Price per team is $15 and the transaction fee is 2.97% plus a flat rate of $0.49</HelpBox></h2><br />
         <h2><a target="_blank" href="https://www.paypal.com/donate/?business=WCN9EFSTWAR4G&amount={price}&no_recurring=1&currency_code=USD">Pay here</a> then come back to input the transaction ID</h2><br/>
         <label for='transaction-id'>Transaction ID <HelpBox>You will find a transaction ID after you pay near the bottom of the payment window. Contact us if you have any trouble.</HelpBox></label>  <br/> 
         <input id="transaction-id" name='transaction-id' type='text' bind:value={$transactionID.value} /> 

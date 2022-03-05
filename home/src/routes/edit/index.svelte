@@ -204,4 +204,6 @@
     .edit {
         background-image: url('/pencil.png');
     }
+
+
 </style>
