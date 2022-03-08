@@ -14,6 +14,7 @@
     
     let categorySelect: HTMLSelectElement
     let teamSelect: HTMLSelectElement
+    let clockLength : number
     let selectedCategory: Category | ""
     let selectedTeam: string
     let questionType: "tossup" | "bonus" | ""
@@ -59,12 +60,20 @@
     }
     
     function startTimer() {
-        $socket.emit('startTimer')
-        debug.addEvent('startTimer', {})
+        $socket.emit('startTimer',{
+            length:clockLength
+        })
+        debug.addEvent('startTimer', {
+            length:clockLength
+        })
     }
     function endGame() {
         $socket.emit('endGame')
         debug.addEvent('endGame', {})
+    }
+    function setGameClock() {
+        $socket.emit('setGameClock')
+        debug.addEvent('setGameClock', {})
     }
     function clearScores() {
         $socket.emit('clearScores')
@@ -136,6 +145,8 @@
         <button on:click={saveScores}>Save Scores</button>
     </ControlSection>
     <ControlSection title="Game Control">
+        <button on:click={setGameClock}>Set Game Clock</button>
+        <input type="text" bind:value={clockLength} />
         <button on:click={endGame} id="endGame">End Game</button>
     </ControlSection>
 </div>

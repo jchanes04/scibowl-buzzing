@@ -68,6 +68,7 @@ io.on('connection', async socket => {
     socket.on('newQ', (question)=>{
         game.newQ(memberId, question)
         socket.to(gameId).emit('questionOpen', question)
+        game.clock.resume()
     })
 
     socket.on('startTimer', () => {
@@ -111,8 +112,14 @@ io.on('connection', async socket => {
                 game.timer.resume()
             } else {
                 game.timer.end()
+                game.clock.pause()
             }
         }
+    })
+
+    socket.on('setGameClock', (length: number)=>{
+        game.clock.set(length)
+        socket.to(gameId).emit('setGameClock', { length })
     })
 
     socket.on('clearScores', () => {
@@ -163,6 +170,7 @@ io.on('connection', async socket => {
         socket.to(gameId).emit('gameEnd')
         socket.emit('gameEnd')
         game.timer.end()
+        game.clock.end()
         games.deleteGame(gameId)
     })
 

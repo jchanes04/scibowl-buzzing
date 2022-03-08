@@ -16,6 +16,7 @@ import buzzAudioStore from "./buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
 import type { TimerMethods } from "./timer"
 import timerStore from "./timer"
+import clockStore from "./clock"
 import type { Question } from "$lib/classes/Game"
 import moderatorStore from "./moderators"
 
@@ -55,6 +56,9 @@ buzzAudioStore.subscribe(value => buzzAudio = value)
 let timer: SvelteComponentTyped & TimerMethods
 timerStore.subscribe(value => timer = value)
 
+let clock : SvelteComponentTyped & TimerMethods
+clockStore.subscribe(value => clock = value)
+
 if (browser) {
     socket.connect()
 }
@@ -62,6 +66,11 @@ if (browser) {
 socket.onAny((event: string, ...args: any[]) => {
     console.log(event, args);
 })
+
+socket.on('setGameClock', length => {
+    clock.set(length)
+})
+
 
 socket.on('memberJoin', ({ member, team }: { member: MemberData, team: TeamData }) => {
     if (member.moderator){
@@ -211,6 +220,7 @@ socket.on('scoreChange', (
             })
         }
     } else {
+        clock.pause()
         timer.reset()
         gameStateStore.set({
             questionState: 'idle',
@@ -238,9 +248,10 @@ socket.on('questionOpen', (question: Question) => {
         type: 'notification',
         text: 'New question opened' + (teams.find(x => x.id === question.team) ? " for " + teams.find(x => x.id === question.team)?.name : "")
     }])
+    clock.resume()
 })
 
-socket.on('timerStart', (length: number) => {
+socket.on('Start', (length: number) => {
     console.log(gameState.buzzedTeamIDs)
     timer.start(length)
     if (gameInfo.myTeam && !gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {

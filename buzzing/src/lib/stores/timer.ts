@@ -6,6 +6,7 @@ export type TimerMethods = {
     pause: () => void,
     resume: () => void,
     end: () => void
+    set: (length: number) => void
 }
 
 const timerStore: Writable<SvelteComponentTyped & TimerMethods> = writable(null)

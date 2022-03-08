@@ -29,6 +29,7 @@ export interface Game {
     teams: Team[]
     teamSettings: TeamSettings
 
+    clock: Timer,
     timer: Timer,
     
     times: { //times [client, server extratime]
@@ -77,6 +78,7 @@ export class Game {
             tossup: times?.tossup || [5, 2],
             bonus: times?.bonus || [20, 2]
         }
+        this.clock = new Timer()
         // time format: [client side time, extra time allowed for latency]
         
         /*

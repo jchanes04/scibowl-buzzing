@@ -60,6 +60,10 @@
         isLive = false
     }
 
+    export function set(length: number){
+        $time = length
+    }
+
     export function reset() {
         $time = 0
         clearInterval(interval)

@@ -50,6 +50,10 @@ export class Timer extends EventEmitter {
         this.emit('resume', this.time)
     }
 
+    set(length: number){
+        this.time = length
+    }
+
     end(){
         this.time = 0 
         clearInterval(this.interval)

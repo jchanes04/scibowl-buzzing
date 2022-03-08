@@ -53,6 +53,7 @@
     import type { GameInfo } from '$lib/stores/gameInfo';
     import gameInfoStore from "$lib/stores/gameInfo";
     import membersStore from "$lib/stores/members";
+    import clockStore from "$lib/stores/clock";
     import teamsStore from "$lib/stores/teams";
     import timerStore from "$lib/stores/timer"
     import gameStateStore from "$lib/stores/gameState";
@@ -85,6 +86,7 @@
     <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode={gameInfo.joinCode}>
         <Timer bind:this={$timerStore} on:end={() => $gameStateStore = { ...$gameStateStore, buzzingDisabled: true }} />
     </svelte:component>
+    <Timer bind:this={$clockStore} />
     <MemberList />
     <Scoreboard teamList={$teamsStore} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
     <Chatbox />
