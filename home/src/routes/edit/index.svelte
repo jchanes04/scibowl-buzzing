@@ -26,6 +26,7 @@
     import Warn from '$lib/components/Warn.svelte';
     import type { Team } from '$lib/mongo';
     import warnStore from '$lib/stores/Warn';
+    import type { SvelteComponentTyped } from 'svelte';
 
     export let teams: Team[]
     let selectedTeam: Team = teams[0]
@@ -33,6 +34,7 @@
     let teamNameWrapper: HTMLElement
     let mobileMenuOpen = false
     let mobileMenuElement: HTMLElement
+    let memberMenuComponent: SvelteComponentTyped
 
     function handleTeamSelect(e: CustomEvent<Team>) {
         selectedTeam = e.detail
@@ -49,6 +51,7 @@
         if (e.key === 'Enter') {
             toggleTeamNameEdit()
             teams = teams
+            memberMenuComponent.setDirty(true)
         }
     }
 
@@ -56,6 +59,7 @@
         if (teamNameWrapper && !teamNameWrapper.contains(e.target as Node)) {
             editingTeamName = false
             teams = teams
+            memberMenuComponent.setDirty(true)
         }
 
         if (mobileMenuElement && !mobileMenuElement.contains(e.target as Node) && mobileMenuElement !== e.target) {
@@ -92,15 +96,16 @@
                         <input id="teamNameInputElement" type='text' bind:value={selectedTeam.teamName} on:keydown={handleKeydown} />
                     {/if}
                 </div>
-                <MemberMenu teamData={selectedTeam} />
+                <MemberMenu bind:this={memberMenuComponent} teamData={selectedTeam} />
             </div>
         {:else} 
-            {#if selectedTeam==null}
+            {#if false} <!-- selectedTeam=null  -->
                 <Payment bind:teams></Payment>
             {:else}
-            <div>
-                <h2>No team selected</h2>
-            </div>
+                <div>
+                    <h2>No team selected. </h2>
+                    <h2>Select a team from the left or make a new team.</h2>
+                </div>
             {/if}
         {/if}
         

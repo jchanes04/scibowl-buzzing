@@ -17,8 +17,27 @@
 
     <section class='bubble'>
         <h2>Revolutionary Buzzing System</h2>
-        <p>Say goodbye to shitty latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers. With integrated scoring, challenge and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay. This is the closest we've ever gotten to emulating real, in-person Science Bowl.</p>
+        <p>
+            Say goodbye to latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers.
+            With integrated scoring, challenge and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay.
+            This is the closest we've ever gotten to emulating real, in-person Science Bowl.
+        </p>
         <p style="text-decoration: underline;" class="info">Publicly available soon</p>
+    </section>
+    <section class='bubble'>
+        <h2>Tournament Information</h2>
+        <p>
+            ESBOT will be held on <b><time datetime="2022-04-16">April 16th</time></b>.
+            The tournament will be held in the style of <b>in-person Science Bowl</b> through an online medium.
+            The anticipated format will consist of a round-robin portion with 6 brackets of 5 teams each (tentative), 
+            with 16 teams advancing to a double elimination tournament lasting 7 rounds.
+        </p>
+        <br />
+        <p>
+            We are anticipating offering <b>cash prizes</b> to the winners of the tournament. Exactly much money will be offered will depend on the number of teams participating, as well as other factors.
+            Registration will have a small fee attached for each team participating. Payment is closed at the moment, but will open up in advance of the tourmanent.
+        </p>
+        <p style="text-decoration: underline;" class="info">Schedule coming soon</p>
     </section>
     <section class='bubble'>
         <h2>Skilled Writers</h2>
@@ -31,6 +50,7 @@
             <StaffCard name="Thanush Patlolla" grade="Freshman" categories="Physics, Math">- AIME Qualifier<br/>- USACO Silver</StaffCard>
             <StaffCard name="Andrew Huang" grade="Senior" categories="Math, Biology">- USACO Gold division<br />- USABO Semifinalist<br/>- AIME Qualifer<br/>- National Science Olympiad Invitational Medalist</StaffCard>
             <StaffCard name="Sukrith Velmineti" grade="Junior" categories="Earth and Space, Math">- AIME Qualifier<br/>- National Science Olympiad Invitational Medalist</StaffCard>
+            <StaffCard name="Vedang Singhal" grade="Junior" categories="Biology, Earth and Space">- USABO Semifinalist<br />- National Science Olympiad Invitational Medalist<br/>- HOSA National Tournament Competitor</StaffCard>
         </div>
     </section>
     <section class='bubble'>
@@ -62,7 +82,7 @@
             </div>
             <div slot="physics">
                 <p>Consider a 1 kg mass at position x = 1. If the potential energy as a function of x is equal to -x<sup>3</sup> + 4x<sup>2</sup> - 5x + 2, what is the angular frequency of small oscillations around the point x = 1?</p><br />
-                <p>ANSWER: <span class="answer">sqrt(2)</span></p>
+                <p>ANSWER: <span class="answer">√<span style="border-top: 1px solid white; position: relative; top: 1.05px;">2</span></span></p>
             </div>
             <div slot="math">
                 <p>Brian and Rishabh take turns playing Russian Roulette using a nerf revolver with 6 spaces for darts and one actual dart in it. However, Rishabh cheated using magic that makes himself half as likely as usual to pick the slot that has the dart in it. if Rishabh goes first, what is the probability that he dies on his second turn?</p><br />

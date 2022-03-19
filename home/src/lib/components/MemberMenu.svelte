@@ -77,6 +77,11 @@
             $warnStore.object = null
         }   
     }
+
+    export function setDirty(value: boolean) {
+        console.log('dirty: ' + value)
+        dirty = value
+    }
 </script>
 
 <div class="member-menu">
