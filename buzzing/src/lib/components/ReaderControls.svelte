@@ -9,6 +9,7 @@
     import type Debugger from '$lib/classes/Debugger';
     import chatMessagesStore from '$lib/stores/chatMessages';
     import teamsStore from '$lib/stores/teams';
+    import modalStore from '$lib/stores/modal';
     export let socket: Writable<Socket>
     export let questionState: 'idle' | 'open' | 'buzzed'
     
@@ -63,8 +64,25 @@
         debug.addEvent('startTimer', {})
     }
     function endGame() {
-        $socket.emit('endGame')
-        debug.addEvent('endGame', {})
+        $modalStore = {
+            title: 'End Game',
+            message: 'Are you sure you want to end the game?',
+            options: [
+                {
+                    text: 'Cancel',
+                    callback: () => {
+                        $modalStore = null
+                    }
+                },
+                {
+                    text: 'Confirm',
+                    callback: () => {
+                        $socket.emit('endGame')
+                        debug.addEvent('endGame', {})
+                    }
+                }
+            ]
+        }
     }
     function clearScores() {
         $socket.emit('clearScores')
@@ -87,7 +105,6 @@
     }
     function handleSubjectSelect(e: CustomEvent<{ id: Category, value: string }>) {
         selectedCategory = e.detail.id
-        
     }
 </script>
 

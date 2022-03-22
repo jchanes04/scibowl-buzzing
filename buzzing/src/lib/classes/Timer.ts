@@ -21,7 +21,6 @@ export class Timer extends EventEmitter {
         this.time = length
         this.interval = setInterval(() => {
             this.time = this.time - 1
-            console.log(this.time)
             if (this.time == 0){
                 this.end()
             }
@@ -41,7 +40,6 @@ export class Timer extends EventEmitter {
 
         this.interval = setInterval(() => {
             this.time = this.time - 1
-            console.log(this.time)
             if (this.time == 0){
                 this.end()
             }

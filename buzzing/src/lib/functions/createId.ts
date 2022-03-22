@@ -1,5 +1,4 @@
 let seed = Math.floor(Math.random() * 1296).toString(36).toUpperCase()
-console.log("Seed: " + seed)
 
 const joinCodes: string[] = []
 

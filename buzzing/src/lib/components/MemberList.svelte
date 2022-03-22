@@ -1,9 +1,8 @@
 <script lang="ts">
+    import gameInfoStore from "$lib/stores/gameInfo";
     import membersStore from "$lib/stores/members";
     import moderatorStore from "$lib/stores/moderators";
-    import teamsStore from "$lib/stores/teams"
-    
-    
+    import MemberListElement from "./MemberListElement.svelte";
 </script>
 
 <div class="member-list">
@@ -11,12 +10,11 @@
     <ul>
         <h3>Moderators</h3>
         {#each $moderatorStore as member}
-            <li class="reader">{member.name}
-                
+            <MemberListElement {member} />
         {/each}
         <h3>Members</h3>
         {#each $membersStore as member}
-            <li>{member.name} <span>({$teamsStore.find(t => t.id = member.teamID).name})</span></li>
+            <MemberListElement {member} showControls={$gameInfoStore.myMember.moderator} />
         {/each}
     </ul>
 </div>
@@ -84,20 +82,5 @@
         list-style: none;
         padding-left: 0px;
         margin: 0;
-    }
-
-    li {
-        font-size: 20px;
-        margin-left: 1em;
-
-        span {
-            color: grey;
-            font-size: 16px;
-            margin-left: 0.5em;
-        }
-    }
-
-    .reader {
-        color: var(--orange);
     }
 </style>

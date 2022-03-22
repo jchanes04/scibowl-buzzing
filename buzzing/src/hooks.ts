@@ -32,7 +32,6 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
         }
     } else if (event.url.pathname.startsWith('/join')) {
         const gameId = event.url.pathname.slice("/join/".length)
-        console.log(gameId)
 
         if (gameExists(gameId)) {
             const game = getGame(gameId)

@@ -11,13 +11,13 @@ import chatMessagesStore from "./chatMessages"
 import type { GameInfo } from "./gameInfo"
 import gameInfoStore from "./gameInfo"
 import gameStateStore, { GameState } from "./gameState"
-import { emptyCatScores } from '$lib/classes/Scoreboard'
 import buzzAudioStore from "./buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
 import type { TimerMethods } from "./timer"
 import timerStore from "./timer"
 import type { Question } from "$lib/classes/Game"
 import moderatorStore from "./moderators"
+import { goto } from "$app/navigation"
 
 const socketStore: Writable<Socket> = writable(io(import.meta.env.VITE_WS_URL as string, {
     auth: {
@@ -121,6 +121,45 @@ socket.on('memberLeave', id => {
         type: 'notification',
         text: member.name + ' has left the game'
     }])
+})
+
+socket.on('promotion', (memberId: string) => {
+    const member = members.find(x => x.id === memberId)
+    const team = teams.find(t => t.id === member?.teamID)
+    if (team) {
+        teamsStore.set([
+            ...teams.filter(t => t.id !== team.id),
+            {
+                ...team,
+                members: team.members.filter(m => m.id !== member.id)
+            }
+        ])
+        moderatorStore.set([
+            ...moderators,
+            {
+                ...member,
+                moderator: true,
+                teamID: null
+            }
+        ])
+        chatMessagesStore.set([
+            ...chatMessages,
+            {
+                type: 'notification',
+                text: member.name + ' has been promoted to a moderator'
+            }
+        ])
+        
+        if (member.id === gameInfo.myMember.id) {
+            gameInfoStore.set({
+                ...gameInfo,
+                myMember: {
+                    ...member,
+                    moderator: true
+                }
+            })
+        }
+    }
 })
 
 socket.on('buzz', (id: string) => {
@@ -241,7 +280,6 @@ socket.on('questionOpen', (question: Question) => {
 })
 
 socket.on('timerStart', (length: number) => {
-    console.log(gameState.buzzedTeamIDs)
     timer.start(length)
     if (gameInfo.myTeam && !gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
         gameStateStore.set({
@@ -271,4 +309,9 @@ socket.on('timerEnd', () => {
         questionState:'idle',
         buzzingDisabled: true
     })
+})
+
+socket.on('kicked', () => {
+    goto('/kicked')
+    socket.disconnect()
 })

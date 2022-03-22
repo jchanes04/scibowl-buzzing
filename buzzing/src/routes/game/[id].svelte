@@ -12,8 +12,7 @@
                         gameId: params.id,
                     } as GameInfo,
                     teamList: json.teamList,
-                    moderatorList: json.moderatorList,
-                    moderator: json.gameInfo.myMember.moderator
+                    moderatorList: json.moderatorList
                 }
             }
         }
@@ -23,7 +22,6 @@
 </script>
 
 <script lang="ts">
-    export let moderator: boolean
     export let moderatorList : MemberData[]
     export let gameInfo: GameInfo
     export let teamList: TeamData[]
@@ -89,7 +87,7 @@
     <Scoreboard teamList={$teamsStore} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
     <Chatbox />
 
-    {#if moderator}
+    {#if $gameInfoStore.myMember.moderator}
         <ReaderControls socket={socket} bind:questionState={$gameStateStore.questionState} />
     {:else}
         <PlayerControls />

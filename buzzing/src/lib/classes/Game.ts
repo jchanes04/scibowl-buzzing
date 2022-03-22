@@ -156,6 +156,15 @@ export class Game {
         return null
     }
 
+    promoteMember(id: string) {
+        const member = this.members.find(x => x.id === id)
+        if (member) {
+            this.members = this.members.filter(x => x.id != id)
+            member.promote()
+            this.moderators = [...this.moderators, member]
+        }
+    }
+
     buzz(memberID: string) {
         const member = this.members.find(x => x.id === memberID)
         if (member && !this.state.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed

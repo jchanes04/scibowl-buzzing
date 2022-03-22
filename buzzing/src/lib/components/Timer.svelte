@@ -19,7 +19,6 @@
         $time = length
         interval = setInterval(() => {
             $time = $time - 1
-            console.log($time)
             if ($time <= 0){
                 this.end()
                 clearInterval(interval)
@@ -43,7 +42,6 @@
 
         interval = setInterval(() => {
             $time = $time - 1
-            console.log($time)
             if ($time <= 0){
                 this.end()
             }

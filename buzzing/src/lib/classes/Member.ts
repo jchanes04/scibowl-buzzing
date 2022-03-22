@@ -43,4 +43,8 @@ export class Member {
             teamID: this.team?.id ?? null
         }
     }
+
+    promote() {
+        this.moderator = true
+    }
 }

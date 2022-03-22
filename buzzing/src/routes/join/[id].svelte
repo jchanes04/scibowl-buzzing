@@ -36,8 +36,7 @@
     if (teamSettings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv"
     if (teamSettings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team"
     if (!(teamSettings.individualsAllowed || teamSettings.newTeamsAllowed)) teamOrIndiv = "team"
-    console.log(teamOrIndiv)
-    console.dir(teamSettings)
+
     if (teamOrIndiv != "") showRadio = false
     $: disabled = 
         memberName === '' || !teamOrIndiv
@@ -54,7 +53,10 @@
         <div>
             <input type="hidden" name="gameId" value={gameId} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
-            <br />                
+            <br />
+            {#if !showRadio}
+                <input type="hidden" name="team-or-indiv" value={teamOrIndiv} />
+            {/if}
             {#if teamSettings.individualsAllowed && showRadio}
                 <div class="radio-wrapper">
                     <label for="indiv">
@@ -67,13 +69,13 @@
             {/if}
             {#if teamSettings.newTeamsAllowed}
                 {#if showRadio}
-                <div class="radio-wrapper">
-                    <label for="new-team">
-                        <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
-                        <span />
-                        Create a new team:
-                    </label>
-                </div>
+                    <div class="radio-wrapper">
+                        <label for="new-team">
+                            <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
+                            <span />
+                            Create a new team:
+                        </label>
+                    </div>
                 {/if}
                 <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
                     <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} />
@@ -82,19 +84,19 @@
             {/if} 
             {#if teams.length > 0}
                 {#if showRadio}
-                <div class="radio-wrapper">
-                    <label for="team">
-                        <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
-                        <span />
-                            Play with an existing team:                        
-                    </label>
-                </div>
+                    <div class="radio-wrapper">
+                        <label for="team">
+                            <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
+                            <span />
+                                Play with an existing team:                        
+                        </label>
+                    </div>
                 {:else}
-                    <label>Team:</label>
+                    <label for="team-select">Team:</label>
                 {/if}
 
                 <div style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
-                    <select name="team-id" bind:value={teamID}>
+                    <select id="team-select" name="team-id" bind:value={teamID}>
                         <option value="" hidden default></option>
                         {#each teams as team}
                             <option value={team.id}>{team.name}</option>

@@ -18,7 +18,6 @@ export async function post({ request }: RequestEvent) {
             },
             teamNames
         }
-        console.dir(gameData)
 
         const game = createNewGame(ownerName, gameData)
 

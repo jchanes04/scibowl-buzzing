@@ -37,7 +37,7 @@ io.on('connection', async socket => {
         return socket.disconnect()
     }
 
-    socket.join(gameId)
+    socket.join([gameId, memberId])
 
     socket.emit('authenticated', {
         moderator: game.moderators.some(m => m.id === memberId)
@@ -115,6 +115,16 @@ io.on('connection', async socket => {
         }
     })
 
+    socket.on('kickPlayer', (id: string) => {
+        const removed = game.removeMember(id)
+        
+        if (removed !== null) {
+            socket.to(id).emit('kicked')
+            io.in(id).disconnectSockets()
+            socket.to(gameId).emit('memberLeave', memberId)
+        }
+    })
+
     socket.on('clearScores', () => {
         game.clearScores()
         socket.to(gameId).emit('scoresClear')
@@ -151,8 +161,6 @@ io.on('connection', async socket => {
                 catScores: m.scoreboard.catScores
             }
         })
-
-        console.dir(data)
 
         fs.writeFileSync(process.cwd() + '/data/' + fullName + '.json', JSON.stringify(data, null, '\t'))
 
