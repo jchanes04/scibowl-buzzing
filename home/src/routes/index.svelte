@@ -11,8 +11,15 @@
 <main>    
     <section id="hero">
         <h1>ESBOT</h1>
-        <h3>Enloe Science Bowl Online Tournament</h3>
-        <h3>Registration is Open! <a id=register href="/register">Register here.</a></h3>
+        <h3 style="margin-top: 0;">Enloe Science Bowl Online Tournament</h3>
+        <h3 style="margin-bottom: 0.2em;">Registration is Open!</h3>
+        <h3 style="margin-top: 0;"><a id=register href="/register">Register here</a> and make sure to join the <a href="https://discord.gg/XNvpJqNvU9">Discord server</a></h3>
+        <br /><br />
+        <h4>Sponsored by:</h4><br />
+        <div class="image-wrapper">
+            <img src="/wolfram-logo.png" alt="Wolfram logo" class="wolfram-logo" />
+        </div>
+        <br /><br />
     </section>
 
     <section class='bubble'>
@@ -34,7 +41,17 @@
         </p>
         <br />
         <p>
+            ESBOT will be run through the <b>Discord server</b> found <a style="color: #6a7ff6" href="https://discord.gg/XNvpJqNvU9">at this link</a>. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
+            <b>All competitors should join</b> the Discord server as soon as possible in order to stay up to date and be ready for competition day.
+        </p>
+        <br />
+        <p>
             We are anticipating offering <b>cash prizes</b> to the winners of the tournament. Exactly much money will be offered will depend on the number of teams participating, as well as other factors.
+            <b>Wolfram</b> has also generously donated ten 1-year subscriptions of <b>WolframAlpha Notebook Edition</b> to be distributed to the top two teams. WolframAlpha Notebook edition includes access to both Wolfram Mathematica and all the premium features of WolframAlpha, and is normally priced at $72/year.
+            
+        </p>
+        <br />
+        <p>
             Registration will have a small fee attached for each team participating. Payment is closed at the moment, but will open up in advance of the tourmanent.
         </p>
         <p style="text-decoration: underline;" class="info">Schedule coming soon</p>
@@ -98,7 +115,7 @@
 <style lang="scss">
     h1  {
         font-size: 180px;
-        margin: .2em .0em .1em 0;
+        margin: .2em .0em 0 0;
         letter-spacing: .1em;
 
         @media (max-width: 900px) {
@@ -136,6 +153,18 @@
            font-size: 32px;
        }
     }
+
+    h4 {
+        font-size: 32px;
+        font-weight: 500;
+        margin-bottom: 0;
+    }
+    .wolfram-logo {
+        display: block;
+        max-width: 70vw;
+        width: 450px;
+    }
+
     .info {
         margin: .5em;
     }
@@ -187,6 +216,7 @@
     p {
         font-size: 20px;
         margin: .1em 0;
+        line-height: 1.3em;
     }
 
     .bubble {

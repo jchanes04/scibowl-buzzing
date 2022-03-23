@@ -67,8 +67,8 @@
     <meta name="description" content="Create an account for your school to manage and register your teams" />
 </svelte:head>
 
+<h1>Register your school</h1>
 <form action="/api/register" method="POST">
-    <h1>Register your school</h1>
     <label for='schoolName'>School Name</label><br />
     <input type='text' name='school-name' bind:value={$schoolName.value}/><br />
     <label for='username'>Username</label><br />
@@ -89,12 +89,12 @@
         color: red;
     }
     form {
-        margin: 0 5vw;
+        margin: 0 calc(5vw + 3em);
     }
     
     h1  {
         font-size: 80px;
-        margin: .2em .0em .1em 0;
+        margin: .4em .0em 0.8em 5vw;
 
         @media (max-width: 900px) {
             font-size: 60px;
@@ -155,6 +155,7 @@
         font-size: 24px;
         cursor: pointer;
         width: 8ch;
+        margin-top: 1em;
         
         &:disabled {
             border: solid var(--color-2) 3px;
