@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { MemberData } from "$lib/classes/Member";
     import kickPlayer from "$lib/functions/kickPlayer";
+    import promotePlayer from "$lib/functions/promotePlayer";
     import modalStore from "$lib/stores/modal";
     import teamsStore from "$lib/stores/teams";
 
@@ -8,7 +9,22 @@
     export let showControls = false
 
     function promote() {
-        
+        $modalStore = {
+            title: 'Promote ' + member.name,
+            message: 'Are you sure you want to promote ' + member.name + ' to moderator?',
+            options: [
+                {
+                    text: 'Cancel',
+                    callback: () => {
+                        $modalStore = null
+                    }
+                },
+                {
+                    text: 'Confirm',
+                    callback: () => promotePlayer(member)
+                }
+            ]
+        }
     }
 
     function kick() {
@@ -38,7 +54,7 @@
 {:else}
     <li>
         {member.name} 
-        <span class="team">({$teamsStore.find(t => t.id = member.teamID).name})</span>
+        <span class="team">({$teamsStore.find(t => t.id === member.teamID)?.name})</span>
         {#if showControls}
             <div class="controls">
                 <span class="icon kick" on:click={kick} />

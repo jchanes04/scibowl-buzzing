@@ -121,7 +121,15 @@ io.on('connection', async socket => {
         if (removed !== null) {
             socket.to(id).emit('kicked')
             io.in(id).disconnectSockets()
-            socket.to(gameId).emit('memberLeave', memberId)
+            io.to(gameId).emit('memberLeave', id)
+        }
+    })
+
+    socket.on('promotePlayer', (id: string) => {
+        const promoted = game.promoteMember(id)
+
+        if (promoted != null) {
+            io.to(gameId).emit('promotion', id)
         }
     })
 
