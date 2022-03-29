@@ -5,8 +5,16 @@
 </script> 
 
 <script lang="ts">
-    function handleFormInput() {
-        (<HTMLButtonElement>document.getElementById('join-game')).disabled = joinCodeValue.length !== 4
+    let buttonDisabled = true
+    let codeExists = false
+
+    async function handleFormInput() {
+        if (joinCodeValue.length === 4) {
+            const res = await fetch('/api/code-exists?code=' + joinCodeValue)
+            const response = await res.json()
+            buttonDisabled = joinCodeValue.length !== 4 || !response.exists
+            codeExists = response.exists
+        }
     }
 
     import Controlled from '$lib/components/ControlledInput.svelte'
@@ -19,11 +27,12 @@
 
 <form action="/api/join" method="POST" on:input={handleFormInput} autocomplete="off">
     <h1>Enter a join code</h1>
-    <div>
-        <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
-            <br />
-        <button id="join-game" disabled>Join</button>
-    </div>
+    <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
+    <br />
+    {#if !codeExists}
+        <p class="error">Invalid code</p>
+    {/if}
+    <button id="join-game" disabled={buttonDisabled}>Join</button>
 </form>
 
 <style lang="scss">
@@ -39,6 +48,10 @@
         font-size: 44px;
         text-decoration: underline var(--blue) 3px;
         text-underline-offset: 0.2em;
+    }
+
+    .error {
+        color: red;
     }
 
     button {
