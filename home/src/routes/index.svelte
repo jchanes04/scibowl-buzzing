@@ -60,7 +60,7 @@
         <h2>Skilled Writers</h2>
         <div id="staff">
             <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">- USAPhO Semifinalist<br/>- USNCO Semifinalist <br/>- Science Olympiad National Medalist<br/>- USACO Silver division<br />- USABO Semifinalist</StaffCard>
-            <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honorable Mention<br/>- AIME Qualifer</StaffCard>
+            <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honorable Mention<br/>- USAPhO Semifinalist<br/>- AIME Qualifer</StaffCard>
             <StaffCard name="Brian Zhang" grade="Sophomore" categories="Math, Physics, Earth and Space">- US Team: International Astronomy Olympiad<br/>- AIME Qualifer</StaffCard>
             <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">- USABO Semifinalist<br/>- Science Olympiad National Medalist<br/>- AIME Qualifier</StaffCard>
             <StaffCard name="Nikhil Vemuri" grade="Freshman" categories="Chemistry">- National Science Olympiad Invitational Medalist</StaffCard>
