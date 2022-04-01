@@ -10,11 +10,11 @@
     import chatMessagesStore from '$lib/stores/chatMessages';
     import teamsStore from '$lib/stores/teams';
     import modalStore from '$lib/stores/modal';
+    import gameStateStore from '$lib/stores/gameState';
     export let socket: Writable<Socket>
     export let questionState: 'idle' | 'open' | 'buzzed'
     
-    let categorySelect: HTMLSelectElement
-    let teamSelect: HTMLSelectElement
+    let teamSelectValue: TeamData
     let selectedCategory: Category | ""
     let selectedTeam: string
     let questionType: "tossup" | "bonus" | ""
@@ -46,16 +46,12 @@
 
         $chatMessagesStore = [...$chatMessagesStore, {
             type: 'notification',
-            text: 'New question opened'
+            text: `New Question: ${questionType[0].toUpperCase() + questionType.slice(1)} - ${selectedCategory[0].toUpperCase() + selectedCategory.slice(1)}`
         }]
 
-        questionState = 'open'
+        questionState = 'open';
 
-        categorySelect.selectedIndex = 0
-        teamSelect.selectedIndex = 0;
         (<HTMLInputElement>document.querySelector('input[name="question-type"]:checked')).checked = false
-        selectedCategory = ""
-        selectedTeam = ""
         questionType = ""
     }
     
@@ -96,6 +92,10 @@
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
     function scoreQuestion() {
         $socket.emit('scoreQuestion', selectedScore)
+        if (selectedScore === "correct") {
+            teamSelectValue = $teamsStore.find(t => t.id === $gameStateStore.buzzedTeamIDs[$gameStateStore.buzzedTeamIDs.length - 1])
+            selectedTeam = teamSelectValue.id
+        }
         selectedScore = ""
         debug.addEvent('scoreQuestion', { selectedScore })
     }
@@ -122,12 +122,12 @@
         </div>
         <br />
         <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus'}>
-            <div class="select-wrapper"><Select items={$teamsStore} optionIdentifier="id" labelIdentifier="name" placeholder="Bonus for" on:select={handleTeamSelect}/></div>
+            <div class="select-wrapper"><Select items={$teamsStore} optionIdentifier="id" labelIdentifier="name" placeholder="Bonus for" on:select={handleTeamSelect} bind:value={teamSelectValue} /></div>
         </div>
         <br />
             <div class="select-wrapper"><Select items={categories} optionIdentifier="id" labelIdentifier="value" placeholder="Category" on:select={handleSubjectSelect}/></div>
         <br />
-        <button on:click={newQ} disabled={!questionType || !selectedCategory}>New Question</button>
+        <button on:click={newQ} disabled={!questionType || !selectedCategory || (!selectedTeam && questionType === "bonus")}>New Question</button>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
         <button on:click={startTimer} id="start-timer" disabled={questionState !== "open"}>Start Timer</button>
