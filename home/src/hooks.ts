@@ -1,11 +1,11 @@
 import { getUserFromToken } from '$lib/authentication'
-import type { RequestEvent, ResolveOpts } from '@sveltejs/kit'
+import type { RequestEvent, ResolveOptions } from '@sveltejs/kit'
 
 type MaybePromise<T> = T | Promise<T>
 
-const restrictedEndpoints = ['/api/teams']
+const restrictedEndpoints = ['/api/teams', '/api/addTransaction']
 
-export async function handle({ event, resolve }: { event: RequestEvent, resolve: (event: RequestEvent, opts?: ResolveOpts) => MaybePromise<Response> }) {
+export async function handle({ event, resolve }: { event: RequestEvent, resolve: (event: RequestEvent, opts?: ResolveOptions) => MaybePromise<Response> }) {
     const authToken = event.request.headers.get('cookie')?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
     event.locals.userData = await getUserFromToken(authToken || event.request.headers.get('authorization'))
 

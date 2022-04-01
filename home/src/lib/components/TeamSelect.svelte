@@ -77,21 +77,21 @@
                 <p>{t.teamName}</p>
                 <span class="icon" on:click={() => {$warnStore = {
                     state:'open',
-                    message:[`are you sure you want to remove ${t.teamName}`, `(This action cannot be undone)`],
+                    message:[`Are you sure you want to remove ${t.teamName}?`, `(This action cannot be undone)`],
                     type:'teamRemove',
                     object:t
                 }}} />
             </div>
         {/each}
-        {#if teams.length<3}
+        {#if teams.length < 3}
             <div class='team' on:click={addteam}>
                 <p>+ Add New Team</p>
             </div>
         {/if}
         
-        <!-- <div class='team' class:selected={selectedTeamId === "payment"} on:click={()=>{teamSelect(null)}}>
+        <div class='team' class:selected={selectedTeamId === "payment"} on:click={()=>{teamSelect(null)}}>
             <h1 id="price">Payment</h1>
-        </div> -->
+        </div>
     </div>
 </div>
 
@@ -111,8 +111,8 @@
 
     .icon {
         display: inline-block;
-        height: 0.8em;
-        width: 0.8em;
+        height: 1em;
+        width: 1em;
         background-size: cover;
         vertical-align: middle;
         margin-left: -.3em;

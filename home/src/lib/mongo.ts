@@ -4,13 +4,17 @@ export interface User {
     passwordHash: string,
     schoolName: string,
     teamIds: string[],
-    transactionIDs: number[],
+    transactions: Transaction[],
     paymentAmount: number,
     createdAt: Date
 }
 
-export type UserClean = Omit<User, 'passwordHash'>
+export type Transaction = {
+    paymentEmail: string,
+    transactionID: string
+}
 
+export type UserClean = Omit<User, 'passwordHash'>
 
 export type Team = {
     id: string,
@@ -99,28 +103,28 @@ export async function createUser(data: Omit<User, 'id' | 'createdAt'>) {
         ...data,
         id: createID(),
         createdAt: new Date(),
-        transactionIDs:[],
+        transactions:[],
         paymentAmount:0
     }
     await collections.users.insertOne(newUser)
     return newUser
 }
 
-export async function addTransaction(amount:number,transactionID:number,userId: string) {
-    console.log(userId,amount,transactionID)
+export async function addTransaction(userId: string, amount: number, transactionID: string, paymentEmail: string) {
     const fetchedUser = await collections.users.findOne({ id: userId })
-    amount += fetchedUser.paymentAmount 
-    console.log(transactionID) 
-    let transactionIDs =  [transactionID]
-    if (fetchedUser.transactionIDs){
-        transactionIDs = fetchedUser.transactionIDs.concat(transactionIDs)
-    }
-    return await collections.users.updateOne({ id: userId }, { $set: { "transactionIDs":transactionIDs, paymentAmount: amount } })
+    const totalPaid = amount + fetchedUser.paymentAmount
+    return await collections.users.updateOne({ id: userId }, { $set: { "transactions": [
+        ...(fetchedUser.transactions || []),
+        {
+            transactionID,
+            paymentEmail
+        }
+    ], paymentAmount: totalPaid } })
 }
 
 export async function getTransactionsFromUser(userId: string) {
     const fetchedUser = await collections.users.findOne({ id: userId })
-    return fetchedUser.transactionIDs
+    return fetchedUser.transactions
 }
 
 
