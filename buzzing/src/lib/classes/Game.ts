@@ -162,7 +162,9 @@ export class Game {
             this.members = this.members.filter(x => x.id != id)
             member.promote()
             this.moderators = [...this.moderators, member]
+            return member
         }
+        return null
     }
 
     buzz(memberID: string) {

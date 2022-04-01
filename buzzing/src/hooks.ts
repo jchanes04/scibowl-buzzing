@@ -11,7 +11,7 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
     if (event.url.pathname.startsWith('/game')) {
         const gameId = event.url.pathname.slice("/game/".length)
         const authToken = event.request.headers.get('Cookie')?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
-        const { memberId } = await getDataFromToken(authToken)
+        const memberId = (await getDataFromToken(authToken))?.memberId
         const game = getGame(gameId)
         const member = game?.people.find(m => m.id === memberId)
 

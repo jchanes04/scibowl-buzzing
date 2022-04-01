@@ -117,7 +117,7 @@
         font-size: 180px;
         margin: .2em .0em 0 0;
         letter-spacing: .1em;
-
+        
         @media (max-width: 900px) {
             font-size: 120px;
         }
@@ -134,7 +134,32 @@
         }
     }
     
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+            transform: skewX(0deg);
+            transform: skewY(12deg);
+        }
+        50%{
+            transform: skewX(80deg);
+            transform: skewY(45deg);
+            
+        }
+        100% {
+            transform: rotate(360deg);
+            transform: skewY(45deg);
+            transform: skewX(0deg);
+        }
+    }
+
+    section{
+        
+        animation: spin 2s infinite;
+        
+    }
+
     h2 {
+        animation: spin .7s infinite;
         font-size: 50px;
         margin: 0 0 .3em 0;
         @media (max-width:700px) {
@@ -147,6 +172,7 @@
     }
     
     h3 {
+        animation: spin 1.3s infinite;
        font-size: 40px;
 
        @media (max-width: 550px) {
@@ -214,12 +240,14 @@
     }
 
     p {
+        animation: spin 1.7s infinite;
         font-size: 20px;
         margin: .1em 0;
         line-height: 1.3em;
     }
 
     .bubble {
+        animation:spin 1s infinite;
         border-radius: 15px;
         background-color: var(--color-2);
         padding: 3em;

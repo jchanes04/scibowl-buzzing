@@ -72,7 +72,7 @@ socket.on('memberJoin', ({ member, team }: { member: MemberData, team: TeamData 
         teamsStore.set([
             ...teams.filter(t => t.id !== team.id),
             team
-        ])  
+        ].sort((a, b) => a.name.localeCompare(b.name)))  
     }
     chatMessagesStore.set([...chatMessages, {
         type: 'notification',
@@ -89,7 +89,7 @@ socket.on('memberRejoin', ({ member, team }: { member: MemberData, team: TeamDat
         teamsStore.set([
             ...teams.filter(t => t.id !== team.id),
             team
-        ])
+        ].sort((a, b) => a.name.localeCompare(b.name)))
     }
     chatMessagesStore.set([...chatMessages, {
         type: 'notification',
@@ -105,8 +105,8 @@ socket.on('memberLeave', id => {
             ...moderators.filter(m => m.id !== member.id)
         ])
     } else {
-        if (team.members.length === 1 && !gameInfo.teamSettings.newTeamsAllowed) {
-            teamsStore.set(teams.filter(t => t.id !== team.id))
+        if (team.members.length === 1 && gameInfo.teamSettings.newTeamsAllowed) {
+            teamsStore.set(teams.filter(t => t.id !== team.id).sort((a, b) => a.name.localeCompare(b.name)))
         } else {
             teamsStore.set([
                 ...teams.filter(t => t.id !== team.id),
@@ -114,7 +114,7 @@ socket.on('memberLeave', id => {
                     ...team,
                     members: team.members.filter(m => m.id !== member.id)
                 }
-            ])
+            ].sort((a, b) => a.name.localeCompare(b.name)))
         }
     }
     chatMessagesStore.set([...chatMessages, {
@@ -133,7 +133,7 @@ socket.on('promotion', (memberId: string) => {
                 ...team,
                 members: team.members.filter(m => m.id !== member.id)
             }
-        ])
+        ].sort((a, b) => a.name.localeCompare(b.name)))
         moderatorStore.set([
             ...moderators,
             {
@@ -194,7 +194,7 @@ socket.on('scoresClear', () => {
     members.forEach(m => {
         m.scoreboard.score = 0  
     })
-    teamsStore.set(teams)
+    teamsStore.set(teams.sort((a, b) => a.name.localeCompare(b.name)))
     
     chatMessagesStore.set([...chatMessages, {
         type: 'notification',
@@ -210,11 +210,11 @@ socket.on('scoreChange', (
     const member = members.find(m => m.id === memberID)
     if (member) {
         member.scoreboard.score = memberScore
-        teamsStore.set(teams)
+        teamsStore.set(teams.sort((a, b) => a.name.localeCompare(b.name)))
     }
     if (team) {
         team.scoreboard.score = teamScore
-        teamsStore.set(teams)
+        teamsStore.set(teams.sort((a, b) => a.name.localeCompare(b.name)))
     }
 
     if (score === "correct") {

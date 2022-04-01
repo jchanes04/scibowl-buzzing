@@ -26,7 +26,7 @@ export class Member {
         this.name = name
         this.moderator = moderator
         this.scoreboard = new Scoreboard({ teamScoreboard: team?.scoreboard, score, catScores })
-        this.team = team || (moderator ? null : new Team(this.id, true, [this]))
+        this.team = team || (moderator ? null : new Team(this.name, true, [this]))
         if (team) team.addMember(this)
     }
 
