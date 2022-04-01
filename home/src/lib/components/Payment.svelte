@@ -6,12 +6,10 @@
     import isRepeatTransactionID from '$lib/functions/isRepeatTransactionID';
     import { session } from '$app/stores';
     
-    let paidTeams = Math.floor($session.userData.paymentAmount /15)
-    console.dir($session.userData)
+    $: paidTeams = Math.floor($session.userData.paymentAmount / 15)
+    $: console.log("paidTeams: " + paidTeams)
     export let teams : Team[]
     let transactionSuccess : boolean = false
-
-    
 
     function RepeatTransactionID(){
         return async (value: string) =>{
@@ -24,8 +22,7 @@
     const form = createForm(transactionID)
 
     $: errorMessage = errorMessages[$form.errors[0]]
-    $: console.log($form.errors)
-    $: price = Math.round(100*(teams.length-paidTeams)*15*1.0297+49)/100
+    $: price = Math.round(100 * (teams.length - paidTeams) * 15 * 1.0297 + 49) / 100
 
     const errorMessages = {
         "transactionID.pattern":"Transaction ID should only contain arabic numberals.",
@@ -36,10 +33,11 @@
     async function handleSubmit(amount:number){
         const params = {transactionID: $transactionID.value,amount:amount.toString(), userID:$session.userData.id}
         const urlParams = new URLSearchParams(params)
-        const res = await fetch('api/addTransaction?'+ urlParams.toString())
-        if(res){
+        const res = await fetch('/api/addTransaction?'+ urlParams.toString())
+        if(res.status === 200) {
+            console.log('d')
             transactionSuccess = true
-            paidTeams =teams.length;
+            $session.userData.paymentAmount += price;
         }
     }
 
@@ -47,8 +45,8 @@
 <div id="payment">
                     
     <h1>Payment</h1><br />
-    {#if paidTeams==teams.length}
-        <h2>Thanks! Unless you did something naughty<HelpBox>If you put in fake transactionIDs, we will know and will check, but please dont put fake transactionIDs.</HelpBox>, you've finished the payment process for ESBOT.</h2>
+    {#if paidTeams == teams.length}
+        <h2>Thanks! Unless you did something naughty <HelpBox>If you put in fake transactionIDs, we will know and will check, but please dont put fake transactionIDs.</HelpBox>, you've finished the payment process for ESBOT.</h2>
         <h2>If you wish to register a new team, press the Add team button in the menu on the left.</h2>
         <h2>You are free to edit your registration until two days before the competition at which point, you should contact us.</h2>
     {:else if paidTeams>teams.length}

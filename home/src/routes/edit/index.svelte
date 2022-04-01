@@ -1,14 +1,15 @@
 <script context="module" lang="ts">
     import type { LoadInput, LoadOutput } from '@sveltejs/kit'
-    import TeamSelect from "$lib/components/TeamSelect.svelte";
     export async function load({ session, fetch }: LoadInput): Promise<LoadOutput> {
         if (!session.loggedIn) {
             return {
                 status: 302,
                 redirect: "/register"
             }
-        } else {   
-            const teamsRes = await Promise.all(session.userData.teamIds.map(t => fetch('/api/teams/' + t)))
+        } else {
+            const teamIdsRes = await fetch('/api/teams')
+            const teamIds = await teamIdsRes.json() as string[]
+            const teamsRes = await Promise.all(teamIds.map(t => fetch('/api/teams/' + t)))
             const resolvedTeams = teamsRes.filter(t => t.status === 200)
             const teams = await Promise.all(resolvedTeams.map(t => t.json() as Promise<Team>))
             return {
@@ -24,6 +25,7 @@
     import MemberMenu from '$lib/components/MemberMenu.svelte';
     import Payment from '$lib/components/Payment.svelte';
     import Warn from '$lib/components/Warn.svelte';
+    import TeamSelect from "$lib/components/TeamSelect.svelte";
     import type { Team } from '$lib/mongo';
     import warnStore from '$lib/stores/Warn';
     import type { SvelteComponentTyped } from 'svelte';
@@ -99,7 +101,7 @@
                 <MemberMenu bind:this={memberMenuComponent} teamData={selectedTeam} />
             </div>
         {:else} 
-            {#if false} <!-- selectedTeam=null  -->
+            {#if selectedTeam === null}
                 <Payment bind:teams></Payment>
             {:else}
                 <div>

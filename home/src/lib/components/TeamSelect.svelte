@@ -89,9 +89,9 @@
             </div>
         {/if}
         
-        <!-- <div class='team' class:selected={selectedTeamId === "payment"} on:click={()=>{teamSelect(null)}}>
+        <div class='team' class:selected={selectedTeamId === "payment"} on:click={()=>{teamSelect(null)}}>
             <h1 id="price">Payment</h1>
-        </div> -->
+        </div>
     </div>
 </div>
 
