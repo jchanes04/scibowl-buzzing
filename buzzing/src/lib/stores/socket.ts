@@ -15,7 +15,7 @@ import buzzAudioStore from "./buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
 import type { TimerMethods } from "./timer"
 import timerStore from "./timer"
-import type { Question } from "$lib/classes/Game"
+import type { Category, Question } from "$lib/classes/Game"
 import moderatorStore from "./moderators"
 import { goto } from "$app/navigation"
 
@@ -202,10 +202,17 @@ socket.on('scoresClear', () => {
     }])
 })
 
+type ScoreData = {
+    open: boolean,
+    score: 'correct' | 'incorrect' | 'penalty',
+    memberID: string,
+    memberScore: number,
+    teamID: string,
+    teamScore: number,
+    category: Category
+}
 socket.on('scoreChange', (
-    { open, score, memberID, memberScore, teamID, teamScore }: 
-    { open: boolean, score: 'correct' | 'incorrect' | 'penalty', memberID: string, memberScore: number, teamID: string, teamScore: number }
-) => {
+    { open, score, memberID, memberScore, teamID, teamScore, category }: ScoreData) => {
     const team = teams.find(t => t.id === teamID)
     const member = members.find(m => m.id === memberID)
     if (member) {
@@ -220,7 +227,7 @@ socket.on('scoreChange', (
     if (score === "correct") {
         chatMessagesStore.set([...chatMessages, {
             type: 'success',
-            text: 'Correct answer'
+            text: `Correct answer (${category[0].toUpperCase() + category.slice(1)})`
         }])
     } else if (score === "incorrect") {
         chatMessagesStore.set([...chatMessages, {

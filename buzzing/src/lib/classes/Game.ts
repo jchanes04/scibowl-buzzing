@@ -218,6 +218,7 @@ export class Game {
             && this.state.buzzedTeams.length < Math.min(3, this.teams.length)
             && score !== 'correct'
 
+        const questionCategory = this.state.currentQuestion.category
         if (!open) {
             this.state.currentQuestion = null
             this.state.questionState = 'idle'
@@ -228,7 +229,8 @@ export class Game {
         return {
             scoredMember,
             open,
-            scoredTeam: scoredMember.team
+            scoredTeam: scoredMember.team,
+            category: questionCategory
         }
     }
 

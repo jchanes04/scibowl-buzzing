@@ -88,7 +88,7 @@ io.on('connection', async socket => {
 
     socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
         if (game.state.questionState === "buzzed") {
-            const { scoredMember, scoredTeam, open } = game.scoreQ(score)
+            const { scoredMember, scoredTeam, open, category } = game.scoreQ(score)
             
             socket.to(gameId).emit('scoreChange', {
                 open,
@@ -96,7 +96,8 @@ io.on('connection', async socket => {
                 memberId: scoredMember.id,
                 memberScore: scoredMember.scoreboard.score,
                 teamID: scoredTeam.id,
-                teamScore: scoredTeam.scoreboard.score
+                teamScore: scoredTeam.scoreboard.score,
+                category
             })
             socket.emit('scoreChange', {
                 open,
@@ -104,7 +105,8 @@ io.on('connection', async socket => {
                 memberId: scoredMember.id,
                 memberScore: scoredMember.scoreboard.score,
                 teamID: scoredTeam.id,
-                teamScore: scoredTeam.scoreboard.score
+                teamScore: scoredTeam.scoreboard.score,
+                category
             })
 
             if (open) {
