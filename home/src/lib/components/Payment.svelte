@@ -86,7 +86,7 @@
         <input id="payment-email" name="payment-email" type="text" bind:value={$paymentEmail.value} /> <br />
         
         <p id="error">{errorMessage ? errorMessage : ""}<p>
-        <button disabled={!$form.valid} on:click={() => handleSubmit(price)}>Submit</button>
+        <button disabled={!$form.valid || (!$transactionID.value || !$paymentEmail.value)} on:click={() => handleSubmit(price)}>Submit</button>
         {#if transactionSuccess}
             <p id="success">Your payment has been sucessfully processed.<p>
         {/if}
