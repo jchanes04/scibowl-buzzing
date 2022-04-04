@@ -8,6 +8,7 @@ import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
 import type { TeamSettings } from '$lib/classes/Game'
 import { getDataFromToken } from './authentication'
+import { addGameScores } from './mongo'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -143,37 +144,7 @@ io.on('connection', async socket => {
 
     socket.on('saveScores', async () => {
         console.log('saving scores')
-        const filename = game.name
-            .replace(/[^a-zA-Z0-9-_\(\)]/g, "")
-            .replace(/\s/g, "_")
-        const postfix: "" | number = ""
-
-        const fullName = await findOpenFile(filename, postfix)
-        console.log("filename: " + fullName)
-
-        const data = {
-            teams: {},
-            members: {}
-        }
-
-        game.teams.forEach(t => {
-            if (!t.individual) {
-                data.teams[t.name] = {
-                    score: t.scoreboard.score,
-                    catScores: t.scoreboard.catScores
-                }
-            }
-        })
-
-        game.members.forEach(m => {
-            data.members[m.name] = {
-                score: m.scoreboard.score,
-                catScores: m.scoreboard.catScores
-            }
-        })
-
-        fs.writeFileSync(process.cwd() + '/data/' + fullName + '.json', JSON.stringify(data, null, '\t'))
-
+        await addGameScores(game.scores)
         socket.emit('scoresSaved')
     })
 

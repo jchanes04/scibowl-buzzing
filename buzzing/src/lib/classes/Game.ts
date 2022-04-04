@@ -1,6 +1,7 @@
 import { createGameID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
 import { Member, MemberData } from "./Member"
+import type { ScoreboardData } from "./Scoreboard"
 import type { Team } from "./Team"
 import { Timer } from "./Timer"
 
@@ -15,6 +16,13 @@ export type Question = {
 export type TeamSettings = {
     individualsAllowed: boolean,
     newTeamsAllowed: boolean
+}
+
+export type GameScores = {
+    id: string,
+    name: string,
+    teams: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>,
+    members: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>
 }
 
 export interface Game {
@@ -241,5 +249,32 @@ export class Game {
         this.members.forEach(m => {
             m.scoreboard.clear()
         })
+    }
+
+    get scores(): GameScores {
+        const data: GameScores = {
+            id: this.id,
+            name: this.name,
+            teams: {},
+            members: {}
+        }
+
+        this.teams.forEach(t => {
+            if (!t.individual) {
+                data.teams[t.name] = {
+                    score: t.scoreboard.score,
+                    catScores: t.scoreboard.catScores
+                }
+            }
+        })
+
+        this.members.forEach(m => {
+            data.members[m.name] = {
+                score: m.scoreboard.score,
+                catScores: m.scoreboard.catScores
+            }
+        })
+
+        return data
     }
 }
