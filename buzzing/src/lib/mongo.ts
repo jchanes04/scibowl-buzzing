@@ -28,5 +28,5 @@ async function init() {
 init()
 
 export async function addGameScores(data: GameScores) {
-    return await collections.scores.updateOne({ id: data.id }, data, { upsert: true })
+    return await collections.scores.updateOne({ id: data.id }, { $set: data }, { upsert: true })
 }
