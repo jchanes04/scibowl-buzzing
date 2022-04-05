@@ -16,8 +16,9 @@
         <h3 style="margin-top: 0;"><a id=register href="/register">Register here</a> and make sure to join the <a href="https://discord.gg/XNvpJqNvU9">Discord server</a></h3>
         <br /><br />
         <h4>Sponsored by:</h4><br />
-        <div class="image-wrapper">
+        <div class="images-wrapper">
             <img src="/wolfram-logo.png" alt="Wolfram logo" class="wolfram-logo" />
+            <img src="/aops-logo.png" alt="AOPS logo" class="aops-logo" />
         </div>
         <br /><br />
     </section>
@@ -37,11 +38,11 @@
             ESBOT will be held on <b><time datetime="2022-04-16">April 16th</time></b>.
             The tournament will be held in the style of <b>in-person Science Bowl</b> through an online medium.
             The anticipated format will consist of a round-robin portion with 6 brackets of 5 teams each (tentative), 
-            with 16 teams advancing to a double elimination tournament lasting 7 rounds.
+            with 12 teams advancing to a double elimination tournament lasting 7 rounds.
         </p>
         <br />
         <p>
-            ESBOT will be run through the <b>Discord server</b> found <a style="color: #6a7ff6" href="https://discord.gg/XNvpJqNvU9">at this link</a>. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
+            ESBOT will be run through the <b>Discord server</b> found <a href="https://discord.gg/XNvpJqNvU9">at this link</a>. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
             <b>All competitors should join</b> the Discord server as soon as possible in order to stay up to date and be ready for competition day.
         </p>
         <br />
@@ -52,9 +53,10 @@
         </p>
         <br />
         <p>
-            Registration will have a small fee attached for each team participating. Payment is closed at the moment, but will open up in advance of the tourmanent.
+            There will be a $15 registration fee for each team competing. Payment is now open and can be accessed through the team editing page. If you cannot pay through PayPal or run into any other issues, please reach out to us on Discord.
         </p>
-        <p style="text-decoration: underline;" class="info">Schedule coming soon</p>
+        <br />
+        <a href="/schedule" style="text-decoration: underline; font-size: 1.5em;" class="info">Schedule and Other Information</a>
     </section>
     <section class='bubble'>
         <h2>Skilled Writers</h2>
@@ -159,10 +161,25 @@
         font-weight: 500;
         margin-bottom: 0;
     }
+
+    .images-wrapper {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 40px;
+    }
+
     .wolfram-logo {
         display: block;
         max-width: 70vw;
         width: 450px;
+    }
+
+    .aops-logo {
+        display: block;
+        max-width: 70vw;
+        width: 350px;
     }
 
     .info {
@@ -228,6 +245,10 @@
 
         @media (max-width: 700px) {
             padding: 2em 1em;
+        }
+
+        a {
+            color: #6a7ff6;
         }
     }
 
