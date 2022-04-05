@@ -10,35 +10,35 @@
         </tr>
         <tr>
             <td>Opening Ceremony</td>
-            <td>8:45 - 9:00</td>
+            <td>9:10 - 9:25</td>
         </tr>
         <tr>
             <td>Round Robin 1</td>
-            <td>9:05 - 9:50</td>
+            <td>9:30 - 10:10</td>
         </tr>
         <tr>
             <td>Round Robin 2</td>
-            <td>9:55 - 10:40</td>
+            <td>10:15 - 10:55</td>
         </tr>
         <tr>
             <td>Round Robin 3</td>
-            <td>10:45 - 11:30</td>
+            <td>11:00 - 11:40</td>
         </tr>
         <tr>
             <td>Round Robin 4</td>
-            <td>11:35 - 12:20</td>
+            <td>11:45 - 12:25</td>
         </tr>
         <tr>
             <td>Round Robin 5</td>
-            <td>12:25 - 1:10</td>
+            <td>12:30 - 1:10</td>
         </tr>
         <tr>
             <td>Seeding Round</td>
-            <td>1:15 - 1:35</td>
+            <td>1:15 - 1:40</td>
         </tr>
         <tr>
             <td>Lunch</td>
-            <td>1:35 - 2:15</td>
+            <td>1:40 - 2:40</td>
         </tr>
     </table>
     <table>
@@ -48,35 +48,35 @@
         </tr>
         <tr>
             <td>DE 6</td>
-            <td>2:20 - 2:55</td>
+            <td>2:45 - 3:20</td>
         </tr>
         <tr>
             <td>DE 7</td>
-            <td>3:00 - 3:35</td>
+            <td>3:25 - 4:00</td>
         </tr>
         <tr>
             <td>DE 8</td>
-            <td>3:40 - 4:15</td>
+            <td>4:05 - 4:40</td>
         </tr>
         <tr>
             <td>DE 9</td>
-            <td>4:20 - 4:55</td>
+            <td>4:45 - 5:20</td>
         </tr>
         <tr>
             <td>DE 10</td>
-            <td>5:00 - 5:35</td>
+            <td>5:25 - 6:00</td>
         </tr>
         <tr>
             <td>DE 11 (Semifinals)</td>
-            <td>5:40 - 6:15</td>
+            <td>6:05 - 6:40</td>
         </tr>
         <tr>
             <td>DE 12 (Finals)</td>
-            <td>6:20 - 6:55</td>
+            <td>6:45 - 7:20</td>
         </tr>
         <tr>
             <td>Closing and Awards</td>
-            <td>7:05 - 7:20</td>
+            <td>7:30 - 7:45</td>
         </tr>
     </table>
 </div>
