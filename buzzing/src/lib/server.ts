@@ -33,6 +33,19 @@ io.on('connection', async socket => {
     const { gameId, memberId } = tokenData
     const game = getGame(gameId)
     
+    if (!game) {
+        socket.emit('authFailed')
+        return socket.disconnect()
+    } else if (!game.people.some(m => m.id === memberId)) {
+        if (game.leftPlayers.some(p => p.id === memberId)) {
+            const rejoined = game.rejoinMember(memberId)
+            socket.emit('memberRejoin', { member: rejoined.data, team: rejoined.team.data })
+        } else {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+    }
+
     if (!game || !game.people.some(m=> m.id === memberId)) {
         socket.emit('authFailed')
         return socket.disconnect()
