@@ -16,7 +16,16 @@ const httpsServer = https.createServer({
 })
 export const io = new Server(httpsServer, {
     cors: {
-        origin: '*'
+        origin: import.meta.env.VITE_HOST_URL,
+        allowedHeaders: ["Cookie"],
+        credentials: true
+    },
+    allowRequest: async (req, callback) => {
+        const authToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        const tokenData = await getDataFromToken(authToken)
+        const game = games.find(g => g.id === tokenData.gameId)
+        const authenticated = [...game.people, ...game.leftPlayers].some(x => x.id === tokenData.memberId)
+        callback(null, authenticated)
     }
 })
 
@@ -75,16 +84,26 @@ io.on('connection', async socket => {
                 socket.emit('buzzFailed')
             }
         } else {
-            
+            socket.emit('buzzFailed')
         }
     })
 
-    socket.on('newQ', (question)=>{
+    socket.on('newQ', (question) => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         game.newQ(memberId, question)
         socket.to(gameId).emit('questionOpen', question)
     })
 
     socket.on('startTimer', () => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         if (game.state.questionState === "open") {
             const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
             game.timer.start(serverLength)
@@ -101,6 +120,11 @@ io.on('connection', async socket => {
     })
 
     socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         if (game.state.questionState === "buzzed") {
             const { scoredMember, scoredTeam, open, category } = game.scoreQ(score)
             
@@ -132,6 +156,11 @@ io.on('connection', async socket => {
     })
 
     socket.on('kickPlayer', (id: string) => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         const removed = game.removeMember(id)
         
         if (removed !== null) {
@@ -142,6 +171,11 @@ io.on('connection', async socket => {
     })
 
     socket.on('promotePlayer', (id: string) => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         const promoted = game.promoteMember(id)
 
         if (promoted != null) {
@@ -150,18 +184,33 @@ io.on('connection', async socket => {
     })
 
     socket.on('clearScores', () => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         game.clearScores()
         socket.to(gameId).emit('scoresClear')
         socket.emit('scoresClear')
     })
 
     socket.on('saveScores', async () => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         console.log('saving scores')
         await addGameScores(game.scores)
         socket.emit('scoresSaved')
     })
 
     socket.on('endGame', () => {
+        if (!game.moderators.some(m => m.id === memberId)) {
+            socket.emit('authFailed')
+            return socket.disconnect()
+        }
+
         socket.to(gameId).emit('gameEnd')
         socket.emit('gameEnd')
         game.timer.end()

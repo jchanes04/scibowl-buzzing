@@ -24,7 +24,8 @@ const socketStore: Writable<Socket> = writable(io(import.meta.env.VITE_WS_URL as
         authToken: Cookie.get('authToken') as string
     },
     autoConnect: false,
-    secure: true
+    secure: true,
+    withCredentials: true
 }))
 export default socketStore
 
