@@ -4,9 +4,9 @@
     import { session } from '$app/stores'
     import {goto} from "$app/navigation"
     import Cookie from 'js-cookie'
-    import type {SaQuestion, McqQuestion, User} from 'src/mongo'
+    import type {SaQuestion, McqQuestion, User} from '$lib/mongo'
     export let userData : User
-    export let questions : (SaQuestion|McqQuestion)[]
+    export let questions : (SaQuestion | McqQuestion)[]
 
     const dispatch = createEventDispatcher()
 </script>
@@ -25,7 +25,7 @@
             <p>Physics: {questions.filter(question => question.category=="physics").length}</p>
             <p>Math: {questions.filter(question => question.category=="math").length}</p>
         {/if}
-        {#if $session.userID==userData.id}
+        {#if $session.userData.id == userData.id}
             <br />
             <button on:click={()=>{goto("/account")}}>Edit</button>
         {/if}

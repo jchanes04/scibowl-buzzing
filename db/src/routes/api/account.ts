@@ -1,23 +1,19 @@
-import type { Request } from "@sveltejs/kit";
-import { updateNameOnQuestions, updateUser, User } from "../../mongo";
-import { getIDFromToken } from "../../authentication";
-import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
+import type { RequestEvent } from "@sveltejs/kit";
+import { updateNameOnQuestions, updateUser, User } from "$lib/mongo";
 
-export async function post({ body, headers }: Request) {
-    const authToken = headers.authorization
-    const userId = getIDFromToken(authToken)
-    const formData = <ReadOnlyFormData>body
-    const username = formData.get('username')
+export async function post({ request, locals }: RequestEvent) {
+    const formData = await request.formData()
+    const username = formData.get('username') as string
     
     if (username) {
-        await updateUser(userId, { username: username.trim() })
-        await updateNameOnQuestions(userId, username.trim())
+        await updateUser(locals.userData.id, { username: username.trim() })
+        await updateNameOnQuestions(locals.userData.id, username.trim())
 
         return {
             status: 200,
             body: {
                 user: {
-                    id: userId,
+                    id: locals.userData.id,
                     username: username.trim()
                 } as Partial<User>
             }

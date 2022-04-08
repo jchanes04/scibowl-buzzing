@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type {SaQuestion, McqQuestion, User, UserSettings} from 'src/mongo'
+    import type {SaQuestion, McqQuestion, User, UserSettings} from '$lib/mongo'
     import { createEventDispatcher } from 'svelte';
 
     export let userData: User

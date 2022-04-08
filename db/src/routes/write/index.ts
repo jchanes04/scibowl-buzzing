@@ -1,27 +1,24 @@
 import { redirectTo } from "$lib/functions/redirectTo";
-import type { Request } from "@sveltejs/kit";
-import type { ReadOnlyFormData } from "@sveltejs/kit/types/helper";
-import { addQuestion, category, getUserFromID, McqBase, McqQuestion, SaBase, SaQuestion } from "../../mongo";
+import type { RequestEvent } from "@sveltejs/kit";
+import { addQuestion, category, getUserFromID } from "$lib/mongo";
 
-export async function post(request: Request) {
+export async function post({ request, locals }: RequestEvent) {
     try {
-        const authToken = request.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken").split("=")[1]
-
-        const formData = <ReadOnlyFormData>request.body
-        const userId = formData.get("user-id")
+        const formData = await request.formData()
+        const userId = formData.get("user-id") as string
         const ownQuestion = formData.get("own-question")
         const authorName = formData.get("author-name")
-        const type= <"MCQ" | "SA">formData.get("type")
-        const category = <category>formData.get("category")
+        const type = formData.get("type") as "MCQ" | "SA"
+        const category = formData.get("category") as category
         const questionText = formData.get("question-text")
         
         const choices = {
-            W: formData.get("W"),
-            X: formData.get("X"),
-            Y: formData.get("Y"),
-            Z: formData.get("Z")
+            W: formData.get("W") as string,
+            X: formData.get("X") as string,
+            Y: formData.get("Y") as string,
+            Z: formData.get("Z") as string
         }
-        const correctAnswer = <"W" | "X" | "Y" | "Z">formData.get("correct-answer")
+        const correctAnswer = formData.get("correct-answer") as "W" | "X" | "Y" | "Z"
         const answer = formData.get("answer")
 
         let question: any = {}

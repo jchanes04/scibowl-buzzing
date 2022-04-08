@@ -9,12 +9,7 @@ const config = {
 
 	kit: {
 		// hydrate the <div id="svelte"> element in src/app.html
-		adapter: node({
-			env: {
-				port: 'PORT'
-			}
-		}),
-		target: '#svelte',
+		adapter: node(),
 		files: {
 			lib: "src/lib"
 		}

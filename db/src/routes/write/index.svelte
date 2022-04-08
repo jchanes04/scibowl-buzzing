@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { category } from "src/mongo";
+    import type { category } from "$lib/mongo";
     import { session } from '$app/stores'
     let ownQuestion: boolean = true
     let author: string
@@ -18,8 +18,8 @@
 <main>
     <form id="form" action="/write" method="POST" autocomplete="off">
         <h1>Submit Questions</h1>
-        <input type="hidden" name="user-id" value={$session.userID} />
-        {#if $session.isLoggedIn}
+        <input type="hidden" name="user-id" value={$session.userData.id} />
+        {#if $session.loggedIn}
             <label for="own-question" class="checkbox-label">
                 <input id="own-question" type="checkbox" name="own-question" bind:checked={ownQuestion} />
                 <span />    

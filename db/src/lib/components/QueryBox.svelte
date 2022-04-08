@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-    import type { category } from "src/mongo";
+    import type { category } from "$lib/mongo";
     import Cookie from 'js-cookie'
     import { page } from "$app/stores";
 
@@ -28,7 +28,7 @@
 </script>
 
 <svelte:body on:keydown={(e) => {
-    if (e.code === "Enter" && $page.path.split("/")[1] === "question") {
+    if (e.code === "Enter" && $page.url.pathname.startsWith("/question/")) {
         dispatch('sendQuery', {
             inputs:inputs
         })

@@ -1,12 +1,12 @@
 import {XMLHttpRequest} from 'xmlhttprequest'
 import * as dotenv from 'dotenv'
-import { generateToken } from '../../authentication'
-import { updateAvatarHash } from '../../mongo'
-import type { Request } from '@sveltejs/kit'
+import { generateToken } from '$lib/authentication'
+import { updateAvatarHash } from '$lib/mongo'
+import type { RequestEvent } from '@sveltejs/kit'
 dotenv.config({path: '../.env'})
 
-export async function get({ query, params }: Request) {
-    const code = query.get("code")
+export async function get({ url, params }: RequestEvent) {
+    const code = url.searchParams.get("code") as string
     if (code) {
         try {
             return await new Promise((resolve, reject) => {
@@ -15,6 +15,7 @@ export async function get({ query, params }: Request) {
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
                 xhr.onload = async () => {
                     const res = JSON.parse(xhr.responseText)
+                    console.dir(res)
                     if (res.error) {
                         resolve({
                             status: 302,
@@ -36,7 +37,7 @@ export async function get({ query, params }: Request) {
                     client_secret: "58RYXZozmWiqGPvlhODBi26fhzau8zX4",
                     code,
                     grant_type: 'authorization_code',
-                    redirect_uri: `http://${import.meta.env.VITE_HOST_URL}/auth/${params.path}`,
+                    redirect_uri: `${import.meta.env.VITE_HOST_URL}/auth/${params.path}`,
                     scope: 'identify',
                 }).toString())
             })
@@ -50,7 +51,6 @@ export async function get({ query, params }: Request) {
             }
 		}
     }
-
 }
 
 async function loginUser(token: string, type: string): Promise<DiscordUserResponse> {
@@ -60,6 +60,7 @@ async function loginUser(token: string, type: string): Promise<DiscordUserRespon
         xhr.setRequestHeader("Authorization", `${type} ${token}`)
         xhr.onload = async () => {
             const userData: DiscordUserResponse = JSON.parse(xhr.responseText)
+            console.dir(userData)
             await updateAvatarHash(userData.id, userData.avatar)
             resolve(userData)
         }

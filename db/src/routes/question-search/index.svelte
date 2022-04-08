@@ -31,7 +31,7 @@
     import PageSwitcher from "$lib/components/PageSwitcher.svelte";
     import QueryBox from '$lib/components/QueryBox.svelte'
     import MobileDatabaseHeader from "$lib/components/MobileDatabaseHeader.svelte";
-    import type {SaQuestion, McqQuestion} from 'src/mongo'
+    import type {SaQuestion, McqQuestion} from '$lib/mongo'
     import Cookie from 'js-cookie'
     import {tick} from 'svelte'
     import DatabaseHeader from "$lib/components/DatabaseHeader.svelte";
@@ -42,7 +42,7 @@
 
     export let questions: (SaQuestion | McqQuestion)[] = []
     const resultsPerPage = 20
-    let pageNumber = Cookie.get('pageNumber') <= Math.ceil(questions.length / resultsPerPage) ? Cookie.get('pageNumber') : 1
+    let pageNumber = parseInt(Cookie.get('pageNumber')) <= Math.ceil(questions.length / resultsPerPage) ? parseInt(Cookie.get('pageNumber')) : 1
     $: numPages = Math.ceil(questions.length / resultsPerPage)
     let menuOpen = true
     let querySent = false
@@ -61,7 +61,7 @@
             }
         })
         if (res.status === 401){
-            $session.isLoggedIn=false
+            $session.loggedIn=false
         } else {
             questions = await res.json()
             await tick()
@@ -87,7 +87,7 @@
 <main>
     <div id="desktop-header">
         <DatabaseHeader>
-            {#if $session.isLoggedIn}
+            {#if $session.loggedIn}
                 <h1>{$session.userData.username}</h1>
                 <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
             {:else}
@@ -100,7 +100,7 @@
     <div id="mobile-header">
         <MobileDatabaseHeader>
             <svelte:fragment slot="left">
-                {#if $session.isLoggedIn}
+                {#if $session.loggedIn}
                     <div id="open-menu" class:opened={menuOpen} on:click={openMenu}>
                         <span><span /></span>
                     </div>
@@ -108,7 +108,7 @@
             </svelte:fragment>
 
             <svelte:fragment slot="right">
-                {#if $session.isLoggedIn}
+                {#if $session.loggedIn}
                     <h1>{$session.userData.username}</h1>
                     <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
                 {:else}
@@ -119,7 +119,7 @@
             </svelte:fragment>
         </MobileDatabaseHeader>
     </div>
-    {#if !$session.isLoggedIn}
+    {#if !$session.loggedIn}
         <div class="spacer"></div>
         <NotLoggedIn page="question-search" />
     {:else if !$session.userData?.username}

@@ -1,4 +1,4 @@
-import { category, getQuestions } from "../../mongo"
+import { category, getQuestions } from "$lib/mongo"
 
 export async function get({ query }: { query: URLSearchParams }) {
     const authorId = query.get("authorId")

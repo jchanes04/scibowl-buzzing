@@ -1,22 +1,18 @@
-import type { Request } from "@sveltejs/kit";
-import { getIDFromToken } from "../../authentication";
-import { category, getQuestions } from "../../mongo";
+import type { RequestEvent } from "@sveltejs/kit";
+import { category, getQuestions } from "$lib/mongo";
 
-export async function get({ query, headers }: { query: URLSearchParams, headers: Record<string, string> }) {
-    const authToken = headers.authorization
-    const authorized = !!getIDFromToken(authToken)
-    
-    if (!authorized) return {
+export async function get({ request, url, locals }: RequestEvent) { 
+    if (!locals.userData) return {
         status: 401
     }
 
-    const authorName = query.get("authorName")
-    const authorId = query.get("authorId")
-    const keywords = query.get("keywords")
-    const categories = <category[]>query.get("categories")?.split(",")
-    const types = <("MCQ" | "SA")[]>query.get("types")?.split(",")
-    let startDate = new Date(query.get("start") || "")
-    let endDate = new Date(query.get("end") || "")
+    const authorName = url.searchParams.get("authorName")
+    const authorId = url.searchParams.get("authorId")
+    const keywords = url.searchParams.get("keywords")
+    const categories = <category[]>url.searchParams.get("categories")?.split(",")
+    const types = <("MCQ" | "SA")[]>url.searchParams.get("types")?.split(",")
+    let startDate = new Date(url.searchParams.get("start") || "")
+    let endDate = new Date(url.searchParams.get("end") || "")
 
     if (isNaN(startDate.getTime())) startDate = undefined
     if (isNaN(endDate.getTime())) endDate = undefined

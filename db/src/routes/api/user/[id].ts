@@ -1,13 +1,10 @@
-import type { Request } from "@sveltejs/kit";
-import { getIDFromToken } from "../../../authentication";
-import { getUserByID } from "../../../mongo";
+import type { RequestEvent } from "@sveltejs/kit";
+import { getUserByID } from "$lib/mongo";
 
-export async function get({ params, headers }: Request) {
-    const authToken = headers.authorization
+export async function get({ params, locals }: RequestEvent) {
     const { id } = params
-    const authorized = !!getIDFromToken(authToken)
 
-    if (!authorized) return {
+    if (!locals.userData) return {
         status: 401
     }
 

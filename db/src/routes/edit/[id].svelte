@@ -1,7 +1,12 @@
 <script lang="ts" context="module">
     import type { LoadInput, LoadOutput } from '@sveltejs/kit';
-    export async function load({ page, fetch }: LoadInput): Promise<LoadOutput> {
-        const res = await fetch(`/api/question/${page.params.id}`)
+    export async function load({ params, session, fetch }: LoadInput): Promise<LoadOutput> {
+        if (!session.userData)
+            return {
+                redirect: `https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=${encodeURIComponent(HOST_URL)}%2Fauth%2Faccount&response_type=code&scope=identify`
+            }
+
+        const res = await fetch(`/api/question/${params.id}`)
         return {
             props: {
                 question: await res.json()
@@ -11,7 +16,7 @@
 </script>
 
 <script lang="ts">
-    import type {SaQuestion, McqQuestion} from 'src/mongo'
+    import type {SaQuestion, McqQuestion} from '$lib/mongo'
     import { session } from '$app/stores'
     import { onMount } from 'svelte';
     import { page } from '$app/stores'
@@ -19,6 +24,7 @@
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
     import EditQuestion from "$lib/components/EditQuestion.svelte";
+import { HOST_URL } from '$lib/variables';
 
     export let question: McqQuestion | SaQuestion
 
@@ -39,9 +45,9 @@
 </svelte:head>
 
 <main>
-    {#if !$session.isLoggedIn}
+    {#if !$session.loggedIn}
         <NotLoggedIn page="account"/>
-    {:else if $session.userID !== question.authorId}
+    {:else if $session.userData.id !== question.authorId}
         <NotAuthorized page="account" />
     {:else}
         <div id="question-wrapper">

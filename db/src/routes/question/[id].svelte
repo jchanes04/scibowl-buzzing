@@ -1,7 +1,13 @@
 <script lang="ts" context="module">
     import type { LoadInput, LoadOutput } from '@sveltejs/kit';
-    export async function load({ page, fetch }: LoadInput): Promise<LoadOutput> {
-        const res = await fetch(`/api/question/${page.params.id}`)
+    export async function load({ params, session, fetch }: LoadInput): Promise<LoadOutput> {
+        if (!session.userData)
+            return {
+                redirect: `https://discord.com/api/oauth2/authorize?client_id=895468421054083112&redirect_uri=${encodeURIComponent(HOST_URL)}%2Fauth%2Faccount&response_type=code&scope=identify`,
+                status: 302
+            }
+
+        const res = await fetch(`/api/question/${params.id}`)
         return {
             props: {
                 question: await res.json()
@@ -12,9 +18,8 @@
 
 <script lang="ts">
     import { session } from '$app/stores'
-    import type { category } from 'src/mongo';
     import { onMount } from 'svelte';
-    import type {SaQuestion, McqQuestion} from 'src/mongo'
+    import type {SaQuestion, McqQuestion, category} from '$lib/mongo'
     import Question from '$lib/components/Question.svelte';
     import Cookie from 'js-cookie'
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
@@ -81,7 +86,7 @@
 <main>
     <div id="desktop-header">
         <DatabaseHeader>
-            {#if $session.isLoggedIn}
+            {#if $session.loggedIn}
                 <h1>{$session.userData.username}</h1>
                 <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
             {:else}
@@ -94,7 +99,7 @@
     <div id="mobile-header">
         <MobileDatabaseHeader>
             <svelte:fragment slot="left">
-                {#if $session.isLoggedIn}
+                {#if $session.loggedIn}
                     <div id="open-menu" class:opened={menuOpen} on:click={openMenu}>
                         <span><span /></span>
                     </div>
@@ -102,7 +107,7 @@
             </svelte:fragment>
 
             <svelte:fragment slot="right">
-                {#if $session.isLoggedIn}
+                {#if $session.loggedIn}
                     <h1>{$session.userData.username}</h1>
                     <div class="icon" style={`background-image: url(https://cdn.discordapp.com/avatars/${$session.userData.id}/${$session.userData.avatarHash}.png)`}></div>
                 {:else}
@@ -114,7 +119,7 @@
         </MobileDatabaseHeader>
     </div>
     
-    {#if !$session.isLoggedIn}
+    {#if !$session.loggedIn}
         <NotLoggedIn page="question-search" />
     {:else if !$session.userData?.username}
         <NotAuthorized page="question-search" />

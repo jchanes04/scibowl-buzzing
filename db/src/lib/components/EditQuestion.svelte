@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { category, McqQuestion, SaQuestion } from "src/mongo";
+    import type { category, McqQuestion, SaQuestion } from "$lib/mongo";
     export let question: SaQuestion | McqQuestion
 
     let textareaWidth: number 

@@ -7,5 +7,5 @@
 </svelte:head>
 
 <main>
-    <h1>{$session.isLoggedIn ? "logged in" : "not logged in"}</h1>
+    <h1>{$session.loggedIn ? "logged in" : "not logged in"}</h1>
 </main>

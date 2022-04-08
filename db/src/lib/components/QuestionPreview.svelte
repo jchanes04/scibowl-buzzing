@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import type { McqQuestion, SaQuestion } from "src/mongo";
+    import type { McqQuestion, SaQuestion } from "$lib/mongo";
     export let question: SaQuestion | McqQuestion
     $: truncatedQuestion = question.questionText.length > numCharacters ? question.questionText.slice(0, numCharacters) + "…" : question.questionText
     $: dateObject = new Date(question.date)

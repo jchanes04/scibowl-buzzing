@@ -1,10 +1,10 @@
 <script lang="ts" context="module">
     import type { LoadInput, LoadOutput } from '@sveltejs/kit';
     
-    export async function load({ page, fetch }: LoadInput): Promise<LoadOutput> {
-        const userRes = await fetch(`/api/user/${page.params.id}`)
-        const userSettingsRes = await fetch(`/api/user/${page.params.id}/settings`)
-        const questionsRes = await fetch(`/api/questions?authorId=${page.params.id}`)
+    export async function load({ params, fetch }: LoadInput): Promise<LoadOutput> {
+        const userRes = await fetch(`/api/user/${params.id}`)
+        const userSettingsRes = await fetch(`/api/user/${params.id}/settings`)
+        const questionsRes = await fetch(`/api/questions?authorId=${params.id}`)
         return {
             props: {
                 userData: await userRes.json(),
@@ -21,7 +21,7 @@
     import NotLoggedIn from "$lib/components/NotLoggedIn.svelte";
     import NotAuthorized from "$lib/components/NotAuthorized.svelte";
     import Account from '$lib/components/Account.svelte'
-    import type { McqQuestion, SaQuestion, User, UserSettings } from 'src/mongo';
+    import type { McqQuestion, SaQuestion, User, UserSettings } from '$lib/mongo';
     export let questions: (SaQuestion|McqQuestion)[]
     export let userData: User
 </script>
@@ -31,9 +31,9 @@
 </svelte:head>
 
 <main>
-    {#if !$session.isLoggedIn}
+    {#if !$session.loggedIn}
         <NotLoggedIn page="account"/>
-    {:else if !$session.userID}
+    {:else if !$session.userData}
         <NotAuthorized page="account" />
     {:else}
     
