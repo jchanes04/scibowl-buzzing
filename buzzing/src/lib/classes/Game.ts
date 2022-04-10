@@ -108,7 +108,7 @@ export class Game {
 
     addMember(member: Member) {
         //error if they are already in the game
-        if ([...this.people, ...this.leftPlayers].some(x => x.id === member.id)) throw new Error("Member is already in the game")
+        if ([...this.people, ...this.leftPlayers].some(x => x.id === member.id)) return member
         
         this.members = [...this.members, member]
 
@@ -124,7 +124,7 @@ export class Game {
             const team = this.teams.find(t => t.id === rejoiningPlayerData.teamID)
 
             if (!team && !rejoiningPlayerData.moderator)
-                throw new Error("Could not find team")
+                return null
 
             const newMember = new Member({
                 name: rejoiningPlayerData.name,
@@ -155,11 +155,15 @@ export class Game {
     removeMember(id: string) {
         const member = this.people.find(x => x.id === id)
         if (member) {
-            this.members = this.members.filter(x => x.id !== id)
-            this.moderators = this.moderators.filter(x => x.id !== id)
-            if (member.team) member.team.removeMember(member.id)
-            this.leftPlayers.push(member.data)
-            return member
+            try {
+                this.members = this.members.filter(x => x.id !== id)
+                this.moderators = this.moderators.filter(x => x.id !== id)
+                if (member.team) member.team.removeMember(member.id)
+                this.leftPlayers.push(member.data)
+                return member
+            } catch (e) {
+                return null
+            }
         }
         return null
     }
@@ -183,7 +187,7 @@ export class Game {
             this.state.questionState = 'buzzed'
             return member
         } else {
-            return false
+            return null
         }
     }
 

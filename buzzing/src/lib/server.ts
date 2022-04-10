@@ -39,23 +39,21 @@ io.on('connection', async socket => {
     } else if (!game.people.some(m => m.id === memberId)) {
         if (game.leftPlayers.some(p => p.id === memberId)) {
             const rejoined = game.rejoinMember(memberId)
-            socket.emit('memberRejoin', { member: rejoined.data, team: rejoined.team.data })
+            if (rejoined) {
+                socket.emit('memberRejoin', { member: rejoined.data, team: rejoined.team?.data })
+            } else {
+                socket.emit('authFailed')
+                return socket.disconnect()
+            }
         } else {
             socket.emit('authFailed')
             return socket.disconnect()
         }
     }
 
-    if (!game || !game.people.some(m=> m.id === memberId)) {
-        socket.emit('authFailed')
-        return socket.disconnect()
-    }
-
     socket.join([gameId, memberId])
 
-    socket.emit('authenticated', {
-        moderator: game.moderators.some(m => m.id === memberId)
-    })
+    socket.emit('authenticated', { name: game.people.find(x => x.id === memberId)?.name })
 
     socket.on('disconnect', () => {
         const removed = game.removeMember(memberId)
@@ -75,7 +73,7 @@ io.on('connection', async socket => {
                 socket.emit('buzzFailed')
             }
         } else {
-            
+            socket.emit('buzzFailed')
         }
     })
 
@@ -88,7 +86,6 @@ io.on('connection', async socket => {
         if (game.state.questionState === "open") {
             const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
             game.timer.start(serverLength)
-
 
             const clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
             socket.to(gameId).emit('timerStart', clientLength)
@@ -104,8 +101,12 @@ io.on('connection', async socket => {
         if (game.state.questionState === "buzzed") {
             const { scoredMember, scoredTeam, open, category } = game.scoreQ(score)
             
+            const clientLength =  game.state.currentQuestion ?
+                game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
+                : 0
             socket.to(gameId).emit('scoreChange', {
                 open,
+                time: clientLength,
                 score, 
                 memberId: scoredMember.id,
                 memberScore: scoredMember.scoreboard.score,
@@ -115,6 +116,7 @@ io.on('connection', async socket => {
             })
             socket.emit('scoreChange', {
                 open,
+                time: clientLength,
                 score,
                 memberId: scoredMember.id,
                 memberScore: scoredMember.scoreboard.score,
@@ -124,7 +126,8 @@ io.on('connection', async socket => {
             })
 
             if (open) {
-                game.timer.resume()
+                const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+                game.timer.start(serverLength)
             } else {
                 game.timer.end()
             }
@@ -200,21 +203,4 @@ export function gameExists(id: string) {
 
 export function getGameFromCode(code: string) {
     return games.find(x => x.joinCode === code)
-}
-
-async function findOpenFile(filename: string, postfix: "" | number) {
-    const p = new Promise((res, rej) => {
-        try {
-            fs.stat(process.cwd() + "/data/" + filename + postfix + '.json', (err) => {
-                if (err === null) {
-                    res(findOpenFile(filename, postfix === "" ? 1 : postfix + 1))
-                } else {
-                    res(filename + postfix)
-                }
-            })
-        } catch (e) {
-            res(filename + postfix)   
-        }
-    })
-    return p
 }

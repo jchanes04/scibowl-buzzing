@@ -63,6 +63,13 @@ socket.onAny((event: string, ...args: any[]) => {
     console.log(event, args);
 })
 
+socket.on('authenticated', ({ name }: { name: string }) => {
+    chatMessagesStore.set([...chatMessages, {
+        type: 'notification',
+        text: name + ' has joined the game'
+    }])
+})
+
 socket.on('memberJoin', ({ member, team }: { member: MemberData, team: TeamData }) => {
     if (member.moderator){
         moderatorStore.set([...moderators,
@@ -164,20 +171,22 @@ socket.on('promotion', (memberId: string) => {
 
 socket.on('buzz', (id: string) => {
     const member = members.find(x => x.id === id);
-    gameStateStore.set({
-        buzzedTeamIDs: [...gameState.buzzedTeamIDs, member.teamID],
-        questionState: "buzzed",
-        buzzingDisabled: true
-    })
-
-    buzzAudio.play()
-
-    chatMessagesStore.set([...chatMessages, {
-        type: 'buzz',
-        text: member.name + ' has buzzed'
-    }])
+    if (member) {
+        gameStateStore.set({
+            buzzedTeamIDs: [...gameState.buzzedTeamIDs, member.teamID],
+            questionState: "buzzed",
+            buzzingDisabled: true
+        })
     
-    timer.pause()
+        buzzAudio.play()
+    
+        chatMessagesStore.set([...chatMessages, {
+            type: 'buzz',
+            text: member.name + ' has buzzed'
+        }])
+        
+        timer.pause()
+    }
 })
 
 socket.on('scoresSaved', () => {
@@ -204,6 +213,7 @@ socket.on('scoresClear', () => {
 
 type ScoreData = {
     open: boolean,
+    time: number,
     score: 'correct' | 'incorrect' | 'penalty',
     memberID: string,
     memberScore: number,
@@ -211,8 +221,7 @@ type ScoreData = {
     teamScore: number,
     category: Category
 }
-socket.on('scoreChange', (
-    { open, score, memberID, memberScore, teamID, teamScore, category }: ScoreData) => {
+socket.on('scoreChange', ({ open, time, score, memberID, memberScore, teamID, teamScore, category }: ScoreData) => {
     const team = teams.find(t => t.id === teamID)
     const member = members.find(m => m.id === memberID)
     if (member) {
@@ -242,7 +251,7 @@ socket.on('scoreChange', (
     }
 
     if (open) {
-        timer.resume()
+        timer.start(time)
         if (gameInfo.myTeam && gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
             gameStateStore.set({
                ...gameState,
