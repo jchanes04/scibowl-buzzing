@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ConnectedIndicator from '$lib/components/ConnectedIndicator.svelte';
     import HeaderCompact from '$lib/components/HeaderCompact.svelte'
     import Modal from '$lib/components/Modal.svelte';
     import modalStore from '$lib/stores/modal';
@@ -7,6 +8,7 @@
 <div id="page">
     <HeaderCompact />
     <slot></slot>
+    <ConnectedIndicator />
 </div>
 {#if $modalStore}
     <Modal />
