@@ -15,6 +15,12 @@
             addTeam()
         }
     }
+
+    function handleInput() {
+        if (newTeamName.length > 30) {
+            newTeamName = newTeamName.slice(0, 30)
+        }
+    }
 </script>
 
 <div>
@@ -29,7 +35,7 @@
             </li>
         {/each}
         <li>
-            <input type="text" id="default-team-name" bind:value={newTeamName} />
+            <input type="text" id="default-team-name" bind:value={newTeamName} on:input={handleInput} />
             <span on:click={addTeam}>
                 <span class="add" />
             </span>

@@ -122,10 +122,10 @@
         </div>
         <br />
         <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus'}>
-            <div class="select-wrapper"><Select items={$teamsStore} optionIdentifier="id" labelIdentifier="name" placeholder="Bonus for" on:select={handleTeamSelect} bind:value={teamSelectValue} /></div>
+            <div class="select-wrapper"><Select items={$teamsStore} optionIdentifier="id" labelIdentifier="name" placeholder="Bonus for" isSearchable={false} on:select={handleTeamSelect} bind:value={teamSelectValue} /></div>
         </div>
         <br />
-            <div class="select-wrapper"><Select items={categories} optionIdentifier="id" labelIdentifier="value" placeholder="Category" on:select={handleSubjectSelect}/></div>
+            <div class="select-wrapper"><Select items={categories} optionIdentifier="id" labelIdentifier="value" placeholder="Category" isSearchable={false}  on:select={handleSubjectSelect}/></div>
         <br />
         <button on:click={newQ} disabled={!questionType || !selectedCategory || (!selectedTeam && questionType === "bonus")}>New Question</button>
     </ControlSection>

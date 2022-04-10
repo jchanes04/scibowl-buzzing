@@ -21,26 +21,29 @@
 
 <script lang="ts">
     export let memberNames: string[], gameName: string, gameId: string, teamSettings: TeamSettings, teams: TeamData[]
-
-    import { session } from "$app/stores"
     
     import JoinMemberList from '$lib/components/JoinMemberList.svelte'
+    import Select from "svelte-select";
     import type { TeamData } from "$lib/classes/Team";
     import type { TeamSettings } from "$lib/classes/Game";
 
     let memberName = ''
-    let teamOrIndiv: "indiv" | "team" | "new-team" | "" = ""
-    let teamID: string
+    let teamOrIndiv: "indiv" | "team" | "new-team" = null
+    let selectedTeam: TeamData
     let newTeamName: string
     let showRadio: boolean = true
     if (teamSettings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv"
     if (teamSettings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team"
     if (!(teamSettings.individualsAllowed || teamSettings.newTeamsAllowed)) teamOrIndiv = "team"
 
-    if (teamOrIndiv != "") showRadio = false
-    $: disabled = 
-        memberName === '' || !teamOrIndiv
+    if (teamOrIndiv !== null) showRadio = false
+    $: disabled = !memberName || !teamOrIndiv || (teamOrIndiv === "new-team" && !newTeamName)
         
+    function handleTeamNameInput() {
+        if (newTeamName.length > 30) {
+            newTeamName = newTeamName.slice(0, 30)
+        }
+    }
 </script>
 
 <svelte:head>
@@ -78,7 +81,7 @@
                     </div>
                 {/if}
                 <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
-                    <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} />
+                    <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} on:input={handleTeamNameInput} />
                 </div>
                 <br />
             {/if} 
@@ -95,13 +98,9 @@
                     <label for="team-select">Team:</label>
                 {/if}
 
-                <div style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
-                    <select id="team-select" name="team-id" bind:value={teamID}>
-                        <option value="" hidden default></option>
-                        {#each teams as team}
-                            <option value={team.id}>{team.name}</option>
-                        {/each}
-                    </select>
+                <div class="select-wrapper" style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
+                    <Select items={teams} optionIdentifier="id" labelIdentifier="name" bind:value={selectedTeam} placeholder="Team" isSearchable={false} />
+                    <input type="hidden" name="team-id" value={selectedTeam?.id}>
                 </div>
                 <br />
                 <br />
@@ -193,9 +192,12 @@
         }
     }
 
-    select {
+    .select-wrapper {
+        width: max-content;
+        min-width: 25ch;
+        margin: auto;
         font-size: 20px;
-        margin-left: 0.5em;
+        text-align: center;
     }
 
     button {
