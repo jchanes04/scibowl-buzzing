@@ -38,12 +38,12 @@ export interface Game {
     teamSettings: TeamSettings
 
     timer: Timer,
-    
     times: { //times [client, server extratime]
         tossup: [number, number],
         bonus:  [number, number]
     }
     
+    lastActive: number,
     
     state: { // idle means no question open
         questionState: 'idle' | 'open' | 'buzzed'
@@ -87,6 +87,8 @@ export class Game {
         }
         // time format: [client side time, extra time allowed for latency]
         
+        this.lastActive = Date.now()
+
         /*
             idle: no question opened, nobody can buzz
             open: a question has been opened and players can buzz in

@@ -331,3 +331,8 @@ socket.on('kicked', () => {
     goto('/kicked')
     socket.disconnect()
 })
+
+socket.on('gameSwept', () => {
+    goto('/swept')
+    socket.disconnect()
+})

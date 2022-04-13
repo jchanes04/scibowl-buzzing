@@ -180,11 +180,17 @@ io.on('connection', async socket => {
             data
         ], null, '\t'))
     })
+
+    socket.onAny(() => {
+        game.lastActive = Date.now()
+    })
 });
 
 httpsServer.listen(3030)
 
 export const games = new GameManager()
+
+setInterval(sweepGames, 300_000)
 
 export function createNewGame(ownerName: string, gameData: { name: string, teamSettings: TeamSettings, teamNames: string[] }) {
     const ownerMember = new Member({ name: ownerName, moderator: true })
@@ -203,4 +209,13 @@ export function gameExists(id: string) {
 
 export function getGameFromCode(code: string) {
     return games.find(x => x.joinCode === code)
+}
+
+
+function sweepGames() {
+    const swept = games.sweepGames()
+
+    for (const id of swept) {
+        io.to(id).emit('gameSwept')
+    }
 }
