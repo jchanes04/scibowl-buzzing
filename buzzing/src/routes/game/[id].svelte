@@ -30,6 +30,7 @@
     $moderatorStore = moderatorList
 
     let windowWidth: number
+    let isStressTest : string
 
     import MemberList from "$lib/components/MemberList.svelte";
     import Chatbox from '$lib/components/Chatbox.svelte'
@@ -38,6 +39,8 @@
     import Timer from '$lib/components/Timer.svelte'
     import PlayerControls from '$lib/components/PlayerControls.svelte'
     import ReaderControls from '$lib/components/ReaderControls.svelte'
+    import StressReader from "$lib/components/StressReader.svelte";
+    import StressTesterPlayer from "$lib/components/StressTesterPlayer.svelte";
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
     import type { LoadInput } from "@sveltejs/kit";
@@ -56,6 +59,7 @@
     import gameStateStore from "$lib/stores/gameState";
     import type { MemberData } from "$lib/classes/Member";
     import moderatorStore from "$lib/stores/moderators";
+
 
     const debug = browser ? new Debugger($gameInfoStore.gameId, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
     setContext('debug', debug)
@@ -88,11 +92,19 @@
     <Chatbox />
 
     {#if $gameInfoStore.myMember.moderator}
+        {#if isStressTest=='EsbotStressTest'}
         <ReaderControls socket={socket} bind:questionState={$gameStateStore.questionState} />
+        {:else}
+        <StressReader socket={socket} bind:questionState={$gameStateStore.questionState} />
+        {/if}
     {:else}
-        <PlayerControls />
+        {#if isStressTest=='EsbotStressTest'}
+            <StressTesterPlayer />
+        {:else}
+            <PlayerControls />
+        {/if}
     {/if}
-
+    <input type='text' bind:value={isStressTest} />
     <div on:click={() => debug.openDebugLog()}
         style="position: fixed; right: 10px; bottom: 10px; cursor: pointer; background:grey; border-radius:1em; padding:.2em;">Open Debug Log</div>
 </main>
