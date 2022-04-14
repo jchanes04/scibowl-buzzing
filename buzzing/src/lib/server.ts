@@ -68,6 +68,7 @@ io.on('connection', async socket => {
             const buzzed = game.buzz(memberId)
             if (buzzed) {
                 game.timer.pause()
+                socket.emit('buzzAccept')
                 socket.to(gameId).emit('buzz', memberId)
             } else {
                 socket.emit('buzzFailed')
@@ -100,13 +101,9 @@ io.on('connection', async socket => {
     socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
         if (game.state.questionState === "buzzed") {
             const { scoredMember, scoredTeam, open, category } = game.scoreQ(score)
-            
-            const clientLength =  game.state.currentQuestion ?
-                game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
-                : 0
+    
             socket.to(gameId).emit('scoreChange', {
                 open,
-                time: clientLength,
                 score, 
                 memberId: scoredMember.id,
                 memberScore: scoredMember.scoreboard.score,
@@ -116,7 +113,6 @@ io.on('connection', async socket => {
             })
             socket.emit('scoreChange', {
                 open,
-                time: clientLength,
                 score,
                 memberId: scoredMember.id,
                 memberScore: scoredMember.scoreboard.score,

@@ -189,6 +189,16 @@ socket.on('buzz', (id: string) => {
     }
 })
 
+socket.on('buzzAccept', () => {
+    chatMessagesStore.set([
+        ...chatMessages,
+        {
+            type: "buzz",
+            text: "You have buzzed"
+        }
+    ])
+})
+
 socket.on('scoresSaved', () => {
     chatMessagesStore.set([...chatMessages, {
         type: 'notification',
@@ -251,7 +261,6 @@ socket.on('scoreChange', ({ open, time, score, memberID, memberScore, teamID, te
     }
 
     if (open) {
-        timer.start(time)
         if (gameInfo.myTeam && gameState.buzzedTeamIDs.includes(gameInfo.myTeam.id)) {
             gameStateStore.set({
                ...gameState,

@@ -21,10 +21,6 @@
         $timerStore.pause()
         
         debug.addEvent('buzz', {})
-        $chatMessagesStore = [...$chatMessagesStore, {
-            type: 'buzz',
-            text: 'You have buzzed'
-        }]
     }
 </script>
 
