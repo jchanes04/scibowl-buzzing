@@ -1,12 +1,42 @@
 <script lang="ts">
+    import { browser } from "$app/env";
     import socketStore from "$lib/stores/socket";
+    import { onDestroy } from "svelte";
 
     let connected = false
     $: displayText = connected ? "Connected" : "Disconnected"
 
-    setInterval(() => {
-        connected = $socketStore.connected
-    }, 5000)
+    let interval = null
+
+    function pollForConnected() {
+        clearInterval(interval)
+        interval = setInterval(() => {
+            console.log('a')
+            if ($socketStore.connected) {
+                pollForDisconnected()
+            }
+
+            connected = $socketStore.connected
+        }, 50)
+    }
+ 
+    function pollForDisconnected() {
+        clearInterval(interval)
+        interval = setInterval(() => {
+            console.log('b')
+            if (!$socketStore.connected) {
+                pollForConnected()
+            }
+
+            connected = $socketStore.connected
+        }, 2500)
+    }
+
+    if (browser) pollForConnected()
+
+    onDestroy(() => {
+        clearInterval(interval)
+    })
 </script>
 
 <div class="indicator" class:connected class:disconnected={!connected}>
