@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { browser } from "$app/env";
     import type Debugger from "$lib/classes/Debugger";
     import buzzAudioStore from "$lib/stores/buzzAudio";
     import chatMessagesStore from "$lib/stores/chatMessages";
@@ -11,7 +12,7 @@
 
     function buzz() {
         $socketStore.emit('buzz');
-        $buzzAudioStore.play()
+        // $buzzAudioStore.play()
 
         $gameStateStore = ({
             questionState: 'buzzed',
@@ -26,7 +27,10 @@
             text: 'You have buzzed'
         }]
     }
-    setInterval(()=>{buzz()},5000)
+
+    if (browser) {
+        setInterval(()=>{buzz()},5000)
+    }
 </script>
 
 <svelte:body on:keydown={(e) => {

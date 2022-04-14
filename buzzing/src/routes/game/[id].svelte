@@ -30,7 +30,6 @@
     $moderatorStore = moderatorList
 
     let windowWidth: number
-    let isStressTest : string
 
     import MemberList from "$lib/components/MemberList.svelte";
     import Chatbox from '$lib/components/Chatbox.svelte'
@@ -92,19 +91,10 @@
     <Chatbox />
 
     {#if $gameInfoStore.myMember.moderator}
-        {#if isStressTest=='EsbotStressTest'}
-        <ReaderControls socket={socket} bind:questionState={$gameStateStore.questionState} />
-        {:else}
         <StressReader socket={socket} bind:questionState={$gameStateStore.questionState} />
-        {/if}
     {:else}
-        {#if isStressTest=='EsbotStressTest'}
-            <StressTesterPlayer />
-        {:else}
-            <PlayerControls />
-        {/if}
+        <StressTesterPlayer />
     {/if}
-    <input type='text' bind:value={isStressTest} />
     <div on:click={() => debug.openDebugLog()}
         style="position: fixed; right: 10px; bottom: 10px; cursor: pointer; background:grey; border-radius:1em; padding:.2em;">Open Debug Log</div>
 </main>
