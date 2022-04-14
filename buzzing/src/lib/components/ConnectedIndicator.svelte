@@ -11,7 +11,6 @@
     function pollForConnected() {
         clearInterval(interval)
         interval = setInterval(() => {
-            console.log('a')
             if ($socketStore.connected) {
                 pollForDisconnected()
             }
@@ -23,7 +22,6 @@
     function pollForDisconnected() {
         clearInterval(interval)
         interval = setInterval(() => {
-            console.log('b')
             if (!$socketStore.connected) {
                 pollForConnected()
             }
