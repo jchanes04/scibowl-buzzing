@@ -11,6 +11,7 @@
     import teamsStore from '$lib/stores/teams';
     import modalStore from '$lib/stores/modal';
     import gameStateStore from '$lib/stores/gameState';
+    import { browser } from '$app/env';
     export let socket: Writable<Socket>
     export let questionState: 'idle' | 'open' | 'buzzed'
     
@@ -32,16 +33,19 @@
     const debug: Debugger = getContext('debug')
 
     function newQ() {
+        selectedCategory = (["bio" as const, "earth" as const, "chem" as const, "physics" as const, "math" as const,])[Math.floor(Math.random() * 5)]
+        questionType = "tossup"
+
         $socket.emit('newQ', {
             category: selectedCategory,
-            bonus: questionType === "bonus",
-            team: questionType === "bonus" ? selectedTeam : null
+            bonus: false,
+            team: false ? selectedTeam : null
         })
 
         debug.addEvent('newQ', {
             category: selectedCategory,
-            bonus: questionType === "bonus",
-            team: questionType === "bonus" ? selectedTeam : null
+            bonus: false,
+            team: false ? selectedTeam : null
         })
 
         $chatMessagesStore = [...$chatMessagesStore, {
@@ -52,7 +56,6 @@
         questionState = 'open';
 
         (<HTMLInputElement>document.querySelector('input[name="question-type"]:checked')).checked = false
-        questionType = ""
     }
     
     function startTimer() {
@@ -91,13 +94,15 @@
 
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
     function scoreQuestion() {
-        $socket.emit('scoreQuestion', selectedScore)
-        if (selectedScore === "correct") {
-            teamSelectValue = $teamsStore.find(t => t.id === $gameStateStore.buzzedTeamIDs[$gameStateStore.buzzedTeamIDs.length - 1])
-            selectedTeam = teamSelectValue.id
+        if ($gameStateStore.questionState === "buzzed") {
+            selectedScore = (["correct" as const, "incorrect" as const, "penalty" as const])[Math.floor(Math.random() * 3)]
+            $socket.emit('scoreQuestion', selectedScore)
+            if (selectedScore === "correct") {
+                teamSelectValue = $teamsStore.find(t => t.id === $gameStateStore.buzzedTeamIDs[$gameStateStore.buzzedTeamIDs.length - 1])
+                selectedTeam = teamSelectValue.id
+            }
+            debug.addEvent('scoreQuestion', { selectedScore })
         }
-        selectedScore = ""
-        debug.addEvent('scoreQuestion', { selectedScore })
     }
 
     function handleTeamSelect(e: CustomEvent<TeamData>) {
@@ -106,13 +111,15 @@
     function handleSubjectSelect(e: CustomEvent<{ id: Category, value: string }>) {
         selectedCategory = e.detail.id
     }
-    setInterval(()=>{
-        newQ()
-        startTimer()
-        setTimeout(()=>{
-            scoreQuestion()
-        },5000)
-    },8000)
+    if (browser) {
+        setInterval(()=>{
+            newQ()
+            startTimer()
+            setTimeout(()=>{
+                scoreQuestion()
+            },5000)
+        },8000)
+    }
 </script>
 
 <div id="buttons">
