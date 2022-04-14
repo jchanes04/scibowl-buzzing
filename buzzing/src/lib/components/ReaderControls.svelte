@@ -55,7 +55,11 @@
         questionType = ""
     }
     
+    let startTimerDisabled = false
     function startTimer() {
+        startTimerDisabled = true
+        setTimeout(() => startTimerDisabled = false, 500)
+
         $socket.emit('startTimer')
         debug.addEvent('startTimer', {})
     }
@@ -130,7 +134,7 @@
         <button on:click={newQ} disabled={!questionType || !selectedCategory || (!selectedTeam && questionType === "bonus")}>New Question</button>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
-        <button on:click={startTimer} id="start-timer" disabled={questionState !== "open"}>Start Timer</button>
+        <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || questionState !== "open"}>Start Timer</button>
         <br />
         <div id="score-wrapper" class:disabled={questionState !== "buzzed"}>
             <label for="correct-radio">
