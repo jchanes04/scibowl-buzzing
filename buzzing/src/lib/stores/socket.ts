@@ -106,7 +106,7 @@ socket.on('memberRejoin', ({ member, team }: { member: MemberData, team: TeamDat
 
 socket.on('memberLeave', id => {
     const member = [...members, ...moderators].find(x => x.id === id)
-    const team = teams.find(t => t.id === member.teamID)
+    const team = teams.find(t => t.id === member?.teamID)
     if (member.moderator){
         moderatorStore.set([
             ...moderators.filter(m => m.id !== member.id)
@@ -178,7 +178,7 @@ socket.on('buzz', (id: string) => {
             buzzingDisabled: true
         })
     
-        buzzAudio.play()
+        // buzzAudio.play()
     
         chatMessagesStore.set([...chatMessages, {
             type: 'buzz',

@@ -54,8 +54,6 @@
         }]
 
         questionState = 'open';
-
-        (<HTMLInputElement>document.querySelector('input[name="question-type"]:checked')).checked = false
     }
     
     function startTimer() {
@@ -94,8 +92,10 @@
 
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
     function scoreQuestion() {
+        console.log($gameStateStore.questionState)
         if ($gameStateStore.questionState === "buzzed") {
             selectedScore = (["correct" as const, "incorrect" as const, "penalty" as const])[Math.floor(Math.random() * 3)]
+            console.log(selectedScore)
             $socket.emit('scoreQuestion', selectedScore)
             if (selectedScore === "correct") {
                 teamSelectValue = $teamsStore.find(t => t.id === $gameStateStore.buzzedTeamIDs[$gameStateStore.buzzedTeamIDs.length - 1])
@@ -116,6 +116,7 @@
             newQ()
             startTimer()
             setTimeout(()=>{
+                console.log('scoring')
                 scoreQuestion()
             },5000)
         },8000)

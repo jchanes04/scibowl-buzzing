@@ -11,7 +11,7 @@
 
     function buzz() {
         $socketStore.emit('buzz');
-        $buzzAudioStore.play()
+        // $buzzAudioStore.play()
 
         $gameStateStore = ({
             questionState: 'buzzed',

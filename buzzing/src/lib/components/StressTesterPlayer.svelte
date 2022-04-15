@@ -19,13 +19,9 @@
             buzzingDisabled: true,
             buzzedTeamIDs: [...$gameStateStore.buzzedTeamIDs, $gameInfoStore.myTeam.id ]
         })
-        $timerStore.pause()
+        $timerStore.pause?.()
         
         debug.addEvent('buzz', {})
-        $chatMessagesStore = [...$chatMessagesStore, {
-            type: 'buzz',
-            text: 'You have buzzed'
-        }]
     }
 
     if (browser) {
