@@ -17,9 +17,6 @@
     .header {
         background: white;
         text-align: left;
-        position: sticky;
-        top: 0;
-        left: 0;
         width: 100%;
         z-index: 5;
     }

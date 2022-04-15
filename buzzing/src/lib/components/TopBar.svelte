@@ -2,6 +2,8 @@
     export let gameName: string
     export let joinCode: string
 
+    $: console.log(gameName)
+
     let hWidth: number
     let windowWidth: number
 </script>
@@ -27,6 +29,10 @@
         grid-template-columns: 1fr auto 1fr;
         padding: 0 2em;
         place-content: center;
+        position: sticky;
+        top: -0.5em;
+        left: 0;
+        background-color: #d4d9d9;
 
         * {
             min-width: 1px;

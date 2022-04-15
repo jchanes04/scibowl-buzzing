@@ -27,16 +27,18 @@
 <svelte:body on:keydown={(e) => {
     const { code, keyCode } = e
     if ((code === "Space" || code === "Enter") && !$gameStateStore.buzzingDisabled) {
+        e.preventDefault()
         buzz()
     } else if (code === null || code === undefined) {
         if ((keyCode === 32 || keyCode === 13) && !$gameStateStore.buzzingDisabled) {
+            e.preventDefault()
             buzz()
         }
     }
 }} />
 
 <div>
-    <button id="buzz" on:click={buzz} disabled={$gameStateStore.buzzingDisabled}>buzz</button>
+    <button id="buzz" on:click={buzz} disabled={$gameStateStore.buzzingDisabled}>Buzz</button>
 </div>
 
 <style>

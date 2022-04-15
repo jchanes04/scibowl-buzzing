@@ -29,6 +29,8 @@
     $teamsStore = teamList
     $moderatorStore = moderatorList
 
+    $: console.log(gameInfo)
+
     let windowWidth: number
 
     import MemberList from "$lib/components/MemberList.svelte";
