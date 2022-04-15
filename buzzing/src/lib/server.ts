@@ -63,7 +63,6 @@ io.on('connection', async socket => {
     })
 
     socket.on('buzz', () => {
-        console.log('buzz received')
         if (game.state.questionState === 'open') {
             const buzzed = game.buzz(memberId)
             if (buzzed) {

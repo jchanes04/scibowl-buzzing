@@ -52,10 +52,8 @@ export class GameManager {
 
     sweepGames() {
         const swept: string[] = []
-        console.log("sweeping...")
 
         for (const [ id, g ] of Object.entries(this.games)) {
-            console.log(g.lastActive)
             if (Date.now() - g.lastActive > 600_000) {
                 swept.push(id)
                 g.timer.end()

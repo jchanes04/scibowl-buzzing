@@ -48,9 +48,6 @@ export class GameScoreboard {
                 : scoreType === "correct"
                     ? this.pointValues.tossup
                     : this.pointValues.penalty
-        console.log(pointValue)
-        console.log(bonus)
-        console.log(scoreType)
         return member.scoreboard.undoScore(scoreType, category, pointValue)
     }
 }

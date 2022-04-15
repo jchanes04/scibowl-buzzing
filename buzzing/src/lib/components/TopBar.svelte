@@ -2,8 +2,6 @@
     export let gameName: string
     export let joinCode: string
 
-    $: console.log(gameName)
-
     let hWidth: number
     let windowWidth: number
 </script>
