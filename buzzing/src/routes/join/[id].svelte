@@ -37,7 +37,7 @@
     if (!(teamSettings.individualsAllowed || teamSettings.newTeamsAllowed)) teamOrIndiv = "team"
 
     if (teamOrIndiv !== null) showRadio = false
-    $: disabled = !memberName || !teamOrIndiv || (teamOrIndiv === "new-team" && !newTeamName)
+    $: disabled = !memberName || !teamOrIndiv || (teamOrIndiv === "new-team" && !newTeamName) || (teamOrIndiv === "team" && !selectedTeam)
         
     function handleTeamNameInput() {
         if (newTeamName.length > 30) {

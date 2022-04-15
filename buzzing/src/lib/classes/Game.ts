@@ -137,6 +137,7 @@ export class Game {
             if (!team && !rejoiningPlayerData.moderator)
                 return null
 
+            this.leftPlayers = this.leftPlayers.filter(p => p.id === memberId)
             const newMember = new Member({
                 name: rejoiningPlayerData.name,
                 id: rejoiningPlayerData.id,
