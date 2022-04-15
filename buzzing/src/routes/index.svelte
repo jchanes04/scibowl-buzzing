@@ -4,13 +4,18 @@
 <main>    
     <section id="hero">
         <h1>Welcome to the Enloe Science Bowl Buzzing System</h1>
-        <a href='/create'><h3>Create a Game</h3></a>
-        <a href='/join'><h3>Join an Existing Game</h3></a>
+        <a href='/create'><h3 style="display: inline-block;">Create a Game</h3></a>
+        <br />
+        <a href='/join'><h3 style="display: inline-block;">Join an Existing Game</h3></a>
     </section>
 
     <section class='bubble'>
         <h2>Revolutionary Buzzing System</h2>
-        <p>Say goodbye to shitty latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers. With integrated scoring, challenge and moderation tools, the enloe science bowl online buzzing system is perfect for all online science bowl gameplay. This is the closest we've ever gotten to emulateing real, in-person science bowl.</p>
+        <p>
+            Say goodbye to latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers.
+            With integrated scoring, challenge and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay.
+            This is the closest we've ever gotten to emulating real, in-person Science Bowl.
+        </p>
     </section>
 </main>
 

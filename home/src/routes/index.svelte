@@ -42,14 +42,19 @@
         </p>
         <br />
         <p>
+            The Round Robin brackets have now been relased! You can find them at <a href="https://docs.google.com/spreadsheets/d/1uSwcUQjfu245jbXpXxkVwpj8Z1_--_7B1T-I9OlZilM/edit?usp=sharing">this link</a>.
+            There are still 4 open spots in the tournament, so if you have a last-minute team to register please let one of the tournament directors know through Discord.
+        </p>
+        <br />
+        <p>
             ESBOT will be run through the <b>Discord server</b> found <a href="https://discord.gg/XNvpJqNvU9">at this link</a>. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
             <b>All competitors should join</b> the Discord server as soon as possible in order to stay up to date and be ready for competition day.
         </p>
         <br />
         <p>
-            We are anticipating offering <b>cash prizes</b> to the winners of the tournament. Exactly much money will be offered will depend on the number of teams participating, as well as other factors.
+            There will be cash prizes available to the top 4 teams, as well as the top individual scorer in each category. The first through fourth place teams will receive $175, $125, $75, and $50 respectively, plus a $25 certificate from AoPS for each team.
+            Top individual scorers in each category will receive $20 in cash.
             <b>Wolfram</b> has also generously donated ten 1-year subscriptions of <b>WolframAlpha Notebook Edition</b> to be distributed to the top two teams. WolframAlpha Notebook edition includes access to both Wolfram Mathematica and all the premium features of WolframAlpha, and is normally priced at $72/year.
-            
         </p>
         <br />
         <p>
