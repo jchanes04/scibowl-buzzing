@@ -91,6 +91,7 @@ io.on('connection', async socket => {
             socket.to(gameId).emit('timerStart', clientLength)
             socket.emit('timerStart', clientLength)
 
+            game.timer.removeAllListeners('end')
             game.timer.once('end', () => {
                 socket.to(gameId).emit('timerEnd')
             })

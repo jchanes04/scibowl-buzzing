@@ -94,7 +94,7 @@ socket.on('memberRejoin', ({ member, team }: { member: MemberData, team: TeamDat
         ])
     } else {
         teamsStore.set([
-            ...teams.filter(t => t.id !== team.id),
+            ...teams.filter(t => t.id !== team?.id),
             team
         ].sort((a, b) => a.name.localeCompare(b.name)))
     }
@@ -106,28 +106,30 @@ socket.on('memberRejoin', ({ member, team }: { member: MemberData, team: TeamDat
 
 socket.on('memberLeave', id => {
     const member = [...members, ...moderators].find(x => x.id === id)
-    const team = teams.find(t => t.id === member.teamID)
-    if (member.moderator){
-        moderatorStore.set([
-            ...moderators.filter(m => m.id !== member.id)
-        ])
-    } else {
-        if (team.members.length === 1 && gameInfo.teamSettings.newTeamsAllowed) {
-            teamsStore.set(teams.filter(t => t.id !== team.id).sort((a, b) => a.name.localeCompare(b.name)))
+    const team = teams.find(t => t.id === member?.teamID)
+    if (member && (member.moderator || team)) {
+        if (member.moderator){
+            moderatorStore.set([
+                ...moderators.filter(m => m.id !== member.id)
+            ])
         } else {
-            teamsStore.set([
-                ...teams.filter(t => t.id !== team.id),
-                {
-                    ...team,
-                    members: team.members.filter(m => m.id !== member.id)
-                }
-            ].sort((a, b) => a.name.localeCompare(b.name)))
+            if (team.members.length === 1 && gameInfo.teamSettings.newTeamsAllowed) {
+                teamsStore.set(teams.filter(t => t.id !== team.id).sort((a, b) => a.name.localeCompare(b.name)))
+            } else {
+                teamsStore.set([
+                    ...teams.filter(t => t.id !== team.id),
+                    {
+                        ...team,
+                        members: team.members.filter(m => m.id !== member.id)
+                    }
+                ].sort((a, b) => a.name.localeCompare(b.name)))
+            }
         }
+        chatMessagesStore.set([...chatMessages, {
+            type: 'notification',
+            text: member.name + ' has left the game'
+        }])
     }
-    chatMessagesStore.set([...chatMessages, {
-        type: 'notification',
-        text: member.name + ' has left the game'
-    }])
 })
 
 socket.on('promotion', (memberId: string) => {
@@ -195,6 +197,16 @@ socket.on('buzzAccept', () => {
         {
             type: "buzz",
             text: "You have buzzed"
+        }
+    ])
+})
+
+socket.on('buzzFailed', () => {
+    chatMessagesStore.set([
+        ...chatMessages,
+        {
+            type: "warning",
+            text: "Buzz failed"
         }
     ])
 })
