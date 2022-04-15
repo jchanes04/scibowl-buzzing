@@ -130,6 +130,37 @@ io.on('connection', async socket => {
         }
     })
 
+    socket.on('undoScore', () => {
+        if (game.state.lastScored) {
+            const undoData = game.undoScore()
+            if (undoData) {
+                const { score, scoredMember, scoredTeam, category, bonus } = undoData
+                socket.emit('scoreUndone', {
+                    score,
+                    memberID: scoredMember.id,
+                    memberScore: scoredMember.scoreboard.score,
+                    teamID: scoredTeam.id,
+                    teamScore: scoredTeam.scoreboard.score,
+                    category,
+                    bonus
+                })
+                socket.to(gameId).emit('scoreUndone', {
+                    score,
+                    memberID: scoredMember.id,
+                    memberScore: scoredMember.scoreboard.score,
+                    teamID: scoredTeam.id,
+                    teamScore: scoredTeam.scoreboard.score,
+                    category,
+                    bonus
+                })
+            } else {
+                socket.emit('undoScoreFailed')
+            }
+        } else {
+            socket.emit('undoScoreFailed')
+        }
+    })
+
     socket.on('kickPlayer', (id: string) => {
         const removed = game.removeMember(id)
         

@@ -223,7 +223,6 @@ socket.on('scoresClear', () => {
 
 type ScoreData = {
     open: boolean,
-    time: number,
     score: 'correct' | 'incorrect' | 'penalty',
     memberID: string,
     memberScore: number,
@@ -231,7 +230,7 @@ type ScoreData = {
     teamScore: number,
     category: Category
 }
-socket.on('scoreChange', ({ open, time, score, memberID, memberScore, teamID, teamScore, category }: ScoreData) => {
+socket.on('scoreChange', ({ open, score, memberID, memberScore, teamID, teamScore, category }: ScoreData) => {
     const team = teams.find(t => t.id === teamID)
     const member = members.find(m => m.id === memberID)
     if (member) {
@@ -282,6 +281,46 @@ socket.on('scoreChange', ({ open, time, score, memberID, memberScore, teamID, te
             buzzedTeamIDs: []
         })
     }
+})
+
+type UndoScoreData = {
+    score: 'correct' | 'incorrect' | 'penalty',
+    memberID: string,
+    memberScore: number,
+    teamID: string,
+    teamScore: number,
+    category: Category,
+    bonus: boolean
+}
+socket.on('scoreUndone', ({ score, memberID, memberScore, teamID, teamScore, category, bonus }: UndoScoreData) => {
+    const team = teams.find(t => t.id === teamID)
+    const member = members.find(m => m.id === memberID)
+    if (member) {
+        member.scoreboard.score = memberScore
+        teamsStore.set(teams.sort((a, b) => a.name.localeCompare(b.name)))
+    }
+    if (team) {
+        team.scoreboard.score = teamScore
+        teamsStore.set(teams.sort((a, b) => a.name.localeCompare(b.name)))
+    }
+
+    chatMessagesStore.set([
+        ...chatMessages,
+        {
+            type: "notification",
+            text: `Undo ${score[0].toUpperCase() + score.slice(1)} ${bonus ? "Bonus" : "Tossup"} Score (${category[0].toUpperCase() + category.slice(1)})`
+        }
+    ])
+})
+
+socket.on('undoScoreFailed', () => {
+    chatMessagesStore.set([
+        ...chatMessages,
+        {
+            type: "warning",
+            text: "Failed to undo scores"
+        }
+    ])
 })
 
 socket.on('questionOpen', (question: Question) => {

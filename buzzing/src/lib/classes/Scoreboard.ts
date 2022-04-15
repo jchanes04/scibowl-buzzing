@@ -1,6 +1,7 @@
-type category = "earth" | "chem" | "math" | "bio" | "physics" | "energy"
+import type { Category } from "./Game"
+
 type catScore = { correct: number, incorrect: number }
-export type catScores = Record<category, catScore>
+export type catScores = Record<Category, catScore>
 
 export type ScoreboardData = {
     score: number,
@@ -21,7 +22,7 @@ export class Scoreboard {
         this.teamScoreboard = teamScoreboard || null
     }
 
-    correctAnswer(category: category, value: number) {
+    correctAnswer(category: Category, value: number) {
         this.score += value
         this.catScores[category].correct += 1
 
@@ -30,7 +31,7 @@ export class Scoreboard {
         }
     }
 
-    incorrectAnswer(category: category, value: number) {
+    incorrectAnswer(category: Category, value: number) {
         this.score += value
         this.catScores[category].incorrect += 1
 
@@ -39,7 +40,7 @@ export class Scoreboard {
         }
     }
 
-    penalty(category: category | null, value: number) {
+    penalty(category: Category | null, value: number) {
         this.score += value
         if (category) {
             this.catScores[category].incorrect += 1
@@ -48,6 +49,24 @@ export class Scoreboard {
         if (this.teamScoreboard) {
             this.teamScoreboard.penalty(category, value)
         }
+    }
+
+    undoScore(scoreType: "correct" | "incorrect" | "penalty", category: Category, value: number) {
+        if (scoreType === "correct") {
+            this.score -= value
+            this.catScores[category].correct -= 1
+        } else if (scoreType === "incorrect") {
+            this.catScores[category].incorrect -= 1
+        } else {
+            this.score -= value
+            this.catScores[category].incorrect -= 1
+        }
+
+        if (this.teamScoreboard) {
+            this.teamScoreboard.undoScore(scoreType, category, value)
+        }
+
+        return true
     }
 
     clear() {

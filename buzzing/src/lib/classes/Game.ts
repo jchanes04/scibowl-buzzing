@@ -25,6 +25,13 @@ export type GameScores = {
     members: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>
 }
 
+export type LastScoredQuestion = {
+    memberId: string,
+    scoreType: "correct" | "incorrect" | "penalty",
+    category: Category,
+    bonus: boolean
+}
+
 export interface Game {
     id: string,
     joinCode: string,
@@ -52,7 +59,8 @@ export interface Game {
             category: Category,
             bonus: boolean
         } | null
-        buzzedTeams: Team[]
+        buzzedTeams: Team[],
+        lastScored: LastScoredQuestion
     }
 
     //stores ids of all players that have left 
@@ -98,7 +106,8 @@ export class Game {
             questionState: 'idle',
             currentBuzzer: null,        // the player that has buzzed in
             currentQuestion: null,      // the current question information (category, is bonus)
-            buzzedTeams: []     // the teams who have buzzed, prevents different players on the same team from buzzing again
+            buzzedTeams: [],     // the teams who have buzzed, prevents different players on the same team from buzzing again
+            lastScored: null
         }
         
         this.leftPlayers = []   // players who have left the game, used for players to rejoin
@@ -226,8 +235,15 @@ export class Game {
             }
         }
 
+        this.state.lastScored = {
+            memberId: scoredMember.id,
+            category: this.state.currentQuestion.category,
+            scoreType: score,
+            bonus: this.state.currentQuestion.bonus
+        }
+
         this.state.currentBuzzer = null
-        
+
         const open = !this.state.currentQuestion.bonus
             && this.state.buzzedTeams.length < Math.min(3, this.teams.length)
             && score !== 'correct'
@@ -245,6 +261,26 @@ export class Game {
             open,
             scoredTeam: scoredMember.team,
             category: questionCategory
+        }
+    }
+
+    undoScore() {
+        const scoredMember = this.members.find(m => m.id === this.state.lastScored.memberId)
+
+        if (scoredMember) {
+            this.scoreboard.undoScore(scoredMember, this.state.lastScored.scoreType, this.state.lastScored.category, this.state.lastScored.bonus)
+            
+            const returnData = {
+                score: this.state.lastScored.scoreType,
+                scoredMember,
+                scoredTeam: scoredMember.team,
+                category: this.state.lastScored.category,
+                bonus: this.state.lastScored.bonus
+            }
+            this.state.lastScored = null
+            return returnData
+        } else {
+            return null
         }
     }
 

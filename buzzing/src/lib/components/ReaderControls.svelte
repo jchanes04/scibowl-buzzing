@@ -104,6 +104,13 @@
         debug.addEvent('scoreQuestion', { selectedScore })
     }
 
+    let undoScoresDisabled = false
+    function undoScore() {
+        undoScoresDisabled = true
+        setTimeout(() => undoScoresDisabled = false, 1000)
+        $socket.emit('undoScore')
+    }
+
     function handleTeamSelect(e: CustomEvent<TeamData>) {
         selectedTeam = e.detail.id
     }
@@ -150,7 +157,9 @@
                 <span>Penalty</span>
             </label>
         </div>
-        <button on:click={scoreQuestion} disabled={questionState !== "buzzed" || !selectedScore}>Score</button> 
+        <button on:click={scoreQuestion} disabled={questionState !== "buzzed" || !selectedScore}>Score</button>
+        <br />
+        <button on:click={undoScore} disabled={undoScoresDisabled}>Undo Score</button>
     </ControlSection>
     <ControlSection title="Scoreboard">
         <button on:click={clearScores}>Clear Scores</button>
