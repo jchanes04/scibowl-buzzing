@@ -29,7 +29,7 @@
     <h1>Enter a join code</h1>
     <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
     <br />
-    {#if !codeExists}
+    {#if !codeExists && joinCodeValue.length === 4}
         <p class="error">Invalid code</p>
     {/if}
     <button id="join-game" disabled={buttonDisabled}>Join</button>
