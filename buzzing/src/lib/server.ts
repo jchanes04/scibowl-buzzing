@@ -22,7 +22,7 @@ export const io = new Server(httpsServer, {
 
 io.on('connection', async socket => {
     console.log("Socket connected")
-    const { authToken } = socket.handshake.auth
+    const { authToken } = socket.handshake.auth || {}
 
     const tokenData = await getDataFromToken(authToken)
     if (!tokenData) {
@@ -198,13 +198,17 @@ io.on('connection', async socket => {
     })
 
     socket.on('logDump', (data: Omit<Debugger, 'socket' | 'openWindow'>) => {
-        console.log(`Dumping log data from game id ${data.gameId} and name ${data.gameName}`)
-        const fileData = fs.readFileSync(process.cwd() + '/debugLogs.json').toString()
-        const currentLogs = JSON.parse(fileData)
-        fs.writeFileSync(process.cwd() + '/debugLogs.json', JSON.stringify([
-            ...currentLogs,
-            data
-        ], null, '\t'))
+        try {
+            console.log(`Dumping log data from game id ${data.gameId} and name ${data.gameName}`)
+            const fileData = fs.readFileSync(process.cwd() + '/debugLogs.json').toString()
+            const currentLogs = JSON.parse(fileData)
+            fs.writeFileSync(process.cwd() + '/debugLogs.json', JSON.stringify([
+                ...currentLogs,
+                data
+            ], null, '\t'))
+        } catch (e) {
+            
+        }
     })
 
     socket.onAny(() => {

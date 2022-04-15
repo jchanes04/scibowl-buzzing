@@ -47,7 +47,7 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
         const authToken = event.request.headers.get('Cookie')?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
         const { memberId } = await getDataFromToken(authToken)
         const game = getGame(gameId)
-        const member = game.people.find(m => m.id === memberId) 
+        const member = game?.people.find(m => m.id === memberId) 
         if (member) {
             event.locals.authenticated = true
             event.locals.memberData = member.data
