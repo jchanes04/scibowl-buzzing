@@ -46,5 +46,7 @@ export class Member {
 
     promote() {
         this.moderator = true
+        this.team?.removeMember(this.id)
+        this.team = null
     }
 }
