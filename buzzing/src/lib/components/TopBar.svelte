@@ -1,19 +1,47 @@
 <script lang="ts">
+import JoinLinkDialog from "./JoinLinkDialog.svelte"
+
     export let gameName: string
     export let joinCode: string
 
-    let hWidth: number
-    let windowWidth: number
+    let dialogOpen = false
+    let clickLock = false
+    let joinCodeElement: HTMLElement
+
+    function openDialog() {
+        dialogOpen = !dialogOpen
+    }
+
+    function handleWindowClick(e: MouseEvent) {
+    if (!joinCodeElement.contains(e.target as Node) && !clickLock) {
+            dialogOpen = false
+        }
+    }
+
+    function handleMouseDown(e: MouseEvent) {
+        if (joinCodeElement.contains(e.target as Node)) {
+            clickLock = true
+        }
+    }
+
+    function handleMouseUp() {
+        clickLock = false
+    }
 </script>
 
-<svelte:window bind:innerWidth={windowWidth} />
+<svelte:window on:click={handleWindowClick} on:mousedown={handleMouseDown} on:mouseup={handleMouseUp} />
 
 <div id="top-bar">
     <div>
         <h1 class="game-name">{gameName}</h1>
     </div>
-    <div>
-        <h1 class="join-code">{joinCode}</h1>
+    <div style="position: relative;" bind:this={joinCodeElement}>
+        <h1 class="join-code" on:click={openDialog}>{joinCode}<span class="icon open" /></h1>
+        {#if dialogOpen}
+            <div class="join-link-wrapper">
+                <JoinLinkDialog />
+            </div>
+        {/if}
     </div>
     <div>
         <slot></slot>
@@ -48,7 +76,27 @@
     }
 
     .join-code {
-        margin: 0    1em;
         font-size: 32px;
+        cursor: pointer;
+    }
+
+    .icon {
+        display: inline-block;
+        height: 1em;
+        width: 1em;
+        cursor: pointer;
+        vertical-align: middle;
+        margin-bottom: 0.1em;
+    }
+
+    .open {
+        background-image: url('/cheveron-down.svg');
+    }
+
+    .join-link-wrapper {
+        position: absolute;
+        left: 50%;
+        top: 3.2em;
+        transform: translateX(-50%);
     }
 </style>

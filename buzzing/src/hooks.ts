@@ -25,19 +25,24 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
                 event.locals.authenticated = true
                 event.locals.memberData = rejoinedMember.data
             } else {
-                return redirectTo(gameExists(gameId) ? "/join/" + gameId : "/join")
+                return redirectTo("/join")
             }
         } else {
-            return redirectTo(gameExists(gameId) ? "/join/" + gameId : "/join")
+            return redirectTo("/join")
         }
-    } else if (event.url.pathname.startsWith('/join')) {
+    } else if (event.url.pathname.startsWith('/join/')) {
         const gameId = event.url.pathname.slice("/join/".length)
 
         if (gameExists(gameId)) {
             const game = getGame(gameId)
-            event.locals = {
-                gameId,
-                gameName: game.name
+            const urlJoinCode = event.url.searchParams.get('code')
+            if (urlJoinCode === game.joinCode) {
+                event.locals = {
+                    gameId,
+                    gameName: game.name
+                }
+            } else {
+                return redirectTo('/join')
             }
         } else if (gameId !== '' && gameId !== undefined) {
             return redirectTo('/join')

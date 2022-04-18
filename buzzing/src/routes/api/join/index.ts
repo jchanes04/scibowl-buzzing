@@ -13,7 +13,7 @@ export async function post({ request }: RequestEvent) {
         const game = joinCode ? getGameFromCode(joinCode) : getGame(gameId)
 
         if (joinCode && game) {
-            return redirectTo('/join/' + game.id)
+            return redirectTo('/join/' + game.id + "?code=" + game.joinCode)
         } else if (game) {
             const name = body.get('name') as string
             const teamOrIndiv = body.get('team-or-indiv')
