@@ -12,8 +12,7 @@
     <section id="hero">
         <h1>ESBOT</h1>
         <h3 style="margin-top: 0;">Enloe Science Bowl Online Tournament</h3>
-        <h3 style="margin-bottom: 0.2em;">Registration is Open!</h3>
-        <h3 style="margin-top: 0;"><a id=register href="/register">Register here</a> and make sure to join the <a href="https://discord.gg/XNvpJqNvU9">Discord server</a></h3>
+        <h3 style="margin-bottom: 0.2em;">Registration has closed</h3>
         <br /><br />
         <h4>Sponsored by:</h4><br />
         <div class="images-wrapper">
@@ -30,7 +29,8 @@
             With integrated scoring, challenge and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay.
             This is the closest we've ever gotten to emulating real, in-person Science Bowl.
         </p>
-        <p style="text-decoration: underline;" class="info">Publicly available soon</p>
+        <br />
+        <p><a href="https://buzzing.enloesciencebowl.xyz">Buzzing website</a></p>
     </section>
     <section class='bubble'>
         <h2>Tournament Information</h2>
@@ -43,7 +43,6 @@
         <br />
         <p>
             The Round Robin brackets have now been relased! You can find them at <a href="https://docs.google.com/spreadsheets/d/1uSwcUQjfu245jbXpXxkVwpj8Z1_--_7B1T-I9OlZilM/edit?usp=sharing">this link</a>.
-            There are still 4 open spots in the tournament, so if you have a last-minute team to register please let one of the tournament directors know through Discord.
         </p>
         <br />
         <p>
@@ -58,7 +57,7 @@
         </p>
         <br />
         <p>
-            There will be a $15 registration fee for each team competing. Payment is now open and can be accessed through the team editing page. If you cannot pay through PayPal or run into any other issues, please reach out to us on Discord.
+            There will be a $15 registration fee for each team competing.
         </p>
         <br />
         <a href="/schedule" style="text-decoration: underline; font-size: 1.5em;" class="info">Schedule and Other Information</a>

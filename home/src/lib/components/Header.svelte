@@ -49,7 +49,7 @@
             </nav>
         {:else}
             <nav>
-                <a href="/register">Register Now</a>
+                <!-- <a href="/register">Register Now</a> -->
                 <div class="login-menu-wrapper" bind:this={loginMenuWrapper}>
                     <span on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</span>
                     <div class="login-menu" class:visible={loginMenuVisible}>

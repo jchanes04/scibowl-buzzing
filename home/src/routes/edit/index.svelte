@@ -101,8 +101,8 @@
                 <MemberMenu bind:this={memberMenuComponent} teamData={selectedTeam} />
             </div>
         {:else} 
-            {#if selectedTeam === null}
-                <Payment bind:teams></Payment>
+            {#if false}
+                <!-- <Payment bind:teams></Payment> -->
             {:else}
                 <div>
                     <h2>No team selected. </h2>
