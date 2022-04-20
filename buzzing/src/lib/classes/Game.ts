@@ -1,4 +1,4 @@
-import { createGameID } from "$lib/functions/createId"
+import { createGameID, createMemberID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
 import { Member, MemberData } from "./Member"
 import type { ScoreboardData } from "./Scoreboard"
@@ -13,9 +13,10 @@ export type Question = {
     team?: string
 }
 
-export type TeamSettings = {
+export type GameSettings = {
     individualsAllowed: boolean,
-    newTeamsAllowed: boolean
+    newTeamsAllowed: boolean,
+    spectatorsAllowed: boolean
 }
 
 export type GameScores = {
@@ -41,8 +42,10 @@ export interface Game {
 
     moderators: Member[],
     members: Member[],
-    teams: Team[]
-    teamSettings: TeamSettings
+    teams: Team[],
+    spectators: Set<string>
+
+    settings: GameSettings
 
     timer: Timer,
     times: { //times [client, server extratime]
@@ -68,7 +71,7 @@ export interface Game {
 }
 
 export class Game {
-    constructor({ name, teamSettings, teams, ownerMember, joinCode, times }: { name: string, teamSettings: Partial<TeamSettings>, teams: Team[], ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
+    constructor({ name, settings, teams, ownerMember, joinCode, times }: { name: string, settings?: Partial<GameSettings>, teams: Team[], ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
         this.id = createGameID()
         this.joinCode = joinCode.toUpperCase()  // Easier way to join games than a url with a 7 or 8 character ID
 
@@ -83,9 +86,11 @@ export class Game {
             individuals: players can only play on their own
         */
         this.teams = [...teams]
-        this.teamSettings = {
-            individualsAllowed: teamSettings.individualsAllowed ?? false,
-            newTeamsAllowed: teamSettings.newTeamsAllowed ?? true
+        this.spectators = new Set()
+        this.settings = {
+            individualsAllowed: settings.individualsAllowed ?? false,
+            newTeamsAllowed: settings.newTeamsAllowed ?? true,
+            spectatorsAllowed: settings.spectatorsAllowed ?? false
         }
 
         this.timer = new Timer()
@@ -292,6 +297,16 @@ export class Game {
         this.members.forEach(m => {
             m.scoreboard.clear()
         })
+    }
+
+    addSpectator() {
+        const newId = createMemberID()
+        this.spectators.add(newId)
+        return newId
+    }
+
+    removeSpectator(id: string) {
+        return this.spectators.delete(id)
     }
 
     get scores(): GameScores {

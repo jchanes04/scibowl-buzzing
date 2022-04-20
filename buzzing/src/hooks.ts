@@ -24,6 +24,8 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
                 io.to(gameId).emit('memberRejoin', { member: rejoinedMember.data, team: rejoinedMember.team?.data })
                 event.locals.authenticated = true
                 event.locals.memberData = rejoinedMember.data
+            } else if (game.settings.spectatorsAllowed) {
+                return redirectTo('/spectate/' + gameId)
             } else {
                 return redirectTo("/join")
             }
@@ -41,6 +43,8 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
                     gameId,
                     gameName: game.name
                 }
+            } else if (game.settings.spectatorsAllowed) {
+                return redirectTo('/spectate/' + gameId)
             } else {
                 return redirectTo('/join')
             }
@@ -60,6 +64,12 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
             return new Response(null, {
                 status: 404
             })
+        }
+    } else if (event.url.pathname.startsWith('/spectate/')) {
+        const gameId = event.url.pathname.slice("/api/game/".length)
+        const game = getGame(gameId)
+        if (!game.settings.spectatorsAllowed) {
+            return redirectTo('/join')
         }
     }
 

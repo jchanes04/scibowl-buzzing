@@ -8,12 +8,12 @@ export function get({ params, locals }: RequestEvent) {
     const memberList = game.members.map(m => m.data)
     const teamList = game.teams.map(x => x.data)
     const moderatorList = game.moderators.map(m => m.data)
-    return new Response(
-        JSON.stringify({
+    return {
+        body: JSON.stringify({
             gameInfo: {
                 gameName: game.name,
                 joinCode: game.joinCode,
-                teamSettings: game.teamSettings,
+                settings: game.settings,
                 myMember: locals.memberData,
                 myTeam: game.teams.find(t => t.id === locals.memberData.teamID)?.data ?? null
             },
@@ -21,5 +21,5 @@ export function get({ params, locals }: RequestEvent) {
             teamList,
             moderatorList
         })
-    )
+    }
 }

@@ -1,4 +1,4 @@
-import { Game, TeamSettings } from './Game'
+import { Game, GameSettings } from './Game'
 import type { Member } from './Member'
 import { createJoinCode } from '$lib/functions/createId'
 import { Team } from './Team'
@@ -35,7 +35,7 @@ export class GameManager {
         return null
     }
 
-    createGame(options: { name: string, teamSettings: TeamSettings, teamNames: string[], ownerMember: Member }) {
+    createGame(options: { name: string, settings: GameSettings, teamNames: string[], ownerMember: Member }) {
         const joinCode = createJoinCode()
         this.joinCodes.push(joinCode)
         const teams = options.teamNames.map(n => new Team(n))

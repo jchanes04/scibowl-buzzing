@@ -41,6 +41,12 @@
             Members can join the game on a team of just themselves
         </label>
         <br />
+        <label for="spectators">
+            <input id="spectators" type="checkbox" name="spectators-allowed" />
+            <span />
+            Spectators allowed
+        </label>
+        <br />
         <br />
     </div>
     <br />

@@ -9,12 +9,14 @@ export async function post({ request }: RequestEvent) {
         const gameName = body.get("game-name") as string
         const individualsAllowed = body.get("individual-teams-allowed") as string === "on"
         const newTeamsAllowed = body.get("new-teams-allowed") as string === "on"
+        const spectatorsAllowed = body.get("spectators-allowed") as string === "on"
         const teamNames = JSON.parse(body.get('teams') as string || "[]")
         const gameData = {
             name: gameName,
-            teamSettings: {
+            settings: {
                 individualsAllowed,
-                newTeamsAllowed
+                newTeamsAllowed,
+                spectatorsAllowed
             },
             teamNames
         }

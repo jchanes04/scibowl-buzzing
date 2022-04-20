@@ -24,7 +24,8 @@ const socketStore: Writable<Socket> = writable(io(import.meta.env.VITE_WS_URL as
         authToken: Cookie.get('authToken') as string
     },
     autoConnect: false,
-    secure: true
+    secure: true,
+    withCredentials: true
 }))
 export default socketStore
 
@@ -113,7 +114,7 @@ socket.on('memberLeave', id => {
                 ...moderators.filter(m => m.id !== member.id)
             ])
         } else {
-            if (team.members.length === 1 && gameInfo.teamSettings.newTeamsAllowed) {
+            if (team.members.length === 1 && gameInfo.settings.newTeamsAllowed) {
                 teamsStore.set(teams.filter(t => t.id !== team.id).sort((a, b) => a.name.localeCompare(b.name)))
             } else {
                 teamsStore.set([

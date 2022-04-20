@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
     export async function load({ params, fetch }: LoadInput) {
 
-        const res = await fetch(`/api/game/${params.id}`)
+        const res = await fetch(`/api/spectate/${params.id}`)
 
         if (res.ok) {
             const json = await res.json()
@@ -22,7 +22,7 @@
 </script>
 
 <script lang="ts">
-    export let moderatorList : MemberData[]
+    export let moderatorList: MemberData[]
     export let gameInfo: GameInfo
     export let teamList: TeamData[]
     $gameInfoStore = gameInfo
@@ -36,8 +36,6 @@
     import TopBar from '$lib/components/TopBar.svelte'
     import MobileTopBar from '$lib/components/MobileTopBar.svelte'
     import Timer from '$lib/components/Timer.svelte'
-    import PlayerControls from '$lib/components/PlayerControls.svelte'
-    import ReaderControls from '$lib/components/ReaderControls.svelte'
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
     import type { LoadInput } from "@sveltejs/kit";
@@ -50,7 +48,6 @@
     import socket from '$lib/stores/socket';
     import type { GameInfo } from '$lib/stores/gameInfo';
     import gameInfoStore from "$lib/stores/gameInfo";
-    import membersStore from "$lib/stores/members";
     import teamsStore from "$lib/stores/teams";
     import timerStore from "$lib/stores/timer"
     import gameStateStore from "$lib/stores/gameState";
@@ -80,7 +77,7 @@
 <svelte:window bind:innerWidth={windowWidth}></svelte:window>
 
 <main>
-    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode="">
+    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode="" spectator={true}>
         <Timer bind:this={$timerStore} on:end={() => $gameStateStore = { ...$gameStateStore, buzzingDisabled: true }} />
     </svelte:component>
     <MemberList />

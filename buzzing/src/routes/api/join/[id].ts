@@ -11,14 +11,14 @@ export function get({ params }: RequestEvent) {
     }
     
     const memberNames = game.members.map(x => x.name)
-    const teamSettings = game.teamSettings
+    const settings = game.settings
     const teams = game.teams.map(t => t.data).filter(t => !t.individual)
 
     return new Response(
         JSON.stringify({
             memberNames,
             gameName: game.name,
-            teamSettings,
+            settings,
             teams
         })
     )

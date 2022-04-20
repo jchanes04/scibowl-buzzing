@@ -20,21 +20,21 @@
 </script>
 
 <script lang="ts">
-    export let memberNames: string[], gameName: string, gameId: string, teamSettings: TeamSettings, teams: TeamData[]
+    export let memberNames: string[], gameName: string, gameId: string, settings: GameSettings, teams: TeamData[]
     
     import JoinMemberList from '$lib/components/JoinMemberList.svelte'
     import Select from "svelte-select";
     import type { TeamData } from "$lib/classes/Team";
-    import type { TeamSettings } from "$lib/classes/Game";
+    import type { GameSettings } from "$lib/classes/Game";
 
     let memberName = ''
     let teamOrIndiv: "indiv" | "team" | "new-team" = null
     let selectedTeam: TeamData
     let newTeamName: string
     let showRadio: boolean = true
-    if (teamSettings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv"
-    if (teamSettings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team"
-    if (!(teamSettings.individualsAllowed || teamSettings.newTeamsAllowed)) teamOrIndiv = "team"
+    if (settings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv"
+    if (settings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team"
+    if (!(settings.individualsAllowed || settings.newTeamsAllowed)) teamOrIndiv = "team"
 
     if (teamOrIndiv !== null) showRadio = false
     $: disabled = !memberName || !teamOrIndiv || (teamOrIndiv === "new-team" && !newTeamName) || (teamOrIndiv === "team" && !selectedTeam)
@@ -60,7 +60,7 @@
             {#if !showRadio}
                 <input type="hidden" name="team-or-indiv" value={teamOrIndiv} />
             {/if}
-            {#if teamSettings.individualsAllowed && showRadio}
+            {#if settings.individualsAllowed && showRadio}
                 <div class="radio-wrapper">
                     <label for="indiv">
                         <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
@@ -70,7 +70,7 @@
                 </div>
                 <br />
             {/if}
-            {#if teamSettings.newTeamsAllowed}
+            {#if settings.newTeamsAllowed}
                 {#if showRadio}
                     <div class="radio-wrapper">
                         <label for="new-team">

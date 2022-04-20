@@ -6,7 +6,7 @@ import { Server } from 'socket.io'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
-import type { TeamSettings } from '$lib/classes/Game'
+import type { GameSettings } from '$lib/classes/Game'
 import { getDataFromToken } from './authentication'
 import { addGameScores } from './mongo'
 
@@ -16,21 +16,42 @@ const httpsServer = https.createServer({
 })
 export const io = new Server(httpsServer, {
     cors: {
-        origin: '*'
+        origin: import.meta.env.VITE_HOST_URL,
+        allowedHeaders: ["Cookie"],
+        credentials: true
+    },
+    allowRequest: async (req, callback) => {
+        const authToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        const tokenData = await getDataFromToken(authToken)
+        if (!tokenData) {
+            return callback(null, false)
+        }
+
+        const { memberId, gameId, spectator } = tokenData
+        const game = games.get(gameId)
+        if (!game) {
+            return callback(null, false)
+        } else if (game.people.some(x => x.id === memberId) && !spectator) {
+            return callback(null, true)
+        } else if (game.settings.spectatorsAllowed) {
+            return callback(null, true)
+        } else {
+            return callback(null, false)
+        }
     }
 })
 
 io.on('connection', async socket => {
     console.log("Socket connected")
-    const { authToken } = socket.handshake.auth || {}
-
+    const cookie = socket.request.headers.cookie
+    const authToken = cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
     const tokenData = await getDataFromToken(authToken)
     if (!tokenData) {
         socket.emit('authFailed')
         return socket.disconnect()
     }
     
-    const { gameId, memberId } = tokenData
+    const { gameId, memberId, spectator } = tokenData
     const game = getGame(gameId)
     
     if (!game) {
@@ -45,7 +66,7 @@ io.on('connection', async socket => {
                 socket.emit('authFailed')
                 return socket.disconnect()
             }
-        } else {
+        } else if (!game.settings.spectatorsAllowed || !spectator) {
             socket.emit('authFailed')
             return socket.disconnect()
         }
@@ -53,12 +74,18 @@ io.on('connection', async socket => {
 
     socket.join([gameId, memberId])
 
-    socket.emit('authenticated', { name: game.people.find(x => x.id === memberId)?.name })
+    if (!spectator) {
+        socket.emit('authenticated', { name: game.people.find(x => x.id === memberId)?.name })
+    }
 
     socket.on('disconnect', () => {
-        const removed = game.removeMember(memberId)
-        if (removed !== null) {
-            socket.to(gameId).emit('memberLeave', memberId)
+        if (!spectator) {
+            const removed = game.removeMember(memberId)
+            if (removed !== null) {
+                socket.to(gameId).emit('memberLeave', memberId)
+            }
+        } else {
+            game.removeSpectator(memberId)
         }
     })
 
@@ -223,7 +250,7 @@ export const games = new GameManager()
 
 setInterval(sweepGames, 300_000)
 
-export function createNewGame(ownerName: string, gameData: { name: string, teamSettings: TeamSettings, teamNames: string[] }) {
+export function createNewGame(ownerName: string, gameData: { name: string, settings: GameSettings, teamNames: string[] }) {
     const ownerMember = new Member({ name: ownerName, moderator: true })
     const game = games.createGame({ ...gameData, ownerMember })
     return game
