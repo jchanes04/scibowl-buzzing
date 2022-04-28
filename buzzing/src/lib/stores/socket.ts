@@ -20,9 +20,6 @@ import moderatorStore from "./moderators"
 import { goto } from "$app/navigation"
 
 const socketStore: Writable<Socket> = writable(io(import.meta.env.VITE_WS_URL as string, {
-    auth: {
-        authToken: Cookie.get('authToken') as string
-    },
     autoConnect: false,
     secure: true,
     withCredentials: true

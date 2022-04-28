@@ -29,7 +29,7 @@ export async function get({ request, params }: RequestEvent): Promise<EndpointOu
         const newToken = generateToken({ memberId: id, gameId: params.id, spectator: true })
         return {
             headers: {
-                'Set-Cookie': "authToken=" + newToken + ";Path=/"
+                'Set-Cookie': "authToken=" + newToken + ";Path=/;Domain=" + (import.meta.env.VITE_HOST_URL as string).replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
             },
             body: JSON.stringify({
                 gameInfo: {

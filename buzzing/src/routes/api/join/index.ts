@@ -38,7 +38,7 @@ export async function post({ request }: RequestEvent) {
             return {
                 headers: {
                     'Location': "/game/" + game.id,
-                    'Set-Cookie': "authToken=" + authToken + ";Path=/"
+                    'Set-Cookie': "authToken=" + authToken + ";Path=/;Domain=" + (import.meta.env.VITE_HOST_URL as string).replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
                 },
                 status: 302
             }
