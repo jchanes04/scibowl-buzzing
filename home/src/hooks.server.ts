@@ -17,10 +17,3 @@ export async function handle({ event, resolve }: { event: RequestEvent, resolve:
 
     return await resolve(event)
 }
-
-export async function getSession(event: RequestEvent) {
-    return {
-        loggedIn: !!event.locals.userData,
-        userData: event.locals.userData
-    }
-}

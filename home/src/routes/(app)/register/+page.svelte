@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { session } from "$app/stores";
     import isSchoolNameTaken from "$lib/functions/isSchoolNameTaken";
     import isUsernameTaken from "$lib/functions/isUsernameTaken";
     import { form as createForm, field } from 'svelte-forms'

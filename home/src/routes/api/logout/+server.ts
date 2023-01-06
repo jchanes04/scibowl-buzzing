@@ -1,4 +1,6 @@
-export async function get() {
+import { RequestHandler } from "./$types"
+
+export async function GET() {
     return new Response(null, {
         headers: {
             'Location': '/',
@@ -6,4 +8,4 @@ export async function get() {
         },
         status: 302
     })
-}
+} satisfies RequestHandler

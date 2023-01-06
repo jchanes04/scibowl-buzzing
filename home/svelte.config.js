@@ -8,12 +8,7 @@ const config = {
 	preprocess: preprocess.default(),
 
 	kit: {
-		// hydrate the <div id="svelte"> element in src/app.html
-		adapter: node({
-			env: {
-				port: 'PORT'
-			}
-		}),
+		adapter: node(),
 		files: {
 			lib: "src/lib"
 		}

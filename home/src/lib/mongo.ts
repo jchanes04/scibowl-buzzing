@@ -1,6 +1,7 @@
 export interface User {
     id: string, 
     username: string,
+    email: string,
     passwordHash: string,
     schoolName: string,
     teamIds: string[],
@@ -24,8 +25,6 @@ export type Team = {
     createdAt: Date
 }
 
-
-
 export type Grade = "8th and under" | "9th" | "10th" | "11th" | "12th"
 
 
@@ -38,14 +37,13 @@ export type Member = {
 }
 
 import { Collection, Db, MongoClient } from 'mongodb'
-import dotenv from 'dotenv';
-dotenv.config()
+import env from "$env/dynamic/private"
 
 const collections: {
     users?: Collection<User>,
     teams?: Collection<Team>
 } = {}
-const client = new MongoClient(process.env.DATABASE_URL, { directConnection: true })
+const client = new MongoClient(env.DATABASE_URL, { directConnection: true })
 var db: Db;
 async function init() {
     try {

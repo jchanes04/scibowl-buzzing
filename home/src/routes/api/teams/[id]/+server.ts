@@ -1,13 +1,13 @@
 import { deleteTeam, getTeam, Team, updateTeam } from "$lib/mongo";
 import type { RequestEvent } from "@sveltejs/kit";
 
-export async function get({ params }: RequestEvent): Promise<Response> {
+export async function GET({ params }: RequestEvent): Promise<Response> {
     const { id } = params
     const fetchedTeam = await getTeam(id)
     return new Response(JSON.stringify(fetchedTeam))
 }
 
-export async function patch({ request, params }: RequestEvent) {
+export async function PATCH({ request, params }: RequestEvent) {
     const body: Team = await request.json()
     if (body.id !== params.id) {
         return new Response(null, {
@@ -24,7 +24,7 @@ export async function patch({ request, params }: RequestEvent) {
     }
 }
 
-export async function del({ params }: RequestEvent) {
+export async function DELETE({ params }: RequestEvent) {
     await deleteTeam(params.id)
     return new Response(null, {
         status: 204

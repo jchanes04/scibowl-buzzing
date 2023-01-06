@@ -1,9 +1,9 @@
 import { generateToken } from "$lib/authentication";
 import { getUserFromUsername, getUserPasswordHash } from "$lib/mongo";
-import type { RequestEvent } from "@sveltejs/kit";
+import { RequestHandler } from "./$types"
 import argon2 from "argon2"
 
-export async function post({ request }: RequestEvent) {
+export async function POST({ request }) {
     const body = await request.formData()
     const username = body.get('username') as string
     const password = body.get('password') as string
@@ -26,4 +26,4 @@ export async function post({ request }: RequestEvent) {
     } else {
         return new Response(JSON.stringify({ correct: false }))
     }
-}
+} satisfies RequestHandler

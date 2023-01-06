@@ -12,13 +12,7 @@
     <section id="hero">
         <h1>ESBOT</h1>
         <h3 style="margin-top: 0;">Enloe Science Bowl Online Tournament</h3>
-        <h3 style="margin-bottom: 0.2em;">Registration has closed</h3>
-        <br /><br />
-        <h4>Sponsored by:</h4><br />
-        <div class="images-wrapper">
-            <img src="/wolfram-logo.png" alt="Wolfram logo" class="wolfram-logo" />
-            <img src="/aops-logo.png" alt="AOPS logo" class="aops-logo" />
-        </div>
+        <h3 style="margin-bottom: 0.2em;">Registration for ESBOT 2023 will open soon</h3>
         <br /><br />
     </section>
 
@@ -26,7 +20,7 @@
         <h2>Revolutionary Buzzing System</h2>
         <p>
             Say goodbye to latency. Enloe Science Bowl has developed a websocket based buzzng system with ultra low latency that will appease even the biggest gamers.
-            With integrated scoring, challenge and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay.
+            With integrated scoring, statistics, and moderation tools, the Enloe Science Bowl online buzzing system is perfect for all online Science Bowl gameplay.
             This is the closest we've ever gotten to emulating real, in-person Science Bowl.
         </p>
         <br />
@@ -35,43 +29,33 @@
     <section class='bubble'>
         <h2>Tournament Information</h2>
         <p>
-            ESBOT will be held on <b><time datetime="2022-04-16">April 16th</time></b>.
+            ESBOT 2023 will be held on <b><time datetime="2022-03-25">March 25th</time></b>.
             The tournament will be held in the style of <b>in-person Science Bowl</b> through an online medium.
-            The anticipated format will consist of a round-robin portion with 6 brackets of 5 teams each (tentative), 
-            with 12 teams advancing to a double elimination tournament lasting 7 rounds.
+            The format will consist of a round-robin portion followed by a double elimination tournament.
         </p>
         <br />
         <p>
-            The Round Robin brackets have now been relased! You can find them at <a href="https://docs.google.com/spreadsheets/d/1uSwcUQjfu245jbXpXxkVwpj8Z1_--_7B1T-I9OlZilM/edit?usp=sharing">this link</a>.
-        </p>
-        <br />
-        <p>
-            ESBOT will be run through the <b>Discord server</b> found <a href="https://discord.gg/XNvpJqNvU9">at this link</a>. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
+            ESBOT will be run through the <b>Discord server</b> which will be set up soon. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
             <b>All competitors should join</b> the Discord server as soon as possible in order to stay up to date and be ready for competition day.
         </p>
         <br />
         <p>
-            There will be cash prizes available to the top 4 teams, as well as the top individual scorer in each category. The first through fourth place teams will receive $175, $125, $75, and $50 respectively, plus a $25 certificate from AoPS for each team.
-            Top individual scorers in each category will receive $20 in cash.
-            <b>Wolfram</b> has also generously donated ten 1-year subscriptions of <b>WolframAlpha Notebook Edition</b> to be distributed to the top two teams. WolframAlpha Notebook edition includes access to both Wolfram Mathematica and all the premium features of WolframAlpha, and is normally priced at $72/year.
+            There will be cash prizes available to the top scoring teams, as well as the top individual scorer in each category. Prize amounts will be determined closer to the competition day. 
         </p>
         <br />
         <p>
             There will be a $15 registration fee for each team competing.
         </p>
-        <br />
-        <a href="/schedule" style="text-decoration: underline; font-size: 1.5em;" class="info">Schedule and Other Information</a>
     </section>
     <section class='bubble'>
         <h2>Skilled Writers</h2>
         <div id="staff">
-            <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">- USAPhO Semifinalist<br/>- USNCO Semifinalist <br/>- Science Olympiad National Medalist<br/>- USACO Silver division<br />- USABO Semifinalist</StaffCard>
+            <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">- USAPhO Bronze Medalist<br/>- USNCO Semifinalist <br/>- Science Olympiad National Medalist<br/>- USACO Silver division<br />- USABO Semifinalist</StaffCard>
             <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honorable Mention<br/>- USAPhO Semifinalist<br/>- AIME Qualifer</StaffCard>
             <StaffCard name="Brian Zhang" grade="Sophomore" categories="Math, Physics, Earth and Space">- US Team: International Astronomy Olympiad<br/>- AIME Qualifer</StaffCard>
             <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">- USABO Semifinalist<br/>- Science Olympiad National Medalist<br/>- AIME Qualifier</StaffCard>
             <StaffCard name="Nikhil Vemuri" grade="Freshman" categories="Chemistry">- National Science Olympiad Invitational Medalist</StaffCard>
             <StaffCard name="Thanush Patlolla" grade="Freshman" categories="Physics, Math">- AIME Qualifier<br/>- USACO Silver</StaffCard>
-            <StaffCard name="Andrew Huang" grade="Senior" categories="Math, Biology">- USACO Gold division<br />- USABO Semifinalist<br/>- AIME Qualifer<br/>- National Science Olympiad Invitational Medalist</StaffCard>
             <StaffCard name="Sukrith Velmineti" grade="Junior" categories="Earth and Space, Math">- AIME Qualifier<br/>- National Science Olympiad Invitational Medalist</StaffCard>
             <StaffCard name="Vedang Singhal" grade="Junior" categories="Biology, Earth and Space">- USABO Semifinalist<br />- National Science Olympiad Invitational Medalist<br/>- HOSA National Tournament Competitor</StaffCard>
         </div>
@@ -160,35 +144,10 @@
        }
     }
 
-    h4 {
-        font-size: 32px;
-        font-weight: 500;
-        margin-bottom: 0;
-    }
-
-    .images-wrapper {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 40px;
-    }
-
-    .wolfram-logo {
-        display: block;
-        max-width: 70vw;
-        width: 450px;
-    }
-
-    .aops-logo {
-        display: block;
-        max-width: 70vw;
-        width: 350px;
-    }
-
     .info {
         margin: .5em;
     }
+
     #staff {
         display: flex;
         flex-direction: row;
@@ -219,7 +178,6 @@
             background-color: transparentize($color: white, $amount: 0.8);
         }
     }
-
 
     #hero {
         position: relative;
