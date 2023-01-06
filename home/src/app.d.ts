@@ -9,10 +9,7 @@ declare namespace App {
 
 	interface Platform {}
 
-	interface Session {
-		loggedIn: boolean,
-		userData: import('$lib/mongo').UserClean
+	interface PrivateEnv {
+		DATABASE_URL: string
 	}
-
-	interface Stuff {}
 }

@@ -1,24 +1,17 @@
 export interface User {
-    id: string, 
-    username: string,
+    _id: string, 
     email: string,
+    secondaryEmail?: string,
     passwordHash: string,
     schoolName: string,
     teamIds: string[],
-    transactions: Transaction[],
-    paymentAmount: number,
     createdAt: Date
-}
-
-export type Transaction = {
-    paymentEmail: string,
-    transactionID: string
 }
 
 export type UserClean = Omit<User, 'passwordHash'>
 
 export type Team = {
-    id: string,
+    _id: string,
     teamName: string,
     userId: string,
     members: Member[],
@@ -27,9 +20,8 @@ export type Team = {
 
 export type Grade = "8th and under" | "9th" | "10th" | "11th" | "12th"
 
-
 export type Member = {
-    id: number,
+    _id: number,
     firstName: string,
     lastName: string,
     discordUsername: string,
@@ -37,7 +29,10 @@ export type Member = {
 }
 
 import { Collection, Db, MongoClient } from 'mongodb'
-import env from "$env/dynamic/private"
+import ShortUniqueId from 'short-unique-id'
+import { env } from "$env/dynamic/private"
+
+const uid = new ShortUniqueId({ dictionary: "alphanum", length: 10 })
 
 const collections: {
     users?: Collection<User>,
@@ -45,7 +40,7 @@ const collections: {
 } = {}
 const client = new MongoClient(env.DATABASE_URL, { directConnection: true })
 var db: Db;
-async function init() {
+export async function init() {
     try {
         console.log("Connecting...")
         await client.connect()
@@ -63,12 +58,10 @@ async function init() {
     }
 }
 
-init();
-
 export async function getUser(userId: string): Promise<UserClean> {
-    const fetchedUser = await collections.users.findOne({ id: userId })
+    const fetchedUser = await collections.users.findOne({ _id: userId })
     if (fetchedUser) {
-        const { passwordHash: _, _id: __, ...withoutPassword } = fetchedUser
+        const { passwordHash: _, ...withoutPassword } = fetchedUser
         return withoutPassword
     } else {
         return null
@@ -78,7 +71,7 @@ export async function getUser(userId: string): Promise<UserClean> {
 export async function getUserFromUsername(username: string) {
     const fetchedUser = await collections.users.findOne({ username })
     if (fetchedUser) {
-        const { passwordHash: _, _id: __, ...withoutPassword } = fetchedUser
+        const { passwordHash: _, ...withoutPassword } = fetchedUser
         return withoutPassword
     } else {
         return null
@@ -96,83 +89,47 @@ export async function getUserPasswordHash(username: string): Promise<string> {
     return null
 }
 
-export async function createUser(data: Omit<User, 'id' | 'createdAt'>) {
+export async function createUser(data: Omit<User, '_id' | 'createdAt'>) {
     const newUser = {
         ...data,
-        id: createID(),
-        createdAt: new Date(),
-        transactions:[],
-        paymentAmount:0
+        _id: uid(),
+        createdAt: new Date()
     }
     await collections.users.insertOne(newUser)
     return newUser
 }
 
-export async function addTransaction(userId: string, amount: number, transactionID: string, paymentEmail: string) {
-    const fetchedUser = await collections.users.findOne({ id: userId })
-    const totalPaid = amount + fetchedUser.paymentAmount
-    return await collections.users.updateOne({ id: userId }, { $set: { "transactions": [
-        ...(fetchedUser.transactions || []),
-        {
-            transactionID,
-            paymentEmail
-        }
-    ], paymentAmount: totalPaid } })
-}
-
-export async function getTransactionsFromUser(userId: string) {
-    const fetchedUser = await collections.users.findOne({ id: userId })
-    return fetchedUser.transactions
-}
-
-
 export async function addTeamToUser(userId: string, teamId: string) {
-    return await collections.users.updateOne({ id: userId }, { $push: { teamIds: teamId } })
+    return await collections.users.updateOne({ _id: userId }, { $push: { teamIds: teamId } })
 }
 
 async function removeTeamFromUser(userId: string, teamId: string) {
-    const fetchedUser = await collections.users.findOne({ id: userId })
+    const fetchedUser = await collections.users.findOne({ _id: userId })
     const filteredTeams = fetchedUser.teamIds.filter(t => t !== teamId)
-    return await collections.users.updateOne({ id: userId }, { $set: { teamIds: filteredTeams } })
+    return await collections.users.updateOne({ _id: userId }, { $set: { teamIds: filteredTeams } })
 }
 
 export async function getTeam(teamId: string) {
-    const fetchedTeam = await collections.teams.findOne({ id: teamId })
-    if (fetchedTeam) {
-        const { _id: _, ...withoutId } = fetchedTeam
-        return withoutId
-    } else {
-        return null
-    }
+    return await collections.teams.findOne({ _id: teamId })
 }
 
-export async function createTeam(data: Omit<Team, 'createdAt' | 'id'>) {
+export async function createTeam(data: Omit<Team, 'createdAt' | '_id'>) {
     const newTeam = {
         ...data,
-        id: createID(),
+        _id: uid(),
         createdAt: new Date()
     }
     await collections.teams.insertOne(newTeam)
     return newTeam
 }
 
-export async function updateTeam(teamId: string, data: Omit<Team, 'createdAt' | 'id' | 'userId'>) {
-    return await collections.teams.updateOne({ id: teamId }, { $set: data })
+export async function updateTeam(teamId: string, data: Omit<Team, 'createdAt' | '_id' | 'userId'>) {
+    return await collections.teams.updateOne({ _id: teamId }, { $set: data })
 }
 
 export async function deleteTeam(teamId: string) {
-    const team = await collections.teams.findOne({ id: teamId })
+    const team = await collections.teams.findOne({ _id: teamId })
     removeTeamFromUser(team.userId, teamId)
-    return await collections.teams.deleteOne({ id: teamId })
+    return await collections.teams.deleteOne({ _id: teamId })
     
-}
-
-function createID() {
-    const time = Date.now()
-    const time1 = time.toString(16).slice(0, 4)
-    const time2 = time.toString(16).slice(4, 8)
-    const random1 = Math.floor(Math.random() * 16).toString(16)
-    const random2 = Math.floor(Math.random() * 16).toString(16)
-    const id = time2 + random1 + time1 + random2
-    return id
 }

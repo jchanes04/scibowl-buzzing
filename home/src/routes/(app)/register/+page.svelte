@@ -1,22 +1,24 @@
 <script lang="ts">
     import isSchoolNameTaken from "$lib/functions/isSchoolNameTaken";
-    import isUsernameTaken from "$lib/functions/isUsernameTaken";
+    import isEmailTaken from "$lib/functions/isEmailTaken";
     import { form as createForm, field } from 'svelte-forms'
     import { required, min, max } from 'svelte-forms/validators'
+    import { enhance } from "$app/forms"
+
     function passwordsMatch(){
-        return async (value: string) =>{ 
-            return { 
+        return () =>{ 
+            return {
                 valid: ($passwordConfirm.value==$password.value), 
                 name: 'password_match' 
             }
         };
     }
 
-    function usernameTaken(){
+    function emailTaken() {
         return async (value: string) =>{
             
-            let taken = await isUsernameTaken(value)
-            console.log(taken)
+            let taken = await isEmailTaken(value)
+
             return {
                 valid: !taken,
                 name:'taken'
@@ -24,7 +26,7 @@
         }
     }
 
-    function schoolNameTaken(){
+    function schoolNameTaken() {
         return async (value: string) =>{
             let taken = await isSchoolNameTaken(value)
             return {
@@ -34,30 +36,32 @@
         }
     }
     
-    const schoolName = field('schoolName', '', [required(),min(5),max(40),schoolNameTaken()])
-    const username = field('username','',[required(),min(5),max(40),usernameTaken()]) 
-    const password = field('password','', [required(),min(5),max(30),passwordsMatch()])
-    const passwordConfirm = field('passwordConfirm','',[required(),passwordsMatch()])
+    const schoolName = field('schoolName', '', [required(), min(5), max(80), schoolNameTaken()])
+    const email = field('email', '', [required(), min(10), max(50), emailTaken()]) 
+    const secondaryEmail = field('secondaryEmail', '', [required(), min(10), max(50), emailTaken()])
+    const password = field('password', '', [required(), min(5), passwordsMatch()])
+    const passwordConfirm = field('passwordConfirm', '', [required(), passwordsMatch()])
 
-    const form = createForm(schoolName, username, password,passwordConfirm)
+    const form = createForm(schoolName, email, secondaryEmail, password,passwordConfirm)
     $: errorMessage = errorMessages[$form.errors[0]]
-    $: console.log($form.errors)
-    $: feildsBlank = !((!!($username.value) && $schoolName.value) && ($password.value && $passwordConfirm.value))
+    $: fieldsBlank = !((!!($email.value) && $schoolName.value) && ($password.value && $passwordConfirm.value))
     const errorMessages = {
-        'schoolName.required':"School Name is required.",
-        'schoolName.min':"School Name must have at least 5 characters",
-        'schoolName.max':"School Name cannot exceed 40 characters",
+        'schoolName.required': "School Name is required",
+        'schoolName.min': "School Name must have at least 5 characters",
+        'schoolName.max': "School Name cannot exceed 80 characters",
         'schoolName.taken': "There is already a school registered under that name",
-        'username.required':"Username is required.",
-        'username.min':"Username must have at least 5 characters",
-        'username.max':"Username cannot exceed 40 characters",
-        'username.taken':"That username is taken.",
-        'password.required':"Password is required.",
-        'password.min':"Password must have at least 5 characters",
-        'password.max':"Password cannot exceed 30 characters",
-        'password.password_match':"Confirmation must match password feild",
-        'passwordConfirm.required':"Password confirmation is reqired",        
-        'passwordConfirm.password_match':"Confirmation must match password feild"
+        'email.required': "Email is required",
+        'email.min': "Email must have at least 10 characters",
+        'email.max': "Email cannot exceed 50 characters",
+        'email.taken': "Email is already taken",
+        'secondaryEmail.min': "Secondary email must have at least 10 characters",
+        'secondaryEmail.max': "Secondary email cannot exceed 50 characters",
+        'secondaryEmail.taken': "Secondary email is already taken",
+        'password.required': "Password is required",
+        'password.min': "Password must have at least 5 characters",
+        'password.password_match': "Confirmation must match password field",
+        'passwordConfirm.required': "Password confirmation is reqired",        
+        'passwordConfirm.password_match': "Confirmation must match password field"
     }
 </script>
 
@@ -67,20 +71,27 @@
 </svelte:head>
 
 <h1>Register your school</h1>
-<form action="/api/register" method="POST">
-    <label for='schoolName'>School Name</label><br />
+<form method="POST" use:enhance>
+    <label class="required" for='schoolName'>School Name</label>
     <input type='text' name='school-name' bind:value={$schoolName.value}/><br />
-    <label for='username'>Username</label><br />
-    <input type='text' name='username' bind:value={$username.value} /><br />
-    <label for='password'>Password</label><br />
+
+    <label class="required" for='email'>Email</label>
+    <p>This email will be used to log into the portal to manage teams</p>
+    <input type='text' name='email' bind:value={$email.value} /><br />
+
+    <label for='secondary-email'>Secondary Email</label>
+    <p>This email will also receive updates alongside the primary email</p>
+    <input type='text' name='secondary-email' bind:value={$secondaryEmail.value} /><br />
+
+    <label class="required" for='password'>Password</label>
     <input type='password' name='password' autocomplete="new-password"   bind:value={$password.value} on:input={()=>{$passwordConfirm.value = $passwordConfirm.value}}/><br />
-    <label for='confirm-password' >Confirm Password</label><br />
+    
+    <label class="required" for='confirm-password' >Confirm Password</label>
     <input type="password" name='confirm-password' autocomplete="new-password" bind:value={$passwordConfirm.value} on:input={()=>{$password.value = $password.value}}/><br />
     {#if errorMessage}
         <p id="error">{errorMessage}</p>
     {/if}
-    <button type="submit" disabled={!$form.valid || feildsBlank}>Submit</button>
-    
+    <button type="submit" disabled={!$form.valid || fieldsBlank}>Submit</button>
 </form>
 
 <style lang="scss">
@@ -88,7 +99,7 @@
         color: red;
     }
     form {
-        margin: 0 calc(5vw + 3em);
+        margin: 0 calc(5vw + 3em) 5em;
     }
     
     h1  {
@@ -172,5 +183,16 @@
     label {
         font-size: 20pt;
         margin: 1em 0 .1em 0;
+        display: block;
+
+        &.required::after {
+            content: ' *';
+            color: red;
+        }
+    }
+
+    p {
+        margin: 0.5em 0 0.5em 1em;
+        color: #333;
     }
 </style>

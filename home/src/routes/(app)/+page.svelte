@@ -97,8 +97,7 @@
             </div>
         </SubjectMenu>
     </section>
-    <a href='https://docs.google.com/document/d/1oibtrtJf7PxFfmF18t379Z9g2Bvv820_-snMUyBx1oM/edit?usp=sharing' target="_blank"><h2 class="info">Rules</h2></a>
-    <div style="height: min(150px, 20vh)"></div>
+    <a href='https://docs.google.com/document/d/1wYKWAL78MHUq8o7Xq5XZiCP5LirB9YQrTpYJhjPhLfI/edit?usp=sharing' target="_blank" rel="noreferrer"><h2 class="info">Rules</h2></a>
 </main>
 
 
@@ -189,7 +188,7 @@
     }
 
     main {
-        margin: 0 5vw;
+        margin: 0 5vw min(6em, 20vh);
     }
 
     p {

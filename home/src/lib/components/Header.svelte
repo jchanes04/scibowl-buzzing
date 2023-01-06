@@ -44,7 +44,7 @@
     <div id="right">
         {#if loggedIn}
             <nav>
-                <a href="/edit" sveltekit:prefetch>Edit Team</a>
+                <a href="/edit" data-sveltekit-prefetch="hover">Edit Team</a>
                 <a href="/api/logout" rel="external">Logout</a>
             </nav>
         {:else}
