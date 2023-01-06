@@ -2,7 +2,7 @@
     import deleteTeam from "$lib/functions/deleteTeam";
     import postTeam from "$lib/functions/postTeam";
     import type { Member, Team } from "$lib/mongo";
-    import warnStore from "$lib/stores/Warn";
+    import warnStore from "$lib/stores/warn";
     import { createEventDispatcher } from "svelte";
     export let teams: Team[]
     export let selectedTeamId: string

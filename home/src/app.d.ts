@@ -4,7 +4,7 @@
 // for information about these interfaces
 declare namespace App {
 	interface Locals {
-		userData: import('$lib/mongo').UserClean
+		user: import('$lib/mongo').UserClean
 	}
 
 	interface Platform {}

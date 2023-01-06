@@ -4,6 +4,7 @@
     import { form as createForm, field } from 'svelte-forms'
     import { required, min, max } from 'svelte-forms/validators'
     import { enhance } from "$app/forms"
+    import { page } from "$app/stores";
 
     function passwordsMatch(){
         return () =>{ 
@@ -35,10 +36,20 @@
             }
         }
     }
+
+    function emailFormatCorrect() {
+        return async (value:string) =>{
+            let valid = !!value.match(/.+@.+\..+/gi)
+            return {
+                valid: !valid,
+                name: 'incorrect_format'
+            }
+        }
+    }
     
     const schoolName = field('schoolName', '', [required(), min(5), max(80), schoolNameTaken()])
-    const email = field('email', '', [required(), min(10), max(50), emailTaken()]) 
-    const secondaryEmail = field('secondaryEmail', '', [required(), min(10), max(50), emailTaken()])
+    const email = field('email', '', [required(), min(10), max(50), emailTaken(),emailFormatCorrect()]) 
+    const secondaryEmail = field('secondaryEmail', '', [min(10), max(50), emailTaken(), emailFormatCorrect()])
     const password = field('password', '', [required(), min(5), passwordsMatch()])
     const passwordConfirm = field('passwordConfirm', '', [required(), passwordsMatch()])
 
@@ -54,9 +65,11 @@
         'email.min': "Email must have at least 10 characters",
         'email.max': "Email cannot exceed 50 characters",
         'email.taken': "Email is already taken",
+        'email.incorrect_format': "Email is incorrectly formatted",
         'secondaryEmail.min': "Secondary email must have at least 10 characters",
         'secondaryEmail.max': "Secondary email cannot exceed 50 characters",
         'secondaryEmail.taken': "Secondary email is already taken",
+        'secondaryEmail.incorrect_format': "Email is incorrectly formatted",
         'password.required': "Password is required",
         'password.min': "Password must have at least 5 characters",
         'password.password_match': "Confirmation must match password field",
@@ -72,6 +85,9 @@
 
 <h1>Register your school</h1>
 <form method="POST" use:enhance>
+    {#if $page.form?.error}
+        <p class="error">{$page.form.error}</p>
+    {/if}
     <label class="required" for='schoolName'>School Name</label>
     <input type='text' name='school-name' bind:value={$schoolName.value}/><br />
 

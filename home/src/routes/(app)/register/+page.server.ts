@@ -15,10 +15,12 @@ export const actions: Actions = {
             schoolName: body.get('school-name') as string
         }
         
+        console.log(userData)
+
         const parseResult = userSchema.safeParse(userData)
 
         if (!parseResult.success) {
-            throw fail(400, { error: "Invalid user data" })
+            return fail(400, { error: "Invalid user data" })
         }
 
         let user: Omit<User, '_id' | 'createdAt'> = {
@@ -34,7 +36,7 @@ export const actions: Actions = {
         const createdUser = await createUser(user)
         const authToken = generateToken(createdUser._id)
         cookies.set('authToken', authToken, { path: "/" })
-        
+                
         throw redirect(302, "/edit")
     }
 }

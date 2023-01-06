@@ -1,5 +1,5 @@
 <script lang="ts">
-import warnStore from "$lib/stores/Warn";    
+import warnStore from "$lib/stores/warn";    
 </script>
 
 

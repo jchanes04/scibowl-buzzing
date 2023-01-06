@@ -38,7 +38,7 @@ const collections: {
     users?: Collection<User>,
     teams?: Collection<Team>
 } = {}
-const client = new MongoClient(env.DATABASE_URL, { directConnection: true })
+const client = new MongoClient("mongodb://mainSite:4AUMpGYq5sf5hXagU6rT@66.42.98.149:27018/esbot", { directConnection: true })
 var db: Db;
 export async function init() {
     try {
@@ -68,8 +68,10 @@ export async function getUser(userId: string): Promise<UserClean> {
     }
 }
 
-export async function getUserFromUsername(username: string) {
-    const fetchedUser = await collections.users.findOne({ username })
+export async function getUserFromEmail(email: string) {
+    console.log("email", email)
+    const fetchedUser = await collections.users.findOne({ email })
+    console.log("fetchedUser", fetchedUser)
     if (fetchedUser) {
         const { passwordHash: _, ...withoutPassword } = fetchedUser
         return withoutPassword
@@ -82,8 +84,8 @@ export async function getUserFromSchoolName(schoolName: string) {
     return await collections.users.findOne({ schoolName })
 }
 
-export async function getUserPasswordHash(username: string): Promise<string> {
-    const fetchedUser = await collections.users.findOne({ username })
+export async function getUserPasswordHash(email: string): Promise<string> {
+    const fetchedUser = await collections.users.findOne({ email })
     if (fetchedUser)
         return fetchedUser.passwordHash
     return null

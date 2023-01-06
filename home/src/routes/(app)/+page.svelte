@@ -12,7 +12,7 @@
     <section id="hero">
         <h1>ESBOT</h1>
         <h3 style="margin-top: 0;">Enloe Science Bowl Online Tournament</h3>
-        <h3 style="margin-bottom: 0.2em;">Registration for ESBOT 2023 will open soon</h3>
+        <h3 style="margin-bottom: 0.2em;"><a href="/register">School registration</a> for ESBOT 2023 is open</h3>
         <br /><br />
     </section>
 

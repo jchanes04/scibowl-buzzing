@@ -2,7 +2,7 @@
     import updateTeam from "$lib/functions/updateTeam";
 
     import type { Member, Team } from "$lib/mongo";
-    import warnStore from "$lib/stores/Warn";
+    import warnStore from "$lib/stores/warn";
     import type { SvelteComponentTyped } from "svelte";
     import MemberEdit from "./MemberEdit.svelte";
 

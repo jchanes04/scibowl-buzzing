@@ -1,11 +1,8 @@
-import { RequestHandler } from "./$types"
+import { redirect } from "@sveltejs/kit"
+import type { RequestHandler } from "./$types"
 
-export async function GET() {
-    return new Response(null, {
-        headers: {
-            'Location': '/',
-            'Set-cookie': 'authToken=;HttpOnly;Path=/'
-        },
-        status: 302
-    })
+export const GET = async function({ cookies }) {
+    cookies.delete('authToken', { path: '/' })
+    
+    throw redirect(302, '/')
 } satisfies RequestHandler

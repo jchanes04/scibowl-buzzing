@@ -1,10 +1,10 @@
 <script lang="ts">
     import Header from "$lib/components/Header.svelte";
-    import { session } from '$app/stores'
+    import { userStore } from "$lib/stores/user";
 </script>
 
 <div class="main">
-    <Header loggedIn={$session.loggedIn}/>
+    <Header loggedIn={!!$userStore}/>
     <slot></slot>
 </div>
 

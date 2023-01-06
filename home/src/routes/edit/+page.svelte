@@ -1,40 +1,11 @@
-<script context="module" lang="ts">
-    throw new Error("@migration task: Check code was safely removed (https://github.com/sveltejs/kit/discussions/5774#discussioncomment-3292722)");
-
-    // import type { LoadInput, LoadOutput } from '@sveltejs/kit'
-    // export async function load({ session, fetch }: LoadInput): Promise<LoadOutput> {
-    //     if (!session.loggedIn) {
-    //         return {
-    //             status: 302,
-    //             redirect: "/register"
-    //         }
-    //     } else {
-    //         const teamIdsRes = await fetch('/api/teams')
-    //         const teamIds = await teamIdsRes.json() as string[]
-    //         const teamsRes = await Promise.all(teamIds.map(t => fetch('/api/teams/' + t)))
-    //         const resolvedTeams = teamsRes.filter(t => t.status === 200)
-    //         const teams = await Promise.all(resolvedTeams.map(t => t.json() as Promise<Team>))
-    //         return {
-    //             props: {
-    //                 teams
-    //             }
-    //         }
-    //     }
-    // }
-</script>
-
 <script lang="ts">
-    throw new Error("@migration task: Add data prop (https://github.com/sveltejs/kit/discussions/5774#discussioncomment-3292707)");
-
-    import MemberMenu from '$lib/components/MemberMenu.svelte';
-    import Payment from '$lib/components/Payment.svelte';
-    import Warn from '$lib/components/Warn.svelte';
-    import TeamSelect from "$lib/components/TeamSelect.svelte";
     import type { Team } from '$lib/mongo';
-    import warnStore from '$lib/stores/Warn';
     import type { SvelteComponentTyped } from 'svelte';
+    import type { PageData } from './$types';
 
-    export let teams: Team[]
+    export let data: PageData
+
+    let { teams } = data
     let selectedTeam: Team = teams[0]
     let editingTeamName = false
     let teamNameWrapper: HTMLElement
@@ -80,7 +51,8 @@
 </svelte:head>
 
 <svelte:window on:click={handleWindowClick}></svelte:window>
-<div>
+<h1>Editing team information will be available soon.</h1>
+<!-- <div>
     {#if !($warnStore.state=='closed')}
         <div id="background-dim"></div>
         <Warn />
@@ -106,7 +78,7 @@
             </div>
         {:else} 
             {#if false}
-                <!-- <Payment bind:teams></Payment> -->
+                <Payment bind:teams></Payment>
             {:else}
                 <div>
                     <h2>No team selected. </h2>
@@ -116,7 +88,7 @@
         {/if}
         
     </main>
-</div>
+</div> -->
 <style lang="scss">
     
     h2{

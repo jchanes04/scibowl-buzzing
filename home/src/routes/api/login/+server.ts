@@ -1,29 +1,35 @@
 import { generateToken } from "$lib/authentication";
-import { getUserFromUsername, getUserPasswordHash } from "$lib/mongo";
-import { RequestHandler } from "./$types"
+import { getUserFromEmail, getUserPasswordHash } from "$lib/mongo";
+import type { RequestHandler } from "./$types"
 import argon2 from "argon2"
+import { redirect } from "@sveltejs/kit";
 
-export async function POST({ request }) {
+export const POST = async function({ request, cookies }) {
     const body = await request.formData()
-    const username = body.get('username') as string
+    const email = body.get('email') as string
     const password = body.get('password') as string
-    const passwordHash = await getUserPasswordHash(username)
-
-    console.dir({
-        username,
-        password,
-        passwordHash
-    })
+    const passwordHash = await getUserPasswordHash(email)
+    console.log("pass", typeof password)
+    console.log("passwordHash", typeof passwordHash)
 
     if (passwordHash && await argon2.verify(passwordHash, password)) {
-        const userData = await getUserFromUsername(username)
-        const authToken = generateToken(userData.id)
-        return new Response(JSON.stringify({ correct: true }), {
+        console.log('valid')
+        const userData = await getUserFromEmail(email)
+        console.log(userData)
+        const authToken = generateToken(userData._id)
+
+        return new Response(null, {
+            status: 302,
             headers: {
-                'Set-cookie': `authToken=${authToken};Path=/`
+                Location: '/',
+                "Set-Cookie": `authToken=${authToken};Path=/`
             }
         })
+
+        // cookies.set('authToken', authToken, { path: '/' })
+        // throw redirect(302, '/edit')
     } else {
-        return new Response(JSON.stringify({ correct: false }))
+        console.log('invalid')
+        throw redirect(302, "/")
     }
 } satisfies RequestHandler

@@ -4,35 +4,13 @@
     let loginMenuVisible = false
     let loginMenuWrapper: HTMLElement
 
-    let username = ""
+    let email = ""
     let password = ""
     let error = null
 
     function handleWindowClick(e: MouseEvent) {
         if (loginMenuWrapper && !loginMenuWrapper.contains(e.target as Node)) {
             loginMenuVisible = false
-        }
-    }
-
-    async function login() {
-        const res = await fetch('/api/login', {
-            body: new URLSearchParams({
-                username,
-                password
-            }),
-            method: "POST"
-        })
-
-        if ((await res.json()).correct) {
-            window.location.href = "/edit"
-        } else {
-            error = "Username or password is incorrect"
-        }
-    }
-
-    function handleKeypress(e: KeyboardEvent) {
-        if (e.code === 'Enter') {
-            login()
         }
     }
 </script>
@@ -44,7 +22,7 @@
     <div id="right">
         {#if loggedIn}
             <nav>
-                <a href="/edit" data-sveltekit-prefetch="hover">Edit Team</a>
+                <a href="/edit">Edit Team</a>
                 <a href="/api/logout" rel="external">Logout</a>
             </nav>
         {:else}
@@ -52,17 +30,16 @@
                 <!-- <a href="/register">Register Now</a> -->
                 <div class="login-menu-wrapper" bind:this={loginMenuWrapper}>
                     <span on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</span>
-                    <div class="login-menu" class:visible={loginMenuVisible}>
-                        
-                        <label for="username">Username</label>
-                        <input id="username" type="text" bind:value={username} autocomplete="off" on:keypress={handleKeypress} />
+                    <form action="/api/login" method="POST" class="login-menu" class:visible={loginMenuVisible}>
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="text" bind:value={email} autocomplete="off" />
                         <label for="password">Password</label>
-                        <input id="password" type="password" bind:value={password} autocomplete="off" on:keypress={handleKeypress} />
-                        <button on:click={login}>Login</button>
+                        <input id="password" name="password" type="password" bind:value={password} autocomplete="off" />
+                        <button type="submit">Login</button>
                         {#if error}
                             <p class="error">{error}</p>
                         {/if}
-                    </div>
+                    </form>
                 </div>
             </nav>
         {/if}
