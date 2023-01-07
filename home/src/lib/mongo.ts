@@ -5,7 +5,8 @@ export interface User {
     passwordHash: string,
     schoolName: string,
     teamIds: string[],
-    createdAt: Date
+    createdAt: Date,
+    admin?: boolean
 }
 
 export type UserClean = Omit<User, 'passwordHash'>
@@ -31,6 +32,7 @@ export type Member = {
 import { Collection, Db, MongoClient } from 'mongodb'
 import ShortUniqueId from 'short-unique-id'
 import { env } from "$env/dynamic/private"
+import { dev } from '$app/environment'
 
 const uid = new ShortUniqueId({ dictionary: "alphanum", length: 10 })
 
@@ -44,7 +46,7 @@ export async function init() {
     try {
         console.log("Connecting...")
         await client.connect()
-        db = client.db("esbot")
+        db = client.db(dev ? 'esbotDev' : 'esbot')
         collections.teams = db.collection('teams')
         collections.users = db.collection('users')
         console.log('Connected')
@@ -68,10 +70,17 @@ export async function getUser(userId: string): Promise<UserClean> {
     }
 }
 
+export async function getAllUsers(): Promise<UserClean[]> {
+    const cursor = collections.users.find({})
+    const results = await cursor.toArray()
+    return results.map(x => {
+        const { passwordHash: _, ...withoutPassword } = x
+        return withoutPassword
+    })
+}
+
 export async function getUserFromEmail(email: string) {
-    console.log("email", email)
     const fetchedUser = await collections.users.findOne({ email })
-    console.log("fetchedUser", fetchedUser)
     if (fetchedUser) {
         const { passwordHash: _, ...withoutPassword } = fetchedUser
         return withoutPassword
@@ -105,10 +114,16 @@ export async function addTeamToUser(userId: string, teamId: string) {
     return await collections.users.updateOne({ _id: userId }, { $push: { teamIds: teamId } })
 }
 
-async function removeTeamFromUser(userId: string, teamId: string) {
+export async function removeTeamFromUser(userId: string, teamId: string) {
     const fetchedUser = await collections.users.findOne({ _id: userId })
     const filteredTeams = fetchedUser.teamIds.filter(t => t !== teamId)
     return await collections.users.updateOne({ _id: userId }, { $set: { teamIds: filteredTeams } })
+}
+
+export async function updateUser(userId: string, setData: Partial<Omit<User, 'createdAt' | '_id' | 'passwordHash'>>, unsetData: {
+    [K in keyof Omit<User, 'createdAt' | '_id' | 'passwordHash'>]?: true
+} = {}) {
+    return await collections.users.updateOne({ _id: userId }, { $set: setData, $unset: unsetData })
 }
 
 export async function getTeam(teamId: string) {
@@ -125,7 +140,7 @@ export async function createTeam(data: Omit<Team, 'createdAt' | '_id'>) {
     return newTeam
 }
 
-export async function updateTeam(teamId: string, data: Omit<Team, 'createdAt' | '_id' | 'userId'>) {
+export async function updateTeam(teamId: string, data: Partial<Omit<Team, 'createdAt' | '_id' | 'userId'>>) {
     return await collections.teams.updateOne({ _id: teamId }, { $set: data })
 }
 

@@ -1,4 +1,9 @@
 <script lang="ts">
+    import { enhance, type SubmitFunction } from "$app/forms";
+    import { invalidateAll } from "$app/navigation";
+    import { page } from "$app/stores";
+
+
     export let loggedIn: boolean
 
     let loginMenuVisible = false
@@ -6,12 +11,19 @@
 
     let email = ""
     let password = ""
-    let error = null
+    $: error = $page.form?.error
 
     function handleWindowClick(e: MouseEvent) {
         if (loginMenuWrapper && !loginMenuWrapper.contains(e.target as Node)) {
             loginMenuVisible = false
         }
+    }
+
+    const handleSubmit: SubmitFunction = () => async ({ update, result }) => {
+        if (result.type === "redirect") {
+            await invalidateAll();
+        }
+        await update();
     }
 </script>
 
@@ -23,14 +35,16 @@
         {#if loggedIn}
             <nav>
                 <a href="/edit">Edit Team</a>
-                <a href="/api/logout" rel="external">Logout</a>
+                <form action="/?/logout" method="POST">
+                    <button class="login" type="submit">Logout</button>
+                </form>
             </nav>
         {:else}
             <nav>
-                <!-- <a href="/register">Register Now</a> -->
+                <a href="/register">Register Now</a>
                 <div class="login-menu-wrapper" bind:this={loginMenuWrapper}>
-                    <span on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</span>
-                    <form action="/api/login" method="POST" class="login-menu" class:visible={loginMenuVisible}>
+                    <button class="login" on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</button>
+                    <form action="/?/login" method="POST" class="login-menu" class:visible={loginMenuVisible} use:enhance={handleSubmit}>
                         <label for="email">Email</label>
                         <input id="email" name="email" type="text" bind:value={email} autocomplete="off" />
                         <label for="password">Password</label>
@@ -81,7 +95,8 @@
             font-size: 24px;
         }
     }
-    button {
+
+    button:not(.login) {
         padding: 0.5em;
         margin: .5em auto;
         width: 100%;
@@ -107,12 +122,27 @@
         flex-direction: row;
         gap: 1em;
 
-        span, a {
+        a {
             text-decoration: none;
             color: inherit;
             transition: color 0.3s;
             cursor: pointer;
             white-space: nowrap;
+
+            &:hover {
+                color: var(--color-2)
+            }
+        }
+
+        button.login {
+            background: none;
+            border: none;
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: inherit;
 
             &:hover {
                 color: var(--color-2)

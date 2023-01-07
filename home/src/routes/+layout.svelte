@@ -4,8 +4,7 @@
 
     export let data: LayoutServerData
 
-    const { user } = data
-    $userStore = user
+    $: $userStore = data.user
 </script>
 
 <slot></slot>

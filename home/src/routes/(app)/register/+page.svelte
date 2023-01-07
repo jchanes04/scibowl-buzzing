@@ -3,8 +3,9 @@
     import isEmailTaken from "$lib/functions/isEmailTaken";
     import { form as createForm, field } from 'svelte-forms'
     import { required, min, max } from 'svelte-forms/validators'
-    import { enhance } from "$app/forms"
+    import { enhance, type SubmitFunction } from "$app/forms"
     import { page } from "$app/stores";
+    import { invalidateAll } from "$app/navigation";
 
     function passwordsMatch(){
         return () =>{ 
@@ -76,6 +77,13 @@
         'passwordConfirm.required': "Password confirmation is reqired",        
         'passwordConfirm.password_match': "Confirmation must match password field"
     }
+
+    const handleSubmit: SubmitFunction = () => async ({ update, result }) => {
+        if (result.type === "redirect") {
+            await invalidateAll();
+        }
+        await update();
+    }
 </script>
 
 <svelte:head>
@@ -84,7 +92,7 @@
 </svelte:head>
 
 <h1>Register your school</h1>
-<form method="POST" use:enhance>
+<form method="POST" use:enhance={handleSubmit}>
     {#if $page.form?.error}
         <p class="error">{$page.form.error}</p>
     {/if}

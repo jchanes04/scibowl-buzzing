@@ -14,9 +14,7 @@ export const actions: Actions = {
             password: body.get('password') as string,
             schoolName: body.get('school-name') as string
         }
-        
-        console.log(userData)
-
+    
         const parseResult = userSchema.safeParse(userData)
 
         if (!parseResult.success) {
