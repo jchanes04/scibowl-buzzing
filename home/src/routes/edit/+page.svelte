@@ -2,6 +2,8 @@
     import type { Team } from '$lib/mongo';
     import type { SvelteComponentTyped } from 'svelte';
     import type { PageData } from './$types';
+    import warnStore from '$lib/stores/warn';
+    import Warn from '$lib/components/Warn.svelte';
 
     export let data: PageData
 
@@ -51,14 +53,15 @@
 </svelte:head>
 
 <svelte:window on:click={handleWindowClick}></svelte:window>
-<h1>Editing team information will be available soon.</h1>
-<!-- <div>
+
+<div>
     {#if !($warnStore.state=='closed')}
         <div id="background-dim"></div>
         <Warn />
     {/if}
     <main>
-        <div id='teamSelect'>
+        <h1>Editing team information will be available soon.</h1>
+        <!-- <div id='teamSelect'>
             <TeamSelect bind:teams={teams} on:select={handleTeamSelect} selectedTeamId={selectedTeam?.id || "payment"} />
         </div>
         <div id='mobileTeamSelect' class:open={mobileMenuOpen} bind:this={mobileMenuElement}>
@@ -86,9 +89,9 @@
                 </div>
             {/if}
         {/if}
-        
+         -->
     </main>
-</div> -->
+</div>
 <style lang="scss">
     
     h2{

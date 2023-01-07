@@ -49,7 +49,7 @@
     
     const schoolName = field('schoolName', '', [required(), min(5), max(80), schoolNameTaken()])
     const email = field('email', '', [required(), min(10), max(50), emailTaken(),emailFormatCorrect()]) 
-    const secondaryEmail = field('secondaryEmail', '', [min(10), max(50), emailTaken(), emailFormatCorrect()])
+    const secondaryEmail = field('secondaryEmail', '', [max(50), emailTaken(), emailFormatCorrect()])
     const password = field('password', '', [required(), min(5), passwordsMatch()])
     const passwordConfirm = field('passwordConfirm', '', [required(), passwordsMatch()])
 
