@@ -29,7 +29,7 @@
     <section class='bubble'>
         <h2>Tournament Information</h2>
         <p>
-            ESBOT 2023 will be held on <b><time datetime="2022-03-25">March 25th</time></b>.
+            ESBOT 2023 will be held on <b><time datetime="2022-03-26">March 26th</time></b>.
             The tournament will be held in the style of <b>in-person Science Bowl</b> through an online medium.
             The format will consist of a round-robin portion followed by a double elimination tournament.
         </p>
