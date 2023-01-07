@@ -38,7 +38,7 @@ const collections: {
     users?: Collection<User>,
     teams?: Collection<Team>
 } = {}
-const client = new MongoClient("mongodb://mainSite:4AUMpGYq5sf5hXagU6rT@66.42.98.149:27018/esbot", { directConnection: true })
+const client = new MongoClient(env.DATABASE_URL, { directConnection: true })
 var db: Db;
 export async function init() {
     try {
