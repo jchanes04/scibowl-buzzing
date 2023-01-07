@@ -35,7 +35,7 @@
         </p>
         <br />
         <p>
-            ESBOT will be run through the <b>Discord server</b> which will be set up soon. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
+            ESBOT will be run through the <b>Discord server</b> which can be found <a href="https://discord.gg/YG468EnsJ7">here</a>. Each match will be run over Discord voice chat, with Zoom as a fallback in case of technical difficulties.
             <b>All competitors should join</b> the Discord server as soon as possible in order to stay up to date and be ready for competition day.
         </p>
         <br />
@@ -44,22 +44,22 @@
         </p>
         <br />
         <p>
-            There will be a $15 registration fee for each team competing.
+            There will be a $20 registration fee for each team competing.
         </p>
     </section>
-    <section class='bubble'>
+    <!-- <section class='bubble'>
         <h2>Skilled Writers</h2>
         <div id="staff">
-            <StaffCard name="Colin Hanes" grade="Junior" categories="Physics, Chemistry">- USAPhO Bronze Medalist<br/>- USNCO Semifinalist <br/>- Science Olympiad National Medalist<br/>- USACO Silver division<br />- USABO Semifinalist</StaffCard>
-            <StaffCard name="Rohit Hari" grade="Junior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honorable Mention<br/>- USAPhO Semifinalist<br/>- AIME Qualifer</StaffCard>
-            <StaffCard name="Brian Zhang" grade="Sophomore" categories="Math, Physics, Earth and Space">- US Team: International Astronomy Olympiad<br/>- AIME Qualifer</StaffCard>
-            <StaffCard name="Rishabh Bedidha" grade="Junior" categories="Biology, Math">- USABO Semifinalist<br/>- Science Olympiad National Medalist<br/>- AIME Qualifier</StaffCard>
-            <StaffCard name="Nikhil Vemuri" grade="Freshman" categories="Chemistry">- National Science Olympiad Invitational Medalist</StaffCard>
-            <StaffCard name="Thanush Patlolla" grade="Freshman" categories="Physics, Math">- AIME Qualifier<br/>- USACO Silver</StaffCard>
-            <StaffCard name="Sukrith Velmineti" grade="Junior" categories="Earth and Space, Math">- AIME Qualifier<br/>- National Science Olympiad Invitational Medalist</StaffCard>
-            <StaffCard name="Vedang Singhal" grade="Junior" categories="Biology, Earth and Space">- USABO Semifinalist<br />- National Science Olympiad Invitational Medalist<br/>- HOSA National Tournament Competitor</StaffCard>
+            <StaffCard name="Colin Hanes" grade="Senior" categories="Physics, Chemistry">- USAPhO Bronze Medalist<br/>- USNCO Semifinalist <br/>- Science Olympiad National Medalist<br/>- USACO Silver division<br />- USABO Semifinalist</StaffCard>
+            <StaffCard name="Rohit Hari" grade="Senior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honors<br/>- USAPhO Semifinalist<br/>- AIME Qualifer</StaffCard>
+            <StaffCard name="Brian Zhang" grade="Junior" categories="Math, Physics, Earth and Space">- US Team: International Astronomy Olympiad<br/>- AIME Qualifer</StaffCard>
+            <StaffCard name="Rishabh Bedidha" grade="Senior" categories="Biology, Math">- USABO Semifinalist<br/>- Science Olympiad National Medalist<br/>- AIME Qualifier</StaffCard>
+            <StaffCard name="Nikhil Vemuri" grade="Sophomore" categories="Chemistry">- National Science Olympiad Invitational Medalist</StaffCard>
+            <StaffCard name="Thanush Patlolla" grade="Sophomore" categories="Physics, Math">- AIME Qualifier<br/>- USACO Silver</StaffCard>
+            <StaffCard name="Sukrith Velmineti" grade="Senior" categories="Earth and Space, Math">- AIME Qualifier<br/>- National Science Olympiad Invitational Medalist</StaffCard>
+            <StaffCard name="Vedang Singhal" grade="Senior" categories="Biology, Earth and Space">- USABO Semifinalist<br />- National Science Olympiad Invitational Medalist<br/>- HOSA National Tournament Competitor</StaffCard>
         </div>
-    </section>
+    </section> -->
     <section class='bubble'>
         <h2>Samples</h2>
         <SubjectMenu>

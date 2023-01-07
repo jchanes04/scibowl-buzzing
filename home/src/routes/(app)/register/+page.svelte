@@ -39,9 +39,9 @@
 
     function emailFormatCorrect() {
         return async (value:string) =>{
-            let valid = !!value.match(/.+@.+\..+/gi)
+            let valid = /.+@.+\..+/gi.test(value) || value === ""
             return {
-                valid: !valid,
+                valid: valid,
                 name: 'incorrect_format'
             }
         }
@@ -69,7 +69,7 @@
         'secondaryEmail.min': "Secondary email must have at least 10 characters",
         'secondaryEmail.max': "Secondary email cannot exceed 50 characters",
         'secondaryEmail.taken': "Secondary email is already taken",
-        'secondaryEmail.incorrect_format': "Email is incorrectly formatted",
+        'secondaryEmail.incorrect_format': "Secondary email is incorrectly formatted",
         'password.required': "Password is required",
         'password.min': "Password must have at least 5 characters",
         'password.password_match': "Confirmation must match password field",
