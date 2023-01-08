@@ -3,6 +3,10 @@
     import type { Writable } from "svelte/store";
     import { getContext } from "svelte";
     import EditField from "./EditField.svelte";
+    import ConfirmEmailSend from "./Confirm.svelte";
+    import Message from "./Message.svelte";
+    import Confirm from "./Confirm.svelte";
+    import { invalidateAll } from "$app/navigation";
 
     export let user: UserClean
 
@@ -75,6 +79,61 @@
             }
         }
     }
+
+    function handleSendVerificationLink() {
+        $modalStore = {
+            component: ConfirmEmailSend,
+            props: {
+                headerText: "Confirm Email Send",
+                message: `Are you sure you want to send another verification link to ${user.schoolName} at ${user.email}? This will invalidate any link that have already been sent.`,
+                cancelCallback: () => {
+                    $modalStore = null
+                },
+                confirmCallback: async () => {
+                    const res = await fetch("/api/verify", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            userId: user._id
+                        })
+                    })
+                    if (res.ok) {
+                        $modalStore = null
+                    } else {
+                        $modalStore = {
+                            component: Message,
+                            props: {
+                                headerText: "Failure",
+                                message: `Failed to send email to ${user.email}`,
+                                closeCallback: () => {
+                                    $modalStore = null
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function handleDeleteUser() {
+        $modalStore = {
+            component: Confirm,
+            props: {
+                headerText: "Confirm Delete",
+                message: `Are you sure you want to delete ${user.schoolName}?`,
+                cancelCallback: () => {
+                    $modalStore = null
+                },
+                confirmCallback: async () => {
+                    await fetch(`/api/user/${user._id}`, {
+                        method: "DELETE"
+                    })
+                    invalidateAll()
+                    $modalStore = null
+                }
+            }
+        }
+    }
 </script>
 
 <div class="user-info">
@@ -102,6 +161,8 @@
         <button on:click={handleRenameSchool}>Rename School</button>
         <button on:click={handleChangeEmail}>Change Email</button>
         <button on:click={handleChangeSecondaryEmail}>Change Secondary Email</button>
+        <button on:click={handleSendVerificationLink}>Send Verification Link</button>
+        <button on:click={handleDeleteUser}>Delete User</button>
     </div>
 </div>
 
@@ -125,6 +186,13 @@
 
     ul {
         list-style: none;
+    }
+
+    .buttons {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 1em;
     }
 
     button {

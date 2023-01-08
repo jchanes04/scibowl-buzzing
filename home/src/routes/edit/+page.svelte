@@ -4,6 +4,7 @@
     import type { PageData } from './$types';
     import warnStore from '$lib/stores/warn';
     import Warn from '$lib/components/Warn.svelte';
+    import { userStore } from '$lib/stores/user';
 
     export let data: PageData
 
@@ -60,7 +61,15 @@
         <Warn />
     {/if}
     <main>
-        <h1>Editing team information will be available soon.</h1>
+        {#if $userStore.verified}
+            <h1>Editing team information will be available soon</h1>
+        {:else}
+            <h1>You have not verified your email yet</h1>
+            <p class="message">
+                After registering, you should have received an email with a link to verify your account sent to your primary email (the one used to log in).
+                If you have not received a verification email, please reach out to the tournament orgaizers on Discord or at <a href="mailto:enloescibowl@gmail.com">enloescibowl@gmail.com</a>
+            </p>
+        {/if}
         <!-- <div id='teamSelect'>
             <TeamSelect bind:teams={teams} on:select={handleTeamSelect} selectedTeamId={selectedTeam?.id || "payment"} />
         </div>
@@ -93,7 +102,16 @@
     </main>
 </div>
 <style lang="scss">
-    
+    h1 {
+        text-align: center;
+    }
+
+    .message {
+        max-width: 70ch;
+        text-align: center;
+        margin: auto;
+    }
+
     h2{
         display: inline-block;
         margin: .5em 0em;
@@ -177,24 +195,24 @@
     }
 
 
-    main {
-        display: grid;
-        height: 100%;
-        max-width: 100vw;
-        grid-template-columns: minmax(300px, 1fr)  3fr;
-        grid-template-rows: 1fr;
-        padding-top: 2em;
-        column-gap: 2em;
-        box-sizing: border-box;
-        @media (max-width:650px) {
-            grid-template-columns: 1fr;
-        }
-    }
+    // main {
+    //     display: grid;
+    //     height: 100%;
+    //     max-width: 100vw;
+    //     grid-template-columns: minmax(300px, 1fr)  3fr;
+    //     grid-template-rows: 1fr;
+    //     padding-top: 2em;
+    //     column-gap: 2em;
+    //     box-sizing: border-box;
+    //     @media (max-width:650px) {
+    //         grid-template-columns: 1fr;
+    //     }
+    // }
 
-    h1 {
-       display: inline-block;
-       cursor: pointer;
-    }
+    // h1 {
+    //    display: inline-block;
+    //    cursor: pointer;
+    // }
 
     .icon {
         display: inline-block;

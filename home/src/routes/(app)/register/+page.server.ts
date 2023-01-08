@@ -1,9 +1,10 @@
 import type { Actions } from "./$types";
 import argon2 from 'argon2'
-import { createUser, type User } from "$lib/mongo";
+import { createUser, generateConfirmationCode, type User } from "$lib/mongo";
 import { generateToken } from "$lib/authentication";
 import { redirect, fail } from "@sveltejs/kit";
 import { userSchema } from "$lib/schemas/user";
+import { sendVerificationEmail } from "$lib/mail";
 
 export const actions: Actions = {
     default: async ({ request, cookies }) => {
@@ -25,13 +26,17 @@ export const actions: Actions = {
             email: parseResult.data.email,
             passwordHash: await argon2.hash(parseResult.data.password),
             schoolName: parseResult.data.schoolName,
-            teamIds: []
+            teamIds: [],
+            verified: false
         }
 
         if (parseResult.data.secondaryEmail)
             user.secondaryEmail = parseResult.data.secondaryEmail
 
         const createdUser = await createUser(user)
+        const code = await generateConfirmationCode(createdUser._id)
+        await sendVerificationEmail(createdUser.email, code)
+
         const authToken = generateToken(createdUser._id)
         cookies.set('authToken', authToken, { path: "/" })
                 

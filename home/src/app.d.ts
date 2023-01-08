@@ -10,6 +10,7 @@ declare namespace App {
 	interface Platform {}
 
 	interface PrivateEnv {
-		DATABASE_URL: string
+		DATABASE_URL: string,
+		SENDGRID_API_KEY: string
 	}
 }

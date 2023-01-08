@@ -43,6 +43,7 @@
     .users {
         display: flex;
         flex-direction: column;
+        gap: 1em;
         margin: 1em auto;
         padding: 3em;
         max-width: 800px;
