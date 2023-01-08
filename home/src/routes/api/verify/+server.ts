@@ -1,5 +1,5 @@
 import { sendVerificationEmail } from "$lib/mail"
-import { generateConfirmationCode } from "$lib/mongo"
+import { generateConfirmationCode, getUser } from "$lib/mongo"
 import type { RequestHandler } from "./$types"
 
 export const POST = async function({ locals, request }) {
@@ -11,9 +11,10 @@ export const POST = async function({ locals, request }) {
     }
 
     const { userId } = await request.json()
+    const userData = await getUser(userId)
     const code = await generateConfirmationCode(userId)
 
-    await sendVerificationEmail(locals.user.email, code)
+    await sendVerificationEmail(userData.email, code)
     return new Response(null, {
         status: 200
     })

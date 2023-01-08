@@ -50,13 +50,13 @@
     }
 
     .modal-wrapper {
-        position: absolute;
+        position: fixed;
         inset: 0;
         background: rgba(64, 64, 64, 0.5);
     }
 
     .modal {
-        position: absolute;
+        position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
