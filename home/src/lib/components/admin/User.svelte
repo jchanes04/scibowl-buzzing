@@ -137,7 +137,12 @@
 </script>
 
 <div class="user-info">
-    <h2>{user.schoolName}</h2>
+    <h2>
+        {user.schoolName}
+        {#if user.verified}
+            ✔️
+        {/if}
+    </h2>
     <div class="flex-wrapper">
         <div>
             <p><b>Email</b>: {user.email}</p>
