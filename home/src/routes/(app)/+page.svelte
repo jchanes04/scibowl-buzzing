@@ -54,16 +54,17 @@
             <StaffCard name="Rohit Hari" grade="Senior" categories="Earth and Space, Chemistry">- US Team: International Earth Science Olympiad<br />- USNCO Honors<br/>- USAPhO Semifinalist<br/>- AIME Qualifer</StaffCard>
             <StaffCard name="Rishabh Bedidha" grade="Senior" categories="Biology, Math">- USABO Semifinalist<br/>- Science Olympiad National Medalist<br/>- AIME Qualifier</StaffCard>
             <StaffCard name="Brian Zhang" grade="Junior" categories="Math, Physics, Earth and Space">- US Team: International Astronomy Olympiad Bronze Medal<br/>- AIME Qualifer<br />- Mathcounts Nationals Qualifier</StaffCard>
-            <StaffCard name="Nikhil Vemuri" grade="Sophomore" categories="Chemistry">- National Science Olympiad Invitational Medalist</StaffCard>
+            <StaffCard name="Nikhil Vemuri" grade="Sophomore" categories="Chemistry">- USNCO Semifinalist<br />- National Science Olympiad Invitational Medalist</StaffCard>
             <StaffCard name="Sukrith Velmineti" grade="Senior" categories="Earth and Space, Math">- AIME Qualifier<br/>- National Science Olympiad Invitational Medalist<br />- Canada Team: International Olympiad in Linguistics</StaffCard>
             <StaffCard name="Vedang Singhal" grade="Senior" categories="Biology, Earth and Space">- USABO Top 125<br />-USESO Camper<br />- National Science Olympiad Invitational Medalist<br/>- HOSA Internationals Top 10</StaffCard>
             <StaffCard name="Siddharth Sivakumar" grade="Senior" categories="Earth and Space">- National Science Olympiad Invitational Medalist</StaffCard>
-            <StaffCard name="Andy Sun" grade="Senior" categories="Math">- AIME Qualifier<br />- National Science Olympiad Invitational Medalist<br />- AMC 8 Honor Roll</StaffCard>
+            <StaffCard name="Andy Sun" grade="Sophomore" categories="Math">- AIME Qualifier<br />- National Science Olympiad Invitational Medalist<br />- AMC 8 Honor Roll</StaffCard>
             <StaffCard name="Serena Zhang" grade="Freshman" categories="Biology">- Science Olympiad National Qualifier<br />- Science Olympiad State Medalist</StaffCard>
-            <StaffCard name="Brandon Yang" grade="Freshman" categories="Math, Physics">- Mathcounts State Finalist<br />- Science Olympiad National Qualifier<br />- AMC 8 Honor Roll<br />- Ready, Set, App! Seminfinalist</StaffCard>
+            <StaffCard name="Brandon Yang" grade="Sophomore" categories="Math, Physics">- Mathcounts State Finalist<br />- Science Olympiad National Qualifier<br />- AMC 8 Honor Roll<br />- Ready, Set, App! Seminfinalist</StaffCard>
+            <StaffCard name="Jerry Cao-Xue" grade="Freshman" categories="Biology, Math">- AIME Qualifier<br />- Science Olympiad State Medalist</StaffCard>
+            <StaffCard name="Angelina Li" grade="Freshman" categories="Earth and Space">- Science Olympiad National Qualifer<br />- Science Olympiad State Medalist</StaffCard>
             <StaffCard name="Thanush Patlolla" grade="Sophomore" categories="Physics, Math"></StaffCard>
-            <StaffCard name="Jerry Cao-Xue" grade="Freshman" categories="Biology, Math"></StaffCard>
-            <StaffCard name="Angelina Li" grade="Freshman" categories="Earth and Space"></StaffCard>
+            <StaffCard name="Kaiwen Yao" grade="Freshman" categories="Physics, Chemistry"></StaffCard>
         </div>
     </section>
     <section class='bubble'>
