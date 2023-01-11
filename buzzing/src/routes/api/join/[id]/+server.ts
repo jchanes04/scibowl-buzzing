@@ -1,14 +1,13 @@
-import type { RequestEvent } from "@sveltejs/kit";
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from "./$types";
 import { getGame } from "$lib/server";
 
-export function get({ params }: RequestEvent) {
+export const GET = async function({ params }) {
     const { id } = params
 
     const game = getGame(id)
 
-    if (!game) return {
-        body: {}
-    }
+    if (!game) return json({})
     
     const memberNames = game.members.map(x => x.name)
     const settings = game.settings
@@ -22,4 +21,4 @@ export function get({ params }: RequestEvent) {
             teams
         })
     )
-}
+} satisfies RequestHandler

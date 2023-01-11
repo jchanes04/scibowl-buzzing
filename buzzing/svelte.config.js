@@ -1,7 +1,5 @@
 import * as preprocess from 'svelte-preprocess';
 import node from '@sveltejs/adapter-node'
-import key from './localhost-key.js'
-import cert from './localhost.js'
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -14,14 +12,6 @@ const config = {
 		adapter: node(),
 		files: {
 			lib: "src/lib"
-		},
-		vite: {
-			server: {
-				https: {
-					key,
-					cert   
-				}
-			}
 		}
 	}
 };

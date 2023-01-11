@@ -1,8 +1,9 @@
 import { generateToken } from "$lib/authentication";
-import type { RequestEvent } from "@sveltejs/kit";
+import type { RequestHandler } from "./$types";
 import { createNewGame } from "$lib/server";
+import { redirect } from "@sveltejs/kit";
 
-export async function post({ request }: RequestEvent) {
+export const POST = async function({ request, cookies }) {
     try {
         const body = await request.formData()
         const ownerName = body.get("owner-name") as string
@@ -24,20 +25,14 @@ export async function post({ request }: RequestEvent) {
         const game = createNewGame(ownerName, gameData)
 
         const authToken = generateToken({ memberId: game.moderators[0].id, gameId: game.id })
-        return {
-            headers: {
-                'Location': "/game/" + game.id,
-                'Set-Cookie': "authToken=" + authToken + ";Path=/;Domain=" + (import.meta.env.VITE_HOST_URL as string).replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
-            },
-            status: 302
-        }
+        cookies.set("authToken", authToken, {
+            path: "/",
+            domain: (import.meta.env.VITE_HOST_URL as string)
+                .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
+        })
+        throw redirect(302, "/game/" + game.id)
     } catch (e) {
         console.error(e)
-        return {
-            headers: {
-                'Location': "/error/invalid-create"
-            },
-            status: 302
-        }
+        throw redirect(302, "/error/invalid-create")
     }
-}
+} satisfies RequestHandler

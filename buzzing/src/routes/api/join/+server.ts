@@ -1,11 +1,12 @@
 import { Member } from "$lib/classes/Member";
 import { Team } from "$lib/classes/Team";
-import type { RequestEvent } from "@sveltejs/kit";
+import type { RequestHandler } from "./$types";
 import { redirectTo } from "$lib/functions/redirectTo";
 import { io, getGameFromCode, getGame } from '$lib/server'
 import { generateToken } from "$lib/authentication";
+import { redirect } from "@sveltejs/kit";
 
-export async function post({ request }: RequestEvent) {
+export const POST = async function({ request, cookies }) {
     try {
         const body: FormData = await request.formData()
         const joinCode = body.get('join-code') as string
@@ -13,7 +14,7 @@ export async function post({ request }: RequestEvent) {
         const game = joinCode ? getGameFromCode(joinCode) : getGame(gameId)
 
         if (joinCode && game) {
-            return redirectTo('/join/' + game.id + "?code=" + game.joinCode)
+            throw redirect(302, `/join/${game.id}?code=${game.joinCode}`)
         } else if (game) {
             const name = body.get('name') as string
             const teamOrIndiv = body.get('team-or-indiv')
@@ -35,19 +36,17 @@ export async function post({ request }: RequestEvent) {
             io.to(game.id).emit('memberJoin', { member: newMember.data, team: newMember.team.data })
     
             const authToken = generateToken({ memberId: newMember.id, gameId: game.id }, '6h')
-            return {
-                headers: {
-                    'Location': "/game/" + game.id,
-                    'Set-Cookie': "authToken=" + authToken + ";Path=/;Domain=" + (import.meta.env.VITE_HOST_URL as string).replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
-                },
-                status: 302
-            }
-
+            cookies.set("authToken", authToken, {
+                path: "/",
+                domain: (import.meta.env.VITE_HOST_URL as string)
+                    .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
+            })
+            throw redirect(302, "/game/" + game.id)
         } else {
-            return redirectTo('/error/invalid-code')
+            throw redirect(302, "/error/invalid-code")
         }
     } catch (e) {
         console.error(e)
-        return redirectTo('/error/invalid-join')
+        throw redirect(302, "/error/invalid-join")        
     }
-}
+} satisfies RequestHandler
