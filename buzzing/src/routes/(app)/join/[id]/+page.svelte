@@ -1,31 +1,11 @@
-<script lang="ts" context="module">
-    import type { LoadInput } from "@sveltejs/kit";
-
-    export async function load({ params, fetch }: LoadInput) {
-
-        const res = await fetch(`/api/join/${params.id}`)
-
-        if (res.ok) {
-            const json = await res.json()
-            return {
-                props: {
-                    ...json,
-                    gameId: params.id
-                }
-            }
-        }
-
-        return {}
-    }
-</script>
-
 <script lang="ts">
-    export let memberNames: string[], gameName: string, gameId: string, settings: GameSettings, teams: TeamData[]
-    
     import JoinMemberList from '$lib/components/JoinMemberList.svelte'
     import Select from "svelte-select";
+    import type { PageData } from './$types'
     import type { TeamData } from "$lib/classes/Team";
-    import type { GameSettings } from "$lib/classes/Game";
+
+    export let data: PageData
+    $: ({ memberNames, gameName, gameId, settings, teams } = data)
 
     let memberName = ''
     let teamOrIndiv: "indiv" | "team" | "new-team" = null

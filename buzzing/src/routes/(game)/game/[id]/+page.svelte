@@ -1,36 +1,4 @@
-<script context="module" lang="ts">
-    export async function load({ params, fetch }: LoadInput) {
-
-        const res = await fetch(`/api/game/${params.id}`)
-
-        if (res.ok) {
-            const json = await res.json()
-            return {
-                props: {
-                    gameInfo: {
-                        ...json?.gameInfo,
-                        gameId: params.id,
-                    } as GameInfo,
-                    teamList: json.teamList,
-                    moderatorList: json.moderatorList
-                }
-            }
-        }
-
-        return {}
-    }
-</script>
-
 <script lang="ts">
-    export let moderatorList : MemberData[]
-    export let gameInfo: GameInfo
-    export let teamList: TeamData[]
-    $gameInfoStore = gameInfo
-    $teamsStore = teamList
-    $moderatorStore = moderatorList
-
-    let windowWidth: number
-
     import MemberList from "$lib/components/MemberList.svelte";
     import Chatbox from '$lib/components/Chatbox.svelte'
     import TopBar from '$lib/components/TopBar.svelte'
@@ -40,9 +8,9 @@
     import ReaderControls from '$lib/components/ReaderControls.svelte'
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
-    import type { LoadInput } from "@sveltejs/kit";
     import type { TeamData } from '$lib/classes/Team'
-    import { browser } from '$app/env'
+    import type { PageData } from "./$types"
+    import { browser } from '$app/environment'
 
     import { goto } from '$app/navigation';
     import Debugger from '$lib/classes/Debugger';
@@ -56,6 +24,15 @@
     import gameStateStore from "$lib/stores/gameState";
     import type { MemberData } from "$lib/classes/Member";
     import moderatorStore from "$lib/stores/moderators";
+
+    export let data: PageData
+    $: ({ gameInfo, teamList, moderatorList } = data)
+
+    $gameInfoStore = gameInfo
+    $teamsStore = teamList
+    $moderatorStore = moderatorList
+
+    let windowWidth: number
 
     const debug = browser ? new Debugger($gameInfoStore.gameId, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
     setContext('debug', debug)

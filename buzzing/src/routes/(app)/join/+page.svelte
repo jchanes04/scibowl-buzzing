@@ -1,10 +1,6 @@
-<script lang="ts" context="module">
-    export function load({ fetch }) {
-        return {}
-    }
-</script> 
+ <script lang="ts">
+    import Controlled from '$lib/components/ControlledInput.svelte'
 
-<script lang="ts">
     let buttonDisabled = true
     let codeExists = false
 
@@ -17,7 +13,6 @@
         }
     }
 
-    import Controlled from '$lib/components/ControlledInput.svelte'
     let joinCodeValue: string
 </script>
 
