@@ -8,7 +8,7 @@ export const load: PageServerLoad = async function({ fetch, parent }) {
         throw redirect(302, "/register");
     } else {
         return {
-            teams: []
+            teams: [] as Team[]
         }
     }
 }

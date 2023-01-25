@@ -1,7 +1,8 @@
-import type { LayoutServerLoad } from "./$types";
+import type { LayoutServerLoad } from "./$types"
 
 export const load = async function({ locals }) {
+    const { user } = locals
     return {
-        user: locals.user
+        user
     }
 } satisfies LayoutServerLoad

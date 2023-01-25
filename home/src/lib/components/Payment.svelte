@@ -1,13 +1,12 @@
 <script lang='ts'>
     import type { Team } from '$lib/mongo';
     import HelpBox from "./HelpBox.svelte";
-    import { form as createForm, field, form } from 'svelte-forms'
+    import { form as createForm, field } from 'svelte-forms'
     import { min, pattern } from 'svelte-forms/validators';
     import isRepeatTransactionID from '$lib/functions/isRepeatTransactionID';
-    import { session } from '$app/stores';
+    import { userStore } from '$lib/stores/user';
     
-    $: paidTeams = Math.floor($session.userData.paymentAmount / 15)
-    console.dir($session.userData)
+    $: paidTeams = Math.floor($userStore.paymentAmount / 15)
     export let teams : Team[]
     let transactionSuccess : boolean = false
 

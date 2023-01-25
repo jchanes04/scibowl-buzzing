@@ -10,9 +10,9 @@ export const handle: Handle = async function({ event, resolve }) {
   
     if (authToken) {
         const user = await getUserFromToken(authToken)
-        if (user) {
-            event.locals.user = user
-        }
+        event.locals.user = user ?? null
+    } else {
+        event.locals.user = null
     }
     
     const response = await resolve(event)  

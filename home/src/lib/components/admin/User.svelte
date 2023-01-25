@@ -2,10 +2,10 @@
     import type { UserClean } from "$lib/mongo";
     import type { Writable } from "svelte/store";
     import { getContext } from "svelte";
-    import EditField from "./EditField.svelte";
-    import ConfirmEmailSend from "./Confirm.svelte";
-    import Message from "./Message.svelte";
-    import Confirm from "./Confirm.svelte";
+    import EditField from "../EditField.svelte";
+    import ConfirmEmailSend from "../Confirm.svelte";
+    import Message from "../Message.svelte";
+    import Confirm from "../Confirm.svelte";
     import { invalidateAll } from "$app/navigation";
 
     export let user: UserClean

@@ -17,7 +17,8 @@ export type Team = {
     teamName: string,
     userId: string,
     members: Member[],
-    createdAt: Date
+    createdAt: Date,
+    paid: boolean
 }
 
 export type Grade = "8th and under" | "9th" | "10th" | "11th" | "12th"
