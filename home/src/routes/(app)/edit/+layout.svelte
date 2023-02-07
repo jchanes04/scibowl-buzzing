@@ -11,31 +11,21 @@
     setContext('modalStore', modalStore)
 </script>
 
-<div class="main">
-    <Header loggedIn={!!$userStore}/>
-    {#if $modalStore}
-        <div class="modal-backdrop">
-            <div>
-                <svelte:component this={$modalStore.component} {...$modalStore.props} />
-            </div>
+{#if $modalStore}
+    <div class="modal-backdrop">
+        <div>
+            <svelte:component this={$modalStore.component} {...$modalStore.props} />
         </div>
-    {/if}
-    <slot></slot>
-</div>
+    </div>
+{/if}
+<slot></slot>
 
 <style lang="scss">
-    .main {
-        display: grid;
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-        height: 100vh;
-        align-content: stretch;
-    }
-
     .modal-backdrop {
         position: fixed;
         inset: 0;
         background: rgba(32, 32, 32, 0.3);
+        z-index: 5;
 
         > * {
             position: fixed;

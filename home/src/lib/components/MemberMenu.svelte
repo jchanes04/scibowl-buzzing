@@ -2,154 +2,111 @@
     import updateTeam from "$lib/functions/updateTeam";
 
     import type { Member, Team } from "$lib/mongo";
-    import warnStore from "$lib/stores/warn";
-    import type { SvelteComponentTyped } from "svelte";
+    import { getContext, type SvelteComponentTyped } from "svelte";
+    import type { Writable } from "svelte/store";
+    import Confirm from "./Confirm.svelte";
     import MemberEdit from "./MemberEdit.svelte";
 
-    let displayTab: number  
     export let teamData: Team
 
-    let dirty = false
+    const modalStore: Writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null> = getContext('modalStore')
 
-    let tabs: Member[] = teamData.members.filter(m => m)
-    let tabWidths: number[] = []
-    
-    $: $warnStore.state && removePlayer()    
-    $: updateTabs(teamData)
-
-    displayTab = tabs.length ? tabs[0].id : null
-
-    let tabComponents: SvelteComponentTyped[] = []
-
-    function updateTabs(teamData) {
-        tabs = teamData.members
-        displayTab = tabs[0].id
-        dirty = false
-    }
+    let displayTab: number | null = teamData.members[0]?.id ?? null
+    console.log(displayTab)
 
     async function saveTeamData() {
-        console.dir(tabComponents)
-        const newMemberData: Member[] = tabComponents.map(c => c?.getMemberData())
-        tabs = newMemberData.filter(d => d)
-        teamData.members = newMemberData.filter(d => d)
+        console.log("saving")
         await updateTeam(teamData)
-        dirty = false
     }
 
     function newPlayer(){
         const newId = Date.now()
-        tabs = [
-            ...tabs,
+        teamData.members = [
+            ...teamData.members,
             {
                 id: newId,
-                firstName: getNextPlayerName(tabs),
+                firstName: '',
                 lastName: '',
                 discordUsername: '',
                 grade: '9th'
             }
         ]
         displayTab = newId
-        dirty = true
+        saveTeamData()
     }
 
-    function getNextPlayerName(tabs: Member[]) {
-        let number = 1
-        while (tabs.some(t => t.firstName === "New Player " + number)) {
-            number++
-        }
-        return "New Player " + number
-    }
-
-    function removePlayer() {
-        if ($warnStore.state=='accept' && $warnStore.type=='memberRemove'){
-            const removedPlayerIndex = tabs.findIndex(t => t.id === displayTab)
-            tabs = tabs.filter(e => e !== $warnStore.object)
-            if (!tabs.length) newPlayer()
-            if ($warnStore.object.id === displayTab) {
-                console.dir(removedPlayerIndex)
-                displayTab = removedPlayerIndex>tabs.length-1 ? tabs[removedPlayerIndex-1]?.id : tabs[removedPlayerIndex]?.id
+    function removePlayer(player: Member) {
+        $modalStore = {
+            component: Confirm,
+            props: {
+                headerText: "Confirm Delete",
+                message: `Are you sure you want to delete ${player.firstName} ${player.lastName} from the team?`,
+                cancelCallback: () => {
+                    $modalStore = null
+                },
+                confirmCallback: async () => {
+                    teamData.members = teamData.members.filter(x => x.id !== player.id)
+                    saveTeamData()
+                    $modalStore = null
+                    displayTab = null
+                }
             }
-            $warnStore.state = 'closed'
-            $warnStore.object = null
-            dirty = true
-        } else if ($warnStore.state=='decline') {
-            $warnStore.state = 'closed'
-            $warnStore.object = null
-        }   
-    }
-
-    export function setDirty(value: boolean) {
-        console.log('dirty: ' + value)
-        dirty = value
+        }
     }
 </script>
 
 <div class="member-menu">
     <div class="tab-menu">
-        {#each tabs as player, i}
-            {#if player}
-                <div class="tab" class:active={displayTab == player.id} on:click={() => displayTab=player.id} bind:clientWidth={tabWidths[i]}>
-                    <p>{player?.firstName ? player.firstName : "New Student"}</p>
-                    <span class="icon" on:click={() => {$warnStore = {
-                        state:'open',
-                        message:[`Are you sure you want to remove ${player.firstName}?`,`(This action will not be saved until you press "Save & Submit")`],
-                        type:'memberRemove',
-                        object:player
-                    }}} />
-                </div>
-            {/if}
+        {#each teamData.members as player, i}
+            <div class="tab" class:active={displayTab == player.id}>
+                <button on:click={() => displayTab=player.id}>
+                    {player?.firstName ? player.firstName : "New Student"}
+                </button>
+                <button class="icon" on:click={() => removePlayer(player)}>x</button>
+            </div>
+        {:else}
+            <div class="tab placeholder"></div>
         {/each}  
-        {#if tabs.length<5}
-            <div class="tab add" on:click={newPlayer}>
-                <p>+</p>
+        {#if teamData.members.length < 5}
+            <div class="tab add">
+                <button on:click={newPlayer}>+</button>
             </div>
         {/if}
     </div>
-    <div id="edit">
-        {#each tabs as player, i}
-            {#if player}
-                <div>
-                    <MemberEdit shown={player.id==displayTab} bind:player={player} bind:this={tabComponents[i]} on:change={() => dirty = true} />
-                </div>
-            {:else}
-                <p>{JSON.stringify(player)}</p>
-            {/if}
+    {#if displayTab}
+        {#each teamData.members as player}
+            <div>
+                <MemberEdit shown={player.id === displayTab} bind:player={player} on:change={saveTeamData} />
+            </div>
+        {:else}
+            <div class="no-selected">
+                <h2>No player selected</h2>
+            </div>
+            
         {/each}
-    </div>
-    <div>
-        <button on:click={saveTeamData} disabled={!dirty}>Save & Submit</button>
-    </div>
+    {:else}
+        <div class="no-selected">
+            <h2>No player selected</h2>
+        </div>
+    {/if}
 </div>
 
 <style lang='scss'>
     .member-menu {
-        padding: 1em;
         position: relative;
-        max-width: calc(75vw - 5em);
-        @media (max-width:1200px) {
-            max-width: calc(100vw - 5em - 300px)
-        }
-        @media (max-width:650px) {
-            max-width: calc(100vw - 2em)
-        }
-    }
-    span{
-        position: relative;
-    }
-    p {
-        padding: 0;
-        margin: 0;
+        margin: auto;
+        max-width: min(85vw, 1200px);
+        margin-bottom: 2em;
     }
     
     .icon {
         display: inline-block;
         height: 0.75em;
         width: 0.75em;
-        background-size: cover;
-        vertical-align: middle;
         margin-left: 0em;
-        background-image: url('/close-menu.svg');
-        filter: brightness(0);
     }
 
     *::-webkit-scrollbar {
@@ -198,10 +155,18 @@
         
         min-width: 0px;
         flex-shrink: 0;
-        p {
-            display: inline-block;
-            padding: 0 0.5em;
+        
+        button {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            border: none;
         }
+    }
+
+    .placeholder {
+        height: 1.25em;
+        background: var(--color-3);
     }
 
     .add {
@@ -236,5 +201,14 @@
             color: #444;
             cursor: default;
         }
+    }
+
+    .no-selected {
+        border: solid 5px var(--color-3);
+        box-sizing: border-box;
+        border-radius: 0 15px 15px 15px;
+        padding-top: 1em;
+        padding-bottom: 1em;
+        padding-left: 3em;
     }
 </style>

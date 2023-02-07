@@ -21,8 +21,10 @@
             props: {
                 headerText: "Rename School",
                 initialValue: user.schoolName,
-                userId: user._id,
                 actionName: "schoolName",
+                hiddenInputs: {
+                    'user-id': user._id
+                },
                 cancelCallback: () => {
                     $modalStore = null
                 },
@@ -41,8 +43,10 @@
             props: {
                 headerText: "Change Email",
                 initialValue: user.email,
-                userId: user._id,
                 actionName: "email",
+                hiddenInputs: {
+                    'user-id': user._id
+                },
                 cancelCallback: () => {
                     $modalStore = null
                 },
@@ -61,8 +65,10 @@
             props: {
                 headerText: "Change Secondary Email",
                 initialValue: user.secondaryEmail || '',
-                userId: user._id,
                 actionName: "secondaryEmail",
+                hiddenInputs: {
+                    'user-id': user._id
+                },
                 cancelCallback: () => {
                     $modalStore = null
                 },

@@ -2,51 +2,32 @@
     import type { Member, Grade } from "$lib/mongo";
     import { createEventDispatcher } from "svelte";
     import Select from 'svelte-select'
+    import DiscordInput from "./DiscordInput.svelte";
 
     export let player: Member
-    export let shown : boolean
-    
+    export let shown: boolean
+
     const dispatch = createEventDispatcher()
 
-    const grades = [
-        { id: 8, value: "8th and under" },
-        { id: 9, value: "9th" },
-        { id: 10, value: "10th" },
-        { id: 11, value: "11th" },
-        { id: 12, value: "12th" }
-    ]
-
-    let tempPlayer = player
-    $: console.log(tempPlayer)
-    $: updatePlayer(player)
-    
-    function updatePlayer(player: Member){
-        tempPlayer = player
-    }
-
-    export function getMemberData() {
-        return tempPlayer
-    }
-
-    function handleGradeSelect(e: CustomEvent<{ id: number, value: Grade}>) {
-        tempPlayer.grade = e.detail.value
-    }
+    const grades = ["8th and under", "9th", "10th", "11th", "12th"]
 </script>
 {#if shown}
-<form class="memberEdit" on:input={() => dispatch('change')}>
-    <label for='firstName'>First Name</label><br />
-    <input type='text' placeholder='John' name='firstName' bind:value={tempPlayer.firstName} autocomplete="off" /><br />
-    <label for='lastName'>Last Name</label><br />
-    <input type='text' placeholder='Doe' name='lastName' bind:value={tempPlayer.lastName} autocomplete="off" /><br />
-    <label for='Discord' >Discord Tag</label><br />
-    <input type='text' placeholder='JohntheDoe#1234' bind:value={tempPlayer.discordUsername} name='Discord' autocomplete="off" /><br />
-    
-    <label for='Grade'>Grade</label><br />
-    <div class='select'>
-    <Select items={grades} optionIdentifier="id" labelIdentifier="value" on:select={handleGradeSelect}
-    value={grades.find(g => g.value === tempPlayer.grade) || null} />
-    </div>
-</form>
+    <form id="edit" on:change={() => dispatch('change')} autocomplete="off">
+        <div class="memberEdit">
+            <label for='firstName'>First Name</label><br />
+            <input type='text' placeholder='John' name='firstName' bind:value={player.firstName} /><br />
+            <label for='lastName'>Last Name</label><br />
+            <input type='text' placeholder='Doe' name='lastName' bind:value={player.lastName} /><br />
+            <label for='Discord' >Discord Tag</label><br />
+            <DiscordInput bind:value={player.discordUsername} /><br />
+            <input type="hidden" name="grade" value={player.grade} />
+            
+            <label for='Grade'>Grade</label><br />
+            <div class='select'>
+                <Select items={grades} name="grade" bind:value={player.grade} searchable={false} clearable={false} showChevron={true} on:change={() => dispatch('change')} />
+            </div>
+        </div>
+    </form>
 {/if}
 
 <style lang="scss">
@@ -70,13 +51,12 @@
         border: solid 5px var(--color-3);
         box-sizing: border-box;
         border-radius: 0 15px 15px 15px;
-        padding-top: 1em;
-        padding-bottom: 1em;
-        padding-left: 3em;
-        
-    }
+        padding: 1em 3em;
 
-    
+        @media (max-width: 600px) {
+            padding: 1em;
+        }
+    }
 
     .select {
         --input-font-size:20px;
@@ -95,7 +75,8 @@
     }
     
     label {
-        font-size: 20pt;
-        margin: 1em 0 .1em 0;
+        font-size: 24px;
+        margin: 0.5em 0 .1em 0;
+        display: inline-block;
     }
 </style>

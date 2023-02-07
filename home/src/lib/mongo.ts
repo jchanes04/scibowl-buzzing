@@ -14,7 +14,7 @@ export type UserClean = Omit<User, 'passwordHash'>
 
 export type Team = {
     _id: string,
-    teamName: string,
+    name: string,
     userId: string,
     members: Member[],
     createdAt: Date,
@@ -24,7 +24,7 @@ export type Team = {
 export type Grade = "8th and under" | "9th" | "10th" | "11th" | "12th"
 
 export type Member = {
-    _id: number,
+    id: number,
     firstName: string,
     lastName: string,
     discordUsername: string,
@@ -72,7 +72,7 @@ async function init(): Promise<{
 
 const { teams, users, confirmationCodes } = await init()
 
-export async function getUser(userId: string): Promise<UserClean> {
+export async function getUser(userId: string): Promise<UserClean | null> {
     const fetchedUser = await users.findOne({ _id: userId })
     if (fetchedUser) {
         const { passwordHash: _, ...withoutPassword } = fetchedUser
@@ -105,7 +105,7 @@ export async function getUserFromSchoolName(schoolName: string) {
     return await users.findOne({ schoolName })
 }
 
-export async function getUserPasswordHash(email: string): Promise<string> {
+export async function getUserPasswordHash(email: string): Promise<string | null> {
     const fetchedUser = await users.findOne({ email })
     if (fetchedUser)
         return fetchedUser.passwordHash
@@ -132,6 +132,8 @@ export async function addTeamToUser(userId: string, teamId: string) {
 
 export async function removeTeamFromUser(userId: string, teamId: string) {
     const fetchedUser = await users.findOne({ _id: userId })
+    if (!fetchedUser) return null
+
     const filteredTeams = fetchedUser.teamIds.filter(t => t !== teamId)
     return await users.updateOne({ _id: userId }, { $set: { teamIds: filteredTeams } })
 }
@@ -144,6 +146,10 @@ export async function updateUser(userId: string, setData: Partial<Omit<User, 'cr
 
 export async function getTeam(teamId: string) {
     return await teams.findOne({ _id: teamId })
+}
+
+export async function getTeamsByUser(userId: string) {
+    return teams.find({ userId }).toArray()
 }
 
 export async function createTeam(data: Omit<Team, 'createdAt' | '_id'>) {
@@ -162,6 +168,8 @@ export async function updateTeam(teamId: string, data: Partial<Omit<Team, 'creat
 
 export async function deleteTeam(teamId: string) {
     const team = await teams.findOne({ _id: teamId })
+    if (!team) return null
+    
     removeTeamFromUser(team.userId, teamId)
     return await teams.deleteOne({ _id: teamId })
     

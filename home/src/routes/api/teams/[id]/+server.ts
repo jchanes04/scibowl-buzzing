@@ -1,32 +1,41 @@
-import { deleteTeam, getTeam, Team, updateTeam } from "$lib/mongo";
-import type { RequestEvent } from "@sveltejs/kit";
+import { deleteTeam, getTeam, updateTeam, type Team } from "$lib/mongo";
+import type { RequestHandler } from "./$types"
 
-export async function GET({ params }: RequestEvent): Promise<Response> {
+export const GET = async function({ params }) {
     const { id } = params
+    if (!id) return new Response(null, {
+        status: 404
+    })
+
     const fetchedTeam = await getTeam(id)
     return new Response(JSON.stringify(fetchedTeam))
-}
+} satisfies RequestHandler
 
-export async function PATCH({ request, params }: RequestEvent) {
+export const PATCH = async function({ request, params }) {
     const body: Team = await request.json()
-    if (body.id !== params.id) {
+    if (body._id !== params.id) {
         return new Response(null, {
             status: 400
         })
     } else {
-        await updateTeam(body.id, {
-            teamName: body.teamName,
+        await updateTeam(body._id, {
+            name: body.name,
             members: body.members
         })
         return new Response(null, {
             status: 204
         })
     }
-}
+} satisfies RequestHandler
 
-export async function DELETE({ params }: RequestEvent) {
-    await deleteTeam(params.id)
+export const DELETE = async function({ params }) {
+    const { id } = params
+    if (!id) return new Response(null, {
+        status: 404
+    })
+
+    await deleteTeam(id)
     return new Response(null, {
         status: 204
     })
-}
+} satisfies RequestHandler

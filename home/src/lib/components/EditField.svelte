@@ -1,24 +1,27 @@
 <script lang="ts">
     import { enhance, type SubmitFunction } from "$app/forms"
+    import type { ActionResult } from "@sveltejs/kit";
     export let headerText: string
     export let initialValue: string
-    export let userId: string
     export let actionName: string
+    export let hiddenInputs: Record<string, string> = {}
     export let cancelCallback: () => void
-    export let confirmCallback: (data: FormData) => void
+    export let confirmCallback: (data?: FormData, result?: ActionResult) => void
     
     let value = initialValue
 
-    const handleSubmit: SubmitFunction = ({ data }) => async ({ update }) => {
-        confirmCallback(data)
+    const handleSubmit: SubmitFunction = ({ data }) => async ({ result, update }) => {
+        confirmCallback(data, result)
         await update()
     }
 </script>
 
 <div class="rename-user-modal">
     <h2>{headerText}</h2>
-    <form action="/admin?/{actionName}" method="POST" use:enhance={handleSubmit}>
-        <input type="hidden" name="user-id" value={userId} />
+    <form action="?/{actionName}" method="POST" autocomplete="off" use:enhance={handleSubmit}>
+        {#each Object.entries(hiddenInputs) as [k, v]}
+            <input type="hidden" name={k} value={v} />
+        {/each}
         <input type="text" name={actionName} bind:value />
         <br /><br />
         <button type="button" on:click={cancelCallback}>Cancel</button>
