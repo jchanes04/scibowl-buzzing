@@ -11,14 +11,14 @@
     setContext('modalStore', modalStore)
 
     export let data: PageData
-    $: ({ users } = data)
+    $: ({ users, teams } = data)
 </script>
 
 <main>
     <h1>{users.length - 1} Users</h1>
     <div class="users">
         {#each users.filter(u => !u.admin) as u}
-            <User bind:user={u} />
+            <User bind:user={u} teams={teams.filter(t => t.userId === u._id)} />
         {/each}
     </div>
     {#if $modalStore}

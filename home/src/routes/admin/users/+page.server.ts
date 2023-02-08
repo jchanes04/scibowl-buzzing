@@ -1,12 +1,14 @@
-import { getAllUsers, updateUser } from '$lib/mongo'
+import { getAllTeams, getAllUsers, updateUser } from '$lib/mongo'
 import type { PageServerLoad, Actions } from './$types'
 import { fail } from "@sveltejs/kit";
 
 export const load: PageServerLoad = async function({ parent }) {
     await parent()
     const users = await getAllUsers()
+    const teams = await getAllTeams()
     return {
-        users
+        users,
+        teams
     }
 }
 

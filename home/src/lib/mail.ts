@@ -21,3 +21,21 @@ export async function sendVerificationEmail(email: string, code: string) {
         console.log('Mail sent')
     }
 }
+
+export async function sendPasswordResetEmail(email: string, code: string) {
+    if (!dev) {
+        await sgMail.send({
+            to: email,
+            from: "automated@enloesciencebowl.xyz",
+            subject: "ESBOT Password Reset",
+            text: `Use the link below to reset your password:
+            
+            https://enloesciencebowl.xyz/reset-password?code=${code}`,
+            html: `Use the link below to reset your password:
+            <br /><br />
+            <a href="https://enloesciencebowl.xyz/reset-password?code=${code}">https://enloesciencebowl.xyz/reset-password?code=${code}</a>`
+        })
+    } else {
+        console.log("Mail sent")
+    }
+}

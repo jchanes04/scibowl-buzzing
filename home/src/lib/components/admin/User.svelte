@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { UserClean } from "$lib/mongo";
+    import type { Team, UserClean } from "$lib/mongo";
     import type { Writable } from "svelte/store";
     import { getContext } from "svelte";
     import EditField from "../EditField.svelte";
@@ -9,6 +9,7 @@
     import { invalidateAll } from "$app/navigation";
 
     export let user: UserClean
+    export let teams: Team[]
 
     const modalStore: Writable<{
         component: ConstructorOfATypedSvelteComponent,
@@ -159,9 +160,8 @@
         <div>
             <h3>Teams:</h3>
             <ul>
-                {#each user.teamIds as teamId, i}
-                    <li>Team {i + 1}: {teamId}</li>
-    
+                {#each teams as t, i}
+                    <li>Team {i + 1}: {t.name}</li>
                 {:else}
                     <li>No teams</li>
                 {/each}

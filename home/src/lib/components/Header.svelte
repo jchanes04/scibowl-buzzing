@@ -49,6 +49,7 @@
                         <input id="email" name="email" type="text" bind:value={email} autocomplete="off" />
                         <label for="password">Password</label>
                         <input id="password" name="password" type="password" bind:value={password} autocomplete="off" />
+                        <a href="/forgot-password" on:click={() => loginMenuVisible = false}>Forgot Password?</a>
                         <button type="submit">Login</button>
                         {#if error}
                             <p class="error">{error}</p>
@@ -182,6 +183,16 @@
 
         &.visible {
             display: block;
+        }
+    }
+
+    form a {
+        font-size: 18px;
+        color: blue;
+        text-decoration: underline;
+
+        &:hover {
+            color: blue;
         }
     }
 
