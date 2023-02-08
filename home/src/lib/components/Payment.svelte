@@ -13,7 +13,7 @@
         <ul>
             {#each teams.filter(t => t.paid) as team}
                 <li>
-                    - {team.name}
+                    ✔️ {team.name} (Paid)
                 </li>
             {/each}
             {#each teams.filter(t => !t.paid) as team, i}

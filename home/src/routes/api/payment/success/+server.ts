@@ -6,8 +6,8 @@ import type { RequestHandler } from "./$types"
 export const GET = async function({ url }) {
     const sessionId = url.searchParams.get('session_id') as string
     const teamIds = await getTransactionTeams(sessionId)
-    if (!teamIds) throw redirect(302, "/edit?status=paymentCancelled")
-
+    if (!teamIds||!sessionId) throw redirect(302, "/edit?status=paymentFailed")
+    
     for (const id of teamIds) {
         await updateTeam(id, { paid: true })
     }

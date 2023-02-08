@@ -2,13 +2,15 @@ import { fail, redirect } from '@sveltejs/kit';
 import { createTeam, getTeamsByUser, updateTeam, type Team } from '$lib/mongo';
 import type { PageServerLoad, Actions } from "./$types"
 
-export const load: PageServerLoad = async function({ parent }) {
+export const load: PageServerLoad = async function({ parent, url }) {
     const parentData = await parent()
     if (!parentData.user) {
         throw redirect(302, "/register");
     } else {
+        const status = url.searchParams.get('status') as string
         return {
-            teams: await getTeamsByUser(parentData.user._id)
+            teams: await getTeamsByUser(parentData.user._id),
+            status
         }
     }
 }
@@ -23,6 +25,7 @@ export const actions = {
         const data = await request.formData()
         const teamId = data.get('team-id') as string
         const teamName = data.get('teamName') as string
+        if (!teamId || !teamName) return fail(400, {message: "Invalid team name" })
 
         await updateTeam(teamId, { name: teamName })
         return { success: true }
@@ -38,6 +41,9 @@ export const actions = {
             name: teamName,
             userId: locals.user._id
         })
+
+        if (!created || !teamName) return fail(500, {message: "Create Team Failed" })
+        
         return {
             team: created
         }

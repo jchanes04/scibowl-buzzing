@@ -4,7 +4,7 @@
     let username: string = value.split("#")[0] || ""
     let discriminator: string = value.split("#")[1] || ""
     
-    $: value = username + discriminator
+    $: value = username + "#" + discriminator
 </script>
 
 <div>

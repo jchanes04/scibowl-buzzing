@@ -15,10 +15,8 @@
     } | null> = getContext('modalStore')
 
     let displayTab: number | null = teamData.members[0]?.id ?? null
-    console.log(displayTab)
 
     async function saveTeamData() {
-        console.log("saving")
         await updateTeam(teamData)
     }
 

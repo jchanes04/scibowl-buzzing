@@ -13,16 +13,29 @@
     import type { ActionResult } from '@sveltejs/kit';
 
     export let data: PageData
-    let { teams } = data
-    $: ({ teams } = data)
+    let { teams, status } = data
+    $: ({ teams, status } = data)
     
     const modalStore: Writable<{
         component: ConstructorOfATypedSvelteComponent,
         props: Record<string, unknown>
     } | null> = getContext('modalStore')
 
-    let selectedTeam: Team | null = teams[0] ?? null
+    if (status === "paymentFailed") {
+        $modalStore = {
+            component: Message,
+            props: {
+                headerText: "Payment Failed",
+                message: "Payment failed. Please contact tournament directors to resolve this issue.",
+                closeCallback: () => {
+                    window.history.replaceState(null, "", "/edit")
+                    $modalStore = null
+                }
+            }
+        }
+    }
 
+    let selectedTeam: Team | null = teams[0] ?? null
 
     async function createTeam() {
         $modalStore = {
@@ -78,14 +91,25 @@
 
     function handlePayment() {
         $modalStore = {
-            component: Payment,
+            component: Message,
             props: {
-                teams,
+                headerText: "Payment Disabled",
+                message: "Payment is currently disabled",
                 closeCallback: () => {
                     $modalStore = null
                 }
             }
         }
+
+        // $modalStore = {
+        //     component: Payment,
+        //     props: {
+        //         teams,
+        //         closeCallback: () => {
+        //             $modalStore = null
+        //         }
+        //     }
+        // }
     }
 
 
@@ -154,7 +178,6 @@
                     showChevron={true} clearable={false} searchable={false} />
             </div>
             <button class="create-team" on:click={createTeam}>New Team</button>
-            <button class="rename-team" on:click={handleRename}>Rename</button>
             <button class="pay" on:click={handlePayment}>Pay</button>
             <button class="delete-team" on:click={handleDelete}></button>
         </div>
@@ -164,7 +187,7 @@
                     <div class="team-name">
                         <h1>
                             {#if selectedTeam.paid}
-                                <span class="paid">$</span>
+                                ✔️
                             {/if}
                             {selectedTeam.name}
                             <button class="icon edit" on:click={handleRename} />

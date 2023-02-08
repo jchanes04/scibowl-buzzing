@@ -13,6 +13,12 @@ export const POST = async function({ locals, request }) {
     const { userId } = await request.json()
     const userData = await getUser(userId)
     const code = await generateConfirmationCode(userId)
+   
+    if (!code||!userData||!userId){
+        return new Response(null, {
+            status: 500
+        })
+    }
 
     await sendVerificationEmail(userData.email, code)
     return new Response(null, {
