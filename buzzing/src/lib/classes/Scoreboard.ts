@@ -16,7 +16,7 @@ export interface Scoreboard {
 }
 
 export class Scoreboard {
-    constructor({teamScoreboard, score, catScores}: {teamScoreboard?: Scoreboard, score?:number, catScores?: catScores }) {
+    constructor({teamScoreboard, score, catScores}: {teamScoreboard?: Scoreboard | null, score?: number, catScores?: catScores }) {
         this.score = score || 0
         this.catScores = catScores || emptyCatScores()
         this.teamScoreboard = teamScoreboard || null

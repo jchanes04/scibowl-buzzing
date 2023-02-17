@@ -1,14 +1,20 @@
 <script lang="ts">
-    import gameInfoStore from "$lib/stores/gameInfo";
+    import gameStore from "$lib/stores/game";
     import { tick } from "svelte";
 
-    let joinLink = `${import.meta.env.VITE_HOST_URL}/join/${$gameInfoStore.gameId}?code=${$gameInfoStore.joinCode}`
+    export let spectator = false
+
+    let joinLink = spectator
+        ? `${import.meta.env.VITE_HOST_URL}/spectate/${$gameStore.id}`
+        : `${import.meta.env.VITE_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`
     let inputElement: HTMLInputElement
     let copied = false
 
     async function handleInput() {
         await tick()
-        joinLink = `${import.meta.env.VITE_HOST_URL}/join/${$gameInfoStore.gameId}?code=${$gameInfoStore.joinCode}`
+        joinLink = spectator
+            ? `${import.meta.env.VITE_HOST_URL}/spectate/${$gameStore.id}`
+            : `${import.meta.env.VITE_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`
         await tick()
         inputElement.setSelectionRange(0, 0)
     }

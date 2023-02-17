@@ -1,14 +1,13 @@
 import { GameManager } from '$lib/classes/GameManager'
-import { Member } from '$lib/classes/Member'
 
 import * as https from 'https'
 import { Server } from 'socket.io'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
-import type { TeamSettings } from '$lib/classes/Game'
+import type { GameSettings } from '$lib/classes/Game'
 import { getDataFromToken } from './authentication'
-import { addGameScores } from './mongo'
+import { Moderator } from './classes/Moderator'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -16,53 +15,70 @@ const httpsServer = https.createServer({
 })
 export const io = new Server(httpsServer, {
     cors: {
-        origin: '*'
+        origin: import.meta.env.VITE_HOST_URL,
+        allowedHeaders: ["Cookie"],
+        credentials: true
+    },
+    allowRequest: async (req, callback) => {
+        const authToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        const tokenData = await getDataFromToken(authToken || "")
+        if (!authToken || !tokenData) {
+            return callback(null, false)
+        }
+
+        const { memberId, gameId, spectator } = tokenData
+        const game = games.get(gameId)
+        if (!game) {
+            return callback(null, false)
+        } else if (game.people[memberId] && !spectator) {
+            return callback(null, true)
+        } else if (game.settings.spectatorsAllowed) {
+            return callback(null, true)
+        } else {
+            return callback(null, false)
+        }
     }
 })
 
 io.on('connection', async socket => {
     console.log("Socket connected")
-    const { authToken } = socket.handshake.auth || {}
-
-    const tokenData = await getDataFromToken(authToken)
-    if (!tokenData) {
+    const cookie = socket.request.headers.cookie
+    const authToken = cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+    const tokenData = await getDataFromToken(authToken || "")
+    if (!authToken || !tokenData) {
         socket.emit('authFailed')
         return socket.disconnect()
     }
     
-    const { gameId, memberId } = tokenData
+    const { gameId, memberId, spectator } = tokenData
     const game = getGame(gameId)
+    const member = game.people[memberId]
     
-    if (!game) {
+    if (!game || (!member && !game.settings.spectatorsAllowed)) {
         socket.emit('authFailed')
         return socket.disconnect()
-    } else if (!game.people.some(m => m.id === memberId)) {
-        if (game.leftPlayers.some(p => p.id === memberId)) {
-            const rejoined = game.rejoinMember(memberId)
-            if (rejoined) {
-                socket.to(gameId).emit('memberRejoin', { member: rejoined.data, team: rejoined.team?.data })
-            } else {
-                socket.emit('authFailed')
-                return socket.disconnect()
-            }
-        } else {
-            socket.emit('authFailed')
-            return socket.disconnect()
-        }
     }
 
     socket.join([gameId, memberId])
 
-    socket.emit('authenticated', { name: game.people.find(x => x.id === memberId)?.name })
+    if (!spectator) {
+        socket.emit('authenticated', { name: game.people[memberId].name })
+    }
 
     socket.on('disconnect', () => {
-        const removed = game.removeMember(memberId)
-        if (removed !== null) {
-            socket.to(gameId).emit('memberLeave', memberId)
+        if (!spectator) {
+            const removed = game.removeMember(memberId)
+            if (removed !== null) {
+                socket.to(gameId).emit('memberLeave', memberId)
+            }
+        } else {
+            game.removeSpectator(memberId)
         }
     })
 
     socket.on('buzz', () => {
+        if (spectator) return
+
         if (game.state.questionState === 'open') {
             const buzzed = game.buzz(memberId)
             if (buzzed) {
@@ -77,91 +93,83 @@ io.on('connection', async socket => {
         }
     })
 
-    socket.on('newQ', (question)=>{
-        game.newQ(memberId, question)
+    socket.on('newQ', (question) => {
+        if (member.type !== "moderator")  return
+        
+        game.newQuestion(question)
         socket.to(gameId).emit('questionOpen', question)
     })
 
     socket.on('startTimer', () => {
-        if (game.state.questionState === "open") {
-            const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
-            game.timer.start(serverLength)
+        if (member.type !== "moderator" || game.state.questionState !== "open") return
+        
+        const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+        game.timer.start(serverLength)
 
-            const clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
-            socket.to(gameId).emit('timerStart', clientLength)
-            socket.emit('timerStart', clientLength)
+        const clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
+        socket.to(gameId).emit('timerStart', clientLength)
+        socket.emit('timerStart', clientLength)
 
-            game.timer.removeAllListeners('end')
-            game.timer.once('end', () => {
-                socket.to(gameId).emit('timerEnd')
-            })
-        }
+        game.timer.removeAllListeners('end')
+        game.timer.once('end', () => {
+            socket.to(gameId).emit('timerEnd')
+        })
     })
 
-    socket.on('scoreQuestion', (score: 'correct' | 'incorrect' | 'penalty') => {
-        if (game.state.questionState === "buzzed") {
-            const { scoredMember, scoredTeam, open, category } = game.scoreQ(score)
-    
-            socket.to(gameId).emit('scoreChange', {
-                open,
-                score, 
-                memberId: scoredMember.id,
-                memberScore: scoredMember.scoreboard.score,
-                teamID: scoredTeam.id,
-                teamScore: scoredTeam.scoreboard.score,
-                category
-            })
-            socket.emit('scoreChange', {
-                open,
-                score,
-                memberId: scoredMember.id,
-                memberScore: scoredMember.scoreboard.score,
-                teamID: scoredTeam.id,
-                teamScore: scoredTeam.scoreboard.score,
-                category
-            })
+    socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
+        if (member.type !== "moderator" || game.state.questionState !== "buzzed") return
+        
+        const result = game.scoreQuestion(scoreType)
 
-            if (open) {
-                const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
-                game.timer.start(serverLength)
-            } else {
-                game.timer.end()
-            }
+        if (!result) return
+
+        const { buzzer, category, open } = result
+
+        io.to(gameId).emit('scoreChange', {
+            open,
+            scoreType, 
+            playerId: buzzer.id,
+            playerScore: buzzer.scoreboard.score,
+            teamId: buzzer.team.id,
+            teamScore: buzzer.team.scoreboard.score,
+            category
+        })
+
+        if (open) {
+            const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+            game.timer.start(serverLength)
+        } else {
+            game.timer.end()
         }
     })
 
     socket.on('undoScore', () => {
-        if (game.state.lastScored) {
-            const undoData = game.undoScore()
-            if (undoData) {
-                const { score, scoredMember, scoredTeam, category, bonus } = undoData
-                socket.emit('scoreUndone', {
-                    score,
-                    memberID: scoredMember.id,
-                    memberScore: scoredMember.scoreboard.score,
-                    teamID: scoredTeam.id,
-                    teamScore: scoredTeam.scoreboard.score,
-                    category,
-                    bonus
-                })
-                socket.to(gameId).emit('scoreUndone', {
-                    score,
-                    memberID: scoredMember.id,
-                    memberScore: scoredMember.scoreboard.score,
-                    teamID: scoredTeam.id,
-                    teamScore: scoredTeam.scoreboard.score,
-                    category,
-                    bonus
-                })
-            } else {
-                socket.emit('undoScoreFailed')
-            }
-        } else {
-            socket.emit('undoScoreFailed')
+        if (member.type !== "moderator") return
+        
+        if (!game.state.lastScored) {
+            return socket.emit('undoScoreFailed')
         }
+
+        const undoData = game.undoScore()
+        if (!undoData) {
+            return socket.emit('undoScoreFailed')
+        }
+        
+        const { score, buzzer, category, bonus } = undoData
+        io.to(gameId).emit('scoreUndone', {
+            score,
+            playerId: buzzer.id,
+            playerScore: buzzer.scoreboard.score,
+            teamId: buzzer.team.id,
+            teamScore: buzzer.scoreboard.score,
+            category,
+            bonus
+        })
     })
 
     socket.on('kickPlayer', (id: string) => {
+        if (member.type !== "moderator") return
+        
         const removed = game.removeMember(id)
         
         if (removed !== null) {
@@ -172,7 +180,9 @@ io.on('connection', async socket => {
     })
 
     socket.on('promotePlayer', (id: string) => {
-        const promoted = game.promoteMember(id)
+        if (member.type !== "moderator") return 
+
+        const promoted = game.promotePlayer(id)
 
         if (promoted != null) {
             io.to(gameId).emit('promotion', id)
@@ -180,18 +190,16 @@ io.on('connection', async socket => {
     })
 
     socket.on('clearScores', () => {
+        if (member.type !== "moderator") return
+
         game.clearScores()
         socket.to(gameId).emit('scoresClear')
         socket.emit('scoresClear')
     })
 
-    socket.on('saveScores', async () => {
-        console.log('saving scores')
-        await addGameScores(game.scores)
-        socket.emit('scoresSaved')
-    })
-
     socket.on('endGame', () => {
+        if (member.type !== "moderator")  return
+
         socket.to(gameId).emit('gameEnd')
         socket.emit('gameEnd')
         game.timer.end()
@@ -221,11 +229,17 @@ httpsServer.listen(3030)
 
 export const games = new GameManager()
 
-setInterval(sweepGames, 300_000)
+setInterval(() => {
+    const swept = games.sweepGames()
 
-export function createNewGame(ownerName: string, gameData: { name: string, teamSettings: TeamSettings, teamNames: string[] }) {
-    const ownerMember = new Member({ name: ownerName, moderator: true })
-    const game = games.createGame({ ...gameData, ownerMember })
+    for (const id of swept) {
+        io.to(id).emit('gameSwept')
+    }
+}, 300_000)
+
+export function createNewGame(ownerName: string, gameData: { name: string, settings: GameSettings, teamNames: string[] }) {
+    const owner = new Moderator({ name: ownerName })
+    const game = games.createGame({ ...gameData, owner })
     return game
 }
 
@@ -240,13 +254,4 @@ export function gameExists(id: string) {
 
 export function getGameFromCode(code: string) {
     return games.find(x => x.joinCode === code)
-}
-
-
-function sweepGames() {
-    const swept = games.sweepGames()
-
-    for (const id of swept) {
-        io.to(id).emit('gameSwept')
-    }
 }

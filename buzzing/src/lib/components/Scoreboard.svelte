@@ -1,26 +1,22 @@
 <script lang="ts">
-    import type { TeamData } from '$lib/classes/Team'
-
-    export let teamList: TeamData[]
-    export let buzzedTeamIDs: string[]
+    import teamsStore from "$lib/stores/teams"
+    import gameStore from "$lib/stores/game"
 </script>
 
 <div class="scoreboard">
     <h2>Scoreboard</h2>
     <ul>
-        {#each teamList as team}
-            {#if team.members.length !== 1 || !team.members[0].moderator}
-                <li class:buzzed={buzzedTeamIDs.includes(team.id)}>
-                    {team.name + ": " + team.scoreboard.score}
-                    {#if !team.individual}
-                        <ul>
-                            {#each team.members as member}
-                                <li>{member.name}</li>
-                            {/each}
-                        </ul>
-                    {/if}
-                </li>
-            {/if}
+        {#each Object.values($teamsStore) as team}
+            <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
+                {team.name + ": " + team.scoreboard.score}
+                {#if team.type !== "individual"}
+                    <ul>
+                        {#each Object.values(team.players) as member}
+                            <li>{member.name}</li>
+                        {/each}
+                    </ul>
+                {/if}
+            </li>
         {/each}
     </ul>
 </div>

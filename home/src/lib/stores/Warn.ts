@@ -1,5 +1,5 @@
 import type { Member, Team } from "$lib/mongo"
-import { Writable, writable } from "svelte/store"
+import { type Writable, writable } from "svelte/store"
 
 
 export type WarnState = {

@@ -1,8 +1,9 @@
 <script lang="ts">
-import JoinLinkDialog from "./JoinLinkDialog.svelte"
+    import JoinLinkDialog from "./JoinLinkDialog.svelte"
 
     export let gameName: string
     export let joinCode: string
+    export let spectator = false
 
     let dialogOpen = false
     let clickLock = false
@@ -39,7 +40,7 @@ import JoinLinkDialog from "./JoinLinkDialog.svelte"
         <h1 class="join-code" on:click={openDialog}>{joinCode}<span class="icon open" /></h1>
         {#if dialogOpen}
             <div class="join-link-wrapper">
-                <JoinLinkDialog />
+                <JoinLinkDialog {spectator} />
             </div>
         {/if}
     </div>

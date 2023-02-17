@@ -1,19 +1,16 @@
-import { Game, TeamSettings } from './Game'
-import type { Member } from './Member'
+import { Game, type GameSettings, type GameTimes } from './Game'
 import { createJoinCode } from '$lib/functions/createId'
 import { Team } from './Team'
+import type { Moderator } from './Moderator'
 
-export interface GameManager {
-
-}
+const defaultTimes = {
+    tossup: [5, 2],
+    bonus: [20, 2]
+} satisfies GameTimes
 
 // basically just a fancy array with methods and shit
 
 export class GameManager {
-    constructor() {
-        
-    }
-
     private games: Record<string, Game> = {}
     private joinCodes: string[] = []
 
@@ -22,7 +19,7 @@ export class GameManager {
     }
 
     has(id: string) {
-        return (id in this.games)
+        return (Object.hasOwn(this.games, id))
     }
 
     find(func: (game: Game) => boolean) {
@@ -35,12 +32,12 @@ export class GameManager {
         return null
     }
 
-    createGame(options: { name: string, teamSettings: TeamSettings, teamNames: string[], ownerMember: Member }) {
+    createGame(options: { name: string, settings: GameSettings, teamNames: string[], owner: Moderator }) {
         const joinCode = createJoinCode()
         this.joinCodes.push(joinCode)
         const teams = options.teamNames.map(n => new Team(n))
 
-        const game = new Game({ ...options, teams, joinCode })
+        const game = new Game({ ...options, teams, joinCode, times: defaultTimes })
         this.games[game.id] = game
         
         return game

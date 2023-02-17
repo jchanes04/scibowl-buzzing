@@ -1,23 +1,19 @@
 <script lang="ts">
     import type Debugger from "$lib/classes/Debugger";
     import buzzAudioStore from "$lib/stores/buzzAudio";
-    import chatMessagesStore from "$lib/stores/chatMessages";
-    import gameInfoStore from "$lib/stores/gameInfo";
-    import gameStateStore from "$lib/stores/gameState";
-    import socketStore from "$lib/stores/socket";
+    import gameStore from "$lib/stores/game";
+    import socket from "$lib/socket";
     import timerStore from "$lib/stores/timer";
     import { getContext } from "svelte";
+    import myMember from "$lib/stores/myMember";
+    
     const debug: Debugger = getContext('debug')
 
     function buzz() {
-        $socketStore.emit('buzz');
-        $buzzAudioStore.play()
+        socket.emit('buzz');
+        $buzzAudioStore?.play()
 
-        $gameStateStore = ({
-            questionState: 'buzzed',
-            buzzingDisabled: true,
-            buzzedTeamIDs: [...$gameStateStore.buzzedTeamIDs, $gameInfoStore.myTeam.id ]
-        })
+        gameStore.buzz($myMember.team?.id || "")
         $timerStore.pause()
         
         debug.addEvent('buzz', {})
@@ -26,11 +22,11 @@
 
 <svelte:body on:keydown={(e) => {
     const { code, keyCode } = e
-    if ((code === "Space" || code === "Enter") && !$gameStateStore.buzzingDisabled) {
+    if ((code === "Space" || code === "Enter") && $gameStore.state.buzzingEnabled) {
         e.preventDefault()
         buzz()
     } else if (code === null || code === undefined) {
-        if ((keyCode === 32 || keyCode === 13) && !$gameStateStore.buzzingDisabled) {
+        if ((keyCode === 32 || keyCode === 13) && $gameStore.state.buzzingEnabled) {
             e.preventDefault()
             buzz()
         }
@@ -38,7 +34,7 @@
 }} />
 
 <div>
-    <button id="buzz" on:click={buzz} disabled={$gameStateStore.buzzingDisabled}>Buzz</button>
+    <button id="buzz" on:click={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
 </div>
 
 <style>

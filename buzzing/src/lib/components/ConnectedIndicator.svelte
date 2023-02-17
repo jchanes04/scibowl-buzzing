@@ -1,32 +1,32 @@
 <script lang="ts">
-    import { browser } from "$app/env";
-    import socketStore from "$lib/stores/socket";
+    import { browser } from "$app/environment";
+    import socket from "$lib/socket";
     import { onDestroy } from "svelte";
 
     let connected = false
     $: displayText = connected ? "Connected" : "Disconnected"
 
-    let interval = null
+    let interval: number | NodeJS.Timer = 0
 
     function pollForConnected() {
         clearInterval(interval)
         interval = setInterval(() => {
-            if ($socketStore.connected) {
+            if (socket.connected) {
                 pollForDisconnected()
             }
 
-            connected = $socketStore.connected
+            connected = socket.connected
         }, 50)
     }
  
     function pollForDisconnected() {
         clearInterval(interval)
         interval = setInterval(() => {
-            if (!$socketStore.connected) {
+            if (!socket.connected) {
                 pollForConnected()
             }
 
-            connected = $socketStore.connected
+            connected = socket.connected
         }, 2500)
     }
 

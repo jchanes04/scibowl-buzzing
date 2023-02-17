@@ -1,8 +1,9 @@
-import { createGameID } from "$lib/functions/createId"
+import { createGameID, createMemberID } from "$lib/functions/createId"
 import { GameScoreboard } from "./GameScoreboard"
-import { Member, MemberData } from "./Member"
+import { Player, type PlayerData } from "./Player"
+import { Moderator, type ModeratorData } from "./Moderator"
 import type { ScoreboardData } from "./Scoreboard"
-import type { Team } from "./Team"
+import { Team, type TeamData } from "./Team"
 import { Timer } from "./Timer"
 
 export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
@@ -13,16 +14,47 @@ export type Question = {
     team?: string
 }
 
-export type TeamSettings = {
+export type GameSettings = {
     individualsAllowed: boolean,
-    newTeamsAllowed: boolean
+    newTeamsAllowed: boolean,
+    spectatorsAllowed: boolean
 }
 
 export type GameScores = {
     id: string,
     name: string,
     teams: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>,
-    members: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>
+    players: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>
+}
+
+type BuzzedState = { // idle means no question open
+    questionState: 'buzzed'
+    currentBuzzer: Player,
+    currentQuestion: {
+        category: Category,
+        bonus: boolean
+    }
+    buzzedTeams: Record<string, Team>,
+    lastScored: LastScoredQuestion | null
+}
+
+type IdleState = { // idle means no question open
+    questionState: 'idle'
+    currentBuzzer: null,
+    currentQuestion: null
+    buzzedTeams: Record<string, Team>,
+    lastScored: LastScoredQuestion | null
+}
+
+type OpenState = {
+    questionState: 'open'
+    currentBuzzer: null,
+    currentQuestion: {
+        category: Category,
+        bonus: boolean
+    }
+    buzzedTeams: Record<string, Team>,
+    lastScored: LastScoredQuestion | null
 }
 
 export type LastScoredQuestion = {
@@ -32,6 +64,8 @@ export type LastScoredQuestion = {
     bonus: boolean
 }
 
+export type LeftPlayerData = PlayerData & { team?: TeamData & { type: "created" } }
+
 export interface Game {
     id: string,
     joinCode: string,
@@ -39,10 +73,12 @@ export interface Game {
     
     scoreboard: GameScoreboard
 
-    moderators: Member[],
-    members: Member[],
-    teams: Team[]
-    teamSettings: TeamSettings
+    moderators: Record<string, Moderator>,
+    players: Record<string, Player>,
+    teams: Record<string, Team>,
+    spectators: Set<string>
+
+    settings: GameSettings
 
     timer: Timer,
     times: { //times [client, server extratime]
@@ -52,40 +88,50 @@ export interface Game {
     
     lastActive: number,
     
-    state: { // idle means no question open
-        questionState: 'idle' | 'open' | 'buzzed'
-        currentBuzzer: Member | null,
-        currentQuestion: {
-            category: Category,
-            bonus: boolean
-        } | null
-        buzzedTeams: Team[],
-        lastScored: LastScoredQuestion
-    }
+    state: IdleState | OpenState | BuzzedState
 
     //stores ids of all players that have left 
-    leftPlayers: MemberData[]
+    leftPlayers: Record<string, LeftPlayerData>
+    leftModerators: Record<string, ModeratorData>
+}
+
+export type GameTimes = {
+    tossup: [number, number],
+    bonus: [number, number]
+}
+
+type GameParameters = {
+    name: string,
+    settings?: Partial<GameSettings>,
+    teams: Team[],
+    owner: Moderator,
+    joinCode: string,
+    times: GameTimes
 }
 
 export class Game {
-    constructor({ name, teamSettings, teams, ownerMember, joinCode, times }: { name: string, teamSettings: Partial<TeamSettings>, teams: Team[], ownerMember: Member, joinCode: string, times?: { tossup: [number, number], bonus: [number, number] } }) {
+    constructor({ name, settings, teams, owner, joinCode, times }: GameParameters) {
         this.id = createGameID()
         this.joinCode = joinCode.toUpperCase()  // Easier way to join games than a url with a 7 or 8 character ID
 
         this.name = name
         this.scoreboard = new GameScoreboard({})
         
-        this.moderators = [ownerMember]
-        this.members = []
+        this.moderators = {
+            [owner.id]: owner
+        }
+        this.players = {}
         /*
             any: allows players to play by themselves or create new teams
             teams: only allows players to join a certain set of teams specified by the reader when creating the game
             individuals: players can only play on their own
         */
-        this.teams = [...teams]
-        this.teamSettings = {
-            individualsAllowed: teamSettings.individualsAllowed ?? false,
-            newTeamsAllowed: teamSettings.newTeamsAllowed ?? true
+        this.teams = Object.fromEntries(teams.map(t => [t.id, t]))
+        this.spectators = new Set()
+        this.settings = {
+            individualsAllowed: settings?.individualsAllowed ?? false,
+            newTeamsAllowed: settings?.newTeamsAllowed ?? true,
+            spectatorsAllowed: settings?.spectatorsAllowed ?? false
         }
 
         this.timer = new Timer()
@@ -106,179 +152,268 @@ export class Game {
             questionState: 'idle',
             currentBuzzer: null,        // the player that has buzzed in
             currentQuestion: null,      // the current question information (category, is bonus)
-            buzzedTeams: [],     // the teams who have buzzed, prevents different players on the same team from buzzing again
+            buzzedTeams: {},     // the teams who have buzzed, prevents different players on the same team from buzzing again
             lastScored: null
         }
         
-        this.leftPlayers = []   // players who have left the game, used for players to rejoin
+        this.leftPlayers = {}   // players who have left the game, used for players to rejoin
+        this.leftModerators = {}
     }
 
     get people() {
-        return [...this.members, ...this.moderators]
+        return {
+            ...this.players,
+            ...this.moderators
+        }
     }
 
-    addMember(member: Member) {
+    addPlayer(player: Player) {
         //error if they are already in the game
-        if ([...this.people, ...this.leftPlayers].some(x => x.id === member.id)) return member
-        
-        this.members = [...this.members, member]
-
-        // if player's team is not already in the list of teams add their team to the list
-        if (!this.teams.some(t => t.id === member.team?.id))  this.teams.push(member.team)
-        
-        return this.members
+        if (this.players[player.id]) {
+            return this.players
+        } else {
+            this.players[player.id] = player
+    
+            // if player's team is not already in the list of teams add their team to the list
+            if (player.team && !this.teams[player.team.id]) {
+                this.teams[player.team.id] = player.team
+            }
+            
+            return this.players
+        }
     }
 
     rejoinMember(memberId: string) {
-        if (this.leftPlayers.some(p => p.id === memberId)) {
-            const rejoiningPlayerData = this.leftPlayers.find(p => p.id === memberId)
-            const team = this.teams.find(t => t.id === rejoiningPlayerData.teamID)
-
-            if (!team && !rejoiningPlayerData.moderator)
+        if (this.leftPlayers[memberId]) {
+            const rejoiningPlayerData = this.leftPlayers[memberId]
+            if (!rejoiningPlayerData) {
                 return null
-
-            this.leftPlayers = this.leftPlayers.filter(p => p.id === memberId)
-            const newMember = new Member({
-                name: rejoiningPlayerData.name,
-                id: rejoiningPlayerData.id,
-                team,
-                moderator: rejoiningPlayerData.moderator,
-                score: rejoiningPlayerData.scoreboard.score,
-                catScores: rejoiningPlayerData.scoreboard.catScores
-            })
-            if (newMember.moderator){
-                this.moderators = [
-                    ...this.moderators,
-                    newMember
-                ]
-            } else {
-                this.members = [
-                    ...this.members,
-                    newMember
-                ]
             }
 
-            return newMember
-        } else {
-            return null
+            const team = this.teams[rejoiningPlayerData.teamID]
+
+            if (team) { // team exists
+                delete this.leftPlayers[memberId]
+    
+                const newMember = new Player({
+                    name: rejoiningPlayerData.name,
+                    id: memberId,
+                    team,
+                    score: rejoiningPlayerData.scoreboard?.score,
+                    catScores: rejoiningPlayerData.scoreboard?.catScores
+                })
+                this.players[memberId] = newMember
+    
+                return newMember
+            } else if (rejoiningPlayerData.team) {
+                // team existed but was removed
+                const newTeam = new Team(
+                    rejoiningPlayerData.team.name,
+                    "created",
+                    [],
+                    rejoiningPlayerData.team.scoreboard
+                )
+
+                delete this.leftPlayers[memberId]
+    
+                const newMember = new Player({
+                    name: rejoiningPlayerData.name,
+                    id: memberId,
+                    team: newTeam,
+                    score: rejoiningPlayerData.scoreboard?.score,
+                    catScores: rejoiningPlayerData.scoreboard?.catScores
+                })
+                this.players[memberId] = newMember
+    
+                return newMember
+            } else {
+                // individual team
+                delete this.leftPlayers[memberId]
+    
+                const newMember = new Player({
+                    name: rejoiningPlayerData.name,
+                    id: memberId,
+                    score: rejoiningPlayerData.scoreboard?.score,
+                    catScores: rejoiningPlayerData.scoreboard?.catScores
+                })
+                this.players[memberId] = newMember
+    
+                return newMember
+            }
+        } else if (this.leftModerators[memberId]) {
+            const rejoiningPlayerData = this.leftModerators[memberId]
+
+            delete this.leftModerators[memberId]
+
+            const newModerator = new Moderator({
+                name: rejoiningPlayerData.name,
+                id: rejoiningPlayerData.id
+            })
+            this.moderators[memberId] = newModerator
+
+            return newModerator
         }
     }
 
     removeMember(id: string) {
-        const member = this.people.find(x => x.id === id)
-        if (member) {
-            try {
-                this.members = this.members.filter(x => x.id !== id)
-                this.moderators = this.moderators.filter(x => x.id !== id)
-                if (member.team) member.team.removeMember(member.id)
-                this.leftPlayers.push(member.data)
-                return member
-            } catch (e) {
-                return null
+        if (this.players[id]) {
+            const member = this.players[id]
+            delete this.players[id]
+
+            if (member.team) {
+                member.team.removePlayer(id)
+
+                if (Object.values(member.team.players).length === 0 && member.team.type === "created") {
+                    this.leftPlayers[id] = {
+                        ...member.data,
+                        team: member.team.data as TeamData & { type: "created" }
+                    }
+                    delete this.teams[member.team.id]
+                } else {
+                    this.leftPlayers[id] = member.data
+                }
+            } else {
+                this.leftPlayers[id] = member.data
             }
-        }
-        return null
-    }
 
-    promoteMember(id: string) {
-        const member = this.members.find(x => x.id === id)
-        if (member) {
-            this.members = this.members.filter(x => x.id != id)
-            member.promote()
-            this.moderators = [...this.moderators, member]
             return member
+        } else if (this.moderators[id]) {
+            const moderator = this.moderators[id]
+            delete this.moderators[id]
+
+            this.leftModerators[id] = moderator.data
+            
+            return moderator
         }
         return null
     }
 
-    buzz(memberID: string) {
-        const member = this.members.find(x => x.id === memberID)
-        if (member && !this.state.buzzedTeams.some(x => x.id === member.team.id)) {     // if the player's team is not already in the list of teams who have buzzed
-            this.state.buzzedTeams.push(member.team)
-            this.state.currentBuzzer = member
+    promotePlayer(id: string) {
+        const player = this.players[id]
+        if (player) {
+            delete this.players[id]
+
+            const newModerator = new Moderator({
+                name: player.name,
+                // might not need id
+                id
+            })
+            this.moderators[id] = newModerator
+
+            return newModerator
+        }
+        return null
+    }
+
+    buzz(id: string) {
+        const player = this.players[id]
+        if (player && !this.state.buzzedTeams[player.team.id]) {
+            // if the player's team is not already in the list of teams who have buzzed
+            this.state.buzzedTeams[player.team.id] = player.team
+            this.state.currentBuzzer = player
             this.state.questionState = 'buzzed'
-            return member
+
+            return player
         } else {
             return null
         }
     }
 
-    newQ(memberID: string, question: Question ) {
-        if (this.moderators.some(x => x.id === memberID)) {     // only allow new questions to be made by moderators
-            this.state.currentBuzzer = null
-            this.state.currentQuestion = question
-            this.state.questionState = 'open'
-            this.state.buzzedTeams = []
-            return true
-        } else {
-
-        }
+    newQuestion(question: Question ) {
+        this.state.questionState = 'open'
+        this.state.currentBuzzer = null
+        this.state.currentQuestion = question
+        this.state.buzzedTeams = {}
+        return true
     }
 
-    scoreQ(score: 'correct' | 'incorrect' | 'penalty') {
-        const scoredMember = this.state.currentBuzzer
+    scoreQuestion(score: 'correct' | 'incorrect' | 'penalty') {
+        if (this.state.questionState !== "buzzed")
+            return null
+
+        const buzzer = this.state.currentBuzzer
 
         if (this.state.currentQuestion.bonus) {
             if (score === "correct") {
-                this.scoreboard.correctBonus(scoredMember, this.state.currentQuestion.category)
+                this.scoreboard.correctBonus(buzzer, this.state.currentQuestion.category)
             } else if (score === 'incorrect') {
-                this.scoreboard.incorrectBonus(scoredMember, this.state.currentQuestion.category)
+                this.scoreboard.incorrectBonus(buzzer, this.state.currentQuestion.category)
             } else if (score === 'penalty') {
-                this.scoreboard.penalty(scoredMember, this.state.currentQuestion.category)
+                this.scoreboard.penalty(buzzer, this.state.currentQuestion.category)
             }
         } else {
             if (score === "correct") {
-                this.scoreboard.correctTossup(scoredMember, this.state.currentQuestion.category)
+                this.scoreboard.correctTossup(buzzer, this.state.currentQuestion.category)
             } else if (score === 'incorrect') {
-                this.scoreboard.incorrectTossup(scoredMember, this.state.currentQuestion.category)
+                this.scoreboard.incorrectTossup(buzzer, this.state.currentQuestion.category)
             } else if (score === 'penalty') {
-                this.scoreboard.penalty(scoredMember, this.state.currentQuestion.category)
+                this.scoreboard.penalty(buzzer, this.state.currentQuestion.category)
+            }
+        }
+        
+        const open = !this.state.currentQuestion.bonus
+            && Object.values(this.state.buzzedTeams).length < Math.min(3, Object.values(this.teams).length)
+            && score !== 'correct'
+
+        const currentQuestion = this.state.currentQuestion
+        const buzzedTeams = this.state.buzzedTeams
+        if (!open) {
+            this.state = {
+                questionState: "idle",
+                currentBuzzer: null,
+                currentQuestion: null,
+                buzzedTeams: {},
+                lastScored: {
+                    memberId: buzzer.id,
+                    category: currentQuestion.category,
+                    scoreType: score,
+                    bonus: currentQuestion.bonus
+                }
+            }
+        } else {
+            this.state = {
+                questionState: "open",
+                currentBuzzer: null,
+                currentQuestion,
+                buzzedTeams,
+                lastScored: {
+                    memberId: buzzer.id,
+                    category: currentQuestion.category,
+                    scoreType: score,
+                    bonus: currentQuestion.bonus
+                }
             }
         }
 
-        this.state.lastScored = {
-            memberId: scoredMember.id,
-            category: this.state.currentQuestion.category,
-            scoreType: score,
-            bonus: this.state.currentQuestion.bonus
-        }
-
-        this.state.currentBuzzer = null
-
-        const open = !this.state.currentQuestion.bonus
-            && this.state.buzzedTeams.length < Math.min(3, this.teams.length)
-            && score !== 'correct'
-
-        const questionCategory = this.state.currentQuestion.category
-        if (!open) {
-            this.state.currentQuestion = null
-            this.state.questionState = 'idle'
-        } else {
-            this.state.questionState = 'open'
-        }
-
         return {
-            scoredMember,
+            buzzer,
             open,
-            scoredTeam: scoredMember.team,
-            category: questionCategory
+            category: currentQuestion.category
         }
     }
 
     undoScore() {
-        const scoredMember = this.members.find(m => m.id === this.state.lastScored.memberId)
+        if (!this.state.lastScored){
+            return null
+        }
 
-        if (scoredMember) {
-            this.scoreboard.undoScore(scoredMember, this.state.lastScored.scoreType, this.state.lastScored.category, this.state.lastScored.bonus)
+        const buzzer = this.players[this.state.lastScored.memberId]
+        if (buzzer) {
+            this.scoreboard.undoScore(
+                buzzer,
+                this.state.lastScored.scoreType,
+                this.state.lastScored.category,
+                this.state.lastScored.bonus
+            )
             
             const returnData = {
                 score: this.state.lastScored.scoreType,
-                scoredMember,
-                scoredTeam: scoredMember.team,
+                buzzer,
                 category: this.state.lastScored.category,
                 bonus: this.state.lastScored.bonus
             }
             this.state.lastScored = null
+
             return returnData
         } else {
             return null
@@ -286,12 +421,22 @@ export class Game {
     }
 
     clearScores() {
-        this.teams.forEach(t => {
+        for (const t of Object.values(this.teams)) {
             t.scoreboard.clear()
-        })
-        this.members.forEach(m => {
-            m.scoreboard.clear()
-        })
+        }
+        for (const p of Object.values(this.players)) {
+            p.scoreboard.clear()
+        }
+    }
+
+    addSpectator() {
+        const newId = createMemberID()
+        this.spectators.add(newId)
+        return newId
+    }
+
+    removeSpectator(id: string) {
+        return this.spectators.delete(id)
     }
 
     get scores(): GameScores {
@@ -299,24 +444,24 @@ export class Game {
             id: this.id,
             name: this.name,
             teams: {},
-            members: {}
+            players: {}
         }
 
-        this.teams.forEach(t => {
-            if (!t.individual) {
+        for (const t of Object.values(this.teams)) {
+            if (t.type !== "individual") {
                 data.teams[t.name] = {
                     score: t.scoreboard.score,
                     catScores: t.scoreboard.catScores
                 }
             }
-        })
+        }
 
-        this.members.forEach(m => {
-            data.members[m.name] = {
+        for (const m of Object.values(this.players)) {
+            data.players[m.name] = {
                 score: m.scoreboard.score,
                 catScores: m.scoreboard.catScores
             }
-        })
+        }
 
         return data
     }

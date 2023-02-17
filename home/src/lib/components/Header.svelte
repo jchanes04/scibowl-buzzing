@@ -1,12 +1,17 @@
 <script lang="ts">
+    import { enhance, type SubmitFunction } from "$app/forms";
+    import { invalidateAll } from "$app/navigation";
+    import { page } from "$app/stores";
+
+
     export let loggedIn: boolean
 
     let loginMenuVisible = false
     let loginMenuWrapper: HTMLElement
 
-    let username = ""
+    let email = ""
     let password = ""
-    let error = null
+    $: error = $page.form?.error
 
     function handleWindowClick(e: MouseEvent) {
         if (loginMenuWrapper && !loginMenuWrapper.contains(e.target as Node)) {
@@ -14,26 +19,11 @@
         }
     }
 
-    async function login() {
-        const res = await fetch('/api/login', {
-            body: new URLSearchParams({
-                username,
-                password
-            }),
-            method: "POST"
-        })
-
-        if ((await res.json()).correct) {
-            window.location.href = "/edit"
-        } else {
-            error = "Username or password is incorrect"
+    const handleSubmit: SubmitFunction = () => async ({ update, result }) => {
+        if (result.type === "redirect") {
+            await invalidateAll();
         }
-    }
-
-    function handleKeypress(e: KeyboardEvent) {
-        if (e.code === 'Enter') {
-            login()
-        }
+        await update();
     }
 </script>
 
@@ -44,25 +34,27 @@
     <div id="right">
         {#if loggedIn}
             <nav>
-                <a href="/edit" sveltekit:prefetch>Edit Team</a>
-                <a href="/api/logout" rel="external">Logout</a>
+                <a href="/edit">Edit Team</a>
+                <form action="/?/logout" method="POST">
+                    <button class="login" type="submit">Logout</button>
+                </form>
             </nav>
         {:else}
             <nav>
-                <!-- <a href="/register">Register Now</a> -->
+                <a href="/register">Register Now</a>
                 <div class="login-menu-wrapper" bind:this={loginMenuWrapper}>
-                    <span on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</span>
-                    <div class="login-menu" class:visible={loginMenuVisible}>
-                        
-                        <label for="username">Username</label>
-                        <input id="username" type="text" bind:value={username} autocomplete="off" on:keypress={handleKeypress} />
+                    <button class="login" on:click={() => {loginMenuVisible = !loginMenuVisible}}>Login</button>
+                    <form action="/?/login" method="POST" class="login-menu" class:visible={loginMenuVisible} use:enhance={handleSubmit}>
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="text" bind:value={email} autocomplete="off" />
                         <label for="password">Password</label>
-                        <input id="password" type="password" bind:value={password} autocomplete="off" on:keypress={handleKeypress} />
-                        <button on:click={login}>Login</button>
+                        <input id="password" name="password" type="password" bind:value={password} autocomplete="off" />
+                        <a href="/forgot-password" on:click={() => loginMenuVisible = false}>Forgot Password?</a>
+                        <button type="submit">Login</button>
                         {#if error}
                             <p class="error">{error}</p>
                         {/if}
-                    </div>
+                    </form>
                 </div>
             </nav>
         {/if}
@@ -104,7 +96,8 @@
             font-size: 24px;
         }
     }
-    button {
+
+    button:not(.login) {
         padding: 0.5em;
         margin: .5em auto;
         width: 100%;
@@ -130,12 +123,27 @@
         flex-direction: row;
         gap: 1em;
 
-        span, a {
+        a {
             text-decoration: none;
             color: inherit;
             transition: color 0.3s;
             cursor: pointer;
             white-space: nowrap;
+
+            &:hover {
+                color: var(--color-2)
+            }
+        }
+
+        button.login {
+            background: none;
+            border: none;
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: inherit;
 
             &:hover {
                 color: var(--color-2)
@@ -175,6 +183,16 @@
 
         &.visible {
             display: block;
+        }
+    }
+
+    form a {
+        font-size: 18px;
+        color: blue;
+        text-decoration: underline;
+
+        &:hover {
+            color: blue;
         }
     }
 

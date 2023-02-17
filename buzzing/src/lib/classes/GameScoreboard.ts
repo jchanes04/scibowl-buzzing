@@ -1,5 +1,5 @@
 import type { Category } from "./Game";
-import type { Member } from "./Member";
+import type { Player } from "./Player";
 
 export interface GameScoreboard {
     pointValues: {
@@ -20,27 +20,27 @@ export class GameScoreboard {
         }
     }
 
-    correctTossup(member: Member, category: Category) {
+    correctTossup(member: Player, category: Category) {
         member.scoreboard.correctAnswer(category, this.pointValues.tossup)
     }
 
-    incorrectTossup(member: Member, category: Category) {
+    incorrectTossup(member: Player, category: Category) {
         member.scoreboard.incorrectAnswer(category, 0)
     }
 
-    correctBonus(member: Member, category: Category) {
+    correctBonus(member: Player, category: Category) {
         member.scoreboard.correctAnswer(category, this.pointValues.bonus)
     }
 
-    incorrectBonus(member: Member, category: Category) {
+    incorrectBonus(member: Player, category: Category) {
         member.scoreboard.incorrectAnswer(category, 0)
     }
 
-    penalty(member: Member, category?: Category) {
+    penalty(member: Player, category?: Category) {
         member.scoreboard.penalty(category, this.pointValues.penalty)
     }
 
-    undoScore(member: Member, scoreType: "correct" | "incorrect" | "penalty", category: Category, bonus: boolean = false) {
+    undoScore(member: Player, scoreType: "correct" | "incorrect" | "penalty", category: Category, bonus: boolean = false) {
         const pointValue = scoreType === "incorrect"
             ? 0
             : bonus

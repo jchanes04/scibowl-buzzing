@@ -4,10 +4,9 @@
 // for information about these interfaces
 declare namespace App {
 	interface Locals {
-		authenticated?: boolean,
         gameId?: string,
         gameName?: string,
-		memberData?: import('$lib/classes/Member').MemberData
+		myData?: import('$lib/classes/Player').PlayerData | import('$lib/classes/Moderator').ModeratorData | null
 	}
 
 	interface Platform {}
