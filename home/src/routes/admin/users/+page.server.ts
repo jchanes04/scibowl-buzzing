@@ -1,16 +1,6 @@
-import { getAllTeams, getAllUsers, updateUser } from '$lib/mongo'
-import type { PageServerLoad, Actions } from './$types'
+import { updateUser } from '$lib/mongo'
+import type { Actions } from './$types'
 import { fail } from "@sveltejs/kit";
-
-export const load: PageServerLoad = async function({ parent }) {
-    await parent()
-    const users = await getAllUsers()
-    const teams = await getAllTeams()
-    return {
-        users,
-        teams
-    }
-}
 
 export const actions: Actions = {
     schoolName: async ({ request, locals }) => {
