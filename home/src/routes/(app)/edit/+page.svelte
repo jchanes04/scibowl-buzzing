@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Team } from '$lib/mongo';
+    import type { Member, Team } from '$lib/mongo';
     import type { PageData } from './$types';
     import { userStore } from '$lib/stores/user';
     import MemberMenu from '$lib/components/MemberMenu.svelte';
@@ -11,6 +11,8 @@
     import Confirm from '$lib/components/Confirm.svelte';
     import Message from '$lib/components/Message.svelte';
     import type { ActionResult } from '@sveltejs/kit';
+    import MemberEdit from '$lib/components/MemberEdit.svelte';
+  import updateTeam from '$lib/functions/updateTeam';
 
     export let data: PageData
     let { teams, status } = data
@@ -163,6 +165,14 @@
             }
         }
     }
+
+    async function handleEdit(event: CustomEvent<Member>) {
+        if (selectedTeam?.members.some(x => x.id === event.detail.id)) {
+            const index = selectedTeam.members.findIndex(x => x.id === event.detail.id)
+            selectedTeam.members[index] = event.detail
+            await updateTeam(selectedTeam)
+        }
+    }
 </script>
 
 <svelte:head>
@@ -182,7 +192,7 @@
             <button class="delete-team" on:click={handleDelete}></button>
         </div>
         {#if selectedTeam}
-            {#key selectedTeam}
+            {#key selectedTeam._id}
                 <div class="edit-menu">
                     <div class="team-name">
                         <h1>
@@ -193,7 +203,11 @@
                             <button class="icon edit" on:click={handleRename} />
                         </h1>
                     </div>
-                    <MemberMenu teamData={selectedTeam} />
+                    <MemberMenu teamData={selectedTeam} let:member>
+                        {#key member}
+                            <MemberEdit {member} on:change={handleEdit} />
+                        {/key}
+                    </MemberMenu>
                 </div>
             {/key}
         {:else} 

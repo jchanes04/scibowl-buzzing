@@ -2,12 +2,15 @@
     import updateTeam from "$lib/functions/updateTeam";
 
     import type { Member, Team } from "$lib/mongo";
-    import { getContext, type SvelteComponentTyped } from "svelte";
+    import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "./Confirm.svelte";
-    import MemberEdit from "./MemberEdit.svelte";
 
     export let teamData: Team
+    export let showNew: boolean = true
+
+    console.log("x")
+    $: memberList = Object.fromEntries(teamData.members.map(m => [m.id, m]))
 
     const modalStore: Writable<{
         component: ConstructorOfATypedSvelteComponent,
@@ -15,12 +18,13 @@
     } | null> = getContext('modalStore')
 
     let displayTab: number | null = teamData.members[0]?.id ?? null
+    $: console.log("displayTab", displayTab)
 
     async function saveTeamData() {
         await updateTeam(teamData)
     }
 
-    function newPlayer(){
+    function newMember(){
         const newId = Date.now()
         teamData.members = [
             ...teamData.members,
@@ -36,17 +40,17 @@
         saveTeamData()
     }
 
-    function removePlayer(player: Member) {
+    function removeMember(member: Member) {
         $modalStore = {
             component: Confirm,
             props: {
                 headerText: "Confirm Delete",
-                message: `Are you sure you want to delete ${player.firstName} ${player.lastName} from the team?`,
+                message: `Are you sure you want to delete ${member.firstName} ${member.lastName} from the team?`,
                 cancelCallback: () => {
                     $modalStore = null
                 },
                 confirmCallback: async () => {
-                    teamData.members = teamData.members.filter(x => x.id !== player.id)
+                    teamData.members = teamData.members.filter(x => x.id !== member.id)
                     saveTeamData()
                     $modalStore = null
                     displayTab = null
@@ -58,36 +62,27 @@
 
 <div class="member-menu">
     <div class="tab-menu">
-        {#each teamData.members as player, i}
-            <div class="tab" class:active={displayTab == player.id}>
-                <button on:click={() => displayTab=player.id}>
-                    {player?.firstName ? player.firstName : "New Student"}
+        {#each teamData.members as member (member.id)}
+            <div class="tab" class:active={displayTab == member.id}>
+                <button on:click={() => displayTab=member.id}>
+                    {member?.firstName ? member.firstName : "New Student"}
                 </button>
-                <button class="icon" on:click={() => removePlayer(player)}>x</button>
+                <button class="icon" on:click={() => removeMember(member)}>x</button>
             </div>
         {:else}
             <div class="tab placeholder"></div>
         {/each}  
-        {#if teamData.members.length < 5}
+        {#if showNew && teamData.members.length < 5}
             <div class="tab add">
-                <button on:click={newPlayer}>+</button>
+                <button on:click={newMember}>+</button>
             </div>
         {/if}
     </div>
-    {#if displayTab}
-        {#each teamData.members as player}
-            <div>
-                <MemberEdit shown={player.id === displayTab} bind:player={player} on:change={saveTeamData} />
-            </div>
-        {:else}
-            <div class="no-selected">
-                <h2>No player selected</h2>
-            </div>
-            
-        {/each}
+    {#if displayTab && memberList[displayTab]}
+        <slot member={memberList[displayTab]}></slot>
     {:else}
         <div class="no-selected">
-            <h2>No player selected</h2>
+            <h2>No member selected</h2>
         </div>
     {/if}
 </div>
