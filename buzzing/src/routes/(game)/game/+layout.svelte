@@ -1,8 +1,14 @@
 <script lang="ts">
     import ConnectedIndicator from '$lib/components/ConnectedIndicator.svelte';
     import HeaderCompact from '$lib/components/HeaderCompact.svelte'
-    import Modal from '$lib/components/Modal.svelte';
-    import modalStore from '$lib/stores/modal';
+    import { setContext } from 'svelte';
+    import { writable } from 'svelte/store';
+
+    const modalStore = writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null>(null)
+    setContext('modalStore', modalStore)
 </script>
 
 <div id="page">
@@ -11,7 +17,7 @@
     <ConnectedIndicator />
 </div>
 {#if $modalStore}
-    <Modal />
+    <svelte:component this={$modalStore.component} {...$modalStore.props} />
     <div class="modal-background" />
 {/if}
 

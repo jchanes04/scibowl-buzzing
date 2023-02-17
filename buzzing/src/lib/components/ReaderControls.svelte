@@ -1,22 +1,18 @@
 <script lang="ts">
     import ControlSection from '$lib/components/ControlSection.svelte'
     import Select from 'svelte-select'
-    import type { Socket } from 'socket.io-client';
-    import type { Writable } from 'svelte/store'
-    import type { TeamData } from '$lib/classes/Team'
     import type { Category } from '$lib/classes/Game';
     import { getContext } from 'svelte';
     import type Debugger from '$lib/classes/Debugger';
     import chatMessagesStore from '$lib/stores/chatMessages';
-    import teamsStore from '$lib/stores/teams';
-    import modalStore from '$lib/stores/modal';
-    import gameStateStore from '$lib/stores/gameState';
-    export let socket: Writable<Socket>
-    export let questionState: 'idle' | 'open' | 'buzzed'
+    import teamsStore, { type ClientTeamData } from '$lib/stores/teams';
+    import gameStore from '$lib/stores/game';
+    import socket from "$lib/socket"
+    import type { Writable } from 'svelte/store';
+    import Confirm from './Confirm.svelte';
     
-    let teamSelectValue: TeamData
+    let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
-    let selectedTeam: string
     let questionType: "tossup" | "bonus" | ""
     const categories: { id: Category, value: string }[] = [
         {id:"earth", value:"Earth and Space"},
@@ -26,22 +22,25 @@
         {id:"math", value:"Math"},
         {id:"energy", value:"Energy"}
     ]
-        
-    
     
     const debug: Debugger = getContext('debug')
+    type ModalStore = Writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null>
+    const modalStore: ModalStore = getContext('modalStore')
 
     function newQ() {
-        $socket.emit('newQ', {
+        socket.emit('newQ', {
             category: selectedCategory,
             bonus: questionType === "bonus",
-            team: questionType === "bonus" ? selectedTeam : null
+            team: questionType === "bonus" ? teamSelectValue?.id : null
         })
 
         debug.addEvent('newQ', {
             category: selectedCategory,
             bonus: questionType === "bonus",
-            team: questionType === "bonus" ? selectedTeam : null
+            team: questionType === "bonus" ? teamSelectValue?.id : null
         })
 
         $chatMessagesStore = [...$chatMessagesStore, {
@@ -49,9 +48,8 @@
             text: `New Question: ${questionType[0].toUpperCase() + questionType.slice(1)} - ${selectedCategory[0].toUpperCase() + selectedCategory.slice(1)}`
         }]
 
-        questionState = 'open';
+        gameStore.openQuestion(true)
 
-        (<HTMLInputElement>document.querySelector('input[name="question-type"]:checked')).checked = false
         questionType = ""
     }
     
@@ -60,45 +58,40 @@
         startTimerDisabled = true
         setTimeout(() => startTimerDisabled = false, 500)
 
-        $socket.emit('startTimer')
+        socket.emit('startTimer')
         debug.addEvent('startTimer', {})
     }
     function endGame() {
         $modalStore = {
-            title: 'End Game',
-            message: 'Are you sure you want to end the game?',
-            options: [
-                {
-                    text: 'Cancel',
-                    callback: () => {
-                        $modalStore = null
-                    }
+            component: Confirm,
+            props: {
+                title: "End Game",
+                message: "Are you sure you want to end the game?",
+                cancelCallback: () => {
+                    $modalStore = null
                 },
-                {
-                    text: 'Confirm',
-                    callback: () => {
-                        $socket.emit('endGame')
-                        debug.addEvent('endGame', {})
-                    }
+                confirmCallback: () => {
+                    socket.emit('endGame')
+                    debug.addEvent('endGame', {})
+                    $modalStore = null
                 }
-            ]
+            }
         }
     }
     function clearScores() {
-        $socket.emit('clearScores')
+        socket.emit('clearScores')
         debug.addEvent('clearScores', {})
     }
     function saveScores() {
-        $socket.emit('saveScores')
+        socket.emit('saveScores')
         debug.addEvent('saveScores', {})
     }
 
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
     function scoreQuestion() {
-        $socket.emit('scoreQuestion', selectedScore)
+        socket.emit('scoreQuestion', selectedScore)
         if (selectedScore === "correct") {
-            teamSelectValue = $teamsStore.find(t => t.id === $gameStateStore.buzzedTeamIDs[$gameStateStore.buzzedTeamIDs.length - 1])
-            selectedTeam = teamSelectValue.id
+            teamSelectValue = $teamsStore[$gameStore.state.buzzedTeamIds[$gameStore.state.buzzedTeamIds.length - 1]]
         }
         selectedScore = ""
         debug.addEvent('scoreQuestion', { selectedScore })
@@ -108,14 +101,7 @@
     function undoScore() {
         undoScoresDisabled = true
         setTimeout(() => undoScoresDisabled = false, 1000)
-        $socket.emit('undoScore')
-    }
-
-    function handleTeamSelect(e: CustomEvent<TeamData>) {
-        selectedTeam = e.detail.id
-    }
-    function handleSubjectSelect(e: CustomEvent<{ id: Category, value: string }>) {
-        selectedCategory = e.detail.id
+        socket.emit('undoScore')
     }
 </script>
 
@@ -133,31 +119,40 @@
         </div>
         <br />
         <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus'}>
-            <div class="select-wrapper"><Select items={$teamsStore} optionIdentifier="id" labelIdentifier="name" placeholder="Bonus for" isSearchable={false} on:select={handleTeamSelect} bind:value={teamSelectValue} /></div>
+            <div class="select-wrapper">
+                <Select items={Object.values($teamsStore)} itemId="id" label="name" placeholder="Bonus for" searchable={false}
+                    bind:value={teamSelectValue} />
+            </div>
         </div>
         <br />
-            <div class="select-wrapper"><Select items={categories} optionIdentifier="id" labelIdentifier="value" placeholder="Category" isSearchable={false}  on:select={handleSubjectSelect}/></div>
+        <div class="select-wrapper">
+            <Select items={categories} itemId="id" label="value" placeholder="Category" searchable={false}
+                bind:justValue={selectedCategory}/>
+        </div>
         <br />
-        <button on:click={newQ} disabled={!questionType || !selectedCategory || (!selectedTeam && questionType === "bonus")}>New Question</button>
+        <button on:click={newQ} disabled={!questionType || !selectedCategory || (!teamSelectValue && questionType === "bonus")}>New Question</button>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
-        <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || questionState !== "open"}>Start Timer</button>
+        <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
         <br />
-        <div id="score-wrapper" class:disabled={questionState !== "buzzed"}>
+        <div id="score-wrapper" class:disabled={$gameStore.state.questionState !== "buzzed"}>
             <label for="correct-radio">
-                <input type="radio" id="correct-radio" name="selected-score" value="correct" bind:group={selectedScore} disabled={questionState !== "buzzed"}>
+                <input type="radio" id="correct-radio" name="selected-score" value="correct"
+                    bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
                 <span>Correct</span>
             </label>
             <label for="incorrect-radio">
-                <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect" bind:group={selectedScore} disabled={questionState !== "buzzed"}>
+                <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect"
+                    bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
                 <span>Incorrect</span>
             </label>
             <label for="penalty-radio">
-                <input type="radio" id="penalty-radio" name="selected-score" value="penalty" bind:group={selectedScore} disabled={questionState !== "buzzed"}>
+                <input type="radio" id="penalty-radio" name="selected-score" value="penalty"
+                    bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
                 <span>Penalty</span>
             </label>
         </div>
-        <button on:click={scoreQuestion} disabled={questionState !== "buzzed" || !selectedScore}>Score</button>
+        <button on:click={scoreQuestion} disabled={$gameStore.state.questionState !== "buzzed" || !selectedScore}>Score</button>
         <br />
         <button on:click={undoScore} disabled={undoScoresDisabled}>Undo Score</button>
     </ControlSection>

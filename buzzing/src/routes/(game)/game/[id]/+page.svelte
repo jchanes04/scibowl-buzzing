@@ -8,70 +8,89 @@
     import ReaderControls from '$lib/components/ReaderControls.svelte'
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
-    import type { TeamData } from '$lib/classes/Team'
-    import type { PageData } from "./$types"
+    import type { PageServerData } from "./$types"
     import { browser } from '$app/environment'
 
-    import { goto } from '$app/navigation';
     import Debugger from '$lib/classes/Debugger';
     import { setContext } from 'svelte';
-    import socket from '$lib/stores/socket';
-    import type { GameInfo } from '$lib/stores/gameInfo';
-    import gameInfoStore from "$lib/stores/gameInfo";
-    import membersStore from "$lib/stores/members";
-    import teamsStore from "$lib/stores/teams";
     import timerStore from "$lib/stores/timer"
-    import gameStateStore from "$lib/stores/gameState";
-    import type { MemberData } from "$lib/classes/Member";
-    import moderatorStore from "$lib/stores/moderators";
+    import gameStore from "$lib/stores/game";
+    import teamsStore, { createTeamStore } from "$lib/stores/teams";
+    import playersStore, { createPlayerStore } from "$lib/stores/players";
+    import moderatorsStore, { createModeratorStore } from "$lib/stores/moderators";
+    import myMemberStore from "$lib/stores/myMember"
+    import { page } from "$app/stores";
+    import socket from "$lib/socket";
 
-    export let data: PageData
-    $: ({ gameInfo, teamList, moderatorList } = data)
+    export let data: PageServerData
+    let { gameInfo, teamList, moderatorList, playerList, myMemberId } = data
+    $: ({ gameInfo, teamList, moderatorList, playerList, myMemberId } = data)
 
-    $gameInfoStore = gameInfo
-    $teamsStore = teamList
-    $moderatorStore = moderatorList
+    $gameStore = {
+        id: $page.params.id,
+        ...gameInfo,
+        state: {
+            questionState: 'idle',
+            currentBuzzer: null,
+            currentQuestion: null,
+            buzzingEnabled: false,
+            buzzedTeamIds: []
+        }
+    }
+
+    for (const t of Object.values(teamList)) {
+        const newStore = createTeamStore(t)
+        teamsStore.addTeam(newStore)
+    }
+
+    for (const p of Object.values(playerList)) {
+        if ($teamsStore[p.teamID]) {
+            const team = $teamsStore[p.teamID]
+            const player = createPlayerStore(p, team.store)
+            if (p.id === myMemberId) {
+                myMemberStore.setMember({ memberStore: player, moderator: false })
+            }
+            team.store.addPlayer(player)
+            playersStore.addPlayer(player)
+        }
+    }
+
+    for (const m of Object.values(moderatorList)) {
+        const moderator = createModeratorStore(m)
+        moderatorsStore.addModerator(moderator)
+        if (m.id === myMemberId) {
+            myMemberStore.setMember({ memberStore: moderator, moderator: true })
+        }
+    }
 
     let windowWidth: number
 
-    const debug = browser ? new Debugger($gameInfoStore.gameId, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
+    const debug = browser ? new Debugger($page.params.id, gameInfo.name, $myMemberStore, socket) : null
     setContext('debug', debug)
-    
-
-    $socket.on('authenticated', () => {
-    })
-
-    $socket.on('authFailed', () => {
-        goto('/join/' + $gameInfoStore.gameId)
-    })
-
-    $socket.on('gameEnd', () => {
-        goto('/')
-    })
 </script>
 
 <svelte:head>
-    <title>{gameInfo.gameName}</title>
+    <title>{gameInfo.name}</title>
 </svelte:head>
 
 <svelte:window bind:innerWidth={windowWidth}></svelte:window>
 
 <main>
-    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode={gameInfo.joinCode}>
-        <Timer bind:this={$timerStore} on:end={() => $gameStateStore = { ...$gameStateStore, buzzingDisabled: true }} />
+    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.name} joinCode={gameInfo.joinCode}>
+        <Timer bind:this={$timerStore} on:end={() => gameStore.disableBuzzing()} />
     </svelte:component>
     <MemberList />
-    <Scoreboard teamList={$teamsStore} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
+    <Scoreboard />
     <Chatbox />
 
-    {#if $gameInfoStore.myMember.moderator}
-        <ReaderControls socket={socket} bind:questionState={$gameStateStore.questionState} />
+    {#if $myMemberStore.moderator}
+        <ReaderControls />
     {:else}
         <PlayerControls />
     {/if}
 
-    <div on:click={() => debug.openDebugLog()}
-        style="position: fixed; right: 10px; bottom: 10px; cursor: pointer; background:grey; border-radius:1em; padding:.2em;">Open Debug Log</div>
+    <button on:click={() => debug?.openDebugLog()}
+        style="position: fixed; right: 10px; bottom: 10px; cursor: pointer; background:grey; border-radius:1em; padding:.2em;">Open Debug Log</button>
 </main>
 
 

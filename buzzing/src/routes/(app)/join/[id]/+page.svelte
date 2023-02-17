@@ -3,12 +3,14 @@
     import Select from "svelte-select";
     import type { PageData } from './$types'
     import type { TeamData } from "$lib/classes/Team";
+    import { enhance } from '$app/forms';
 
     export let data: PageData
-    $: ({ memberNames, gameName, gameId, settings, teams } = data)
+    let { memberNames, gameName, settings, teams } = data
+    $: ({ memberNames, gameName, settings, teams } = data)
 
     let memberName = ''
-    let teamOrIndiv: "indiv" | "team" | "new-team" = null
+    let teamOrIndiv: "indiv" | "team" | "new-team" | null = null
     let selectedTeam: TeamData
     let newTeamName: string
     let showRadio: boolean = true
@@ -31,10 +33,9 @@
 </svelte:head>
 
 <div>
-    <form action="/api/join" method="POST" autocomplete="off">
+    <form method="POST" autocomplete="off" use:enhance>
         <h1>Join {gameName}</h1>
         <div>
-            <input type="hidden" name="gameId" value={gameId} />
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
             <br />
             {#if !showRadio}
@@ -79,13 +80,13 @@
                 {/if}
 
                 <div class="select-wrapper" style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
-                    <Select items={teams} optionIdentifier="id" labelIdentifier="name" bind:value={selectedTeam} placeholder="Team" isSearchable={false} />
+                    <Select itemId="id" label="name" items={teams} bind:value={selectedTeam} placeholder="Team" searchable={false} />
                     <input type="hidden" name="team-id" value={selectedTeam?.id}>
                 </div>
                 <br />
                 <br />
             {/if}
-            <button id="join-game" disabled={disabled}>Join</button>
+            <button id="join-game" {disabled}>Join</button>
         </div>
         <JoinMemberList memberNames={memberNames} />
     </form>

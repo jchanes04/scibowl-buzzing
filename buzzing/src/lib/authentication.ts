@@ -1,6 +1,5 @@
 import fs from 'fs'
 import jwt from 'jsonwebtoken'
-import { games } from '$lib/server'
 
 const privateKey = fs.readFileSync('jwt.key')
 

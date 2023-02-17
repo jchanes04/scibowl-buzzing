@@ -1,64 +1,68 @@
 <script lang="ts">
-    import type { MemberData } from "$lib/classes/Member";
-    import kickPlayer from "$lib/functions/kickPlayer";
-    import promotePlayer from "$lib/functions/promotePlayer";
-    import modalStore from "$lib/stores/modal";
+    import socket from "$lib/socket";
+    import type { ModeratorStore } from "$lib/stores/moderators";
+    import type { PlayerStore } from "$lib/stores/players";
     import teamsStore from "$lib/stores/teams";
+    import { getContext } from "svelte";
+    import type { Writable } from "svelte/store";
+    import Confirm from "./Confirm.svelte";
 
-    export let member: MemberData
+    export let member: PlayerStore | ModeratorStore
     export let showControls = false
+
+    type ModalStore = Writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null>
+    const modalStore: ModalStore = getContext('modalStore')
 
     function promote() {
         $modalStore = {
-            title: 'Promote ' + member.name,
-            message: 'Are you sure you want to promote ' + member.name + ' to moderator?',
-            options: [
-                {
-                    text: 'Cancel',
-                    callback: () => {
-                        $modalStore = null
-                    }
+            component: Confirm,
+            props: {
+                title: 'Promote ' + $member.name,
+                message: 'Are you sure you want to promote ' + $member.name + ' to moderator?',
+                cancelCallback: () => {
+                    $modalStore = null
                 },
-                {
-                    text: 'Confirm',
-                    callback: () => promotePlayer(member)
+                confirmCallback: () => {
+                    socket.emit('promotePlayer', member.id)
+                    $modalStore = null
                 }
-            ]
+            }
         }
     }
 
     function kick() {
         $modalStore = {
-            title: 'Kick ' + member.name,
-            message: 'Are you sure you want to kick ' + member.name + '?',
-            options: [
-                {
-                    text: 'Cancel',
-                    callback: () => {
-                        $modalStore = null
-                    }
+            component: Confirm,
+            props: {
+                title: 'Kick ' + $member.name,
+                message: 'Are you sure you want to kick ' + $member.name + '?',
+                cancelCallback: () => {
+                    $modalStore = null
                 },
-                {
-                    text: 'Kick',
-                    callback: () => kickPlayer(member)
+                confirmCallback: () => {
+                    socket.emit('kickPlayer', member.id)
+                    $modalStore = null
                 }
-            ]
+            }
         }
     }
 </script>
 
-{#if member.moderator}
+{#if $member.type === "moderator"}
     <li class="moderator">
-        {member.name}
+        {$member.name}
     </li>
 {:else}
     <li>
-        {member.name} 
-        <span class="team">({$teamsStore.find(t => t.id === member.teamID)?.name})</span>
+        {$member.name}
+        <span class="team">({$teamsStore[$member.team.id]?.name})</span>
         {#if showControls}
             <div class="controls">
-                <span class="icon kick" on:click={kick} />
-                <span class="icon promote" on:click={promote} />
+                <button class="icon kick" on:click={kick} />
+                <button class="icon promote" on:click={promote} />
             </div>
         {/if}
     </li>

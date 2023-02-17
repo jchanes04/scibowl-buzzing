@@ -1,33 +1,31 @@
  <script lang="ts">
     import Controlled from '$lib/components/ControlledInput.svelte'
 
-    let buttonDisabled = true
     let codeExists = false
 
     async function handleFormInput() {
         if (joinCodeValue.length === 4) {
             const res = await fetch('/api/code-exists?code=' + joinCodeValue)
             const response = await res.json()
-            buttonDisabled = joinCodeValue.length !== 4 || !response.exists
             codeExists = response.exists
         }
     }
 
-    let joinCodeValue: string
+    let joinCodeValue: string = ""
 </script>
 
 <svelte:head>
     <title>Join Game</title>
 </svelte:head>
 
-<form action="/api/join" method="POST" on:input={handleFormInput} autocomplete="off">
+<form method="POST" on:input={handleFormInput} autocomplete="off">
     <h1>Enter a join code</h1>
     <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
     <br />
     {#if !codeExists && joinCodeValue?.length === 4}
         <p class="error">Invalid code</p>
     {/if}
-    <button id="join-game" disabled={buttonDisabled}>Join</button>
+    <button id="join-game" disabled={codeExists || joinCodeValue.length !== 4}>Join</button>
 </form>
 
 <style lang="scss">

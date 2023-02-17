@@ -1,6 +1,10 @@
+import type { ModeratorStore } from "$lib/stores/moderators"
+import type { MyMember } from "$lib/stores/myMember"
+import type { PlayerStore } from "$lib/stores/players"
 import type { Socket } from "socket.io-client"
-import type { DefaultEventsMap } from "socket.io-client/build/typed-events"
-import type { MemberData } from "./Member"
+import type { ClientModerator } from "./client/ClientModerator"
+import type { ClientPlayer } from "./client/ClientPlayer"
+import type { PlayerData } from "./Player"
 
 export type Event = {
     name: string,
@@ -14,12 +18,12 @@ export default interface Debugger {
     memberId: string,
     memberName: string,
     events: Event[],
-    socket: Socket<DefaultEventsMap, DefaultEventsMap>,
+    socket: Socket,
     openWindow: Window | null
 }
 
 export default class Debugger {
-    constructor(gameId: string, gameName: string, member: MemberData, socket: Socket<DefaultEventsMap, DefaultEventsMap>) {
+    constructor(gameId: string, gameName: string, member: MyMember, socket: Socket) {
         this.memberId = member.id,
         this.memberName = member.name
         this.gameId = gameId
@@ -36,7 +40,7 @@ export default class Debugger {
                 newMessageElement.classList.add('ws-message')
                 const newContent = this.openWindow.document.createTextNode(`[WS]     ${event.padEnd(14, " ")} | ${JSON.stringify(args)}`)
                 newMessageElement.appendChild(newContent)
-                this.openWindow.document.getElementById('event-container').appendChild(newMessageElement)
+                this.openWindow.document.getElementById('event-container')?.appendChild(newMessageElement)
             }
         })
 
@@ -54,7 +58,7 @@ export default class Debugger {
             newMessageElement.classList.add('client-message')
             const newContent = this.openWindow.document.createTextNode(`[Client] ${name.padEnd(14, " ")} | ${JSON.stringify(data)}`)
             newMessageElement.appendChild(newContent)
-            this.openWindow.document.getElementById('event-container').appendChild(newMessageElement)
+            this.openWindow.document.getElementById('event-container')?.appendChild(newMessageElement)
         }
     }
 
@@ -71,7 +75,7 @@ export default class Debugger {
     openDebugLog() {
         const newWindow = window.open("", this.gameName + " Debug Log", "width=800,height=600")
         this.openWindow = newWindow
-        newWindow.document.write(
+        newWindow?.document.write(
             `<script>function reportBug() {window.opener.postMessage("reportBug", "${import.meta.env.VITE_HOST_URL}")}</script>
             <style> .ws-message { color: black; }  .client-message { color: red; }
                 .report {

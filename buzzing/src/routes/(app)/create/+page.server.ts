@@ -1,10 +1,12 @@
-import { generateToken } from "$lib/authentication";
-import type { RequestHandler } from "./$types";
-import { createNewGame } from "$lib/server";
-import { redirect } from "@sveltejs/kit";
+import { generateToken } from "$lib/authentication"
+import { createNewGame } from "$lib/server"
+import { redirect } from "@sveltejs/kit"
+import type { Actions } from "./$types"
 
-export const POST = async function({ request, cookies }) {
-    try {
+// TODO: zod validation
+
+export const actions = {
+    default: async function({ request, cookies }) {
         const body = await request.formData()
         const ownerName = body.get("owner-name") as string
         const gameName = body.get("game-name") as string
@@ -24,15 +26,12 @@ export const POST = async function({ request, cookies }) {
 
         const game = createNewGame(ownerName, gameData)
 
-        const authToken = generateToken({ memberId: game.moderators[0].id, gameId: game.id })
+        const authToken = generateToken({ memberId: Object.values(game.moderators)[0].id, gameId: game.id })
         cookies.set("authToken", authToken, {
             path: "/",
             domain: (import.meta.env.VITE_HOST_URL as string)
                 .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
         })
         throw redirect(302, "/game/" + game.id)
-    } catch (e) {
-        console.error(e)
-        throw redirect(302, "/error/invalid-create")
     }
-} satisfies RequestHandler
+} satisfies Actions

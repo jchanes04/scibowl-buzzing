@@ -1,4 +1,10 @@
 <script lang="ts">
+    import { enhance } from '$app/forms';
+    import TeamList from '$lib/components/TeamList.svelte'
+    import type { ActionData } from './$types';
+
+    export let form: ActionData
+
     let newTeamsAllowed: boolean = false
     let individualTeamsAllowed: boolean
     let ownerName: string
@@ -6,8 +12,6 @@
     let defaultTeams: string[] = []
     let newTeamName: string
     $: submitEnabled = ownerName && gameName && !(!individualTeamsAllowed && !newTeamsAllowed && defaultTeams.length === 0)
-
-    import TeamList from '$lib/components/TeamList.svelte'
 
     function handleSubmit() {
         if (newTeamName)
@@ -20,8 +24,13 @@
     <title>Create Game</title>
 </svelte:head>
 
-<form id="form" action="/api/create" method="POST" autocomplete="off" on:submit={handleSubmit}>
+<form id="form" method="POST" autocomplete="off" on:submit={handleSubmit} use:enhance>
     <h1>Create Game</h1>
+
+    {#if form?.error}
+        <p class="error">{form.error}</p>
+    {/if}
+
     <input type="text" placeholder="Game Name" name="game-name" id="game-name-input" bind:value={gameName} />
     <br />
     <input type="text" placeholder="Your Name" name="owner-name" id="owner-name-input" bind:value={ownerName} />
@@ -75,6 +84,10 @@
         font-size: 24px;
         text-decoration: underline var(--blue) 2px;
         text-underline-offset: 0.1em;
+    }
+
+    .error {
+        color: red;
     }
 
     .checkbox-wrapper {

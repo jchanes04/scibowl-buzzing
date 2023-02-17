@@ -1,49 +1,57 @@
 import { createTeamID } from "$lib/functions/createId";
-import type { Member, MemberData } from "./Member";
-import { Scoreboard, ScoreboardData } from "./Scoreboard";
+import type { Player, PlayerData } from "./Player";
+import { Scoreboard, type ScoreboardData } from "./Scoreboard";
+
+export type TeamType = "default" | "created" | "individual"
 
 export interface Team {
     id: string,
     name: string,
-    members: Member[],
+    players: Record<string, Player>,
     scoreboard: Scoreboard,
-    individual: boolean
+    type: TeamType
 }
 
 export interface TeamData {
     id: string,
     name: string,
-    members: MemberData[],
+    players: Record<string, PlayerData>,
     scoreboard: ScoreboardData,
-    individual: boolean
+    type: TeamType
 }
 
 export class Team {
-    constructor(name: string, individual?: boolean, members?: Member[]) {
+    constructor(name: string, type: TeamType = "default", players: Player[] = [], scores?: ScoreboardData) {
         this.id = createTeamID()
         this.name = name
-        this.members = members ?? []
-        this.scoreboard = new Scoreboard({})
-        this.individual = individual ?? false
+        this.players = Object.fromEntries(players.map(p => [p.id, p]))
+        this.scoreboard = scores ? new Scoreboard({
+            teamScoreboard: null,
+            score: scores.score,
+            catScores: scores.catScores
+        }) : new Scoreboard({})
+        this.type = type
     }
 
-    addMember(member: Member) {
-        this.members = [...this.members, member]
+    addPlayer(player: Player) {
+        this.players[player.id] = player
     }
 
-    removeMember(id: string) {
-        const member = this.members.find(x => x.id === id)
-        this.members = this.members.filter(x => x.id !== id)
-        return member || null
+    removePlayer(id: string) {
+        const player = this.players[id]
+        delete this.players[id]
+        return player ?? null
     }
 
     get data(): TeamData {
         return {
             id: this.id,
             name: this.name,
-            members: this.members.map(m => m.data),
+            players: Object.fromEntries(
+                Object.entries(this.players).map(([id, p]) => [id, p.data])
+            ),
             scoreboard: this.scoreboard.data,
-            individual: this.individual
+            type: this.type
         }
     }
 }

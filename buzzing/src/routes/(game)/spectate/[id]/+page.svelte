@@ -6,59 +6,70 @@
     import Timer from '$lib/components/Timer.svelte'
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
+    import type { PageServerData } from "./$types"
     import { browser } from '$app/environment'
 
-    import { goto } from '$app/navigation';
     import Debugger from '$lib/classes/Debugger';
     import { setContext } from 'svelte';
-    import socket from '$lib/stores/socket';
-    import gameInfoStore from "$lib/stores/gameInfo";
-    import teamsStore from "$lib/stores/teams";
     import timerStore from "$lib/stores/timer"
-    import gameStateStore from "$lib/stores/gameState";
-    import type { PageData } from "./$types"
-    import moderatorStore from "$lib/stores/moderators";
+    import gameStore from "$lib/stores/game";
+    import teamsStore, { createTeamStore } from "$lib/stores/teams";
+    import playersStore, { createPlayerStore } from "$lib/stores/players";
+    import moderatorsStore, { createModeratorStore } from "$lib/stores/moderators";
+    import myMemberStore from "$lib/stores/myMember"
+    import { page } from "$app/stores";
+    import socket from "$lib/socket";
 
-    export let data: PageData
-    $: ({ moderatorList, gameInfo, teamList } = data)
-    $gameInfoStore = gameInfo
-    $teamsStore = teamList
-    $moderatorStore = moderatorList
+    export let data: Required<PageServerData>
+    let { gameInfo, teamList, moderatorList, playerList } = data
+
+    $gameStore = {
+        id: $page.params.id,
+        ...gameInfo,
+        state: {
+            questionState: 'idle',
+            currentBuzzer: null,
+            currentQuestion: null,
+            buzzingEnabled: false,
+            buzzedTeamIds: []
+        }
+    }
+
+    for (const t of Object.values(teamList)) {
+        const newStore = createTeamStore(t)
+        teamsStore.addTeam(newStore)
+    }
+
+    for (const p of Object.values(playerList)) {
+        if ($teamsStore[p.teamID]) {
+            const team = $teamsStore[p.teamID]
+            const player = createPlayerStore(p, team.store)
+            team.store.addPlayer(player)
+            playersStore.addPlayer(player)
+        }
+    }
+
+    for (const m of Object.values(moderatorList)) {
+        const moderator = createModeratorStore(m)
+        moderatorsStore.addModerator(moderator)
+    }
 
     let windowWidth: number
-
-    const debug = browser ? new Debugger($gameInfoStore.gameId, gameInfo.gameName, $gameInfoStore.myMember, $socket) : null
-    setContext('debug', debug)
-    
-
-    $socket.on('authenticated', () => {
-    })
-
-    $socket.on('authFailed', () => {
-        goto('/join/' + $gameInfoStore.gameId)
-    })
-
-    $socket.on('gameEnd', () => {
-        goto('/')
-    })
 </script>
 
 <svelte:head>
-    <title>{gameInfo.gameName}</title>
+    <title>{gameInfo.name}</title>
 </svelte:head>
 
 <svelte:window bind:innerWidth={windowWidth}></svelte:window>
 
 <main>
-    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.gameName} joinCode="" spectator={true}>
-        <Timer bind:this={$timerStore} on:end={() => $gameStateStore = { ...$gameStateStore, buzzingDisabled: true }} />
+    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.name} joinCode="X">
+        <Timer bind:this={$timerStore} on:end={() => gameStore.disableBuzzing()} />
     </svelte:component>
     <MemberList />
-    <Scoreboard teamList={$teamsStore} buzzedTeamIDs={$gameStateStore.buzzedTeamIDs} />
+    <Scoreboard />
     <Chatbox />
-
-    <div on:click={() => debug.openDebugLog()}
-        style="position: fixed; right: 10px; bottom: 10px; cursor: pointer; background:grey; border-radius:1em; padding:.2em;">Open Debug Log</div>
 </main>
 
 

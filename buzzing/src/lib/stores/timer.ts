@@ -1,5 +1,5 @@
 import type { SvelteComponentTyped } from "svelte";
-import { Writable, writable } from "svelte/store";
+import { type Writable, writable } from "svelte/store";
 
 export type TimerMethods = {
     start: (length: number) => void,
@@ -8,5 +8,5 @@ export type TimerMethods = {
     end: () => void
 }
 
-const timerStore: Writable<SvelteComponentTyped & TimerMethods> = writable(null)
+const timerStore: Writable<SvelteComponentTyped & TimerMethods | null> = writable(null)
 export default timerStore

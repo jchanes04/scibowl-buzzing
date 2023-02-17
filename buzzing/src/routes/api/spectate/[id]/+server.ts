@@ -13,7 +13,7 @@ export const GET = async function({ params, cookies }) {
         return new Response(undefined, { status: 400 })
     } else if (!authToken || params.id !== gameId || !spectator) {
         const game = games.get(params.id)
-        const memberList = game.members.map(m => m.data)
+        const memberList = game.players.map(m => m.data)
         const teamList = game.teams.map(x => x.data)
         const moderatorList = game.moderators.map(m => m.data)
 
@@ -42,7 +42,7 @@ export const GET = async function({ params, cookies }) {
         }))
     } else {
         const game = games.get(params.id)
-        const memberList = game.members.map(m => m.data)
+        const memberList = game.players.map(m => m.data)
         const teamList = game.teams.map(x => x.data)
         const moderatorList = game.moderators.map(m => m.data)
 
