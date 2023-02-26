@@ -3,7 +3,7 @@
     import buzzAudioStore from "$lib/stores/buzzAudio";
     import gameStore from "$lib/stores/game";
     import socket from "$lib/socket";
-    import timerStore from "$lib/stores/timer";
+    import { timerStore, gameClockStore } from "$lib/stores/timer";
     import { getContext } from "svelte";
     import myMember from "$lib/stores/myMember";
     
@@ -14,7 +14,7 @@
         $buzzAudioStore?.play()
 
         gameStore.buzz($myMember.team?.id || "")
-        $timerStore.pause()
+        timerStore.pause()
         
         debug.addEvent('buzz', {})
     }
@@ -33,14 +33,21 @@
     }
 }} />
 
-<div>
+<div class="player-controls">
     <button id="buzz" on:click={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
+    <div class="timer-wrapper">
+        <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
+        <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
+    </div>
 </div>
 
 <style>
-    div {
+    .player-controls {
         grid-area: control-panel;
         display: grid;
+        grid-template-columns: auto auto;
+        grid-template-rows: 1fr;
+        gap: 2em;
         place-content: center;
         box-sizing: border-box;
         border-radius: 1em;
@@ -63,5 +70,15 @@
         background: var(--green-dull);
         border-color: var(--blue-dull);
         cursor: default;
+    }
+
+    h2 {
+        font-size: 48px;
+        margin: 0;
+    }
+
+    h3 {
+        font-size: 32px;
+        margin: 0;
     }
 </style>

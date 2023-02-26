@@ -63,6 +63,7 @@ io.on('connection', async socket => {
 
     if (!spectator) {
         socket.emit('authenticated', { name: game.people[memberId].name })
+        socket.emit('gameClockUpdate', game.gameClock.time)
     }
 
     socket.on('disconnect', () => {
@@ -93,7 +94,7 @@ io.on('connection', async socket => {
         }
     })
 
-    socket.on('newQ', (question) => {
+    socket.on('newQuestion', (question) => {
         if (member.type !== "moderator")  return
         
         game.newQuestion(question)
@@ -203,7 +204,9 @@ io.on('connection', async socket => {
         socket.to(gameId).emit('gameEnd')
         socket.emit('gameEnd')
         game.timer.end()
+        game.gameClock.end()
         games.deleteGame(gameId)
+        io.in(gameId).disconnectSockets(true)
     })
 
     socket.on('logDump', (data: Omit<Debugger, 'socket' | 'openWindow'>) => {
@@ -218,6 +221,39 @@ io.on('connection', async socket => {
         } catch (e) {
             
         }
+    })
+
+    socket.on("startGameClock", (length) => {
+        if (member.type !== "moderator") return 
+
+        game.gameClock.start(length)
+        game.gameClock.on("update", (time: number) => {
+            if (time <= 0) {
+                io.to(gameId).emit("gameClockEnd")
+            } if (time % 15 === 0) {
+                io.to(gameId).emit("gameClockUpdate", time)
+            }
+        })
+        io.to(gameId).emit("gameClockStart", length)
+    })
+
+    socket.on('pauseGameClock', () => {
+        if (member.type !== "moderator") return 
+
+        if (game.gameClock.live) {
+            game.gameClock.pause()
+            io.to(gameId).emit('gameClockPause')
+        } else {
+            game.gameClock.resume()
+            io.to(gameId).emit('gameClockResume')
+        }
+    })
+
+    socket.on('stopGameClock', () => {
+        if (member.type !== "moderator") return 
+
+        game.gameClock.end()
+        io.to(gameId).emit('gameClockStop')
     })
 
     socket.onAny(() => {

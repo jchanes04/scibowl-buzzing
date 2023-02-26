@@ -1,80 +1,37 @@
 <script lang="ts" context="module">
-    import { writable } from 'svelte/store'
-    export const time = writable(0)
+    import { timerStore, gameClockStore } from "$lib/stores/timer"
 </script>
 
 <script lang="ts">
-    export let style: string = ""
-    let interval = null
-    let isLive = false
+    import { createEventDispatcher } from "svelte";
 
-    import { createEventDispatcher, onDestroy } from 'svelte'
     const dispatch = createEventDispatcher()
 
-    export function start(length: number) {
-        if (interval) clearInterval(interval)
-
-        isLive = true
-
-        $time = length
-        interval = setInterval(() => {
-            $time = $time - 1
-            if ($time <= 0){
-                this.end()
-                clearInterval(interval)
-            }
-            dispatch('update', $time)
-        }, 1000)
-        dispatch('start', $time)
-    }
-    
-    export function pause() {
-        if (interval) clearInterval(interval)
-        isLive = false
-        dispatch('pause', $time)
-    }
-
-    export function resume() {
-        if (interval) clearInterval(interval)
-        if ($time <= 0) return
-
-        isLive = true
-
-        interval = setInterval(() => {
-            $time = $time - 1
-            if ($time <= 0){
-                this.end()
-            }
-            dispatch('update', $time)
-        }, 1000)
-        dispatch('resume', $time)
-    }
-
-    export function end(){
-        $time = 0 
-        clearInterval(interval)
-        dispatch('end')
-
-        isLive = false
-    }
-
-    export function reset() {
-        $time = 0
-        clearInterval(interval)
-
-        isLive = false
-    }
-
-    export function live() {
-        return isLive
-    }
+    timerStore.addEventListener?.("end", () => {
+        dispatch("end")
+    })
 </script>
 
-<h1 style={style}>{'0:' + ($time < 10 ? "0" + $time : $time)}</h1>
+<div>
+    <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
+    <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
+</div>
 
 <style lang="scss">
-    h1 {
+    div {
+        display: flex;
+        flex-direction: column;
+    }
+
+    h3 {
         margin: 0;
         text-align: right;
+        font-size: 18px;
+    }
+
+    h2 {
+        margin: 0;
+        text-align: right;
+        font-size: 32px;
     }
 </style>

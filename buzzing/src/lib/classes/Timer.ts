@@ -4,6 +4,7 @@ export interface Timer extends EventEmitter {
     length: number,
     time: number,
     interval: any,
+    live: boolean
 }
 
 // extending the EventEmitter class allows events to be emitted and listened to with timer.on(...)
@@ -13,12 +14,14 @@ export class Timer extends EventEmitter {
         super()
         this.time = 0
         this.interval = undefined
+        this.live = false
     }
 
     start(length: number) {
         if (this.interval) clearInterval(this.interval)
 
         this.time = length
+        this.live = true
         this.interval = setInterval(() => {
             this.time = this.time - 1
             if (this.time == 0){
@@ -31,6 +34,7 @@ export class Timer extends EventEmitter {
     
     pause() {
         if (this.interval) clearInterval(this.interval)
+        this.live = false
         this.emit('pause', this.time)
     }
 
@@ -38,6 +42,7 @@ export class Timer extends EventEmitter {
         if (this.interval) clearInterval(this.interval)
         if (this.time <= 0) return
 
+        this.live = true
         this.interval = setInterval(() => {
             this.time = this.time - 1
             if (this.time == 0){
@@ -49,7 +54,8 @@ export class Timer extends EventEmitter {
     }
 
     end(){
-        this.time = 0 
+        this.time = 0
+        this.live = true
         clearInterval(this.interval)
         this.emit('end')
     }

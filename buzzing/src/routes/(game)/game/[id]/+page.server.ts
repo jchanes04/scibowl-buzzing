@@ -6,6 +6,7 @@ import type { PageServerLoad } from "./$types"
 export const load = async function({ params, locals, cookies }) {
     const { id } = params
     const game = getGame(id)
+    console.log(game, game?.joinCode)
 
     if (!game)
         throw redirect(302, "/join")

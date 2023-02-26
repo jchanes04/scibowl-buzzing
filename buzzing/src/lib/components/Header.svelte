@@ -5,12 +5,10 @@
 
 <div class="header">
     <a href="/"><h1 class="title">ESBOT Buzzing</h1></a>
-    <div class="right">
-        <nav>
-            <a href="/join">Join Game</a>
-            <a href="/create">Create Game</a>
-        </nav>
-    </div>
+    <nav>
+        <a href="/join">Join Game</a>
+        <a href="/create">Create Game</a>
+    </nav>
 </div>
 
 <style lang="scss">
@@ -20,6 +18,9 @@
         position: sticky;
         top: 0;
         left: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         width: 100%;
         z-index: 5;
     }
@@ -33,21 +34,14 @@
             display: none;
         }
     }
-    
-    .right {
-        position: absolute;
-        top: .57em;
-        right: 1em;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        font-size: 32px;
-    }
 
     nav {
         display: flex;
         flex-direction: row;
+        align-items: center;
         gap: 1em;
+        margin: 0.5em 1em 0.5em auto;
+        font-size: 32px;
     }
     
     a {

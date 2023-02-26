@@ -80,7 +80,7 @@
                 {/if}
 
                 <div class="select-wrapper" style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
-                    <Select itemId="id" label="name" items={teams} bind:value={selectedTeam} placeholder="Team" searchable={false} />
+                    <Select itemId="id" label="name" items={teams} bind:value={selectedTeam} placeholder="Team" searchable={false} showChevron={true} />
                     <input type="hidden" name="team-id" value={selectedTeam?.id}>
                 </div>
                 <br />

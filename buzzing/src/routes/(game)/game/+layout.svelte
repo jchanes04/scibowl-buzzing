@@ -17,8 +17,8 @@
     <ConnectedIndicator />
 </div>
 {#if $modalStore}
-    <svelte:component this={$modalStore.component} {...$modalStore.props} />
     <div class="modal-background" />
+    <svelte:component this={$modalStore.component} {...$modalStore.props} />
 {/if}
 
 <style lang="scss">

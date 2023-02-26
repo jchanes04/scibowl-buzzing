@@ -2,7 +2,6 @@
     import MemberList from "$lib/components/MemberList.svelte";
     import Chatbox from '$lib/components/Chatbox.svelte'
     import TopBar from '$lib/components/TopBar.svelte'
-    import MobileTopBar from '$lib/components/MobileTopBar.svelte'
     import Timer from '$lib/components/Timer.svelte'
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
@@ -11,7 +10,7 @@
 
     import Debugger from '$lib/classes/Debugger';
     import { setContext } from 'svelte';
-    import timerStore from "$lib/stores/timer"
+    import { timerStore } from "$lib/stores/timer"
     import gameStore from "$lib/stores/game";
     import teamsStore, { createTeamStore } from "$lib/stores/teams";
     import playersStore, { createPlayerStore } from "$lib/stores/players";
@@ -53,26 +52,20 @@
         const moderator = createModeratorStore(m)
         moderatorsStore.addModerator(moderator)
     }
-
-    let windowWidth: number
 </script>
 
 <svelte:head>
     <title>{gameInfo.name}</title>
 </svelte:head>
 
-<svelte:window bind:innerWidth={windowWidth}></svelte:window>
-
 <main>
-    <svelte:component this={windowWidth > 500 ? TopBar : MobileTopBar} gameName={gameInfo.name} joinCode="X">
-        <Timer bind:this={$timerStore} on:end={() => gameStore.disableBuzzing()} />
-    </svelte:component>
+    <TopBar gameName={gameInfo.name} joinCode="X" spectator={true}>
+        <Timer on:end={() => gameStore.disableBuzzing()} />
+    </TopBar>
     <MemberList />
     <Scoreboard />
     <Chatbox />
 </main>
-
-
 
 <style lang="scss">
     main {
@@ -99,7 +92,7 @@
             grid-template-columns: .05fr 1fr.05fr;
             grid-template-rows: max(10vh, 80px) auto auto auto;
             grid-template-areas: 
-                "mobile-top-bar mobile-top-bar mobile-top-bar"
+                "top-bar top-bar top-bar"
                 ". chat-box ."
                 ". scoreboard ."
                 ". member-list .";

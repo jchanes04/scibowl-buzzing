@@ -48,6 +48,10 @@
         <slot></slot>
     </div>
 </div>
+<div id="mobile-top-bar">
+    <h1>{joinCode}</h1>
+    <slot></slot>
+</div>
 
 <style lang="scss">
     #top-bar {
@@ -55,11 +59,12 @@
         display: grid;
         grid-template-columns: 1fr auto 1fr;
         padding: 0 2em;
-        place-content: center;
+        align-items: center;
         position: sticky;
         top: -0.5em;
         left: 0;
         background-color: #d4d9d9;
+        z-index: 5;
 
         * {
             min-width: 1px;
@@ -99,5 +104,34 @@
         left: 50%;
         top: 3.2em;
         transform: translateX(-50%);
+    }
+
+    #mobile-top-bar {
+        grid-area: top-bar;
+        position: sticky;
+        top: 0;
+        display: none;
+        place-content: center;
+        grid-template-columns: 1fr 1fr;
+        padding: 0 0.5em;
+        width: 100%;
+        box-sizing: border-box;
+        background: #d4d9d9;
+        z-index: 5;
+    }
+
+    h1 {
+        display: inline-block;
+        width: max-content;
+    }
+
+    @media (max-width: 500px) {
+        #mobile-top-bar {
+            display: grid;
+        }
+
+        #top-bar {
+            display: none;
+        }
     }
 </style>

@@ -7,9 +7,11 @@
     import chatMessagesStore from '$lib/stores/chatMessages';
     import teamsStore, { type ClientTeamData } from '$lib/stores/teams';
     import gameStore from '$lib/stores/game';
+    import { gameClockStore } from '$lib/stores/timer';
     import socket from "$lib/socket"
     import type { Writable } from 'svelte/store';
     import Confirm from './Confirm.svelte';
+    import TimeEntry from './TimeEntry.svelte';
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
@@ -30,14 +32,14 @@
     } | null>
     const modalStore: ModalStore = getContext('modalStore')
 
-    function newQ() {
-        socket.emit('newQ', {
+    function newQuestion() {
+        socket.emit('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
             team: questionType === "bonus" ? teamSelectValue?.id : null
         })
 
-        debug.addEvent('newQ', {
+        debug.addEvent('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
             team: questionType === "bonus" ? teamSelectValue?.id : null
@@ -51,6 +53,27 @@
         gameStore.openQuestion(true)
 
         questionType = ""
+    }
+
+    function confirmNewQuestion() {
+        if (gameClockStore.ended) {
+            $modalStore = {
+                component: Confirm,
+                props: {
+                    title: "Confirm New Question",
+                    message: "The game clock has ended. Are you sure you want to open a new question?",
+                    confirmCallback: () => {
+                        newQuestion()
+                        $modalStore = null
+                    },
+                    cancelCallback: () => {
+                        $modalStore = null
+                    }
+                }
+            }
+        } else {
+            newQuestion()
+        }   
     }
     
     let startTimerDisabled = false
@@ -103,6 +126,35 @@
         setTimeout(() => undoScoresDisabled = false, 1000)
         socket.emit('undoScore')
     }
+
+    let gameClockTime: number
+    let startGameClockDisabled = false
+    function startGameClock() {
+        startGameClockDisabled = true
+        setTimeout(() => startGameClockDisabled = false, 1000)
+
+        socket.emit('startGameClock', gameClockTime)
+        debug.addEvent('startGameClock', { gameClockTime })
+        gameClockTime = 0
+    }
+
+    let pauseGameClockDisabled = false
+    function pauseGameClock() {
+        pauseGameClockDisabled = true
+        setTimeout(() => pauseGameClockDisabled = false, 1000)
+
+        socket.emit("pauseGameClock")
+        debug.addEvent("pauseGameClock", {})
+    }
+
+    let stopGameClockDisabled = false
+    function stopGameClock() {
+        stopGameClockDisabled = true
+        setTimeout(() => stopGameClockDisabled = false, 1000)
+
+        socket.emit('stopGameClock')
+        debug.addEvent("stopGameClock", {})
+    }
 </script>
 
 <div id="buttons">
@@ -120,17 +172,17 @@
         <br />
         <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus'}>
             <div class="select-wrapper">
-                <Select items={Object.values($teamsStore)} itemId="id" label="name" placeholder="Bonus for" searchable={false}
+                <Select items={Object.values($teamsStore)} itemId="id" label="name" placeholder="Bonus for" searchable={false} showChevron={true}
                     bind:value={teamSelectValue} />
             </div>
         </div>
         <br />
         <div class="select-wrapper">
-            <Select items={categories} itemId="id" label="value" placeholder="Category" searchable={false}
+            <Select items={categories} itemId="id" label="value" placeholder="Category" searchable={false} showChevron={true}
                 bind:justValue={selectedCategory}/>
         </div>
         <br />
-        <button on:click={newQ} disabled={!questionType || !selectedCategory || (!teamSelectValue && questionType === "bonus")}>New Question</button>
+        <button on:click={confirmNewQuestion} disabled={!questionType || !selectedCategory || (!teamSelectValue && questionType === "bonus")}>New Question</button>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
         <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
@@ -161,6 +213,12 @@
         <button on:click={saveScores}>Save Scores</button>
     </ControlSection>
     <ControlSection title="Game Control">
+        <TimeEntry bind:value={gameClockTime} />
+        <br />
+        <button disabled={startGameClockDisabled || gameClockTime === 0} on:click={startGameClock}>▶</button>
+        <button disabled={pauseGameClockDisabled} on:click={pauseGameClock}>⏯</button>
+        <button disabled={stopGameClockDisabled} on:click={stopGameClock}>⏹</button>
+        <br />
         <button on:click={endGame} id="endGame">End Game</button>
     </ControlSection>
 </div>

@@ -14,12 +14,13 @@
 
 <style lang="scss">
     .confirm-modal {
-        background: var(--color-5);
+        background: #d4d9d9;
         border-radius: 15px;
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        padding: 2em;
     }
 
     button {

@@ -81,6 +81,7 @@ export interface Game {
     settings: GameSettings
 
     timer: Timer,
+    gameClock: Timer,
     times: { //times [client, server extratime]
         tossup: [number, number],
         bonus:  [number, number]
@@ -135,6 +136,7 @@ export class Game {
         }
 
         this.timer = new Timer()
+        this.gameClock = new Timer()
         this.times = {  
             tossup: times?.tossup || [5, 2],
             bonus: times?.bonus || [20, 2]

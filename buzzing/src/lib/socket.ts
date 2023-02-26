@@ -7,7 +7,7 @@ import chatMessagesStore, { type ChatMessage } from "./stores/chatMessages"
 import gameStore, { type ClientGameData } from "./stores/game"
 import buzzAudioStore from "./stores/buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
-import timerStore, { type TimerMethods } from "./stores/timer"
+import { timerStore, gameClockStore } from "./stores/timer"
 import type { Category, Question } from "$lib/classes/Game"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import { goto } from "$app/navigation"
@@ -38,7 +38,7 @@ myMemberStore.subscribe(value => myMember = value)
 let buzzAudio: HTMLAudioElement | null
 buzzAudioStore.subscribe(value => buzzAudio = value)
 
-let timer: SvelteComponentTyped & TimerMethods
+let timer: number
 timerStore.subscribe(value => timer = value)
 
 const socket = io(import.meta.env.VITE_WS_URL as string, {
@@ -166,7 +166,7 @@ socket.on('buzz', (id: string) => {
     if (player) {
         gameStore.buzz(player.team.id)
         buzzAudio?.play()
-        timer.pause()
+        timerStore.pause()
     
         chatMessagesStore.update(oldList => {
             oldList.push({
@@ -278,7 +278,7 @@ socket.on('scoreChange', ({ open, scoreType, playerId, playerScore, teamId, team
             gameStore.openQuestion(true)
         }
     } else {
-        timer.reset()
+        timerStore.end()
         gameStore.clearQuestion()
     }
 })
@@ -335,15 +335,15 @@ socket.on('questionOpen', (question: Question) => {
 })
 
 socket.on('timerStart', (length: number) => {
-    timer.start(length)
+    timerStore.start(length)
     const questionOpen = !myMember.moderator && 
         (!game.state.currentQuestion?.bonus || game.state.currentQuestion.team === myMember.team?.id )
     gameStore.openQuestion(questionOpen)
 })
 
 socket.on('timerEnd', () => {
-    if (timer.live()) {
-        timer.end()
+    if (timerStore.live) {
+        timerStore.end()
         chatMessagesStore.update(oldList => {
             oldList.push({
                 type: 'warning',
@@ -355,6 +355,65 @@ socket.on('timerEnd', () => {
     gameStore.stopQuestion()
 })
 
+socket.on("gameClockStart", (length: number) => {
+    gameClockStore.start(length)
+    chatMessagesStore.update(oldList => {
+        oldList.push({
+            type: "notification",
+            text: `${Math.floor(length / 60).toString().padStart(2, "0")}:${(length % 60).toString().padStart(2, "0")} game clock started`
+        })
+        return oldList
+    })
+})
+
+socket.on("gameClockUpdate", (length: number) => {
+    gameClockStore.start(length)
+})
+
+socket.on("gameClockPause", () => {
+    gameClockStore.pause()
+    chatMessagesStore.update(oldList => {
+        oldList.push({
+            type: "notification",
+            text: "Game clock paused"
+        })
+        return oldList
+    })
+})
+
+socket.on("gameClockResume", () => {
+    gameClockStore.resume()
+    chatMessagesStore.update(oldList => {
+        oldList.push({
+            type: "notification",
+            text: "Game clock resumed"
+        })
+        return oldList
+    })
+})
+
+socket.on("gameClockEnd", () => {
+    gameClockStore.end()
+    chatMessagesStore.update(oldList => {
+        oldList.push({
+            type: "notification",
+            text: "Game clock ended"
+        })
+        return oldList
+    })
+})
+
+socket.on("gameClockStop", () => {
+    gameClockStore.stop()
+    chatMessagesStore.update(oldList => {
+        oldList.push({
+            type: "notification",
+            text: "Game clock stopped"
+        })
+        return oldList
+    })
+})
+
 socket.on('kicked', () => {
     goto('/kicked')
     socket.disconnect()
@@ -362,5 +421,10 @@ socket.on('kicked', () => {
 
 socket.on('gameSwept', () => {
     goto('/swept')
+    socket.disconnect()
+})
+
+socket.on('gameEnd', () => {
+    goto('/')
     socket.disconnect()
 })
