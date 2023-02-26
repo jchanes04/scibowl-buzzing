@@ -5,7 +5,7 @@ import { Server } from 'socket.io'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
-import type { GameSettings } from '$lib/classes/Game'
+import type { GameSettings, NewQuestionData } from '$lib/classes/Game'
 import { getDataFromToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 
@@ -63,7 +63,9 @@ io.on('connection', async socket => {
 
     if (!spectator) {
         socket.emit('authenticated', { name: game.people[memberId].name })
-        socket.emit('gameClockUpdate', game.gameClock.time)
+        if (game.gameClock.time > 0) {
+            socket.emit('gameClockUpdate', game.gameClock.time)
+        }
     }
 
     socket.on('disconnect', () => {
@@ -80,7 +82,7 @@ io.on('connection', async socket => {
     socket.on('buzz', () => {
         if (spectator) return
 
-        if (game.state.questionState === 'open') {
+        if (game.state.questionState === 'open' && (!game.state.currentQuestion.bonus || game.state.currentQuestion.team.players[memberId] )) {
             const buzzed = game.buzz(memberId)
             if (buzzed) {
                 game.timer.pause()
@@ -94,7 +96,7 @@ io.on('connection', async socket => {
         }
     })
 
-    socket.on('newQuestion', (question) => {
+    socket.on('newQuestion', (question: NewQuestionData) => {
         if (member.type !== "moderator")  return
         
         game.newQuestion(question)
@@ -254,6 +256,13 @@ io.on('connection', async socket => {
 
         game.gameClock.end()
         io.to(gameId).emit('gameClockStop')
+    })
+
+    socket.on('claimCaptain', () => {
+        if (member.type !== "player") return
+
+        member.team.captainId = member.id
+        io.to(gameId).emit('changeCaptain', member.team.id, member.id)
     })
 
     socket.onAny(() => {

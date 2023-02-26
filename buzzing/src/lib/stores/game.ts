@@ -1,11 +1,11 @@
-import type { Category, GameSettings, GameTimes, Question } from "$lib/classes/Game";
+import type { Category, GameSettings, GameTimes, NewQuestionData, Question } from "$lib/classes/Game";
 import { writable, type Writable } from "svelte/store";
 import type { PlayerStore } from "./players";
 
 type BuzzedState = {
     questionState: "buzzed",
     currentBuzzer: PlayerStore,
-    currentQuestion: Question,
+    currentQuestion: NewQuestionData,
     buzzingEnabled: false,
     buzzedTeamIds: string[]
 }
@@ -21,7 +21,7 @@ type IdleState = {
 type OpenState = {
     questionState: "open",
     currentBuzzer: null,
-    currentQuestion: Question,
+    currentQuestion: NewQuestionData,
     buzzingEnabled: boolean,
     buzzedTeamIds: string[]
 }
@@ -84,7 +84,7 @@ export default {
             return value
         })
     },
-    newQuestion: (questionData: Question, buzzingEnabled: boolean) => {
+    newQuestion: (questionData: NewQuestionData, buzzingEnabled: boolean) => {
         store.update(value => {
             value.state = {
                 questionState: "open",

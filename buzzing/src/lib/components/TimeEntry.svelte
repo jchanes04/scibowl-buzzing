@@ -43,5 +43,7 @@
         border: none;
         width: 4ch;
         font-size: inherit;
+        border-radius: 0.3em;
+        padding: 0.3em;
     }
 </style>

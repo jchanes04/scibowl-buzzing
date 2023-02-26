@@ -9,6 +9,7 @@ export interface Team {
     name: string,
     players: Record<string, Player>,
     scoreboard: Scoreboard,
+    captainId: string | null,
     type: TeamType
 }
 
@@ -17,6 +18,7 @@ export interface TeamData {
     name: string,
     players: Record<string, PlayerData>,
     scoreboard: ScoreboardData,
+    captainId: string | null,
     type: TeamType
 }
 
@@ -30,6 +32,7 @@ export class Team {
             score: scores.score,
             catScores: scores.catScores
         }) : new Scoreboard({})
+        this.captainId = null
         this.type = type
     }
 
@@ -51,6 +54,7 @@ export class Team {
                 Object.entries(this.players).map(([id, p]) => [id, p.data])
             ),
             scoreboard: this.scoreboard.data,
+            captainId: this.captainId,
             type: this.type
         }
     }

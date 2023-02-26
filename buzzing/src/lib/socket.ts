@@ -8,7 +8,7 @@ import gameStore, { type ClientGameData } from "./stores/game"
 import buzzAudioStore from "./stores/buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
 import { timerStore, gameClockStore } from "./stores/timer"
-import type { Category, Question } from "$lib/classes/Game"
+import type { Category, NewQuestionData, Question } from "$lib/classes/Game"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import { goto } from "$app/navigation"
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
@@ -322,13 +322,14 @@ socket.on('undoScoreFailed', () => {
     })
 })
 
-socket.on('questionOpen', (question: Question) => {
-    const buzzingEnabled = !question.bonus || (question.team && question.team === myMember.team?.id)
+socket.on('questionOpen', (question: NewQuestionData) => {
+    const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)
     gameStore.newQuestion(question, !!buzzingEnabled)
     chatMessagesStore.update(oldList => {
+        const teamName = teams[question.bonus ? question.teamId : ""]?.name
         oldList.push({
             type: 'notification',
-            text: 'New question opened' + (teams[question.team || ""] ? " for " + teams[question.team || ""]?.name : "")
+            text: 'New question opened' + (teamName ? " for " + teamName : "")
         })
         return oldList
     })
@@ -337,7 +338,7 @@ socket.on('questionOpen', (question: Question) => {
 socket.on('timerStart', (length: number) => {
     timerStore.start(length)
     const questionOpen = !myMember.moderator && 
-        (!game.state.currentQuestion?.bonus || game.state.currentQuestion.team === myMember.team?.id )
+        (!game.state.currentQuestion?.bonus || game.state.currentQuestion.teamId === myMember.team?.id )
     gameStore.openQuestion(questionOpen)
 })
 
@@ -412,6 +413,13 @@ socket.on("gameClockStop", () => {
         })
         return oldList
     })
+})
+
+socket.on('changeCaptain', (teamId: string, memberId: string) => {
+    const team = teams[teamId]
+    if (!team) return
+
+    team.store.changeCaptain(memberId)
 })
 
 socket.on('kicked', () => {

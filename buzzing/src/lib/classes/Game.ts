@@ -9,9 +9,21 @@ import { Timer } from "./Timer"
 export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
 
 export type Question = {
-    bonus: boolean,
+    bonus: false,
+    category: Category
+} | {
+    bonus: true,
     category: Category,
-    team?: string
+    team: Team
+}
+
+export type NewQuestionData = {
+    bonus: false,
+    category: Category
+} | {
+    bonus: true,
+    category: Category,
+    teamId: string
 }
 
 export type GameSettings = {
@@ -30,10 +42,7 @@ export type GameScores = {
 type BuzzedState = { // idle means no question open
     questionState: 'buzzed'
     currentBuzzer: Player,
-    currentQuestion: {
-        category: Category,
-        bonus: boolean
-    }
+    currentQuestion: Question
     buzzedTeams: Record<string, Team>,
     lastScored: LastScoredQuestion | null
 }
@@ -49,10 +58,7 @@ type IdleState = { // idle means no question open
 type OpenState = {
     questionState: 'open'
     currentBuzzer: null,
-    currentQuestion: {
-        category: Category,
-        bonus: boolean
-    }
+    currentQuestion: Question
     buzzedTeams: Record<string, Team>,
     lastScored: LastScoredQuestion | null
 }
@@ -321,11 +327,24 @@ export class Game {
         }
     }
 
-    newQuestion(question: Question ) {
+    newQuestion(question: NewQuestionData) {
         this.state.questionState = 'open'
         this.state.currentBuzzer = null
-        this.state.currentQuestion = question
         this.state.buzzedTeams = {}
+
+        if (question.bonus) {
+            const team = this.teams[question.teamId]
+            this.state.currentQuestion = {
+                category: question.category,
+                bonus: true,
+                team
+            }
+        } else {
+            this.state.currentQuestion = {
+                category: question.category,
+                bonus: false
+            }
+        }
         return true
     }
 

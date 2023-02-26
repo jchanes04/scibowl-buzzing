@@ -7,6 +7,7 @@ export interface ClientTeam {
     name: string,
     members: ClientPlayer[],
     scoreboard: Scoreboard,
+    captainId: string | null,
     type: "default" | "individual" | "created"
 }
 
@@ -15,6 +16,7 @@ export class ClientTeam {
         this.id = teamData.id
         this.name = teamData.name
         this.members = members
+        this.captainId = teamData.captainId
         this.type = teamData.type
     }
 

@@ -18,6 +18,11 @@
         
         debug.addEvent('buzz', {})
     }
+
+    function claimCaptain() {
+        socket.emit('claimCaptain')
+        debug.addEvent('claimCaptain', {})
+    }
 </script>
 
 <svelte:body on:keydown={(e) => {
@@ -38,17 +43,18 @@
     <div class="timer-wrapper">
         <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
         <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
+        <br />
+        <button on:click={claimCaptain}>Claim Captain</button>
     </div>
 </div>
 
 <style>
     .player-controls {
         grid-area: control-panel;
-        display: grid;
-        grid-template-columns: auto auto;
-        grid-template-rows: 1fr;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         gap: 2em;
-        place-content: center;
         box-sizing: border-box;
         border-radius: 1em;
         background: #EEE;
@@ -59,10 +65,13 @@
         background: var(--green);
         border: 3px solid var(--blue);
         border-radius: 0.5em;
-        font-size: 36px;
         font-weight: 600;
         padding: 1em 2em;
         cursor: pointer;
+    }
+
+    #buzz {
+        font-size: 36px;
     }
 
     button:disabled {

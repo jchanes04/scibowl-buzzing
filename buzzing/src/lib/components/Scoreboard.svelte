@@ -11,8 +11,10 @@
                 {team.name + ": " + team.scoreboard.score}
                 {#if team.type !== "individual"}
                     <ul>
-                        {#each Object.values(team.players) as member}
-                            <li>{member.name}</li>
+                        {#each Object.values(team.players) as player}
+                            <li class:captain={player.id === team.captainId}>
+                                {player.name}
+                            </li>
                         {/each}
                     </ul>
                 {/if}
@@ -82,5 +84,10 @@
 
     ul .buzzed {
         color: #333;
+        text-decoration: underline;
+    }
+
+    .captain::after {
+        content: '*';
     }
 </style>

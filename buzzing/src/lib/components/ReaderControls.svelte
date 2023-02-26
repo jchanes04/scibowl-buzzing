@@ -36,13 +36,13 @@
         socket.emit('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
-            team: questionType === "bonus" ? teamSelectValue?.id : null
+            teamId: questionType === "bonus" ? teamSelectValue?.id : null
         })
 
         debug.addEvent('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
-            team: questionType === "bonus" ? teamSelectValue?.id : null
+            teamId: questionType === "bonus" ? teamSelectValue?.id : null
         })
 
         $chatMessagesStore = [...$chatMessagesStore, {
@@ -187,7 +187,7 @@
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
         <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
         <br />
-        <div id="score-wrapper" class:disabled={$gameStore.state.questionState !== "buzzed"}>
+        <div id="score-wrapper" class:disabled={$gameStore.state.questionState !== "buzzed" && !$gameStore.state.currentQuestion?.bonus}>
             <label for="correct-radio">
                 <input type="radio" id="correct-radio" name="selected-score" value="correct"
                     bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
@@ -257,11 +257,11 @@
     }
 
     .select-wrapper {
-        min-width: 10em;
+        width: 14em;
         --background:white;
         --border: .1em solid green;
         --border-radius: .5em;
-        
+        --selected-item-padding: 0;
     }
 
     #question-type-wrapper label {

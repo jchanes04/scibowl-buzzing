@@ -30,6 +30,7 @@ export type ClientTeamData = {
     name: string,
     type: "default" | "created" | "individual"
     scoreboard: Scoreboard,
+    captainId: string | null,
     players: Record<string, ClientPlayer>
 }
 
@@ -41,6 +42,7 @@ export function createTeamStore(teamData: TeamData) {
         id: teamData.id,
         name: teamData.name,
         type: teamData.type,
+        captainId: null,
         scoreboard: new Scoreboard({})
     })
     const derivedTeamStore = derived([players, teamDataStore], ([ players, data ]) => ({
@@ -65,6 +67,12 @@ export function createTeamStore(teamData: TeamData) {
                 Object.entries(oldList).filter(([k, ]) => k !== id)
             ))
             return players
+        },
+        changeCaptain: (id: string) => {
+            teamDataStore.update(x => {
+                x.captainId = id
+                return x
+            })
         }
     } satisfies TeamStore
 
@@ -78,8 +86,10 @@ export type TeamStore = {
         id: string;
         name: string;
         type: "default" | "created" | "individual";
+        captainId: string | null;
         scoreboard: Scoreboard;
     }>['subscribe'],
     addPlayer: (player: PlayerStore) => Writable<Record<string, ClientPlayer>>,
-    removePlayer: (id: string) => Writable<Record<string, ClientPlayer>>
+    removePlayer: (id: string) => Writable<Record<string, ClientPlayer>>,
+    changeCaptain: (id: string) => void
 }
