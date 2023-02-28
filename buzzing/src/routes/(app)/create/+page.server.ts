@@ -2,6 +2,7 @@ import { generateToken } from "$lib/authentication"
 import { createNewGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { Actions } from "./$types"
+import { env } from "$env/dynamic/public"
 
 // TODO: zod validation
 
@@ -29,8 +30,7 @@ export const actions = {
         const authToken = generateToken({ memberId: Object.values(game.moderators)[0].id, gameId: game.id })
         cookies.set("authToken", authToken, {
             path: "/",
-            domain: (import.meta.env.VITE_HOST_URL as string)
-                .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
+            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).host
         })
         throw redirect(302, "/game/" + game.id)
     }

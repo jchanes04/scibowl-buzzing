@@ -2,6 +2,7 @@ import { generateToken } from "$lib/authentication"
 import { getGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
+import { env } from "$env/dynamic/public"
 
 export const load = async function({ params, cookies, isDataRequest }) {
     const { id } = params
@@ -15,8 +16,7 @@ export const load = async function({ params, cookies, isDataRequest }) {
         const newToken = generateToken({ gameId: id, spectator: true, memberId: "" })
         cookies.set("authToken", newToken, {
             path: "/",
-            domain: (import.meta.env.VITE_HOST_URL as string)
-                .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
+            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).host
         })
     }
 

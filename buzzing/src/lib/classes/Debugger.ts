@@ -1,10 +1,6 @@
-import type { ModeratorStore } from "$lib/stores/moderators"
 import type { MyMember } from "$lib/stores/myMember"
-import type { PlayerStore } from "$lib/stores/players"
 import type { Socket } from "socket.io-client"
-import type { ClientModerator } from "./client/ClientModerator"
-import type { ClientPlayer } from "./client/ClientPlayer"
-import type { PlayerData } from "./Player"
+import { env } from "$env/dynamic/public"
 
 export type Event = {
     name: string,
@@ -76,7 +72,7 @@ export default class Debugger {
         const newWindow = window.open("", this.gameName + " Debug Log", "width=800,height=600")
         this.openWindow = newWindow
         newWindow?.document.write(
-            `<script>function reportBug() {window.opener.postMessage("reportBug", "${import.meta.env.VITE_HOST_URL}")}</script>
+            `<script>function reportBug() {window.opener.postMessage("reportBug", "${env.PUBLIC_HOST_URL}")}</script>
             <style> .ws-message { color: black; }  .client-message { color: red; }
                 .report {
                     position: absolute;

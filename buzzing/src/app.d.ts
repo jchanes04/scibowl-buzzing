@@ -18,4 +18,14 @@ declare namespace App {
 	}
 
 	interface Stuff {}
+
+	interface PrivateEnv {
+		DATABASE_URL: string
+	}
+
+	interface PublicEnv {
+		PUBLIC_WS_URL: string,
+		PUBLIC_HOST_URL: string,
+		PUBLIC_COOKIE_URL: string
+	}
 }

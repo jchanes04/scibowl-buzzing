@@ -5,6 +5,7 @@ import { Team } from "$lib/classes/Team"
 import { getGame, io } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
+import { env } from "$env/dynamic/public"
 
 export const load = async function({ params, url }) {
     const { id } = params
@@ -53,8 +54,7 @@ export const actions = {
         const authToken = generateToken({ memberId: player.id, gameId: game.id }, '6h')
         cookies.set("authToken", authToken, {
             path: "/",
-            domain: (import.meta.env.VITE_HOST_URL as string)
-                .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
+            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).host
         })
         throw redirect(302, "/game/" + game.id)
     }

@@ -1,9 +1,9 @@
 import type { PageServerLoad } from "./$types"
+import { env } from "$env/dynamic/public"
 
 export const load = function({ cookies }) {
     cookies.delete("authToken", {
         path: "/",
-        domain: (import.meta.env.VITE_HOST_URL as string)
-                .replace(/https?:\/\//, "").replace(/:[0-9]{1,4}/, "")
+        domain: (new URL(env.PUBLIC_COOKIE_URL as string)).host
     })
 } satisfies PageServerLoad

@@ -8,6 +8,7 @@ import type Debugger from '$lib/classes/Debugger'
 import type { GameSettings, NewQuestionData } from '$lib/classes/Game'
 import { getDataFromToken } from './authentication'
 import { Moderator } from './classes/Moderator'
+import { env } from "$env/dynamic/public"
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -15,7 +16,7 @@ const httpsServer = https.createServer({
 })
 export const io = new Server(httpsServer, {
     cors: {
-        origin: import.meta.env.VITE_HOST_URL,
+        origin: env.PUBLIC_HOST_URL,
         allowedHeaders: ["Cookie"],
         credentials: true
     },
