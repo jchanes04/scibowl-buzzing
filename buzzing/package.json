@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^1.1.0",
-    "@sveltejs/kit": "^1.0.7",
+    "@sveltejs/kit": "^1.8.7",
     "@types/dotenv": "^8.2.0",
     "@types/js-cookie": "^3.0.1",
     "@types/jsonwebtoken": "^8.5.8",
