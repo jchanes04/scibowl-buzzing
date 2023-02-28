@@ -30,7 +30,7 @@ export const actions = {
         const authToken = generateToken({ memberId: Object.values(game.moderators)[0].id, gameId: game.id })
         cookies.set("authToken", authToken, {
             path: "/",
-            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).host
+            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
         })
         throw redirect(302, "/game/" + game.id)
     }

@@ -21,7 +21,9 @@ export const io = new Server(httpsServer, {
         credentials: true
     },
     allowRequest: async (req, callback) => {
+        console.log('allowing')
         const authToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
+        console.log(authToken)
         const tokenData = await getDataFromToken(authToken || "")
         if (!authToken || !tokenData) {
             return callback(null, false)

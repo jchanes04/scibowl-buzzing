@@ -16,7 +16,7 @@ export const load = async function({ params, cookies, isDataRequest }) {
         const newToken = generateToken({ gameId: id, spectator: true, memberId: "" })
         cookies.set("authToken", newToken, {
             path: "/",
-            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).host
+            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
         })
     }
 

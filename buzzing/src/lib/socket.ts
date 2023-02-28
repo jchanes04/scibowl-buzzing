@@ -16,6 +16,7 @@ import type { ClientModerator } from "$lib/classes/client/ClientModerator"
 import type { ModeratorData } from "$lib/classes/Moderator"
 import type { PlayerData } from "$lib/classes/Player"
 import type { TeamData } from "$lib/classes/Team"
+import { env } from "$env/dynamic/public"
 
 let teams: Record<string, ClientTeamData & { store: TeamStore }>
 teamsStore.subscribe(value => teams = value)
@@ -41,7 +42,7 @@ buzzAudioStore.subscribe(value => buzzAudio = value)
 let timer: number
 timerStore.subscribe(value => timer = value)
 
-const socket = io(import.meta.env.VITE_WS_URL as string, {
+const socket = io(env.PUBLIC_WS_URL as string, {
     autoConnect: false,
     secure: true,
     withCredentials: true
