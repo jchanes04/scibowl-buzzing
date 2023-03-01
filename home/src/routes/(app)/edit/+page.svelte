@@ -12,7 +12,7 @@
     import Message from '$lib/components/Message.svelte';
     import type { ActionResult } from '@sveltejs/kit';
     import MemberEdit from '$lib/components/MemberEdit.svelte';
-  import updateTeam from '$lib/functions/updateTeam';
+    import updateTeam from '$lib/functions/updateTeam';
 
     export let data: PageData
     let { teams, status } = data
@@ -92,26 +92,26 @@
 
 
     function handlePayment() {
-        $modalStore = {
-            component: Message,
-            props: {
-                headerText: "Payment Disabled",
-                message: "Payment is currently disabled",
-                closeCallback: () => {
-                    $modalStore = null
-                }
-            }
-        }
-
         // $modalStore = {
-        //     component: Payment,
+        //     component: Message,
         //     props: {
-        //         teams,
+        //         headerText: "Payment Disabled",
+        //         message: "Payment is currently disabled",
         //         closeCallback: () => {
         //             $modalStore = null
         //         }
         //     }
         // }
+
+        $modalStore = {
+            component: Payment,
+            props: {
+                teams,
+                closeCallback: () => {
+                    $modalStore = null
+                }
+            }
+        }
     }
 
 

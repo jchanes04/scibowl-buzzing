@@ -73,10 +73,6 @@
         padding-bottom: 0.3em;
         display: inline-block;
 
-        h2 {
-            margin: 0;
-        }
-
         input {
             visibility: hidden;
             width: 0;
