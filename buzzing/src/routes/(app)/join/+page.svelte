@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-    <title>Join Game</title>
+    <title>Join a Game</title>
 </svelte:head>
 
 <form method="POST" on:input={handleFormInput} autocomplete="off">
