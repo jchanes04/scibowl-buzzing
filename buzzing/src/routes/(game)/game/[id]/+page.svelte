@@ -19,11 +19,14 @@
     import moderatorsStore, { createModeratorStore } from "$lib/stores/moderators";
     import myMemberStore from "$lib/stores/myMember"
     import { page } from "$app/stores";
-    import socket from "$lib/socket";
+    import { createSocket } from "$lib/socket";
+    import { beforeNavigate, invalidateAll } from "$app/navigation";
 
     export let data: PageServerData
-    let { gameInfo, teamList, moderatorList, playerList, myMemberId } = data
-    $: ({ gameInfo, teamList, moderatorList, playerList, myMemberId } = data)
+    let { gameInfo, teamList, moderatorList, playerList, myMemberId, scores } = data
+    $: ({ gameInfo, teamList, moderatorList, playerList, myMemberId, scores } = data)
+
+    const socket = createSocket()
 
     $gameStore = {
         id: $page.params.id,
@@ -34,8 +37,10 @@
             currentQuestion: null,
             buzzingEnabled: false,
             buzzedTeamIds: []
-        }
+        },
+        scores
     }
+    gameStore.scoreboard.setScores(scores)
 
     for (const t of Object.values(teamList)) {
         const newStore = createTeamStore(t)
@@ -64,6 +69,11 @@
 
     const debug = browser ? new Debugger($page.params.id, gameInfo.name, $myMemberStore, socket) : null
     setContext('debug', debug)
+
+    beforeNavigate(() => {
+        socket.disconnect()
+        invalidateAll()
+    })
 </script>
 
 <svelte:head>

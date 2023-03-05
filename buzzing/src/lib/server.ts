@@ -123,54 +123,33 @@ io.on('connection', async socket => {
     })
 
     socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
-        if (member.type !== "moderator" || game.state.questionState !== "buzzed") return
-        
+        if (member.type !== "moderator") return
+        if (!(game.state.questionState === "buzzed" || game.state.currentQuestion?.bonus)) return
+
         const result = game.scoreQuestion(scoreType)
 
         if (!result) return
 
-        const { buzzer, category, open } = result
+        const { buzzer, category, bonus, open, number } = result
 
         io.to(gameId).emit('scoreChange', {
             open,
-            scoreType, 
+            bonus,
+            scoreType,
             playerId: buzzer.id,
-            playerScore: buzzer.scoreboard.score,
             teamId: buzzer.team.id,
-            teamScore: buzzer.team.scoreboard.score,
-            category
+            category,
+            number
         })
 
         if (open) {
-            const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+            const serverLength = game.state.currentQuestion.bonus
+                ? game.times.bonus[0] + game.times.bonus[1]
+                : game.times.tossup[0] + game.times.tossup[1]
             game.timer.start(serverLength)
         } else {
             game.timer.end()
         }
-    })
-
-    socket.on('undoScore', () => {
-        if (member.type !== "moderator") return
-        
-        if (!game.state.lastScored) {
-            return socket.emit('undoScoreFailed')
-        }
-
-        const undoData = game.undoScore()
-        if (!undoData) {
-            return socket.emit('undoScoreFailed')
-        }
-        
-        const { score, buzzer, category, bonus } = undoData
-        io.to(gameId).emit('scoreUndone', {
-            score,
-            playerId: buzzer.id,
-            playerScore: buzzer.scoreboard.score,
-            teamId: buzzer.team.id,
-            teamScore: buzzer.scoreboard.score,
-            category,
-            bonus
-        })
     })
 
     socket.on('kickPlayer', (id: string) => {

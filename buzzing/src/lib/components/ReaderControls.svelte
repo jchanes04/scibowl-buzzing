@@ -8,10 +8,11 @@
     import teamsStore, { type ClientTeamData } from '$lib/stores/teams';
     import gameStore from '$lib/stores/game';
     import { gameClockStore } from '$lib/stores/timer';
-    import socket from "$lib/socket"
+    import getSocket from "$lib/socket"
     import type { Writable } from 'svelte/store';
     import Confirm from './Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
+  import ExpandedScoreboard from './ExpandedScoreboard.svelte';
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
@@ -25,6 +26,7 @@
         {id:"energy", value:"Energy"}
     ]
     
+    const socket = getSocket()
     const debug: Debugger = getContext('debug')
     type ModalStore = Writable<{
         component: ConstructorOfATypedSvelteComponent,
@@ -32,22 +34,25 @@
     } | null>
     const modalStore: ModalStore = getContext('modalStore')
 
+    let questionNumber: number = 0
     function newQuestion() {
         socket.emit('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
-            teamId: questionType === "bonus" ? teamSelectValue?.id : null
+            teamId: questionType === "bonus" ? teamSelectValue?.id : null,
+            number: questionNumber
         })
 
         debug.addEvent('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
-            teamId: questionType === "bonus" ? teamSelectValue?.id : null
+            teamId: questionType === "bonus" ? teamSelectValue?.id : null,
+            number: questionNumber
         })
 
         $chatMessagesStore = [...$chatMessagesStore, {
             type: 'notification',
-            text: `New Question: ${questionType[0].toUpperCase() + questionType.slice(1)} - ${selectedCategory[0].toUpperCase() + selectedCategory.slice(1)}`
+            text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${questionType[0].toUpperCase() + questionType.slice(1)} - ${selectedCategory[0].toUpperCase() + selectedCategory.slice(1)}`
         }]
 
         gameStore.openQuestion(true)
@@ -74,6 +79,12 @@
         } else {
             newQuestion()
         }   
+    }
+
+    function handleQuestionNumberChange() {
+        if (questionNumber < 1) {
+            questionNumber = 0
+        }
     }
     
     let startTimerDisabled = false
@@ -102,29 +113,39 @@
         }
     }
     function clearScores() {
-        socket.emit('clearScores')
-        debug.addEvent('clearScores', {})
-    }
-    function saveScores() {
-        socket.emit('saveScores')
-        debug.addEvent('saveScores', {})
+        $modalStore = {
+            component: Confirm,
+            props: {
+                title: "Clear Scores",
+                message: "Are you sure you want to clear scores?",
+                cancelCallback: () => {
+                    $modalStore = null
+                },
+                confirmCallback: () => {
+                    socket.emit('clearScores')
+                    debug.addEvent('clearScores', {})
+                    $modalStore = null
+                }
+            }
+        }
     }
 
+    let scoreboardExpanded = false
+
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
+    $: scoringEnabled = $gameStore.state.questionState === "buzzed" || $gameStore.state.currentQuestion?.bonus
     function scoreQuestion() {
         socket.emit('scoreQuestion', selectedScore)
         if (selectedScore === "correct") {
             teamSelectValue = $teamsStore[$gameStore.state.buzzedTeamIds[$gameStore.state.buzzedTeamIds.length - 1]]
         }
         selectedScore = ""
-        debug.addEvent('scoreQuestion', { selectedScore })
-    }
 
-    let undoScoresDisabled = false
-    function undoScore() {
-        undoScoresDisabled = true
-        setTimeout(() => undoScoresDisabled = false, 1000)
-        socket.emit('undoScore')
+        if ($gameStore.state.currentQuestion?.bonus && questionNumber !== 0) {
+            questionNumber++
+        }
+
+        debug.addEvent('scoreQuestion', { selectedScore })
     }
 
     let gameClockTime: number
@@ -182,45 +203,49 @@
                 bind:justValue={selectedCategory}/>
         </div>
         <br />
-        <button on:click={confirmNewQuestion} disabled={!questionType || !selectedCategory || (!teamSelectValue && questionType === "bonus")}>New Question</button>
+        <div class="new-question-wrapper">
+            <input type="number" bind:value={questionNumber} on:change={handleQuestionNumberChange} />
+            <button on:click={confirmNewQuestion} disabled={!questionType || !selectedCategory || (!teamSelectValue && questionType === "bonus")}>New Question</button>
+        </div>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
         <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
         <br />
-        <div id="score-wrapper" class:disabled={$gameStore.state.questionState !== "buzzed" && !$gameStore.state.currentQuestion?.bonus}>
+        <div id="score-wrapper" class:disabled={!scoringEnabled}>
             <label for="correct-radio">
                 <input type="radio" id="correct-radio" name="selected-score" value="correct"
-                    bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
+                    bind:group={selectedScore} disabled={!scoringEnabled}>
                 <span>Correct</span>
             </label>
             <label for="incorrect-radio">
                 <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect"
-                    bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
+                    bind:group={selectedScore} disabled={!scoringEnabled}>
                 <span>Incorrect</span>
             </label>
             <label for="penalty-radio">
                 <input type="radio" id="penalty-radio" name="selected-score" value="penalty"
-                    bind:group={selectedScore} disabled={$gameStore.state.questionState !== "buzzed"}>
+                    bind:group={selectedScore} disabled={!scoringEnabled}>
                 <span>Penalty</span>
             </label>
         </div>
-        <button on:click={scoreQuestion} disabled={$gameStore.state.questionState !== "buzzed" || !selectedScore}>Score</button>
-        <br />
-        <button on:click={undoScore} disabled={undoScoresDisabled}>Undo Score</button>
-    </ControlSection>
-    <ControlSection title="Scoreboard">
-        <button on:click={clearScores}>Clear Scores</button>
-        <button on:click={saveScores}>Save Scores</button>
+        <button on:click={scoreQuestion} disabled={!scoringEnabled || !selectedScore}>Score</button>
+        <button on:click={() => scoreboardExpanded = true}>Expand Scoreboard</button>
     </ControlSection>
     <ControlSection title="Game Control">
         <TimeEntry bind:value={gameClockTime} />
-        <br />
+        <br /><br />
         <button disabled={startGameClockDisabled || gameClockTime === 0} on:click={startGameClock}>▶</button>
         <button disabled={pauseGameClockDisabled} on:click={pauseGameClock}>⏯</button>
         <button disabled={stopGameClockDisabled} on:click={stopGameClock}>⏹</button>
-        <br />
+        <br /><br />
         <button on:click={endGame} id="endGame">End Game</button>
     </ControlSection>
+
+    {#if scoreboardExpanded}
+        <div class="expanded-scoreboard-wrapper">
+            <ExpandedScoreboard on:close={() => scoreboardExpanded = false} />
+        </div>
+    {/if}
 </div>
 
 <style lang="scss">
@@ -236,6 +261,7 @@
         box-sizing: border-box;
         border-radius: 1em;
         background: #EEE;
+        position: relative;
     }
 
     button {
@@ -262,6 +288,15 @@
         --border: .1em solid green;
         --border-radius: .5em;
         --selected-item-padding: 0;
+    }
+
+    input[type="number"] {
+        border: none;
+        width: 3ch;
+        font-size: 18px;
+        border-radius: 0.3em;
+        padding: 0.3em;
+        border: 0.1em solid green;
     }
 
     #question-type-wrapper label {
@@ -382,6 +417,11 @@
     
     #target-team-wrapper.hidden {
         visibility: hidden;
+    }
+
+    .expanded-scoreboard-wrapper {
+        inset: 0;
+        position: absolute;
     }
 </style>
 

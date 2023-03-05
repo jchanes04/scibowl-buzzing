@@ -43,6 +43,7 @@ export const load = async function({ params, locals, cookies }) {
                 settings: game.settings,
                 times: game.times
             },
+            scores: game.scoreboard.scores,
             playerList,
             teamList,
             moderatorList,
@@ -75,6 +76,7 @@ export const load = async function({ params, locals, cookies }) {
                     settings: game.settings,
                     times: game.times
                 },
+                scores: game.scoreboard.scores,
                 playerList,
                 teamList,
                 moderatorList,
@@ -102,6 +104,7 @@ export const load = async function({ params, locals, cookies }) {
                     settings: game.settings,
                     times: game.times
                 },
+                scores: game.scoreboard.scores,
                 playerList,
                 teamList,
                 moderatorList,

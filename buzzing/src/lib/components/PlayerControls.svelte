@@ -2,11 +2,12 @@
     import type Debugger from "$lib/classes/Debugger";
     import buzzAudioStore from "$lib/stores/buzzAudio";
     import gameStore from "$lib/stores/game";
-    import socket from "$lib/socket";
+    import getSocket from "$lib/socket";
     import { timerStore, gameClockStore } from "$lib/stores/timer";
     import { getContext } from "svelte";
     import myMember from "$lib/stores/myMember";
     
+    const socket = getSocket()
     const debug: Debugger = getContext('debug')
 
     function buzz() {
