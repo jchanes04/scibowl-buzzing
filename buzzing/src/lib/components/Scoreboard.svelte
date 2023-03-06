@@ -11,18 +11,16 @@
 
     function sumQuestionScores(scores: Record<number, QuestionPairScore>, teamId: string) {
         return Object.values(scores).reduce((acc, q) => {
-            console.log(acc, q)
             if (q.tossup[teamId]?.scoreType === "correct") {
-                return acc + pointValues.tossup + (
-                    q.bonus?.teamId === teamId && q.bonus.correct
-                    ? pointValues.bonus
-                    : 0
-                )
+                acc += pointValues.tossup 
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
-                return acc + pointValues.penalty
-            } else {
-                return acc
+                acc += pointValues.penalty
             }
+
+            if (q.bonus?.teamId === teamId && q.bonus?.correct) {
+                acc += pointValues.bonus
+            }
+            return acc
         }, 0)
     }
 </script>

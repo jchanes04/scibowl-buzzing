@@ -3,22 +3,32 @@
     import teamsStore from "$lib/stores/teams"
     import playersStore from "$lib/stores/players"
     import { createEventDispatcher } from "svelte";
-  import type { Category, ScoreType } from "$lib/classes/Game";
+    import type { Category, ScoreType } from "$lib/classes/Game";
 
     const dispatch = createEventDispatcher()
 
     $: rowNumber = Math.max(...Object.keys($gameStore.scores).map(Number))
     $: rowArray = Array.from({length: rowNumber}, (_, i) => i + 1)
-    $: players = Object.values($gameStore.scores).reduce((acc, s) => {
-        for (const t of Object.keys(s.tossup)) {
-            if (!acc[t]) {
-                acc[t] = [s.tossup[t].playerId]
-            } else if (!acc[t].includes(s.tossup[t].playerId)) {
-                acc[t].push(s.tossup[t].playerId)
+    $: players = {
+        ...Object.values($gameStore.scores).reduce((acc, s) => {
+            for (const t of Object.keys(s.tossup)) {
+                if (!acc[t]) {
+                    acc[t] = [s.tossup[t].playerId]
+                } else if (!acc[t].includes(s.tossup[t].playerId)) {
+                    acc[t].push(s.tossup[t].playerId)
+                }
             }
-        }
-        return acc
-    }, {} as Record<string, string[]>)
+            return acc
+        }, {} as Record<string, string[]>),
+        ...Object.entries($teamsStore).reduce((acc, [teamId, team]) => {
+            if (!Object.values($gameStore.scores).some(s => s.tossup[teamId])) {
+                acc[teamId] = Object.keys(team.players)
+                return acc
+            } else {
+                return acc
+            }
+        }, {} as Record<string, string[]>)
+    }
 
     const categories: Record<Category, string> = {
         "bio": "B",
@@ -52,7 +62,7 @@
             <th colspan="2"></th>
             {#each Object.values(players) as p}
                 {#each p as playerId}
-                    <th class="player-name">{$playersStore[playerId].name}</th>
+                    <th class="player-name" style:font-weight="normal">{$playersStore[playerId]?.name || "Unknown"}</th>
                 {/each}
                 <th class="player-name" style:font-weight="bold">Bonus</th>
             {/each}
@@ -64,7 +74,7 @@
                     <td>{categories[$gameStore.scores[i].category]}</td>
                     {#each Object.entries(players) as [teamId, p]}
                         {#each p as playerId}
-                            {#if $gameStore.scores[i].tossup[teamId].playerId === playerId}
+                            {#if $gameStore.scores[i].tossup[teamId]?.playerId === playerId}
                                 <td class="{$gameStore.scores[i].tossup[teamId].scoreType}">
                                     {scoreTypes[$gameStore.scores[i].tossup[teamId].scoreType]}
                                 </td>
@@ -72,12 +82,12 @@
                                 <td></td>
                             {/if}
                         {/each}
-                        {#if $gameStore.scores[i].bonus}
-                            <td class={$gameStore.scores[i].bonus?.correct ? "correct" : "incorrect"}>
+                        {#if $gameStore.scores[i].bonus?.teamId === teamId}
+                            <td class="bonus {$gameStore.scores[i].bonus?.correct ? "correct" : "incorrect"}">
                                 {$gameStore.scores[i].bonus?.correct ? "C" : "I"}
                             </td>
                         {:else}
-                            <td></td>
+                            <td class="bonus"></td>
                         {/if}
                     {/each}
                 {:else}
@@ -86,9 +96,16 @@
                         {#each p as _}
                             <td></td>
                         {/each}
-                        <td></td>
+                        <td class="bonus"></td>
                     {/each}
                 {/if}
+            </tr>
+        {:else}
+            <tr>
+                <td colspan="2"></td>
+                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length + 1, 0)}>
+                    No questions
+                </td>
             </tr>
         {/each}
     </table>
@@ -135,6 +152,10 @@
     td {
         text-align: center;
         padding: 0.1em 0.2em;
+
+        &.bonus {
+            border-right: 1px solid black;
+        }
 
         &.correct {
             background: var(--green);

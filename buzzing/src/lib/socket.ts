@@ -309,9 +309,13 @@ export function createSocket() {
     }
 
     socket.on('questionOpen', (question: NewQuestionData) => {
-        console.log(question)
         const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)
         gameStore.newQuestion(question, !!buzzingEnabled)
+
+        if (!question.bonus && question.number && game.scores[question.number]) {
+            gameStore.scoreboard.clearQuestion(question.number)
+        }
+
         chatMessagesStore.update(oldList => {
             const teamName = teams[question.bonus ? question.teamId : ""]?.name
             if (question.number) {
@@ -414,6 +418,17 @@ export function createSocket() {
         if (!team) return
 
         team.store.changeCaptain(memberId)
+
+        const member = team.players[memberId]
+        if (!member) return
+
+        chatMessagesStore.update(oldValue => {
+            oldValue.push({
+                type: "notification",
+                text: member.name + " is now captain of " + team.name
+            })
+            return oldValue
+        })
     })
 
     socket.on('kicked', () => {

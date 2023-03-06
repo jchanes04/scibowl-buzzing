@@ -43,6 +43,10 @@
             number: questionNumber
         })
 
+        if (questionType === "tossup" && questionNumber && $gameStore.scores[questionNumber]) {
+            gameStore.scoreboard.clearQuestion(questionNumber)
+        }
+
         debug.addEvent('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus",
@@ -55,27 +59,73 @@
             text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${questionType[0].toUpperCase() + questionType.slice(1)} - ${selectedCategory[0].toUpperCase() + selectedCategory.slice(1)}`
         }]
 
-        gameStore.openQuestion(true)
+        if (questionType === "bonus") {
+            gameStore.newQuestion({
+                category: selectedCategory as Category,
+                bonus: true,
+                teamId: teamSelectValue?.id as string,
+                number: questionNumber
+            }, true)
+        } else {
+            gameStore.newQuestion({
+                category: selectedCategory as Category,
+                bonus: false,
+                number: questionNumber
+            }, true)
+        }
 
         questionType = ""
     }
 
+    const timeEndedModal = (confirmCallback: () => void) => ({
+        component: Confirm,
+        props: {
+            title: "Confirm New Question",
+            message: "The game clock has ended. Are you sure you want to open a new question?",
+            confirmCallback,
+            cancelCallback: () => {
+                $modalStore = null
+            }
+        }
+    })
+    const overwriteQuestionModal = (number: number, confirmCallback: () => void) => ({
+        component: Confirm,
+        props: {
+            title: "Overwrite Question #" + number,
+            message: `There is already a question #${number} in the scoreboard. Are you sure you want to overwrite it?`,
+            confirmCallback,
+            cancelCallback: () => {
+                $modalStore = null
+            }
+        }
+    })
+
     function confirmNewQuestion() {
         if (gameClockStore.ended) {
-            $modalStore = {
-                component: Confirm,
-                props: {
-                    title: "Confirm New Question",
-                    message: "The game clock has ended. Are you sure you want to open a new question?",
-                    confirmCallback: () => {
+            $modalStore = timeEndedModal(() => {
+                if (
+                    questionType === "tossup"
+                    && $gameStore.scores[questionNumber]
+                    && questionNumber !== 0
+                ) {
+                    $modalStore = overwriteQuestionModal(questionNumber, () => {
                         newQuestion()
                         $modalStore = null
-                    },
-                    cancelCallback: () => {
-                        $modalStore = null
-                    }
+                    })
+                } else {
+                    newQuestion()
+                    $modalStore = null
                 }
-            }
+            })
+        } else if (
+            questionType === "tossup"
+            && $gameStore.scores[questionNumber]
+            && questionNumber !== 0
+        ) {
+            $modalStore = overwriteQuestionModal(questionNumber, () => {
+                newQuestion()
+                $modalStore = null
+            })
         } else {
             newQuestion()
         }   
@@ -135,7 +185,17 @@
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
     $: scoringEnabled = $gameStore.state.questionState === "buzzed" || $gameStore.state.currentQuestion?.bonus
     function scoreQuestion() {
+        console.log($gameStore.state.currentQuestion)
         socket.emit('scoreQuestion', selectedScore)
+
+        if (
+            selectedScore === "incorrect"
+            && $gameStore.state.buzzedTeamIds.length === Object.keys($teamsStore).length
+            && questionNumber !== 0
+        ) {
+            questionNumber++
+        }
+
         if (selectedScore === "correct") {
             teamSelectValue = $teamsStore[$gameStore.state.buzzedTeamIds[$gameStore.state.buzzedTeamIds.length - 1]]
         }

@@ -48,6 +48,7 @@ export class GameScoreboard {
                 playerId,
                 scoreType: "correct"
             }
+            this.scores[number].bonus = null
         } else {
             this.scores[number] = {
                 category,
@@ -68,6 +69,7 @@ export class GameScoreboard {
                 playerId,
                 scoreType: "incorrect"
             }
+            this.scores[number].bonus = null
         } else {
             this.scores[number] = {
                 category,
@@ -88,6 +90,7 @@ export class GameScoreboard {
                 playerId,
                 scoreType: "penalty"
             }
+            this.scores[number].bonus = null
         } else {
             this.scores[number] = {
                 category,
@@ -136,5 +139,9 @@ export class GameScoreboard {
                 }
             }
         }
+    }
+
+    clearQuestion(number: number) {
+        delete this.scores[number]
     }
 }

@@ -81,6 +81,7 @@ export default {
     },
     clearQuestion: () => {
         store.update(value => {
+            value.state.currentQuestion = null
             value.state.buzzingEnabled = false
             value.state.buzzedTeamIds = []
             value.state.questionState = "idle"
@@ -168,6 +169,13 @@ export default {
         },
         setScores: (scores: Record<number, QuestionPairScore>) => {
             scoreboard = new GameScoreboard(scores)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        clearQuestion: (number: number) => {
+            scoreboard.clearQuestion(number)
             store.update(value => {
                 value.scores = scoreboard.scores
                 return value
