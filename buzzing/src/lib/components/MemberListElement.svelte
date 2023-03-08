@@ -1,5 +1,5 @@
 <script lang="ts">
-    import socket from "$lib/socket";
+    import getSocket from "$lib/socket";
     import type { ModeratorStore } from "$lib/stores/moderators";
     import type { PlayerStore } from "$lib/stores/players";
     import teamsStore from "$lib/stores/teams";
@@ -10,6 +10,7 @@
     export let member: PlayerStore | ModeratorStore
     export let showControls = false
 
+    const socket = getSocket()
     type ModalStore = Writable<{
         component: ConstructorOfATypedSvelteComponent,
         props: Record<string, unknown>
@@ -69,6 +70,8 @@
 {/if}
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     li {
         font-size: 20px;
         margin-left: 1em;
@@ -88,7 +91,7 @@
     }
 
     .moderator {
-        color: var(--orange);
+        color: $orange;
     }
 
     .controls {

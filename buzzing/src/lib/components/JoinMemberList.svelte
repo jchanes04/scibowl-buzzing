@@ -11,14 +11,16 @@
     </ul>
 </div>
 
-<style>
+<style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     div {
         margin-top: 1em;
     }
 
     h3 {
         font-size: 24px;
-        text-decoration: underline var(--blue) 2px;
+        text-decoration: underline $blue 2px;
         text-underline-offset: 0.1em;
         margin-bottom: 0.5em;
     }

@@ -54,6 +54,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     #top-bar {
         grid-area: top-bar;
         display: grid;
@@ -63,7 +65,7 @@
         position: sticky;
         top: -0.5em;
         left: 0;
-        background-color: #d4d9d9;
+        background-color: $background-2;
         z-index: 5;
 
         * {
@@ -116,7 +118,7 @@
         padding: 0 0.5em;
         width: 100%;
         box-sizing: border-box;
-        background: #d4d9d9;
+        background: $background-2;
         z-index: 5;
     }
 

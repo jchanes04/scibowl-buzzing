@@ -12,6 +12,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     .header {
         background: white;
         text-align: left;
@@ -50,7 +52,7 @@
         transition: color 0.3s;
 
         &:hover {
-            color: #006242;
+            color: adjust($green, $lightness: -20%);
         }
     }
 </style>

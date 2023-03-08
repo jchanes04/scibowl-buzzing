@@ -3,6 +3,7 @@
     export let name: string
     export let value: string = ""
     export let placeholderValue: string = ""
+    
     let lastValue = value
 </script>
 
@@ -16,21 +17,16 @@
 }} />
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     input[type="text"] {
-        padding: 0.3em;
+        @extend %text-input;
+
         font-size: 24px;
         margin: 0.5em auto;
-        border: none;
-        border-radius: 0.3em;
         box-sizing: border-box;
         width: 25ch;
         max-width: 80vw;
         text-align: center;
-        font-family: 'Ubuntu';
-        position: relative;
-
-        &:focus::placeholder {
-            color: transparent;
-        }
     }
 </style>

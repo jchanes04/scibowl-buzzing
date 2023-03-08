@@ -20,6 +20,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     .member-list {
         grid-area: member-list;
         display: grid;
@@ -27,43 +29,17 @@
         padding: 1em;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: $background-1;
         min-height: 10em;
         max-height: 25em;
     }
 
     ul {
+        @include vertical-scrollable();
+
         display: flex;
         flex-direction: column;
         overflow-y: auto;
-
-        &::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        &::-webkit-scrollbar-button {
-            display: none;
-        }
-
-        &::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        &::-webkit-scrollbar-thumb {
-            background: var(--green);
-            width: 5px;
-            border-radius: 5px;
-        }
-
-        &::-webkit-scrollbar-track-piece:start {
-            margin-top: 1.2em;
-            background: transparent;
-        }
-
-        &::-webkit-scrollbar-track-piece:end {
-            margin-bottom: 1.2em;
-            background: transparent;
-        }
     }
 
     h2 {

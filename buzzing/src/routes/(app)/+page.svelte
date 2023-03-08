@@ -21,6 +21,8 @@
 
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+    
     h1  {
         font-size: 80px;
         margin: .2em .0em .1em 0;
@@ -33,21 +35,6 @@
     }
     h3 {
         font-size: 40px;
-    }
-    .info {
-        margin: .5em;
-    }
-    
-
-    .info::before {
-        content: '';
-        height: 1.1em;
-        width: 0.07em;
-        position: relative;
-        bottom: -0.18em;
-        background-color: currentColor;
-        display: inline-block;
-        margin-right: 0.5em;
     }
     
     #hero {
@@ -66,9 +53,9 @@
 
     .bubble {
         border-radius: 15px;
-        background-color: #006242;
+        background-color: $green;
         padding: 3em;
         color:white;
         margin: 2em 0;
-        }
+    }
 </style>

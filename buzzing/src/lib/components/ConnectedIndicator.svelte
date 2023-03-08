@@ -44,6 +44,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     .indicator {
         position: fixed;
         left: 10px;
@@ -62,10 +64,10 @@
     }
 
     .connected .circle {
-        background-color: var(--green);
+        background-color: $green;
     }
 
     .disconnected .circle {
-        background-color: var(--red);
+        background-color: $red;
     }
 </style>

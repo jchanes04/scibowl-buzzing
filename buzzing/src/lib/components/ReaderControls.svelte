@@ -222,7 +222,7 @@
 
 <div id="buttons">
     <ControlSection title="Questions" style="display: flex; flex-direction: column; align-items: center;">
-        <div id="question-type-wrapper">
+        <div class="multi-choice">
             <label for="tossup-radio">
                 <input type="radio" id="tossup-radio" name="question-type" value="tossup" bind:group={questionType}>
                 <span>Tossup</span>
@@ -253,7 +253,7 @@
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
         <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
         <br />
-        <div id="score-wrapper" class:disabled={!scoringEnabled}>
+        <div class="multi-choice" class:disabled={!scoringEnabled}>
             <label for="correct-radio">
                 <input type="radio" id="correct-radio" name="selected-score" value="correct"
                     bind:group={selectedScore} disabled={!scoringEnabled}>
@@ -292,6 +292,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     #buttons {
         padding: 1em;
         display: flex;
@@ -303,32 +305,22 @@
         grid-area: control-panel;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: $background-1;
         position: relative;
     }
 
     button {
-        color: #EEE;
-        background: var(--green);
+        @extend %button;
+
         font-size: 20px;
-        font-weight: bold;
         padding: 0.6em;
         border-radius: 0.6em;
-        border: solid black 3px;
-        cursor: pointer;
-    }
-
-    button:disabled {
-        border: solid var(--green) 3px;
-        background: transparent;
-        color: #444;
-        cursor: default;
     }
 
     .select-wrapper {
         width: 14em;
         --background:white;
-        --border: .1em solid green;
+        --border: .1em solid $green;
         --border-radius: .5em;
         --selected-item-padding: 0;
     }
@@ -339,105 +331,10 @@
         font-size: 18px;
         border-radius: 0.3em;
         padding: 0.3em;
-        border: 0.1em solid green;
+        border: 0.1em solid $green;
     }
 
-    #question-type-wrapper label {
-        cursor: pointer;
-        position: relative;
-        
-        input {
-            visibility: hidden;
-            width: 0;
-            height: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-
-            & ~ span {
-                color: #000;
-                font-weight: bold;
-            }
-
-            &:disabled ~ span {
-                color: #444;
-                font-weight: normal;
-            }
-
-            &:checked ~ span {
-                border: 2px solid var(--blue);
-                padding: calc(0.3em - 2px);
-                border-radius: 0.3em;
-            }
-        }
-
-        span {
-            padding: 0.3em;
-            display: inline-block;
-
-            &:hover {
-                text-decoration: underline #000 2px;
-            }
-        }
-    }
-
-    #score-wrapper {
-        margin-bottom: 0.5em;
-    }
-
-    #score-wrapper label {
-        cursor: pointer;
-        position: relative;
-        
-        input {
-            visibility: hidden;
-            width: 0;
-            height: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-
-            & ~ span {
-                color: #000;
-                font-weight: bold;
-            }
-
-            &:disabled ~ span {
-                color: #444;
-                font-weight: normal;
-            }
-
-            &:checked ~ span {
-                border: 2px solid;
-                padding: calc(0.3em - 2px);
-                border-radius: 0.3em;
-            }
-        }
-
-        #correct-radio:checked ~ span {
-            border-color: var(--green);
-        }
-
-        #incorrect-radio:checked ~ span {
-            border-color: var(--red);
-        }
-
-        #penalty-radio:checked ~ span {
-            border-color: var(--red);
-        }
-
-        span {
-            padding: 0.3em;
-            display: inline-block;
-            border: none;
-
-            &:hover {
-                text-decoration: underline #000 2px;
-            }
-        }
-    }
-
-    #score-wrapper.disabled {
+    .multi-choice.disabled {
         cursor: default;
 
         label {
@@ -454,6 +351,46 @@
             input:checked ~ span {
                 padding: 0.3em;
                 border: none;
+            }
+        }
+    }
+
+    .multi-choice label {
+        cursor: pointer;
+        position: relative;
+        
+        input {
+            visibility: hidden;
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+
+            & ~ span {
+                color: black;
+                font-weight: bold;
+            }
+
+            &:disabled ~ span {
+                color: #444;
+                font-weight: normal;
+            }
+
+            &:checked ~ span {
+                border: 2px solid $blue;
+                padding: 0.3em;
+                border-radius: 0.3em;
+            }
+        }
+
+        span {
+            padding: 0.3em;
+            display: inline-block;
+            box-sizing: border-box;
+
+            &:hover {
+                text-decoration: underline black 2px;
             }
         }
     }

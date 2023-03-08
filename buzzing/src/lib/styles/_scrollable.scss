@@ -1,0 +1,65 @@
+@use 'variables';
+
+@mixin horizontal-scrollable($width: 5px) {
+    overflow-x: auto;
+
+    &::-webkit-scrollbar {
+        width: $width;
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: variables.$green;
+        width: $width;
+        border-radius: $width;
+    }
+
+    &::-webkit-scrollbar-track-piece:start {
+        margin-top: 1.2em;
+        background: transparent;
+    }
+    
+    &::-webkit-scrollbar-track-piece:end {
+        margin-bottom: 1.2em;
+        background: transparent;
+    }
+}
+
+@mixin vertical-scrollable($width: 5px) {
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+        width: $width;
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: variables.$green;
+        width: $width;
+        border-radius: $width;
+    }
+
+    &::-webkit-scrollbar-track-piece:start {
+        margin-top: 1.2em;
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-track-piece:end {
+        margin-bottom: 1.2em;
+        background: transparent;
+    }
+}

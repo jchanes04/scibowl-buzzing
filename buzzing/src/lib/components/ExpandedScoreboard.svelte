@@ -244,9 +244,11 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     div {
         overflow: auto;
-        background: #EEE;
+        background: $background-1;
         border-radius: 1em;
         padding: 2em;
         width: 100%;
@@ -305,39 +307,30 @@
         }
 
         &.correct {
-            background: var(--green);
+            background: adjust($green, $lightness: 20%);
         }
 
         &.incorrect {
-            background: var(--red);
+            background: adjust($red, $lightness: 20%);
         }
 
         &.penalty {
-            background: var(--red);
+            background: adjust($red, $lightness: 20%);
         }
     }
 
     button {
-        color: #EEE;
-        background: var(--green);
+        @extend %button;
+
         font-size: 20px;
-        font-weight: bold;
         padding: 0.6em;
         border-radius: 0.6em;
-        border: solid black 3px;
-        cursor: pointer;
-    }
-
-    button:disabled {
-        border: solid var(--green) 3px;
-        background: transparent;
-        color: #444;
-        cursor: default;
     }
 
     .delete-button {
         font-size: inherit;
         padding: 0.2em;
         border: solid black 2px;
+        border-radius: 0.2em;
     }
 </style>

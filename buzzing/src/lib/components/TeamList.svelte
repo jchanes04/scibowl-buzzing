@@ -46,6 +46,7 @@
 <svelte:body on:keydown={handleKeydown}></svelte:body>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
 
     ul {
         list-style: none;
@@ -75,28 +76,24 @@
     }
 
     .add {
-        background: hsl(210, 100%, 38%);
+        background: $blue;
         clip-path: polygon(0 40%, 40% 40%, 40% 0, 60% 0, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%);
         margin-left: 0.2em;
         float: right;
     }
 
     .remove {
+        background: $red;
         clip-path: polygon(15% 0, 0 15%, 35% 50%, 0 85%, 15% 100%, 50% 65%, 85% 100%, 100% 85%, 65% 50%, 100% 15%, 85% 0, 50% 35%);
-        background: var(--red);
         margin-right: 0.5em;
     }
 
     input[type="text"] {
-        padding: 0.3em;
+        @extend %text-input;
+
         font-size: 16px;
         margin: 0.5em auto;
-        border: none;
-        border-radius: 0.3em;
-        box-sizing: border-box;
         width: 25ch;
         text-align: center;
-        font-family: 'Ubuntu';
-        position: relative;
     }
 </style>

@@ -13,8 +13,10 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+    
     .confirm-modal {
-        background: #d4d9d9;
+        background: $background-2;
         border-radius: 15px;
         position: fixed;
         top: 50%;
@@ -24,13 +26,10 @@
     }
 
     button {
-        color: #EEE;
-        background: var(--green);
+        @extend %button;
+        
         font-size: 20px;
-        font-weight: bold;
         padding: 0.6em;
         border-radius: 0.6em;
-        border: solid black 3px;
-        cursor: pointer;
     }
 </style>

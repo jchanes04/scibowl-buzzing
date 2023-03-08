@@ -92,6 +92,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     form {
         margin: 0em auto;
         border-radius: 1em;
@@ -102,7 +104,7 @@
 
     h1 {
         font-size: 44px;
-        text-decoration: underline var(--blue) 3px;
+        text-decoration: underline $blue 3px;
         text-underline-offset: 0.2em;
     }
 
@@ -112,21 +114,13 @@
     }
 
     input[type="text"] {
-        padding: 0.3em;
+        @extend %text-input;
+
         font-size: 24px;
         margin: 0.5em auto;
-        border: none;
-        border-radius: 0.3em;
-        box-sizing: border-box;
         width: 25ch;
         max-width: 80vw;
         text-align: center;
-        font-family: 'Ubuntu';
-        position: relative;
-
-        &:focus::placeholder {
-            color: transparent;
-        }
     }
 
     label {
@@ -159,12 +153,12 @@
                 width: 0.7em;
                 height: 0.7em;
                 border-radius: 0.35em;
-                background: var(--blue);
+                background: $blue;
             }
         }
 
         &:hover > span {
-            border-color: var(--green);
+            border-color: $green;
         }
 
         input:checked ~ span::after {
@@ -181,21 +175,9 @@
     }
 
     button {
-        padding: 0.5em;
-        color: #EEE;
-        background: var(--green);
-        border-radius: 0.3em;
-        font-weight: bold;
-        border: solid black 3px;
-        font-size: 18px;
-        cursor: pointer;
-        width: 8ch;
+        @extend %button;
 
-        &:disabled {
-            border: solid var(--green) 3px;
-            background: transparent;
-            color: #444;
-            cursor: default;
-        }
+        font-size: 18px;
+        width: 8ch;
     }
 </style>

@@ -36,6 +36,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     .join-link-dialog {
         background-color: #EEE;
         position: relative;
@@ -69,16 +71,12 @@
     }
 
     button {
-        background: var(--green);
-        border: 3px solid black;
+        @extend %button;
+
         border-left-width: 2px;
         border-radius: 0 0.5em 0.5em 0;
         font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        box-sizing: border-box;
         height: 100%;
         width: 9ch;
-        color: white;
     }
 </style>

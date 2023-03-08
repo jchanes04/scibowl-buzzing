@@ -49,7 +49,9 @@
     </div>
 </div>
 
-<style>
+<style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     .player-controls {
         grid-area: control-panel;
         display: flex;
@@ -58,28 +60,19 @@
         gap: 2em;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: $background-1;
         padding: 2em;
     }
 
     button {
-        background: var(--green);
-        border: 3px solid var(--blue);
+        @extend %button;
+
         border-radius: 0.5em;
-        font-weight: 600;
         padding: 1em 2em;
-        cursor: pointer;
     }
 
     #buzz {
         font-size: 36px;
-    }
-
-    button:disabled {
-        color: #333;
-        background: var(--green-dull);
-        border-color: var(--blue-dull);
-        cursor: default;
     }
 
     h2 {

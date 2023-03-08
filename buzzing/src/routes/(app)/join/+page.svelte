@@ -29,6 +29,8 @@
 </form>
 
 <style lang="scss">
+    @use '$styles/_global.scss';
+
     form {
         margin: 0em auto;
         border-radius: 1em;
@@ -48,21 +50,9 @@
     }
 
     button {
-        padding: 0.5em;
-        color: #EEE;
-        background: var(--green);
-        border-radius: 0.3em;
-        font-weight: bold;
-        border: solid black 3px;
-        font-size: 18px;
-        cursor: pointer;
-        width: 8ch;
+        @extend %button;
 
-        &:disabled {
-            border: solid var(--green) 3px;
-            background: transparent;
-            color: #444;
-            cursor: default;
-        }
+        font-size: 18px;
+        width: 8ch;
     }
 </style>

@@ -1,0 +1,20 @@
+@use 'sass:color';
+@use '_variables';
+
+%text-input {
+    padding: 0.3em;
+    margin: 0.5em 0;
+    border: transparent 1px solid;
+    border-radius: 0.3em;
+    background: white;
+    transition: border-color 0.2s;
+    font-family: 'Ubuntu';
+    
+    &:focus {
+        border-color: variables.$blue;
+
+        &::placeholder {
+            color: transparent;
+        }
+    }
+}

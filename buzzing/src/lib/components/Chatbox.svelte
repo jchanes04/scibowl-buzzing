@@ -18,6 +18,8 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     .chatbox {
         grid-area: chat-box;
         display: grid;
@@ -25,43 +27,17 @@
         padding: 1em;
         box-sizing: border-box;
         border-radius: 1em;
-        background: #EEE;
+        background: $background-2;
         min-height: 10em;
         max-height: 25em;
     }
 
     .chat-messages {
+        @include vertical-scrollable();
+
         display: flex;
         flex-direction: column;
         overflow-y: scroll;
-
-        &::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        &::-webkit-scrollbar-button {
-            display: none;
-        }
-
-        &::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        &::-webkit-scrollbar-thumb {
-            background: var(--green);
-            width: 5px;
-            border-radius: 5px;
-        }
-
-        &::-webkit-scrollbar-track-piece:start {
-            margin-top: 1.2em;
-            background: transparent;
-        }
-
-        &::-webkit-scrollbar-track-piece:end {
-            margin-bottom: 1.2em;
-            background: transparent;
-        }
     }
 
     h2 {
@@ -79,7 +55,7 @@
     }
 
     .buzz {
-        color: var(--orange);
+        color: $orange;
     }
 
     .notif {
@@ -87,10 +63,10 @@
     }
 
     .warning {
-        color: var(--red);
+        color: $red;
     }
 
     .success {
-        color: var(--green);
+        color: $green;
     }
 </style>
