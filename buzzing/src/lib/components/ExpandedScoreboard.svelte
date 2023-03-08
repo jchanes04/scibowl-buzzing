@@ -4,6 +4,7 @@
     import playersStore from "$lib/stores/players"
     import { createEventDispatcher } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
+  import { convertToCSV } from "$lib/functions/scoreboard";
 
     const dispatch = createEventDispatcher()
 
@@ -44,10 +45,22 @@
         "incorrect": "I",
         "penalty": "P"
     }
+
+    async function exportScores() {
+        const csv = await convertToCSV($teamsStore, $playersStore, players, $gameStore.scores)
+        const url = window.URL.createObjectURL(new Blob([csv], { type: "plain/text" }))
+        const a = document.createElement('a')
+        a.style.display = 'none'
+        a.href = url
+        a.download = 'scores.csv'
+        document.body.appendChild(a)
+        a.click()
+        URL.revokeObjectURL(url)
+    }
 </script>
 
 <div>
-    <button on:click={() => dispatch('close')}>Close</button>
+    <button on:click={() => dispatch('close')} class="close-button">Close</button>
     <table>
         <colgroup>
             <col span="2" class="question-info" />
@@ -109,6 +122,8 @@
             </tr>
         {/each}
     </table>
+    <br />
+    <button on:click={exportScores}>Export Scores</button>
 </div>
 
 <style lang="scss">
@@ -120,6 +135,13 @@
         width: 100%;
         height: 100%;
         box-sizing: border-box;
+        position: relative;
+    }
+
+    .close-button {
+        position: absolute;
+        top: 0.5em;
+        right: 0.5em;
     }
 
     table {
@@ -147,6 +169,14 @@
 
     tr td {
         border: 1px solid #BBB;
+
+        &:first-child {
+            border-left: 1px solid black;
+        }
+    }
+
+    tr:last-child td {
+        border-bottom: 1px solid black;
     }
 
     td {
@@ -168,5 +198,23 @@
         &.penalty {
             background: var(--red);
         }
+    }
+
+    button {
+        color: #EEE;
+        background: var(--green);
+        font-size: 20px;
+        font-weight: bold;
+        padding: 0.6em;
+        border-radius: 0.6em;
+        border: solid black 3px;
+        cursor: pointer;
+    }
+
+    button:disabled {
+        border: solid var(--green) 3px;
+        background: transparent;
+        color: #444;
+        cursor: default;
     }
 </style>

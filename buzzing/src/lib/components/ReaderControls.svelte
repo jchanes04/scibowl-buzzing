@@ -289,6 +289,7 @@
             </label>
         </div>
         <button on:click={scoreQuestion} disabled={!scoringEnabled || !selectedScore}>Score</button>
+        <br />
         <button on:click={() => scoreboardExpanded = true}>Expand Scoreboard</button>
     </ControlSection>
     <ControlSection title="Game Control">
