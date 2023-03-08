@@ -14,7 +14,7 @@
         const params = new URLSearchParams(inputs)
         const questionsRes = await fetch("/api/questions?" + params.toString(), {
             headers: {
-                'Authorization': Cookie.get('authToken')
+                'Authorization': Cookie.get('gameToken')
             }
         })
         return {
@@ -57,7 +57,7 @@
         const params = new URLSearchParams(inputs)
         const res = await fetch("/api/questions?" + params.toString(), {
             headers: {
-                'Authorization': Cookie.get('authToken')
+                'Authorization': Cookie.get('gameToken')
             }
         })
         if (res.status === 401){

@@ -24,7 +24,7 @@
     <title>Create Game</title>
 </svelte:head>
 
-<form id="form" method="POST" autocomplete="off" on:submit={handleSubmit} use:enhance>
+<form id="form" method="POST" autocomplete="off" on:submit={handleSubmit}>
     <h1>Create Game</h1>
 
     {#if form?.error}

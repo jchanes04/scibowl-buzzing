@@ -1,4 +1,3 @@
-import type { Scoreboard } from "$lib/classes/Scoreboard";
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer";
 import type { TeamData } from "../Team";
 
@@ -6,7 +5,6 @@ export interface ClientTeam {
     id: string,
     name: string,
     members: ClientPlayer[],
-    scoreboard: Scoreboard,
     captainId: string | null,
     type: "default" | "individual" | "created"
 }

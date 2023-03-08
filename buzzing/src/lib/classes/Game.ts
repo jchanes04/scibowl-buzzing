@@ -11,19 +11,23 @@ export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
 export type Question = {
     bonus: false,
     category: Category
+    number?: number
 } | {
     bonus: true,
     category: Category,
-    team: Team
+    team: Team,
+    number?: number
 }
 
 export type NewQuestionData = {
     bonus: false,
     category: Category
+    number?: number
 } | {
     bonus: true,
     category: Category,
     teamId: string
+    number?: number
 }
 
 export type GameSettings = {
@@ -63,9 +67,11 @@ type OpenState = {
     lastScored: LastScoredQuestion | null
 }
 
+export type ScoreType = "correct" | "incorrect" | "penalty"
+
 export type LastScoredQuestion = {
     memberId: string,
-    scoreType: "correct" | "incorrect" | "penalty",
+    scoreType: ScoreType,
     category: Category,
     bonus: boolean
 }
@@ -207,8 +213,6 @@ export class Game {
                     name: rejoiningPlayerData.name,
                     id: memberId,
                     team,
-                    score: rejoiningPlayerData.scoreboard?.score,
-                    catScores: rejoiningPlayerData.scoreboard?.catScores
                 })
                 this.players[memberId] = newMember
     
@@ -218,8 +222,7 @@ export class Game {
                 const newTeam = new Team(
                     rejoiningPlayerData.team.name,
                     "created",
-                    [],
-                    rejoiningPlayerData.team.scoreboard
+                    []
                 )
 
                 delete this.leftPlayers[memberId]
@@ -227,9 +230,7 @@ export class Game {
                 const newMember = new Player({
                     name: rejoiningPlayerData.name,
                     id: memberId,
-                    team: newTeam,
-                    score: rejoiningPlayerData.scoreboard?.score,
-                    catScores: rejoiningPlayerData.scoreboard?.catScores
+                    team: newTeam
                 })
                 this.players[memberId] = newMember
     
@@ -241,8 +242,6 @@ export class Game {
                 const newMember = new Player({
                     name: rejoiningPlayerData.name,
                     id: memberId,
-                    score: rejoiningPlayerData.scoreboard?.score,
-                    catScores: rejoiningPlayerData.scoreboard?.catScores
                 })
                 this.players[memberId] = newMember
     
@@ -337,42 +336,67 @@ export class Game {
             this.state.currentQuestion = {
                 category: question.category,
                 bonus: true,
-                team
+                team,
+                number: question.number
             }
         } else {
             this.state.currentQuestion = {
                 category: question.category,
-                bonus: false
+                bonus: false,
+                number: question.number
             }
         }
         return true
     }
 
     scoreQuestion(score: 'correct' | 'incorrect' | 'penalty') {
-        if (this.state.questionState !== "buzzed")
+        if (this.state.questionState !== "buzzed" || !this.state.currentQuestion.number)
             return null
 
         const buzzer = this.state.currentBuzzer
+        const number = this.state.currentQuestion.number
+        const bonus = this.state.currentQuestion.bonus
 
-        if (this.state.currentQuestion.bonus) {
+        if (bonus) {
             if (score === "correct") {
-                this.scoreboard.correctBonus(buzzer, this.state.currentQuestion.category)
+                this.scoreboard.correctBonus(
+                    number,
+                    buzzer.team.id,
+                    this.state.currentQuestion.category
+                )
             } else if (score === 'incorrect') {
-                this.scoreboard.incorrectBonus(buzzer, this.state.currentQuestion.category)
-            } else if (score === 'penalty') {
-                this.scoreboard.penalty(buzzer, this.state.currentQuestion.category)
+                this.scoreboard.incorrectBonus(
+                    number,
+                    buzzer.team.id,
+                    this.state.currentQuestion.category
+                )
             }
         } else {
             if (score === "correct") {
-                this.scoreboard.correctTossup(buzzer, this.state.currentQuestion.category)
+                this.scoreboard.correctTossup(
+                    number,
+                    buzzer.id,
+                    buzzer.team.id,
+                    this.state.currentQuestion.category
+                )
             } else if (score === 'incorrect') {
-                this.scoreboard.incorrectTossup(buzzer, this.state.currentQuestion.category)
+                this.scoreboard.incorrectTossup(
+                    number,
+                    buzzer.id,
+                    buzzer.team.id,
+                    this.state.currentQuestion.category
+                )
             } else if (score === 'penalty') {
-                this.scoreboard.penalty(buzzer, this.state.currentQuestion.category)
+                this.scoreboard.penalty(
+                    number,
+                    buzzer.id,
+                    buzzer.team.id,
+                    this.state.currentQuestion.category
+                )
             }
         }
         
-        const open = !this.state.currentQuestion.bonus
+        const open = !bonus
             && Object.values(this.state.buzzedTeams).length < Math.min(3, Object.values(this.teams).length)
             && score !== 'correct'
 
@@ -409,7 +433,9 @@ export class Game {
         return {
             buzzer,
             open,
-            category: currentQuestion.category
+            category: currentQuestion.category,
+            number,
+            bonus
         }
     }
 
@@ -420,12 +446,12 @@ export class Game {
 
         const buzzer = this.players[this.state.lastScored.memberId]
         if (buzzer) {
-            this.scoreboard.undoScore(
-                buzzer,
-                this.state.lastScored.scoreType,
-                this.state.lastScored.category,
-                this.state.lastScored.bonus
-            )
+            // this.scoreboard.undoScore(
+            //     buzzer,
+            //     this.state.lastScored.scoreType,
+            //     this.state.lastScored.category,
+            //     this.state.lastScored.bonus
+            // )
             
             const returnData = {
                 score: this.state.lastScored.scoreType,
@@ -442,12 +468,7 @@ export class Game {
     }
 
     clearScores() {
-        for (const t of Object.values(this.teams)) {
-            t.scoreboard.clear()
-        }
-        for (const p of Object.values(this.players)) {
-            p.scoreboard.clear()
-        }
+        
     }
 
     addSpectator() {
@@ -458,32 +479,5 @@ export class Game {
 
     removeSpectator(id: string) {
         return this.spectators.delete(id)
-    }
-
-    get scores(): GameScores {
-        const data: GameScores = {
-            id: this.id,
-            name: this.name,
-            teams: {},
-            players: {}
-        }
-
-        for (const t of Object.values(this.teams)) {
-            if (t.type !== "individual") {
-                data.teams[t.name] = {
-                    score: t.scoreboard.score,
-                    catScores: t.scoreboard.catScores
-                }
-            }
-        }
-
-        for (const m of Object.values(this.players)) {
-            data.players[m.name] = {
-                score: m.scoreboard.score,
-                catScores: m.scoreboard.catScores
-            }
-        }
-
-        return data
     }
 }

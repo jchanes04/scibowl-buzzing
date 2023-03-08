@@ -1,4 +1,5 @@
-import type { Category, GameSettings, GameTimes, NewQuestionData, Question } from "$lib/classes/Game";
+import type { Category, GameSettings, GameTimes, NewQuestionData, Question, ScoreType } from "$lib/classes/Game";
+import { GameScoreboard, type QuestionPairScore } from "$lib/classes/GameScoreboard";
 import { writable, type Writable } from "svelte/store";
 import type { PlayerStore } from "./players";
 
@@ -34,10 +35,12 @@ export type ClientGameData = {
     joinCode?: string,
     settings: GameSettings,
     times: GameTimes,
-    state: ClientGameState
+    state: ClientGameState,
+    scores: Record<number, QuestionPairScore>
 }
 
 const store = writable<ClientGameData>()
+let scoreboard = new GameScoreboard({})
 
 export default {
     subscribe: store.subscribe,
@@ -78,6 +81,7 @@ export default {
     },
     clearQuestion: () => {
         store.update(value => {
+            value.state.currentQuestion = null
             value.state.buzzingEnabled = false
             value.state.buzzedTeamIds = []
             value.state.questionState = "idle"
@@ -95,5 +99,118 @@ export default {
             }
             return value
         })
+    },
+    scoreboard: {
+        correctTossup: (number: number, playerId: string, teamId: string, category: Category) => {
+            scoreboard.correctTossup(
+                number,
+                playerId,
+                teamId,
+                category
+            )
+            console.log(scoreboard.scores)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        incorrectTossup: (number: number, playerId: string, teamId: string, category: Category) => {
+            scoreboard.incorrectTossup(
+                number,
+                playerId,
+                teamId,
+                category
+            )
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        penalty: (number: number, playerId: string, teamId: string, category: Category) => {
+            scoreboard.penalty(
+                number,
+                playerId,
+                teamId,
+                category
+            )
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        editTossup: (
+            number: number,
+            playerId: string,
+            teamId: string,
+            category: Category,
+            scoreType: ScoreType | "none"
+        ) => {
+            scoreboard.editTossup(number, playerId, teamId, category, scoreType)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        correctBonus: (number: number, teamId: string, category: Category) => {
+            scoreboard.correctBonus(
+                number,
+                teamId,
+                category
+            )
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        incorrectBonus: (number: number, teamId: string, category: Category) => {
+            scoreboard.incorrectBonus(
+                number,
+                teamId,
+                category
+            )
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        editBonus: (
+            number: number,
+            teamId: string,
+            scoreType: "correct" | "incorrect" | "none"
+        ) => {
+            scoreboard.editBonus(number, teamId, scoreType)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        clear: () => {
+            scoreboard = new GameScoreboard()
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        setScores: (scores: Record<number, QuestionPairScore>) => {
+            scoreboard = new GameScoreboard(scores)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        clearQuestion: (number: number) => {
+            scoreboard.clearQuestion(number)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        deleteQuestion: (number: number) => {
+            scoreboard.deleteQuestion(number)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        }
     }
 }

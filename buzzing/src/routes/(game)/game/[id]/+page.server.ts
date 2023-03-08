@@ -11,8 +11,8 @@ export const load = async function({ params, locals, cookies }) {
     if (!game)
         throw redirect(302, "/join")
 
-    const authToken = cookies.get("authToken")
-    const tokenData = authToken ? await getDataFromToken(authToken) : null
+    const gameToken = cookies.get("gameToken")
+    const tokenData = gameToken ? await getDataFromToken(gameToken) : null
 
     const memberId = tokenData?.memberId
     if (!memberId) {
@@ -43,6 +43,7 @@ export const load = async function({ params, locals, cookies }) {
                 settings: game.settings,
                 times: game.times
             },
+            scores: game.scoreboard.scores,
             playerList,
             teamList,
             moderatorList,
@@ -75,6 +76,7 @@ export const load = async function({ params, locals, cookies }) {
                     settings: game.settings,
                     times: game.times
                 },
+                scores: game.scoreboard.scores,
                 playerList,
                 teamList,
                 moderatorList,
@@ -102,6 +104,7 @@ export const load = async function({ params, locals, cookies }) {
                     settings: game.settings,
                     times: game.times
                 },
+                scores: game.scoreboard.scores,
                 playerList,
                 teamList,
                 moderatorList,

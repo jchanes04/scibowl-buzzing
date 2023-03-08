@@ -1,53 +1,205 @@
-import type { Category } from "./Game";
-import type { Player } from "./Player";
+import type { Category, ScoreType } from "./Game";
+
+export type QuestionPairScore = {
+    category: Category,
+    tossup: Record<string, TossupScore>,
+    bonus: {
+        teamId: string,
+        correct: boolean
+    } | null
+}
+
+type TossupScore = {
+    playerId: string,
+    scoreType: ScoreType
+}
 
 export interface GameScoreboard {
     pointValues: {
         tossup: number,
         bonus: number,
         penalty: number
-    }
+    },
+    scores: Record<number, QuestionPairScore>
 }
 
 // main purpose is to keep track of point values for the game
 
 export class GameScoreboard {
-    constructor({ tossup = 4, bonus = 10, penalty = -4}: { tossup?: number, bonus?: number, penalty?: number }) {
+    constructor(
+        scores: Record<number, QuestionPairScore> = {},
+        pointValues: {
+            tossup?: number,
+            bonus?: number,
+            penalty?: number
+        } = { tossup: 4, bonus: 10, penalty: -4 }
+    ) {
+        this.scores = scores
         this.pointValues = {
-            tossup,
-            bonus, 
-            penalty
+            tossup: pointValues.tossup || 4,
+            bonus: pointValues.bonus || 10, 
+            penalty: pointValues.penalty || -4
         }
     }
 
-    correctTossup(member: Player, category: Category) {
-        member.scoreboard.correctAnswer(category, this.pointValues.tossup)
+    correctTossup(number: number, playerId: string, teamId: string, category: Category) {
+        if (this.scores[number]) {
+            this.scores[number].tossup[teamId] = {
+                playerId,
+                scoreType: "correct"
+            }
+            this.scores[number].bonus = null
+        } else {
+            this.scores[number] = {
+                category,
+                tossup: {
+                    [teamId]: {
+                        playerId,
+                        scoreType: "correct"
+                    }
+                },
+                bonus: null
+            }
+        }
     }
 
-    incorrectTossup(member: Player, category: Category) {
-        member.scoreboard.incorrectAnswer(category, 0)
+    incorrectTossup(number: number, playerId: string, teamId: string, category: Category) {
+        if (this.scores[number]) {
+            this.scores[number].tossup[teamId] = {
+                playerId,
+                scoreType: "incorrect"
+            }
+            this.scores[number].bonus = null
+        } else {
+            this.scores[number] = {
+                category,
+                tossup: {
+                    [teamId]: {
+                        playerId,
+                        scoreType: "incorrect"
+                    }
+                },
+                bonus: null
+            }
+        }
     }
 
-    correctBonus(member: Player, category: Category) {
-        member.scoreboard.correctAnswer(category, this.pointValues.bonus)
+    penalty(number: number, playerId: string, teamId: string, category: Category) {
+        if (this.scores[number]) {
+            this.scores[number].tossup[teamId] = {
+                playerId,
+                scoreType: "penalty"
+            }
+            this.scores[number].bonus = null
+        } else {
+            this.scores[number] = {
+                category,
+                tossup: {
+                    [teamId]: {
+                        playerId,
+                        scoreType: "penalty"
+                    }
+                },
+                bonus: null
+            }
+        }
     }
 
-    incorrectBonus(member: Player, category: Category) {
-        member.scoreboard.incorrectAnswer(category, 0)
+    editTossup(
+        number: number,
+        playerId: string,
+        teamId: string,
+        category: Category,
+        scoreType: ScoreType | "none"
+    ) {
+        if (this.scores[number]) {
+            if (scoreType === "none") {
+                delete this.scores[number].tossup[teamId]
+            } else {
+                this.scores[number].tossup[teamId] = {
+                    playerId,
+                    scoreType
+                }
+            }
+        } else if (scoreType !== "none") {
+            this.scores[number] = {
+                category,
+                tossup: {
+                    [teamId]: {
+                        playerId,
+                        scoreType
+                    }
+                },
+                bonus: null
+            }
+        }
     }
 
-    penalty(member: Player, category?: Category) {
-        member.scoreboard.penalty(category, this.pointValues.penalty)
+    correctBonus(number: number, teamId: string, category: Category) {
+        if (this.scores[number]) {
+            this.scores[number].bonus = {
+                teamId,
+                correct: true
+            }
+        } else {
+            this.scores[number] = {
+                category,
+                tossup: {},
+                bonus: {
+                    teamId,
+                    correct: true
+                }
+            }
+        }
     }
 
-    undoScore(member: Player, scoreType: "correct" | "incorrect" | "penalty", category: Category, bonus: boolean = false) {
-        const pointValue = scoreType === "incorrect"
-            ? 0
-            : bonus
-                ? this.pointValues.bonus
-                : scoreType === "correct"
-                    ? this.pointValues.tossup
-                    : this.pointValues.penalty
-        return member.scoreboard.undoScore(scoreType, category, pointValue)
+    incorrectBonus(number: number, teamId: string, category: Category) {
+        if (this.scores[number]) {
+            this.scores[number].bonus = {
+                teamId,
+                correct: false
+            }
+        } else {
+            this.scores[number] = {
+                category,
+                tossup: {},
+                bonus: {
+                    teamId,
+                    correct: false
+                }
+            }
+        }
+    }
+
+    editBonus(
+        number: number,
+        teamId: string,
+        scoreType: "correct" | "incorrect" | "none"
+    ) {
+        if (this.scores[number] && scoreType === "none") {
+            this.scores[number].bonus = null
+        } else if (this.scores[number]) {
+            this.scores[number]
+        } else if (scoreType !== "none") {
+            this.scores[number].bonus = {
+                teamId,
+                correct: scoreType === "correct"
+            }
+        }
+    }
+
+    clearQuestion(number: number) {
+        delete this.scores[number]
+    }
+
+    deleteQuestion(number: number) {
+        delete this.scores[number]
+        const max = Math.max(...Object.keys(this.scores).map(Number))
+        for (let i = number + 1; i <= max; i++) {
+            if (this.scores[i]) {
+                this.scores[i - 1] = this.scores[i]
+                delete this.scores[i]
+            }
+        }
     }
 }

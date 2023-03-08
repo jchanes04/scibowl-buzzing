@@ -27,7 +27,7 @@ export async function get({ url, params }: RequestEvent) {
                             status: 302,
                             headers: {
                                 'Location': "/" + params.path,
-                                'Set-Cookie': "authToken=" + generateToken(id) + ";Path=/"
+                                'Set-Cookie': "gameToken=" + generateToken(id) + ";Path=/"
                             }
                         })
                     }

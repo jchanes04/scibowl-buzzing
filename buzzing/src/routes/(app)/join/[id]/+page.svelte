@@ -3,7 +3,6 @@
     import Select from "svelte-select";
     import type { PageData } from './$types'
     import type { TeamData } from "$lib/classes/Team";
-    import { enhance } from '$app/forms';
 
     export let data: PageData
     let { memberNames, gameName, settings, teams } = data
@@ -33,7 +32,7 @@
 </svelte:head>
 
 <div>
-    <form method="POST" autocomplete="off" use:enhance>
+    <form method="POST" autocomplete="off">
         <h1>Join {gameName}</h1>
         <div>
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />

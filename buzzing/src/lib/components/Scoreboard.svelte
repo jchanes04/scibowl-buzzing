@@ -1,6 +1,28 @@
 <script lang="ts">
     import teamsStore from "$lib/stores/teams"
     import gameStore from "$lib/stores/game"
+    import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
+
+    const pointValues = {
+        tossup: 4,
+        bonus: 10,
+        penalty: -4
+    }
+
+    function sumQuestionScores(scores: Record<number, QuestionPairScore>, teamId: string) {
+        return Object.values(scores).reduce((acc, q) => {
+            if (q.tossup[teamId]?.scoreType === "correct") {
+                acc += pointValues.tossup 
+            } else if (q.tossup[teamId]?.scoreType === "penalty") {
+                acc += pointValues.penalty
+            }
+
+            if (q.bonus?.teamId === teamId && q.bonus?.correct) {
+                acc += pointValues.bonus
+            }
+            return acc
+        }, 0)
+    }
 </script>
 
 <div class="scoreboard">
@@ -8,7 +30,7 @@
     <ul>
         {#each Object.values($teamsStore) as team}
             <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
-                {team.name + ": " + team.scoreboard.score}
+                {team.name + ": " + sumQuestionScores($gameStore.scores, team.id)}
                 {#if team.type !== "individual"}
                     <ul>
                         {#each Object.values(team.players) as player}

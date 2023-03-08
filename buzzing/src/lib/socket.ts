@@ -1,5 +1,5 @@
 import { browser } from "$app/environment"
-import { io } from "socket.io-client"
+import { io, Socket } from "socket.io-client"
 import teamsStore, { createTeamStore, type ClientTeamData, type TeamStore } from "./stores/teams"
 import playersStore, { createPlayerStore, type PlayerStore } from "./stores/players"
 import myMemberStore, { type MyMember } from "./stores/myMember"
@@ -8,7 +8,7 @@ import gameStore, { type ClientGameData } from "./stores/game"
 import buzzAudioStore from "./stores/buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
 import { timerStore, gameClockStore } from "./stores/timer"
-import type { Category, NewQuestionData, Question } from "$lib/classes/Game"
+import type { Category, NewQuestionData, Question, ScoreType } from "$lib/classes/Game"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import { goto } from "$app/navigation"
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
@@ -42,398 +42,423 @@ buzzAudioStore.subscribe(value => buzzAudio = value)
 let timer: number
 timerStore.subscribe(value => timer = value)
 
-const socket = io(env.PUBLIC_WS_URL as string, {
-    autoConnect: false,
-    secure: true,
-    withCredentials: true
-})
-export default socket
+let existingSocket: Socket
 
-if (browser) {
-    socket.connect()
-}
+export function createSocket() {
+    if (existingSocket) existingSocket.disconnect()
 
-socket.onAny((event: string, ...args: any[]) => {
-    console.log(event, args);
-})
+    const socket = io(env.PUBLIC_WS_URL as string, {
+        autoConnect: false,
+        secure: true,
+        withCredentials: true
+    })
+    existingSocket = socket
 
-socket.on('authenticated', ({ name }: { name: string }) => {
-    chatMessagesStore.set([...chatMessages, {
-        type: 'notification',
-        text: name + ' has joined the game'
-    }])
-})
-
-socket.on('playerJoin', ({ player, team }: { player: PlayerData, team: TeamData }) => {
-    const playerTeam = teams[team.id]?.store ?? createTeamStore(team)
-    const newPlayer = createPlayerStore(player, playerTeam)
-    playerTeam.addPlayer(newPlayer)
-    playersStore.addPlayer(newPlayer)
-
-    if (!teams[team.id]) {
-        teamsStore.addTeam(playerTeam)
+    if (browser) {
+        socket.connect()
     }
 
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: 'notification',
-            text: player.name + ' has joined the game'
-        })
-        return oldList
+    socket.onAny((event: string, ...args: any[]) => {
+        console.log(event, args);
     })
-})
 
-socket.on('memberRejoin', ({ member, team }: { member: PlayerData | ModeratorData, team: TeamData })=>{
-    if (member.type === "moderator"){
-        const newModerator = createModeratorStore(member)
-        moderatorsStore.addModerator(newModerator)
-    } else {
+    socket.on('authenticated', ({ name }: { name: string }) => {
+        chatMessagesStore.set([...chatMessages, {
+            type: 'notification',
+            text: name + ' has joined the game'
+        }])
+    })
+
+    socket.on('playerJoin', ({ player, team }: { player: PlayerData, team: TeamData }) => {
         const playerTeam = teams[team.id]?.store ?? createTeamStore(team)
-        const newPlayer = createPlayerStore(member, playerTeam)
+        const newPlayer = createPlayerStore(player, playerTeam)
         playerTeam.addPlayer(newPlayer)
         playersStore.addPlayer(newPlayer)
 
         if (!teams[team.id]) {
             teamsStore.addTeam(playerTeam)
         }
-    }
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: 'notification',
-            text: member.name + ' has rejoined the game'
+
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: 'notification',
+                text: player.name + ' has joined the game'
+            })
+            return oldList
         })
-        return oldList
     })
-})
 
-socket.on('memberLeave', id => {
-    const player = players[id]
-    const moderator = moderators[id]
-
-    if (moderator) {
-        moderatorsStore.removeModerator(id)
-        chatMessagesStore.update(oldList => {
-            oldList.push({
-                type: 'notification',
-                text: moderator.name + ' has left the game'
-            })
-            return oldList
-        })
-    } else if (player) {
-        playersStore.removePlayer(id)
-        if (teams[player.team.id].type !== "default" && Object.values(teams[player.team.id].players).length === 1) {
-            teamsStore.removeTeam(player.team.id)
+    socket.on('memberRejoin', ({ member, team }: { member: PlayerData | ModeratorData, team: TeamData })=>{
+        if (member.type === "moderator"){
+            const newModerator = createModeratorStore(member)
+            moderatorsStore.addModerator(newModerator)
         } else {
-            player.team.removePlayer(id)
-        }
-        chatMessagesStore.update(oldList => {
-            oldList.push({
-                type: 'notification',
-                text: player.name + ' has left the game'
-            })
-            return oldList
-        })
-    }
-})
+            const playerTeam = teams[team.id]?.store ?? createTeamStore(team)
+            const newPlayer = createPlayerStore(member, playerTeam)
+            playerTeam.addPlayer(newPlayer)
+            playersStore.addPlayer(newPlayer)
 
-socket.on('promotion', (memberId: string) => {
-    const player = players[memberId]
-    const team = player.team
-    if (team && player) {
-        team.removePlayer(player.id)
-        playersStore.removePlayer(player.id)
-        const newModerator = createModeratorStore({
-            id: memberId,
-            name: player.name,
-            type: "moderator"
-        })
-        moderatorsStore.addModerator(newModerator)
-        chatMessagesStore.set([
-            ...chatMessages,
-            {
-                type: 'notification',
-                text: player.name + ' has been promoted to a moderator'
+            if (!teams[team.id]) {
+                teamsStore.addTeam(playerTeam)
             }
-        ])
+        }
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: 'notification',
+                text: member.name + ' has rejoined the game'
+            })
+            return oldList
+        })
+    })
+
+    socket.on('memberLeave', id => {
+        const player = players[id]
+        const moderator = moderators[id]
+
+        if (moderator) {
+            moderatorsStore.removeModerator(id)
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'notification',
+                    text: moderator.name + ' has left the game'
+                })
+                return oldList
+            })
+        } else if (player) {
+            playersStore.removePlayer(id)
+            if (teams[player.team.id].type !== "default" && Object.values(teams[player.team.id].players).length === 1) {
+                teamsStore.removeTeam(player.team.id)
+            } else {
+                player.team.removePlayer(id)
+            }
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'notification',
+                    text: player.name + ' has left the game'
+                })
+                return oldList
+            })
+        }
+    })
+
+    socket.on('promotion', (memberId: string) => {
+        const player = players[memberId]
+        const team = player.team
+        if (team && player) {
+            team.removePlayer(player.id)
+            playersStore.removePlayer(player.id)
+            const newModerator = createModeratorStore({
+                id: memberId,
+                name: player.name,
+                type: "moderator"
+            })
+            moderatorsStore.addModerator(newModerator)
+            chatMessagesStore.set([
+                ...chatMessages,
+                {
+                    type: 'notification',
+                    text: player.name + ' has been promoted to a moderator'
+                }
+            ])
+            
+            if (player.id === myMember.id) {
+                myMemberStore.setMember({ memberStore: newModerator, moderator: true })
+            }
+        }
+    })
+
+    socket.on('buzz', (id: string) => {
+        const player = players[id]
+        if (player) {
+            gameStore.buzz(player.team.id)
+            buzzAudio?.play()
+            timerStore.pause()
         
-        if (player.id === myMember.id) {
-            myMemberStore.setMember({ memberStore: newModerator, moderator: true })
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'buzz',
+                    text: player.name + ' has buzzed'
+                })
+                return oldList
+            })
         }
-    }
-})
+    })
 
-socket.on('buzz', (id: string) => {
-    const player = players[id]
-    if (player) {
-        gameStore.buzz(player.team.id)
-        buzzAudio?.play()
-        timerStore.pause()
-    
+    socket.on('buzzAccept', () => {
         chatMessagesStore.update(oldList => {
             oldList.push({
-                type: 'buzz',
-                text: player.name + ' has buzzed'
+                type: "buzz",
+                text: "You have buzzed"
             })
             return oldList
         })
-    }
-})
-
-socket.on('buzzAccept', () => {
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "buzz",
-            text: "You have buzzed"
-        })
-        return oldList
     })
-})
 
-socket.on('buzzFailed', () => {
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "warning",
-            text: "Buzz failed"
-        })
-        return oldList
-    })
-})
-
-socket.on('scoresSaved', () => {
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: "Scores saved successfully"
-        })
-        return oldList
-    })
-})
-
-socket.on('scoresClear', () => {
-    for (const t of Object.values(teams)) {
-        t.scoreboard.score = 0
-    }
-    for (const p of Object.values(players)) {
-        if (p.scoreboard) p.scoreboard.score = 0
-    }
-    
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: "Scores cleared"
-        })
-        return oldList
-    })
-})
-
-type ScoreData = {
-    open: boolean,
-    scoreType: 'correct' | 'incorrect' | 'penalty',
-    playerId: string,
-    playerScore: number,
-    teamId: string,
-    teamScore: number,
-    category: Category
-}
-
-socket.on('scoreChange', ({ open, scoreType, playerId, playerScore, teamId, teamScore, category }: ScoreData) => {
-    const team = teams[teamId]
-    const player = players[playerId]
-    if (player?.scoreboard) {
-        player.scoreboard.score = playerScore
-    }
-    if (team) {
-        team.scoreboard.score = teamScore
-    }
-
-    if (scoreType === "correct") {
+    socket.on('buzzFailed', () => {
         chatMessagesStore.update(oldList => {
             oldList.push({
-                type: 'success',
-                text: `Correct answer (${category[0].toUpperCase() + category.slice(1)})`
+                type: "warning",
+                text: "Buzz failed"
             })
             return oldList
         })
-    } else if (scoreType === "incorrect") {
+    })
+
+    socket.on('scoresClear', () => {
+        gameStore.scoreboard.clear()
+        
         chatMessagesStore.update(oldList => {
             oldList.push({
-                type: 'warning',
-                text: 'Incorrect answer'
+                type: "notification",
+                text: "Scores cleared"
             })
             return oldList
         })
-    } else if (scoreType === "penalty") {
-        chatMessagesStore.update(oldList => {
-            oldList.push({
-                type: 'warning',
-                text: 'Penalty applied'
-            })
-            return oldList
-        })
+    })
+
+    type ScoreData = {
+        open: boolean,
+        bonus: boolean,
+        scoreType: 'correct' | 'incorrect' | 'penalty',
+        playerId: string,
+        teamId: string,
+        category: Category,
+        number: number
     }
 
-    if (open) {
-        if (myMember.team && game.state.buzzedTeamIds.includes(myMember.team.id)) {
-            gameStore.openQuestion(false)
+    socket.on('scoreChange', ({ open, scoreType, playerId, teamId, bonus, category, number }: ScoreData) => {
+        const team = teams[teamId]
+
+        if (!team) {
+            return
+        }
+
+        if (scoreType === "correct") {
+            if (bonus) {
+                gameStore.scoreboard.correctBonus(number, teamId, category)
+            } else {
+                console.log('correct tossup')
+                gameStore.scoreboard.correctTossup(number, playerId, teamId, category)
+            }
+
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'success',
+                    text: `Correct answer (${category[0].toUpperCase() + category.slice(1)})`
+                })
+                return oldList
+            })
+        } else if (scoreType === "incorrect") {
+            if (bonus) {
+                gameStore.scoreboard.incorrectBonus(number, teamId, category)
+            } else {
+                gameStore.scoreboard.incorrectTossup(number, playerId, teamId, category)
+            }
+
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'warning',
+                    text: 'Incorrect answer'
+                })
+                return oldList
+            })
+        } else if (scoreType === "penalty") {
+            if (!bonus) {
+                gameStore.scoreboard.penalty(number, playerId, teamId, category)
+            }
+
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'warning',
+                    text: 'Penalty applied'
+                })
+                return oldList
+            })
+        }
+
+        if (open) {
+            if (myMember.team && game.state.buzzedTeamIds.includes(myMember.team.id)) {
+                gameStore.openQuestion(false)
+            } else {
+                gameStore.openQuestion(true)
+            }
         } else {
-            gameStore.openQuestion(true)
+            timerStore.end()
+            gameStore.clearQuestion()
         }
-    } else {
-        timerStore.end()
-        gameStore.clearQuestion()
-    }
-})
-
-type UndoScoreData = {
-    score: 'correct' | 'incorrect' | 'penalty',
-    playerId: string,
-    playerScore: number,
-    teamId: string,
-    teamScore: number,
-    category: Category,
-    bonus: boolean
-}
-
-socket.on('scoreUndone', ({ score, playerId, playerScore, teamId, teamScore, category, bonus }: UndoScoreData) => {
-    const team = teams[teamId]
-    const player = players[playerId]
-    if (player?.scoreboard) {
-        player.scoreboard.score = playerScore
-    }
-    if (team) {
-        team.scoreboard.score = teamScore
-    }
-
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: `Undo ${score[0].toUpperCase() + score.slice(1)} ${bonus ? "Bonus" : "Tossup"} Score (${category[0].toUpperCase() + category.slice(1)})`
-        })
-        return oldList
     })
-})
 
-socket.on('undoScoreFailed', () => {
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "warning",
-            text: `Failed to undo scores`
-        })
-        return oldList
+    socket.on('tossupEdit', (
+        number: number,
+        playerId: string,
+        teamId: string,
+        category: Category,
+        scoreType: ScoreType | "none"
+    ) => {
+        gameStore.scoreboard.editTossup(
+            number,
+            playerId,
+            teamId,
+            category,
+            scoreType
+        )
     })
-})
 
-socket.on('questionOpen', (question: NewQuestionData) => {
-    const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)
-    gameStore.newQuestion(question, !!buzzingEnabled)
-    chatMessagesStore.update(oldList => {
-        const teamName = teams[question.bonus ? question.teamId : ""]?.name
-        oldList.push({
-            type: 'notification',
-            text: 'New question opened' + (teamName ? " for " + teamName : "")
-        })
-        return oldList
+    socket.on("bonusEdit", (
+        number: number,
+        teamId: string,
+        scoreType: "correct" | "incorrect" | "none"
+    ) => {
+        gameStore.scoreboard.editBonus(
+            number,
+            teamId,
+            scoreType
+        )
     })
-})
 
-socket.on('timerStart', (length: number) => {
-    timerStore.start(length)
-    const questionOpen = !myMember.moderator && 
-        (!game.state.currentQuestion?.bonus || game.state.currentQuestion.teamId === myMember.team?.id )
-    gameStore.openQuestion(questionOpen)
-})
+    socket.on("questionDelete", (number: number) => {
+        gameStore.scoreboard.deleteQuestion(number)
+    })
 
-socket.on('timerEnd', () => {
-    if (timerStore.live) {
-        timerStore.end()
+    socket.on('questionOpen', (question: NewQuestionData) => {
+        const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)
+        gameStore.newQuestion(question, !!buzzingEnabled)
+
+        if (!question.bonus && question.number && game.scores[question.number]) {
+            gameStore.scoreboard.clearQuestion(question.number)
+        }
+
+        chatMessagesStore.update(oldList => {
+            const teamName = teams[question.bonus ? question.teamId : ""]?.name
+            if (question.number) {
+                oldList.push({
+                    type: "notification",
+                    text: `${question.bonus ? "Bonus" : "Tossup"} #${question.number} opened` + (teamName ? " for " + teamName : "")
+                })
+            } else {
+                oldList.push({
+                    type: 'notification',
+                    text: `New ${question.bonus ? "bonus" : "tossup"} opened` + (teamName ? " for " + teamName : "")
+                })
+            }
+            return oldList
+        })
+    })
+
+    socket.on('timerStart', (length: number) => {
+        timerStore.start(length)
+        const questionOpen = !myMember.moderator && 
+            (!game.state.currentQuestion?.bonus || game.state.currentQuestion.teamId === myMember.team?.id )
+        gameStore.openQuestion(questionOpen)
+    })
+
+    socket.on('timerEnd', () => {
+        if (timerStore.live) {
+            timerStore.end()
+            chatMessagesStore.update(oldList => {
+                oldList.push({
+                    type: 'warning',
+                    text: "Time is up"
+                })
+                return oldList
+            })
+        }
+        gameStore.stopQuestion()
+    })
+
+    socket.on("gameClockStart", (length: number) => {
+        gameClockStore.start(length)
         chatMessagesStore.update(oldList => {
             oldList.push({
-                type: 'warning',
-                text: "Time is up"
+                type: "notification",
+                text: `${Math.floor(length / 60).toString().padStart(2, "0")}:${(length % 60).toString().padStart(2, "0")} game clock started`
             })
             return oldList
         })
-    }
-    gameStore.stopQuestion()
-})
-
-socket.on("gameClockStart", (length: number) => {
-    gameClockStore.start(length)
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: `${Math.floor(length / 60).toString().padStart(2, "0")}:${(length % 60).toString().padStart(2, "0")} game clock started`
-        })
-        return oldList
     })
-})
 
-socket.on("gameClockUpdate", (length: number) => {
-    gameClockStore.start(length)
-})
-
-socket.on("gameClockPause", () => {
-    gameClockStore.pause()
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: "Game clock paused"
-        })
-        return oldList
+    socket.on("gameClockUpdate", (length: number) => {
+        gameClockStore.start(length)
     })
-})
 
-socket.on("gameClockResume", () => {
-    gameClockStore.resume()
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: "Game clock resumed"
+    socket.on("gameClockPause", () => {
+        gameClockStore.pause()
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: "notification",
+                text: "Game clock paused"
+            })
+            return oldList
         })
-        return oldList
     })
-})
 
-socket.on("gameClockEnd", () => {
-    gameClockStore.end()
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: "Game clock ended"
+    socket.on("gameClockResume", () => {
+        gameClockStore.resume()
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: "notification",
+                text: "Game clock resumed"
+            })
+            return oldList
         })
-        return oldList
     })
-})
 
-socket.on("gameClockStop", () => {
-    gameClockStore.stop()
-    chatMessagesStore.update(oldList => {
-        oldList.push({
-            type: "notification",
-            text: "Game clock stopped"
+    socket.on("gameClockEnd", () => {
+        gameClockStore.end()
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: "notification",
+                text: "Game clock ended"
+            })
+            return oldList
         })
-        return oldList
     })
-})
 
-socket.on('changeCaptain', (teamId: string, memberId: string) => {
-    const team = teams[teamId]
-    if (!team) return
+    socket.on("gameClockStop", () => {
+        gameClockStore.stop()
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: "notification",
+                text: "Game clock stopped"
+            })
+            return oldList
+        })
+    })
 
-    team.store.changeCaptain(memberId)
-})
+    socket.on('changeCaptain', (teamId: string, memberId: string) => {
+        const team = teams[teamId]
+        if (!team) return
 
-socket.on('kicked', () => {
-    goto('/kicked')
-    socket.disconnect()
-})
+        team.store.changeCaptain(memberId)
 
-socket.on('gameSwept', () => {
-    goto('/swept')
-    socket.disconnect()
-})
+        const member = team.players[memberId]
+        if (!member) return
 
-socket.on('gameEnd', () => {
-    goto('/')
-    socket.disconnect()
-})
+        chatMessagesStore.update(oldValue => {
+            oldValue.push({
+                type: "notification",
+                text: member.name + " is now captain of " + team.name
+            })
+            return oldValue
+        })
+    })
+
+    socket.on('kicked', () => {
+        goto('/kicked')
+        socket.disconnect()
+    })
+
+    socket.on('gameSwept', () => {
+        goto('/swept')
+        socket.disconnect()
+    })
+
+    socket.on('gameEnd', () => {
+        goto('/')
+        socket.disconnect()
+    })
+
+    return socket
+}
+
+export default () => existingSocket

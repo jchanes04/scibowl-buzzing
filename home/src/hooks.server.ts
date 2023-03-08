@@ -6,10 +6,10 @@ import type { Handle } from "@sveltejs/kit";
 
 export const handle: Handle = async function({ event, resolve }) {
     const { cookies } = event
-    const authToken = cookies.get('authToken')
+    const gameToken = cookies.get('gameToken')
   
-    if (authToken) {
-        const user = await getUserFromToken(authToken)
+    if (gameToken) {
+        const user = await getUserFromToken(gameToken)
         event.locals.user = user ?? null
     } else {
         event.locals.user = null

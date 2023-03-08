@@ -1,8 +1,9 @@
 <script lang="ts">
     import { browser } from "$app/environment";
-    import socket from "$lib/socket";
+    import getSocket from "$lib/socket";
     import { onDestroy } from "svelte";
 
+    const socket = getSocket()
     let connected = false
     $: displayText = connected ? "Connected" : "Disconnected"
 
