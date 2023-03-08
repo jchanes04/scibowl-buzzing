@@ -51,8 +51,8 @@ export const actions = {
 
         io.to(game.id).emit('playerJoin', { player: player.data, team: player.team.data })
     
-        const authToken = generateToken({ memberId: player.id, gameId: game.id }, '6h')
-        cookies.set("authToken", authToken, {
+        const gameToken = generateToken({ memberId: player.id, gameId: game.id }, '6h')
+        cookies.set("gameToken", gameToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
         })

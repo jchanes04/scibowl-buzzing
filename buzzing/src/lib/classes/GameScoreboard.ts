@@ -105,6 +105,36 @@ export class GameScoreboard {
         }
     }
 
+    editTossup(
+        number: number,
+        playerId: string,
+        teamId: string,
+        category: Category,
+        scoreType: ScoreType | "none"
+    ) {
+        if (this.scores[number]) {
+            if (scoreType === "none") {
+                delete this.scores[number].tossup[teamId]
+            } else {
+                this.scores[number].tossup[teamId] = {
+                    playerId,
+                    scoreType
+                }
+            }
+        } else if (scoreType !== "none") {
+            this.scores[number] = {
+                category,
+                tossup: {
+                    [teamId]: {
+                        playerId,
+                        scoreType
+                    }
+                },
+                bonus: null
+            }
+        }
+    }
+
     correctBonus(number: number, teamId: string, category: Category) {
         if (this.scores[number]) {
             this.scores[number].bonus = {
@@ -141,7 +171,35 @@ export class GameScoreboard {
         }
     }
 
+    editBonus(
+        number: number,
+        teamId: string,
+        scoreType: "correct" | "incorrect" | "none"
+    ) {
+        if (this.scores[number] && scoreType === "none") {
+            this.scores[number].bonus = null
+        } else if (this.scores[number]) {
+            this.scores[number]
+        } else if (scoreType !== "none") {
+            this.scores[number].bonus = {
+                teamId,
+                correct: scoreType === "correct"
+            }
+        }
+    }
+
     clearQuestion(number: number) {
         delete this.scores[number]
+    }
+
+    deleteQuestion(number: number) {
+        delete this.scores[number]
+        const max = Math.max(...Object.keys(this.scores).map(Number))
+        for (let i = number + 1; i <= max; i++) {
+            if (this.scores[i]) {
+                this.scores[i - 1] = this.scores[i]
+                delete this.scores[i]
+            }
+        }
     }
 }

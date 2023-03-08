@@ -31,7 +31,7 @@ import { HOST_URL } from '$lib/variables';
     onMount(async () => {
         const res = await fetch("/api/question/" + $page.params.id, {
             headers: {
-                'Authorization': Cookie.get('authToken')
+                'Authorization': Cookie.get('gameToken')
             }
         })
         question = <McqQuestion | SaQuestion>await res.json();     

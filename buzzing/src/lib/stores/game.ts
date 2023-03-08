@@ -1,4 +1,4 @@
-import type { Category, GameSettings, GameTimes, NewQuestionData, Question } from "$lib/classes/Game";
+import type { Category, GameSettings, GameTimes, NewQuestionData, Question, ScoreType } from "$lib/classes/Game";
 import { GameScoreboard, type QuestionPairScore } from "$lib/classes/GameScoreboard";
 import { writable, type Writable } from "svelte/store";
 import type { PlayerStore } from "./players";
@@ -138,6 +138,19 @@ export default {
                 return value
             })
         },
+        editTossup: (
+            number: number,
+            playerId: string,
+            teamId: string,
+            category: Category,
+            scoreType: ScoreType | "none"
+        ) => {
+            scoreboard.editTossup(number, playerId, teamId, category, scoreType)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
         correctBonus: (number: number, teamId: string, category: Category) => {
             scoreboard.correctBonus(
                 number,
@@ -160,6 +173,17 @@ export default {
                 return value
             })
         },
+        editBonus: (
+            number: number,
+            teamId: string,
+            scoreType: "correct" | "incorrect" | "none"
+        ) => {
+            scoreboard.editBonus(number, teamId, scoreType)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
         clear: () => {
             scoreboard = new GameScoreboard()
             store.update(value => {
@@ -176,6 +200,13 @@ export default {
         },
         clearQuestion: (number: number) => {
             scoreboard.clearQuestion(number)
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
+        deleteQuestion: (number: number) => {
+            scoreboard.deleteQuestion(number)
             store.update(value => {
                 value.scores = scoreboard.scores
                 return value

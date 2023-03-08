@@ -8,7 +8,7 @@ import gameStore, { type ClientGameData } from "./stores/game"
 import buzzAudioStore from "./stores/buzzAudio"
 import type { SvelteComponentTyped } from "svelte"
 import { timerStore, gameClockStore } from "./stores/timer"
-import type { Category, NewQuestionData, Question } from "$lib/classes/Game"
+import type { Category, NewQuestionData, Question, ScoreType } from "$lib/classes/Game"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import { goto } from "$app/navigation"
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
@@ -204,16 +204,6 @@ export function createSocket() {
         })
     })
 
-    socket.on('scoresSaved', () => {
-        chatMessagesStore.update(oldList => {
-            oldList.push({
-                type: "notification",
-                text: "Scores saved successfully"
-            })
-            return oldList
-        })
-    })
-
     socket.on('scoresClear', () => {
         gameStore.scoreboard.clear()
         
@@ -298,15 +288,37 @@ export function createSocket() {
         }
     })
 
-    type UndoScoreData = {
-        score: 'correct' | 'incorrect' | 'penalty',
+    socket.on('tossupEdit', (
+        number: number,
         playerId: string,
-        playerScore: number,
         teamId: string,
-        teamScore: number,
         category: Category,
-        bonus: boolean
-    }
+        scoreType: ScoreType | "none"
+    ) => {
+        gameStore.scoreboard.editTossup(
+            number,
+            playerId,
+            teamId,
+            category,
+            scoreType
+        )
+    })
+
+    socket.on("bonusEdit", (
+        number: number,
+        teamId: string,
+        scoreType: "correct" | "incorrect" | "none"
+    ) => {
+        gameStore.scoreboard.editBonus(
+            number,
+            teamId,
+            scoreType
+        )
+    })
+
+    socket.on("questionDelete", (number: number) => {
+        gameStore.scoreboard.deleteQuestion(number)
+    })
 
     socket.on('questionOpen', (question: NewQuestionData) => {
         const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)

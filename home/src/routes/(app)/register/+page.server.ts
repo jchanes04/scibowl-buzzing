@@ -37,8 +37,8 @@ export const actions: Actions = {
         const code = await generateConfirmationCode(createdUser._id)
         await sendVerificationEmail(createdUser.email, code)
 
-        const authToken = generateToken(createdUser._id)
-        cookies.set('authToken', authToken, { path: "/" })
+        const gameToken = generateToken(createdUser._id)
+        cookies.set('gameToken', gameToken, { path: "/" })
                 
         throw redirect(302, "/edit")
     }

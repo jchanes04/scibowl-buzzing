@@ -13,9 +13,9 @@ export const actions: Actions = {
 
         if (passwordHash && await argon2.verify(passwordHash, password)) {
             const userData = await getUserFromEmail(email)
-            const authToken = generateToken(userData._id)
+            const gameToken = generateToken(userData._id)
 
-            cookies.set('authToken', authToken, { path: '/' })
+            cookies.set('gameToken', gameToken, { path: '/' })
             if (userData.admin) {
                 throw redirect(302, '/admin')
             } else {
@@ -26,7 +26,7 @@ export const actions: Actions = {
         }
     },
     logout: async ({ cookies }) => {
-        cookies.delete('authToken', { path: '/' })
+        cookies.delete('gameToken', { path: '/' })
     
         throw redirect(302, '/')
     }

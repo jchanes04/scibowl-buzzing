@@ -11,10 +11,10 @@ export const load = async function({ params, cookies, isDataRequest }) {
     if (!game)
         throw redirect(302, "/join")
 
-    const authToken = cookies.get('authToken')
-    if (!authToken) {
+    const gameToken = cookies.get('gameToken')
+    if (!gameToken) {
         const newToken = generateToken({ gameId: id, spectator: true, memberId: "" })
-        cookies.set("authToken", newToken, {
+        cookies.set("gameToken", newToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
         })

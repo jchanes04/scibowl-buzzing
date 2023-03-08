@@ -2,11 +2,22 @@
     import gameStore from "$lib/stores/game"
     import teamsStore from "$lib/stores/teams"
     import playersStore from "$lib/stores/players"
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, getContext } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
-  import { convertToCSV } from "$lib/functions/scoreboard";
+    import { convertToCSV } from "$lib/functions/scoreboard";
+    import ScoreboardTableCell from "./ScoreboardTableCell.svelte";
+    import getSocket from "$lib/socket";
+    import Confirm from "./Confirm.svelte";
+    import type { Writable } from "svelte/store";
 
+    const socket = getSocket()
     const dispatch = createEventDispatcher()
+
+    type ModalStore = Writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null>
+    const modalStore: ModalStore = getContext('modalStore')
 
     $: rowNumber = Math.max(...Object.keys($gameStore.scores).map(Number))
     $: rowArray = Array.from({length: rowNumber}, (_, i) => i + 1)
@@ -57,6 +68,77 @@
         a.click()
         URL.revokeObjectURL(url)
     }
+
+    function handleTossupChange(
+        number: number,
+        playerId: string,
+        teamId: string,
+        category: Category,
+        scoreType: ScoreType | "none"
+    ) {
+        gameStore.scoreboard.editTossup(
+            number,
+            playerId,
+            teamId,
+            category,
+            scoreType
+        )
+        socket.emit("editTossup",
+            number,
+            playerId,
+            teamId,
+            category,
+            scoreType
+        )
+    }
+
+    function handleBonusChange(
+        number: number,
+        teamId: string,
+        scoreType: "correct" | "incorrect" | "none"
+    ) {
+        gameStore.scoreboard.editBonus(number, teamId, scoreType)
+        socket.emit("editBonus",
+            number,
+            teamId,
+            scoreType
+        )
+    }
+
+    function deleteQuestion(number: number) {
+        $modalStore = {
+            component: Confirm,
+            props: {
+                title: "Delete Question #" + number,
+                message: `Are you sure you want to delete question #${number}?`,
+                confirmCallback: () => {
+                    gameStore.scoreboard.deleteQuestion(number)
+                    socket.emit("deleteQuestion", number)
+                    $modalStore = null
+                },
+                cancelCallback: () => {
+                    $modalStore = null
+                }
+            }
+        }
+    }
+
+    function clearScores() {
+        $modalStore = {
+            component: Confirm,
+            props: {
+                title: "Clear Scores",
+                message: "Are you sure you want to clear scores?",
+                cancelCallback: () => {
+                    $modalStore = null
+                },
+                confirmCallback: () => {
+                    socket.emit('clearScores')
+                    $modalStore = null
+                }
+            }
+        }
+    }
 </script>
 
 <div>
@@ -70,6 +152,7 @@
             {#each Object.keys(players) as teamId}
                 <th colspan={players[teamId].length + 1} style:font-weight="bold">{$teamsStore[teamId].name}</th>
             {/each}
+            <th></th>
         </tr>
         <tr>
             <th colspan="2"></th>
@@ -79,6 +162,7 @@
                 {/each}
                 <th class="player-name" style:font-weight="bold">Bonus</th>
             {/each}
+            <th></th>
         </tr>
         {#each rowArray as i}
             <tr>
@@ -88,19 +172,47 @@
                     {#each Object.entries(players) as [teamId, p]}
                         {#each p as playerId}
                             {#if $gameStore.scores[i].tossup[teamId]?.playerId === playerId}
-                                <td class="{$gameStore.scores[i].tossup[teamId].scoreType}">
-                                    {scoreTypes[$gameStore.scores[i].tossup[teamId].scoreType]}
+                                <td class="tossup {$gameStore.scores[i].tossup[teamId].scoreType}">
+                                    <ScoreboardTableCell
+                                        scoreType={$gameStore.scores[i].tossup[teamId].scoreType}
+                                        bonus={false}
+                                        on:change={(e) => handleTossupChange(
+                                            i,
+                                            playerId,
+                                            teamId,
+                                            $gameStore.scores[i].category,
+                                            e.detail
+                                        )} />
                                 </td>
                             {:else}
-                                <td></td>
+                                <td>
+                                    <ScoreboardTableCell
+                                        scoreType="none"
+                                        bonus={false}
+                                        on:change={(e) => handleTossupChange(
+                                            i,
+                                            playerId,
+                                            teamId,
+                                            $gameStore.scores[i].category,
+                                            e.detail
+                                        )} />
+                                </td>
                             {/if}
                         {/each}
                         {#if $gameStore.scores[i].bonus?.teamId === teamId}
                             <td class="bonus {$gameStore.scores[i].bonus?.correct ? "correct" : "incorrect"}">
-                                {$gameStore.scores[i].bonus?.correct ? "C" : "I"}
+                                <ScoreboardTableCell
+                                    scoreType={$gameStore.scores[i].bonus?.correct ? "correct" : "incorrect"}
+                                    bonus={true} 
+                                    on:change={(e) => handleBonusChange(i, teamId, e.detail)} />
                             </td>
                         {:else}
-                            <td class="bonus"></td>
+                            <td class="bonus">
+                                <ScoreboardTableCell
+                                    scoreType="none"
+                                    bonus={true} 
+                                    on:change={(e) => handleBonusChange(i, teamId, e.detail)} />
+                            </td>
                         {/if}
                     {/each}
                 {:else}
@@ -112,6 +224,9 @@
                         <td class="bonus"></td>
                     {/each}
                 {/if}
+                <td>
+                    <button class="delete-button" on:click={() => deleteQuestion(i)}>Delete</button>
+                </td>
             </tr>
         {:else}
             <tr>
@@ -119,11 +234,13 @@
                 <td colspan={Object.values(players).reduce((acc, x) => acc + x.length + 1, 0)}>
                     No questions
                 </td>
+                <td></td>
             </tr>
         {/each}
     </table>
     <br />
     <button on:click={exportScores}>Export Scores</button>
+    <button on:click={clearScores}>Clear Scores</button>
 </div>
 
 <style lang="scss">
@@ -216,5 +333,11 @@
         background: transparent;
         color: #444;
         cursor: default;
+    }
+
+    .delete-button {
+        font-size: inherit;
+        padding: 0.2em;
+        border: solid black 2px;
     }
 </style>

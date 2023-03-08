@@ -5,7 +5,7 @@ import { Server } from 'socket.io'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
-import type { GameSettings, NewQuestionData } from '$lib/classes/Game'
+import type { Category, GameSettings, NewQuestionData, ScoreType } from '$lib/classes/Game'
 import { getDataFromToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
@@ -22,10 +22,10 @@ export const io = new Server(httpsServer, {
     },
     allowRequest: async (req, callback) => {
         console.log('allowing')
-        const authToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
-        console.log(authToken)
-        const tokenData = await getDataFromToken(authToken || "")
-        if (!authToken || !tokenData) {
+        const gameToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
+        console.log(gameToken)
+        const tokenData = await getDataFromToken(gameToken || "")
+        if (!gameToken || !tokenData) {
             return callback(null, false)
         }
 
@@ -46,9 +46,9 @@ export const io = new Server(httpsServer, {
 io.on('connection', async socket => {
     console.log("Socket connected")
     const cookie = socket.request.headers.cookie
-    const authToken = cookie?.split("; ").find(x => x.split("=")[0] === "authToken")?.split("=")[1]
-    const tokenData = await getDataFromToken(authToken || "")
-    if (!authToken || !tokenData) {
+    const gameToken = cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
+    const tokenData = await getDataFromToken(gameToken || "")
+    if (!gameToken || !tokenData) {
         socket.emit('authFailed')
         return socket.disconnect()
     }
@@ -150,6 +150,51 @@ io.on('connection', async socket => {
         } else {
             game.timer.end()
         }
+    })
+
+    socket.on("editTossup", (
+        number: number,
+        playerId: string,
+        teamId: string,
+        category: Category,
+        scoreType: ScoreType | "none"
+    ) => {
+        game.scoreboard.editTossup(
+            number,
+            playerId,
+            teamId,
+            category,
+            scoreType
+        )
+        socket.to(gameId).emit("tossupEdit",
+            number,
+            playerId,
+            teamId,
+            category,
+            scoreType
+        )
+    })
+
+    socket.on("editBonus", (
+        number: number,
+        teamId: string,
+        scoreType: "correct" | "incorrect" | "none"
+    ) => {
+        game.scoreboard.editBonus(
+            number,
+            teamId,
+            scoreType
+        )
+        socket.to(gameId).emit("bonusEdit",
+            number,
+            teamId,
+            scoreType
+        )
+    })
+
+    socket.on("deleteQuestion", (number: number) => {
+        game.scoreboard.deleteQuestion(number)
+        socket.to(gameId).emit("questionDelete", number)
     })
 
     socket.on('kickPlayer', (id: string) => {

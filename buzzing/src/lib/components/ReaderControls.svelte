@@ -12,7 +12,7 @@
     import type { Writable } from 'svelte/store';
     import Confirm from './Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
-  import ExpandedScoreboard from './ExpandedScoreboard.svelte';
+    import ExpandedScoreboard from './ExpandedScoreboard.svelte';
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
@@ -162,30 +162,12 @@
             }
         }
     }
-    function clearScores() {
-        $modalStore = {
-            component: Confirm,
-            props: {
-                title: "Clear Scores",
-                message: "Are you sure you want to clear scores?",
-                cancelCallback: () => {
-                    $modalStore = null
-                },
-                confirmCallback: () => {
-                    socket.emit('clearScores')
-                    debug.addEvent('clearScores', {})
-                    $modalStore = null
-                }
-            }
-        }
-    }
 
     let scoreboardExpanded = false
 
     let selectedScore: "correct" | "incorrect" | "penalty" | ""
     $: scoringEnabled = $gameStore.state.questionState === "buzzed" || $gameStore.state.currentQuestion?.bonus
     function scoreQuestion() {
-        console.log($gameStore.state.currentQuestion)
         socket.emit('scoreQuestion', selectedScore)
 
         if (
