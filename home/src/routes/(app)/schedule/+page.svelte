@@ -6,8 +6,9 @@
     <section class="bubble">
         <h1>Schedule</h1>
         <p>
-            Information about the schedule on tournament day will be released at a later date.
+            In order to prevent delays, the times listed here will be kept to as closely as possible. Rounds will start and end exactly at the listed time. 
         </p>
+        <Schedule />
     </section>
 </main>
 

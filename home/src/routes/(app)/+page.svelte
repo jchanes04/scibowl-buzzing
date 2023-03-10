@@ -32,6 +32,7 @@
             ESBOT 2023 will be held on <b><time datetime="2022-03-26">March 26th</time></b>.
             The tournament will be held in the style of <b>in-person Science Bowl</b> through an online medium.
             The format will consist of a round-robin portion followed by a double elimination tournament.
+            The tournament will take place from 9:40 AM to 7:15 PM, with more detailed times available on the <a href="/schedule">schedule</a>.
         </p>
         <br />
         <p>
