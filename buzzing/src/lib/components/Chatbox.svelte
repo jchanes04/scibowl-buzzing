@@ -27,7 +27,7 @@
         padding: 1em;
         box-sizing: border-box;
         border-radius: 1em;
-        background: $background-2;
+        background: $background-1;
         min-height: 10em;
         max-height: 25em;
     }

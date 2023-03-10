@@ -320,9 +320,12 @@
     .select-wrapper {
         width: 14em;
         --background:white;
-        --border: .1em solid $green;
         --border-radius: .5em;
         --selected-item-padding: 0;
+
+        :global(.svelte-select) {
+            box-sizing: border-box;
+        }
     }
 
     input[type="number"] {
@@ -370,6 +373,7 @@
             & ~ span {
                 color: black;
                 font-weight: bold;
+                border: 2px solid transparent;
             }
 
             &:disabled ~ span {
