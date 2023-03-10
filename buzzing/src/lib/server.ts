@@ -106,13 +106,27 @@ io.on('connection', async socket => {
         socket.to(gameId).emit('questionOpen', question)
     })
 
+    socket.on("openVisualBonus", (data: Buffer) => {
+        if (member.type !== "moderator")  return
+
+        socket.to(gameId).emit("visualBonusOpen", data)
+    })
+
     socket.on('startTimer', () => {
         if (member.type !== "moderator" || game.state.questionState !== "open") return
         
-        const serverLength = game.state.currentQuestion.bonus ? game.times.bonus[0] + game.times.bonus[1] : game.times.tossup[0] + game.times.tossup[1]
+        const serverLength = game.state.currentQuestion.bonus ?
+            game.state.currentQuestion.visual
+                ? game.times.visual[0] + game.times.visual[1]
+                : game.times.bonus[0] + game.times.bonus[1]
+            : game.times.tossup[0] + game.times.tossup[1]
         game.timer.start(serverLength)
 
-        const clientLength = game.state.currentQuestion.bonus ? game.times.bonus[0] : game.times.tossup[0]
+        const clientLength = game.state.currentQuestion.bonus
+            ? game.state.currentQuestion.visual
+                ? game.times.visual[0]
+                : game.times.bonus[0]
+            : game.times.tossup[0]
         socket.to(gameId).emit('timerStart', clientLength)
         socket.emit('timerStart', clientLength)
 

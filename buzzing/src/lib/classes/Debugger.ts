@@ -69,7 +69,7 @@ export default class Debugger {
     }
 
     openDebugLog() {
-        const newWindow = window.open("", this.gameName + " Debug Log", "width=800,height=600")
+        const newWindow = window.open("", "DebugLog", "width=800,height=600")
         this.openWindow = newWindow
         newWindow?.document.write(
             `<script>function reportBug() {window.opener.postMessage("reportBug", "${env.PUBLIC_HOST_URL}")}</script>

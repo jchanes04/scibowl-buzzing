@@ -13,10 +13,13 @@
     import Confirm from './Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
     import ExpandedScoreboard from './ExpandedScoreboard.svelte';
+  import getBase64 from '$lib/functions/image';
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
-    let questionType: "tossup" | "bonus" | ""
+    let questionType: "tossup" | "bonus" | "visual" | ""
+    let visualBonusFiles: FileList
+    let visualBonusFilename: string
     const categories: { id: Category, value: string }[] = [
         {id:"earth", value:"Earth and Space"},
         {id:"bio", value:"Biology"},
@@ -34,12 +37,23 @@
     } | null>
     const modalStore: ModalStore = getContext('modalStore')
 
+    $: newQuestionDisabled = !questionType
+        || !selectedCategory
+        || (!teamSelectValue && questionType === "bonus")
+        || ((!teamSelectValue || !visualBonusFiles) && questionType === "visual")
+
     let questionNumber: number = 0
-    function newQuestion() {
+    async function newQuestion() {
+        if (questionType === "visual") {
+            socket.emit('openVisualBonus', visualBonusFiles[0])
+        }
+
         socket.emit('newQuestion', {
             category: selectedCategory,
-            bonus: questionType === "bonus",
-            teamId: questionType === "bonus" ? teamSelectValue?.id : null,
+            bonus: questionType === "bonus" || questionType === "visual",
+            teamId: questionType === "bonus" || questionType === "visual"
+                ? teamSelectValue?.id
+                : null,
             number: questionNumber
         })
 
@@ -49,8 +63,10 @@
 
         debug.addEvent('newQuestion', {
             category: selectedCategory,
-            bonus: questionType === "bonus",
-            teamId: questionType === "bonus" ? teamSelectValue?.id : null,
+            bonus: questionType === "bonus" || questionType === "visual",
+            teamId: questionType === "bonus" || questionType === "visual"
+                ? teamSelectValue?.id
+                : null,
             number: questionNumber
         })
 
@@ -66,6 +82,14 @@
                 teamId: teamSelectValue?.id as string,
                 number: questionNumber
             }, true)
+        } else if (questionType === "visual") {
+            gameStore.newQuestion({
+                category: selectedCategory as Category,
+                bonus: true,
+                visual: true,
+                teamId: teamSelectValue?.id as string,
+                number: questionNumber
+            }, true)
         } else {
             gameStore.newQuestion({
                 category: selectedCategory as Category,
@@ -75,6 +99,7 @@
         }
 
         questionType = ""
+        visualBonusFilename = ""
     }
 
     const timeEndedModal = (confirmCallback: () => void) => ({
@@ -231,9 +256,32 @@
                 <input type="radio" id="bonus-radio" name="question-type" value="bonus" bind:group={questionType}>
                 <span>Bonus</span>
             </label>
+            <label for="visual-radio">
+                <input type="radio" id="visual-radio" name="question-type" value="visual" bind:group={questionType}>
+                <span>Visual Bonus</span>
+            </label>
         </div>
         <br />
-        <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus'}>
+        {#if questionType === "visual"}
+            <label class="file-input-wrapper" for="visual-bonus-upload">
+                <input
+                    type="file"
+                    id="visual-bonus-upload"
+                    accept="image/png, image/jpeg"
+                    bind:files={visualBonusFiles}
+                    bind:value={visualBonusFilename}
+                    />
+                <span>
+                    {#if visualBonusFiles?.[0]}
+                        {visualBonusFiles[0].name}
+                    {:else}
+                        Choose File
+                    {/if}
+                </span>
+            </label>
+            <br />
+        {/if}
+        <div id="target-team-wrapper"  class:hidden={questionType !== 'bonus' && questionType !== 'visual'}>
             <div class="select-wrapper">
                 <Select items={Object.values($teamsStore)} itemId="id" label="name" placeholder="Bonus for" searchable={false} showChevron={true}
                     bind:value={teamSelectValue} />
@@ -247,7 +295,7 @@
         <br />
         <div class="new-question-wrapper">
             <input type="number" bind:value={questionNumber} on:change={handleQuestionNumberChange} />
-            <button on:click={confirmNewQuestion} disabled={!questionType || !selectedCategory || (!teamSelectValue && questionType === "bonus")}>New Question</button>
+            <button on:click={confirmNewQuestion} disabled={newQuestionDisabled}>New Question</button>
         </div>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
@@ -399,6 +447,21 @@
         }
     }
     
+    .file-input-wrapper {
+        cursor: pointer;
+
+        input[type="file"] {
+            display: none;
+        }
+
+        span {
+            display: inline-block;
+            padding: 0.3em;
+            border-radius: 0.3em;
+            border: 1px solid black;
+        }
+    }
+
     #target-team-wrapper.hidden {
         visibility: hidden;
     }

@@ -19,7 +19,8 @@ export interface ClientGame {
 
     times: { //times [client, server extratime]
         tossup: [number, number],
-        bonus:  [number, number]
+        bonus:  [number, number],
+        visual: [number, number]
     }
         
     state: { // idle means no question open
@@ -27,7 +28,8 @@ export interface ClientGame {
         currentBuzzer: ClientPlayer | null,
         currentQuestion: {
             category: Category,
-            bonus: boolean
+            bonus: boolean,
+            visual?: boolean
         } | null
         buzzedTeams: ClientTeam[],
         lastScored: LastScoredQuestion | null
@@ -41,7 +43,8 @@ export type ClientGameParameters = {
     settings: GameSettings,
     times: {
         tossup: [number, number],
-        bonus: [number, number]
+        bonus: [number, number],
+        visual: [number, number]
     }
 }
 

@@ -16,7 +16,8 @@ export type Question = {
     bonus: true,
     category: Category,
     team: Team,
-    number?: number
+    number?: number,
+    visual?: boolean
 }
 
 export type NewQuestionData = {
@@ -26,8 +27,9 @@ export type NewQuestionData = {
 } | {
     bonus: true,
     category: Category,
-    teamId: string
-    number?: number
+    teamId: string,
+    number?: number,
+    visual?: boolean
 }
 
 export type GameSettings = {
@@ -96,7 +98,8 @@ export interface Game {
     gameClock: Timer,
     times: { //times [client, server extratime]
         tossup: [number, number],
-        bonus:  [number, number]
+        bonus:  [number, number],
+        visual: [number, number]
     }
     
     lastActive: number,
@@ -110,7 +113,8 @@ export interface Game {
 
 export type GameTimes = {
     tossup: [number, number],
-    bonus: [number, number]
+    bonus: [number, number],
+    visual: [number, number]
 }
 
 type GameParameters = {
@@ -151,7 +155,8 @@ export class Game {
         this.gameClock = new Timer()
         this.times = {  
             tossup: times?.tossup || [5, 2],
-            bonus: times?.bonus || [20, 2]
+            bonus: times?.bonus || [20, 2],
+            visual: times?.visual || [30, 2]
         }
         // time format: [client side time, extra time allowed for latency]
         

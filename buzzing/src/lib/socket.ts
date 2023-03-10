@@ -43,6 +43,7 @@ let timer: number
 timerStore.subscribe(value => timer = value)
 
 let existingSocket: Socket
+let visualBonusWindow: Window
 
 export function createSocket() {
     if (existingSocket) existingSocket.disconnect()
@@ -236,6 +237,7 @@ export function createSocket() {
         if (scoreType === "correct") {
             if (bonus) {
                 gameStore.scoreboard.correctBonus(number, teamId, category)
+                if (visualBonusWindow) visualBonusWindow.close()
             } else {
                 console.log('correct tossup')
                 gameStore.scoreboard.correctTossup(number, playerId, teamId, category)
@@ -251,6 +253,7 @@ export function createSocket() {
         } else if (scoreType === "incorrect") {
             if (bonus) {
                 gameStore.scoreboard.incorrectBonus(number, teamId, category)
+                if (visualBonusWindow) visualBonusWindow.close()
             } else {
                 gameStore.scoreboard.incorrectTossup(number, playerId, teamId, category)
             }
@@ -343,6 +346,30 @@ export function createSocket() {
             }
             return oldList
         })
+    })
+
+    socket.on("visualBonusOpen", (data: Buffer) => {
+        if (myMember.moderator) return
+
+        const blob = new Blob([data])
+        const url = URL.createObjectURL(blob)
+        const newWindow = window.open("", "VisualBonus", "width=800,height=600")
+        if (newWindow) {
+            visualBonusWindow = newWindow
+            const img = new Image()
+            img.src = url
+            visualBonusWindow.document.body.innerHTML = 
+                `<style>
+                    img {
+                        width: 100%;
+                    }
+                </style>
+                <div>
+                    ${img.outerHTML}
+                </div>`
+        } else {
+            console.log('openFailed')
+        }
     })
 
     socket.on('timerStart', (length: number) => {
