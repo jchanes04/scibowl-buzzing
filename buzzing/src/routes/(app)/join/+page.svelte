@@ -25,7 +25,7 @@
     {#if !codeExists && joinCodeValue?.length === 4}
         <p class="error">Invalid code</p>
     {/if}
-    <button id="join-game" disabled={codeExists || joinCodeValue.length !== 4}>Join</button>
+    <button id="join-game" disabled={!codeExists || joinCodeValue.length !== 4}>Join</button>
 </form>
 
 <style lang="scss">

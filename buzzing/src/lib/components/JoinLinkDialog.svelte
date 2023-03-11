@@ -65,7 +65,7 @@
 
     input {
         border: 1px solid black;
-        padding: 0.3em 0.5em;
+        padding: 0.1em 0.3em;
         border-top-left-radius: 0.5em;
         border-bottom-left-radius: 0.5em;
     }

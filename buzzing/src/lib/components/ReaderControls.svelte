@@ -13,7 +13,6 @@
     import Confirm from './Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
     import ExpandedScoreboard from './ExpandedScoreboard.svelte';
-  import getBase64 from '$lib/functions/image';
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
