@@ -8,6 +8,7 @@
         <nav>
             <a href="/admin/users">Users</a>
             <a href="/admin/teams">Teams</a>
+            <a href="/admin/discord">Discord Usernames</a>
             <form action="/?/logout" method="POST">
                 <button class="login" type="submit">Logout</button>
             </form>
