@@ -13,6 +13,10 @@
     import Confirm from './Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
     import ExpandedScoreboard from './ExpandedScoreboard.svelte';
+    import Icon from './Icon.svelte';
+    import playSvg from "$lib/icons/play.svg?raw"
+    import pausePlaySvg from "$lib/icons/pause-play.svg?raw"
+    import stopSvg from "$lib/icons/stop.svg?raw"
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
@@ -325,9 +329,15 @@
     <ControlSection title="Game Control">
         <TimeEntry bind:value={gameClockTime} />
         <br /><br />
-        <button disabled={startGameClockDisabled || gameClockTime === 0} on:click={startGameClock}>▶</button>
-        <button disabled={pauseGameClockDisabled} on:click={pauseGameClock}>⏯</button>
-        <button disabled={stopGameClockDisabled} on:click={stopGameClock}>⏹</button>
+        <button disabled={startGameClockDisabled || gameClockTime === 0} on:click={startGameClock}>
+            <Icon svg={playSvg} />
+        </button>
+        <button disabled={pauseGameClockDisabled} on:click={pauseGameClock}>
+            <Icon svg={pausePlaySvg} />
+        </button>
+        <button disabled={stopGameClockDisabled} on:click={stopGameClock}>
+            <Icon svg={stopSvg} />
+        </button>
         <br /><br />
         <button on:click={endGame} id="endGame">End Game</button>
     </ControlSection>

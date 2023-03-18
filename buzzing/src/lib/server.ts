@@ -21,9 +21,7 @@ export const io = new Server(httpsServer, {
         credentials: true
     },
     allowRequest: async (req, callback) => {
-        console.log('allowing')
         const gameToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
-        console.log(gameToken)
         const tokenData = await getDataFromToken(gameToken || "")
         if (!gameToken || !tokenData) {
             return callback(null, false)
@@ -66,7 +64,7 @@ io.on('connection', async socket => {
 
     if (!spectator) {
         socket.emit('authenticated', { name: game.people[memberId].name })
-        if (game.gameClock.time > 0) {
+        if (game.gameClock.time > 0 && game.gameClock.live) {
             socket.emit('gameClockUpdate', game.gameClock.time)
         }
     }

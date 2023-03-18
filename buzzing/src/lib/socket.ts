@@ -247,7 +247,6 @@ export function createSocket() {
                     })
                 }
             } else {
-                console.log('correct tossup')
                 gameStore.scoreboard.correctTossup(number, playerId, teamId, category)
             }
 
@@ -293,7 +292,7 @@ export function createSocket() {
             })
         }
 
-        if (open) {
+        if (open && game.state.currentQuestion) {
             if (myMember.team && game.state.buzzedTeamIds.includes(myMember.team.id)) {
                 gameStore.openQuestion(false)
             } else {
@@ -386,7 +385,6 @@ export function createSocket() {
             url,
             window: value.window
         }))
-        console.log("url updated", url)
     })
 
     socket.on('timerStart', (length: number) => {

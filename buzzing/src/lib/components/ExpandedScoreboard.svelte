@@ -76,7 +76,6 @@
         category: Category,
         scoreType: ScoreType | "none"
     ) {
-        console.log('handlingChange')
         gameStore.scoreboard.editTossup(
             number,
             playerId,
