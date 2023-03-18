@@ -1,5 +1,3 @@
-import type { ClientModerator } from "$lib/classes/client/ClientModerator";
-import type { ClientPlayer } from "$lib/classes/client/ClientPlayer";
 import { writable } from "svelte/store";
 import type { ModeratorStore } from "./moderators";
 import type { PlayerStore } from "./players";

@@ -49,16 +49,14 @@ type BuzzedState = { // idle means no question open
     questionState: 'buzzed'
     currentBuzzer: Player,
     currentQuestion: Question
-    buzzedTeams: Record<string, Team>,
-    lastScored: LastScoredQuestion | null
+    buzzedTeams: Record<string, Team>
 }
 
 type IdleState = { // idle means no question open
     questionState: 'idle'
     currentBuzzer: null,
     currentQuestion: null
-    buzzedTeams: Record<string, Team>,
-    lastScored: LastScoredQuestion | null
+    buzzedTeams: Record<string, Team>
 }
 
 type OpenState = {
@@ -66,17 +64,9 @@ type OpenState = {
     currentBuzzer: null,
     currentQuestion: Question
     buzzedTeams: Record<string, Team>,
-    lastScored: LastScoredQuestion | null
 }
 
 export type ScoreType = "correct" | "incorrect" | "penalty"
-
-export type LastScoredQuestion = {
-    memberId: string,
-    scoreType: ScoreType,
-    category: Category,
-    bonus: boolean
-}
 
 export type LeftPlayerData = PlayerData & { team?: TeamData & { type: "created" } }
 
@@ -171,8 +161,7 @@ export class Game {
             questionState: 'idle',
             currentBuzzer: null,        // the player that has buzzed in
             currentQuestion: null,      // the current question information (category, is bonus)
-            buzzedTeams: {},     // the teams who have buzzed, prevents different players on the same team from buzzing again
-            lastScored: null
+            buzzedTeams: {}    // the teams who have buzzed, prevents different players on the same team from buzzing again
         }
         
         this.leftPlayers = {}   // players who have left the game, used for players to rejoin
@@ -355,47 +344,54 @@ export class Game {
     }
 
     scoreQuestion(score: 'correct' | 'incorrect' | 'penalty') {
-        if (this.state.questionState !== "buzzed" || !this.state.currentQuestion.number)
-            return null
+        if (!this.state.currentQuestion?.number) return null
+        const currentQuestion = this.state.currentQuestion
+        if (
+            (this.state.questionState !== "buzzed" || !this.state.currentBuzzer)
+            && !currentQuestion.bonus
+        ) return null
 
         const buzzer = this.state.currentBuzzer
         const number = this.state.currentQuestion.number
         const bonus = this.state.currentQuestion.bonus
+        const team = currentQuestion.bonus ? currentQuestion.team : buzzer!.team
 
         if (bonus) {
             if (score === "correct") {
                 this.scoreboard.correctBonus(
                     number,
-                    buzzer.team.id,
-                    this.state.currentQuestion.category
+                    team.id,
+                    currentQuestion.category
                 )
             } else if (score === 'incorrect') {
                 this.scoreboard.incorrectBonus(
                     number,
-                    buzzer.team.id,
-                    this.state.currentQuestion.category
+                    team.id,
+                    currentQuestion.category
                 )
             }
         } else {
-            if (score === "correct") {
+            if (!buzzer) {
+                return
+            } else if (score === "correct") {
                 this.scoreboard.correctTossup(
                     number,
                     buzzer.id,
-                    buzzer.team.id,
+                    team.id,
                     this.state.currentQuestion.category
                 )
             } else if (score === 'incorrect') {
                 this.scoreboard.incorrectTossup(
                     number,
                     buzzer.id,
-                    buzzer.team.id,
+                    team.id,
                     this.state.currentQuestion.category
                 )
             } else if (score === 'penalty') {
                 this.scoreboard.penalty(
                     number,
                     buzzer.id,
-                    buzzer.team.id,
+                    team.id,
                     this.state.currentQuestion.category
                 )
             }
@@ -405,70 +401,30 @@ export class Game {
             && Object.values(this.state.buzzedTeams).length < Math.min(3, Object.values(this.teams).length)
             && score !== 'correct'
 
-        const currentQuestion = this.state.currentQuestion
         const buzzedTeams = this.state.buzzedTeams
         if (!open) {
             this.state = {
                 questionState: "idle",
                 currentBuzzer: null,
                 currentQuestion: null,
-                buzzedTeams: {},
-                lastScored: {
-                    memberId: buzzer.id,
-                    category: currentQuestion.category,
-                    scoreType: score,
-                    bonus: currentQuestion.bonus
-                }
+                buzzedTeams: {}
             }
         } else {
             this.state = {
                 questionState: "open",
                 currentBuzzer: null,
                 currentQuestion,
-                buzzedTeams,
-                lastScored: {
-                    memberId: buzzer.id,
-                    category: currentQuestion.category,
-                    scoreType: score,
-                    bonus: currentQuestion.bonus
-                }
+                buzzedTeams
             }
         }
 
         return {
             buzzer,
+            team,
             open,
             category: currentQuestion.category,
             number,
             bonus
-        }
-    }
-
-    undoScore() {
-        if (!this.state.lastScored){
-            return null
-        }
-
-        const buzzer = this.players[this.state.lastScored.memberId]
-        if (buzzer) {
-            // this.scoreboard.undoScore(
-            //     buzzer,
-            //     this.state.lastScored.scoreType,
-            //     this.state.lastScored.category,
-            //     this.state.lastScored.bonus
-            // )
-            
-            const returnData = {
-                score: this.state.lastScored.scoreType,
-                buzzer,
-                category: this.state.lastScored.category,
-                bonus: this.state.lastScored.bonus
-            }
-            this.state.lastScored = null
-
-            return returnData
-        } else {
-            return null
         }
     }
 

@@ -36,7 +36,8 @@
         background: none;
         padding: 0;
         cursor: pointer;
-        width: 1ch;
-        height: 1em;
+        min-width: 1.8ch;
+        width: 100%;
+        height: 1.8em;
     }
 </style>

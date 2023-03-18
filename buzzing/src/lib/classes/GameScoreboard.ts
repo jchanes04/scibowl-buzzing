@@ -179,8 +179,6 @@ export class GameScoreboard {
         if (this.scores[number] && scoreType === "none") {
             this.scores[number].bonus = null
         } else if (this.scores[number]) {
-            this.scores[number]
-        } else if (scoreType !== "none") {
             this.scores[number].bonus = {
                 teamId,
                 correct: scoreType === "correct"

@@ -50,6 +50,7 @@
         socket.emit('newQuestion', {
             category: selectedCategory,
             bonus: questionType === "bonus" || questionType === "visual",
+            ...(questionType === "visual" ? { visual: true } : {}),
             teamId: questionType === "bonus" || questionType === "visual"
                 ? teamSelectValue?.id
                 : null,
@@ -377,8 +378,8 @@
 
     input[type="number"] {
         border: none;
-        width: 3ch;
-        font-size: 18px;
+        width: 3.5ch;
+        font-size: 22px;
         border-radius: 0.3em;
         padding: 0.3em;
         border: 0.1em solid $green;

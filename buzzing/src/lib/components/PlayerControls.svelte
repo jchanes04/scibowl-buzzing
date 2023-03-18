@@ -6,6 +6,8 @@
     import { timerStore, gameClockStore } from "$lib/stores/timer";
     import { getContext } from "svelte";
     import myMember from "$lib/stores/myMember";
+    import visualBonus from "$lib/stores/visualBonus";
+    import teamsStore from "$lib/stores/teams"
     
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
@@ -24,6 +26,32 @@
         socket.emit('claimCaptain')
         debug.addEvent('claimCaptain', {})
     }
+
+    function openVisual() {
+        if (!$visualBonus.url) return
+
+        const newWindow = window.open("", "VisualBonus", "width=800,height=600")
+        if (!newWindow) return
+        
+        $visualBonus.window = newWindow
+        const img = new Image()
+        img.src = $visualBonus.url
+        newWindow.document.body.innerHTML = 
+            `<style>
+                img {
+                    width: 100%;
+                }
+            </style>
+            <div>
+                ${img.outerHTML}
+            </div>`
+    }
+
+    $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""].captainId === $myMember.id
+    $: visualBonusEnabled = $gameStore.state.questionState === "open"
+            && $gameStore.state.currentQuestion.bonus
+            && $gameStore.state.currentQuestion.visual
+            && !!$visualBonus.url
 </script>
 
 <svelte:body on:keydown={(e) => {
@@ -45,7 +73,12 @@
         <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
         <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
         <br />
-        <button on:click={claimCaptain}>Claim Captain</button>
+        <button on:click={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
+        {#if visualBonusEnabled}
+            <br />
+            <br />
+            <button on:click={openVisual}>Open Visual Bonus</button>
+        {/if}
     </div>
 </div>
 

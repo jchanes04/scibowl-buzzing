@@ -144,14 +144,14 @@ io.on('connection', async socket => {
 
         if (!result) return
 
-        const { buzzer, category, bonus, open, number } = result
+        const { buzzer, team, category, bonus, open, number } = result
 
         io.to(gameId).emit('scoreChange', {
             open,
             bonus,
             scoreType,
-            playerId: buzzer.id,
-            teamId: buzzer.team.id,
+            playerId: buzzer?.id,
+            teamId: team.id,
             category,
             number
         })

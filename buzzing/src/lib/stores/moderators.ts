@@ -7,6 +7,7 @@ let unsubscribeFunctions: Record<string, Unsubscriber> = {}
 
 export default {
     subscribe: store.subscribe,
+    clear: () => store.set({}),
     addModerator: (moderator: ModeratorStore) => {
         unsubscribeFunctions[moderator.id] = moderator.subscribe(newPlayerValue => {
             store.update(oldList => ({

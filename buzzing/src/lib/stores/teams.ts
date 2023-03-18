@@ -9,6 +9,7 @@ let unsubscribeFunctions: Record<string, Unsubscriber> = {}
 
 export default {
     subscribe: store.subscribe,
+    clear: () => store.set({}),
     addTeam: (team: TeamStore) => {
         unsubscribeFunctions[team.id] = team.subscribe(newTeamValue => {
             store.update(oldList => ({

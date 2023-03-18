@@ -12,7 +12,6 @@
 
     import Debugger from '$lib/classes/Debugger';
     import { setContext } from 'svelte';
-    import { timerStore } from "$lib/stores/timer"
     import gameStore from "$lib/stores/game";
     import teamsStore, { createTeamStore } from "$lib/stores/teams";
     import playersStore, { createPlayerStore } from "$lib/stores/players";
@@ -27,6 +26,9 @@
     $: ({ gameInfo, teamList, moderatorList, playerList, myMemberId, scores } = data)
 
     const socket = createSocket()
+    playersStore.clear()
+    moderatorsStore.clear()
+    teamsStore.clear()
 
     $gameStore = {
         id: $page.params.id,

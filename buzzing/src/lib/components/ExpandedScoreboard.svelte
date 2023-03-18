@@ -76,6 +76,7 @@
         category: Category,
         scoreType: ScoreType | "none"
     ) {
+        console.log('handlingChange')
         gameStore.scoreboard.editTossup(
             number,
             playerId,
@@ -300,7 +301,10 @@
 
     td {
         text-align: center;
-        padding: 0.1em 0.2em;
+
+        &:first-child, &:nth-child(2) {
+            padding: 0.1em 0.2em;
+        }
 
         &.bonus {
             border-right: 1px solid black;

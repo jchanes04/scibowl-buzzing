@@ -6,11 +6,11 @@ import myMemberStore, { type MyMember } from "./stores/myMember"
 import chatMessagesStore, { type ChatMessage } from "./stores/chatMessages"
 import gameStore, { type ClientGameData } from "./stores/game"
 import buzzAudioStore from "./stores/buzzAudio"
-import type { SvelteComponentTyped } from "svelte"
 import { timerStore, gameClockStore } from "./stores/timer"
-import type { Category, NewQuestionData, Question, ScoreType } from "$lib/classes/Game"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
+import visualBonusStore from "./stores/visualBonus"
 import { goto } from "$app/navigation"
+import type { Category, NewQuestionData, ScoreType } from "$lib/classes/Game"
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
 import type { ClientModerator } from "$lib/classes/client/ClientModerator"
 import type { ModeratorData } from "$lib/classes/Moderator"
@@ -42,8 +42,10 @@ buzzAudioStore.subscribe(value => buzzAudio = value)
 let timer: number
 timerStore.subscribe(value => timer = value)
 
+let visualBonus: { url: string | null, window: Window | null }
+visualBonusStore.subscribe(value => visualBonus = value)
+
 let existingSocket: Socket
-let visualBonusWindow: Window
 
 export function createSocket() {
     if (existingSocket) existingSocket.disconnect()
@@ -237,7 +239,13 @@ export function createSocket() {
         if (scoreType === "correct") {
             if (bonus) {
                 gameStore.scoreboard.correctBonus(number, teamId, category)
-                if (visualBonusWindow) visualBonusWindow.close()
+                if (visualBonus.window) {
+                    visualBonus.window.close()
+                    visualBonusStore.set({
+                        url: null,
+                        window: null
+                    })
+                }
             } else {
                 console.log('correct tossup')
                 gameStore.scoreboard.correctTossup(number, playerId, teamId, category)
@@ -253,7 +261,13 @@ export function createSocket() {
         } else if (scoreType === "incorrect") {
             if (bonus) {
                 gameStore.scoreboard.incorrectBonus(number, teamId, category)
-                if (visualBonusWindow) visualBonusWindow.close()
+                if (visualBonus.window) {
+                    visualBonus.window.close()
+                    visualBonusStore.set({
+                        url: null,
+                        window: null
+                    })
+                }
             } else {
                 gameStore.scoreboard.incorrectTossup(number, playerId, teamId, category)
             }
@@ -325,10 +339,25 @@ export function createSocket() {
 
     socket.on('questionOpen', (question: NewQuestionData) => {
         const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)
-        gameStore.newQuestion(question, !!buzzingEnabled)
+        gameStore.newQuestion(question, buzzingEnabled)
 
         if (!question.bonus && question.number && game.scores[question.number]) {
             gameStore.scoreboard.clearQuestion(question.number)
+        }
+
+        if (!question.bonus || !question.visual) {
+            console.log("clearing")
+            visualBonusStore.update(value => ({
+                url: null,
+                window: value.window
+            }))
+            if (visualBonus.window) visualBonus.window.document.body.innerHTML = 
+                `<style>
+                    img {
+                        width: 100%;
+                    }
+                </style>
+                <div></div>`
         }
 
         chatMessagesStore.update(oldList => {
@@ -353,23 +382,11 @@ export function createSocket() {
 
         const blob = new Blob([data])
         const url = URL.createObjectURL(blob)
-        const newWindow = window.open("", "VisualBonus", "width=800,height=600")
-        if (newWindow) {
-            visualBonusWindow = newWindow
-            const img = new Image()
-            img.src = url
-            visualBonusWindow.document.body.innerHTML = 
-                `<style>
-                    img {
-                        width: 100%;
-                    }
-                </style>
-                <div>
-                    ${img.outerHTML}
-                </div>`
-        } else {
-            console.log('openFailed')
-        }
+        visualBonusStore.update(value => ({
+            url,
+            window: value.window
+        }))
+        console.log("url updated", url)
     })
 
     socket.on('timerStart', (length: number) => {
@@ -460,6 +477,21 @@ export function createSocket() {
 
         const member = team.players[memberId]
         if (!member) return
+
+        if (
+            game.state.questionState === "open"
+            && game.state.currentQuestion.bonus
+            && game.state.currentQuestion.teamId === myMember.team?.id
+            && memberId === myMember.id
+        ) {
+            gameStore.enableBuzzing()
+        } else if (
+            game.state.questionState === "open"
+            && game.state.currentQuestion.bonus
+            && game.state.currentQuestion.teamId === myMember.team?.id
+        ) {
+            gameStore.disableBuzzing()
+        }
 
         chatMessagesStore.update(oldValue => {
             oldValue.push({
