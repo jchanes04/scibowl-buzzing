@@ -6,7 +6,10 @@
     <section class="bubble">
         <h1>Schedule</h1>
         <p>
-            In order to prevent delays, the times listed here will be kept to as closely as possible. Rounds will start and end exactly at the listed time. 
+            In order to prevent delays, the times listed here will be kept to as closely as possible.
+            We are not building transition times into this schedule, but due to our game clock policy, rounds should finish well before the listed times.
+            All rounds <b>will</b> begin reading questions at most 5 minutes after the listed start time, so participants should use all the time that they have to join their next match and prepare.
+            All times are listed in EDT.
         </p>
         <Schedule />
     </section>
