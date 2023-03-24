@@ -102,9 +102,9 @@ export interface Game {
 }
 
 export type GameTimes = {
-    tossup: [number, number],
-    bonus: [number, number],
-    visual: [number, number]
+    tossup?: [number, number],
+    bonus?: [number, number],
+    visual?: [number, number]
 }
 
 type GameParameters = {
@@ -113,7 +113,7 @@ type GameParameters = {
     teams: Team[],
     owner: Moderator,
     joinCode: string,
-    times: GameTimes
+    times?: GameTimes
 }
 
 export class Game {
@@ -289,6 +289,20 @@ export class Game {
         return null
     }
 
+    kickPlayer(id: string) {
+        if (this.players[id]) {
+            const member = this.players[id]
+            delete this.players[id]
+
+            if (member.team) {
+                member.team.removePlayer(id)
+            }
+
+            return member
+        }
+        return null
+    }
+
     promotePlayer(id: string) {
         const player = this.players[id]
         if (player) {
@@ -330,6 +344,7 @@ export class Game {
             this.state.currentQuestion = {
                 category: question.category,
                 bonus: true,
+                visual: question.visual,
                 team,
                 number: question.number
             }

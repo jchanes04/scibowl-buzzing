@@ -5,7 +5,6 @@ import playersStore, { createPlayerStore, type PlayerStore } from "./stores/play
 import myMemberStore, { type MyMember } from "./stores/myMember"
 import chatMessagesStore, { type ChatMessage } from "./stores/chatMessages"
 import gameStore, { type ClientGameData } from "./stores/game"
-import buzzAudioStore from "./stores/buzzAudio"
 import { timerStore, gameClockStore } from "./stores/timer"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import visualBonusStore from "./stores/visualBonus"
@@ -36,14 +35,13 @@ gameStore.subscribe(value => game = value)
 let myMember: MyMember
 myMemberStore.subscribe(value => myMember = value)
 
-let buzzAudio: HTMLAudioElement | null
-buzzAudioStore.subscribe(value => buzzAudio = value)
-
 let timer: number
 timerStore.subscribe(value => timer = value)
 
 let visualBonus: { url: string | null, window: Window | null }
 visualBonusStore.subscribe(value => visualBonus = value)
+
+const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
 let existingSocket: Socket
 

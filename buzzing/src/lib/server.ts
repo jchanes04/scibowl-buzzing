@@ -100,6 +100,8 @@ io.on('connection', async socket => {
     socket.on('newQuestion', (question: NewQuestionData) => {
         if (member.type !== "moderator")  return
         
+        console.log("question", question)
+
         game.newQuestion(question)
         socket.to(gameId).emit('questionOpen', question)
     })
@@ -112,7 +114,7 @@ io.on('connection', async socket => {
 
     socket.on('startTimer', () => {
         if (member.type !== "moderator" || game.state.questionState !== "open") return
-        
+
         const serverLength = game.state.currentQuestion.bonus ?
             game.state.currentQuestion.visual
                 ? game.times.visual[0] + game.times.visual[1]
@@ -132,6 +134,14 @@ io.on('connection', async socket => {
         game.timer.once('end', () => {
             socket.to(gameId).emit('timerEnd')
         })
+    })
+
+    socket.on('stopTimer', () => {
+        if (member.type !== "moderator") return
+
+        game.timer.end()
+        game.timer.removeAllListeners('end')
+        socket.to(gameId).emit('timerEnd')
     })
 
     socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
@@ -212,7 +222,7 @@ io.on('connection', async socket => {
     socket.on('kickPlayer', (id: string) => {
         if (member.type !== "moderator") return
         
-        const removed = game.removeMember(id)
+        const removed = game.kickPlayer(id)
         
         if (removed !== null) {
             socket.to(id).emit('kicked')
@@ -298,7 +308,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('claimCaptain', () => {
-        if (member.type !== "player") return
+        if (member.type !== "player" || game.state.questionState !== "idle") return
 
         member.team.captainId = member.id
         io.to(gameId).emit('changeCaptain', member.team.id, member.id)

@@ -7,7 +7,7 @@
     import chatMessagesStore from '$lib/stores/chatMessages';
     import teamsStore, { type ClientTeamData } from '$lib/stores/teams';
     import gameStore from '$lib/stores/game';
-    import { gameClockStore } from '$lib/stores/timer';
+    import { gameClockStore, timerStore } from '$lib/stores/timer';
     import getSocket from "$lib/socket"
     import type { Writable } from 'svelte/store';
     import Confirm from './Confirm.svelte';
@@ -247,6 +247,12 @@
         socket.emit('stopGameClock')
         debug.addEvent("stopGameClock", {})
     }
+
+    function stopTimer() {
+        timerStore.stop()
+
+        socket.emit("stopTimer")
+    }
 </script>
 
 <div id="buttons">
@@ -303,7 +309,12 @@
         </div>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
-        <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
+        <div>
+            <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
+            <button on:click={stopTimer} disabled={$timerStore === 0}>
+                <Icon svg={stopSvg} />
+            </button>
+        </div>
         <br />
         <div class="multi-choice" class:disabled={!scoringEnabled}>
             <label for="correct-radio">

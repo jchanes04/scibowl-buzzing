@@ -1,6 +1,5 @@
 <script lang="ts">
     import type Debugger from "$lib/classes/Debugger";
-    import buzzAudioStore from "$lib/stores/buzzAudio";
     import gameStore from "$lib/stores/game";
     import getSocket from "$lib/socket";
     import { timerStore, gameClockStore } from "$lib/stores/timer";
@@ -8,13 +7,15 @@
     import myMember from "$lib/stores/myMember";
     import visualBonus from "$lib/stores/visualBonus";
     import teamsStore from "$lib/stores/teams"
+    import { browser } from "$app/environment";
     
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
+    const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
     function buzz() {
         socket.emit('buzz');
-        $buzzAudioStore?.play()
+        buzzAudio?.play()
 
         gameStore.buzz($myMember.team?.id || "")
         timerStore.pause()
@@ -47,7 +48,7 @@
             </div>`
     }
 
-    $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""].captainId === $myMember.id
+    $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""].captainId === $myMember.id || $gameStore.state.questionState !== "idle"
     $: visualBonusEnabled = $gameStore.state.questionState === "open"
             && $gameStore.state.currentQuestion.bonus
             && $gameStore.state.currentQuestion.visual
