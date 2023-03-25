@@ -444,7 +444,7 @@ export class Game {
     }
 
     clearScores() {
-        
+        this.scoreboard = new GameScoreboard({})
     }
 
     addSpectator() {

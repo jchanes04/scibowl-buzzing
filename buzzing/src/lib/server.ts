@@ -308,7 +308,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('claimCaptain', () => {
-        if (member.type !== "player" || game.state.questionState !== "idle") return
+        if (member.type !== "player") return
 
         member.team.captainId = member.id
         io.to(gameId).emit('changeCaptain', member.team.id, member.id)

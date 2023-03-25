@@ -21,8 +21,7 @@
 
     $: rowNumber = Math.max(...Object.keys($gameStore.scores).map(Number))
     $: rowArray = Array.from({length: rowNumber}, (_, i) => i + 1)
-    $: players = {
-        ...Object.values($gameStore.scores).reduce((acc, s) => {
+    $: playersFromScores = Object.values($gameStore.scores).reduce((acc, s) => {
             for (const t of Object.keys(s.tossup)) {
                 if (!acc[t]) {
                     acc[t] = [s.tossup[t].playerId]
@@ -31,15 +30,20 @@
                 }
             }
             return acc
-        }, {} as Record<string, string[]>),
-        ...Object.entries($teamsStore).reduce((acc, [teamId, team]) => {
-            if (!Object.values($gameStore.scores).some(s => s.tossup[teamId])) {
-                acc[teamId] = Object.keys(team.players)
-                return acc
-            } else {
-                return acc
-            }
         }, {} as Record<string, string[]>)
+    $: playersFromTeams = Object.entries($teamsStore).reduce((acc, [teamId, team]) => {
+            acc[teamId] = Object.keys(team.players)
+            return acc
+        }, {} as Record<string, string[]>)
+    $: players = combinePlayersLists(playersFromScores, playersFromTeams)
+
+    function combinePlayersLists(list1: Record<string, string[]>, list2: Record<string, string[]>) {
+        const list: Record<string, string[]> = {}
+        const keys = new Set([...Object.keys(list1), ...Object.keys(list2)])
+        for (const teamId of keys) {
+            list[teamId] = [...(list1[teamId] || []), ...(list2[teamId] || []).filter(x => !(list1[teamId] || []).includes(x))]
+        }
+        return list
     }
 
     const categories: Record<Category, string> = {

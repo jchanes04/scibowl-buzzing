@@ -199,7 +199,7 @@ export function createSocket() {
         chatMessagesStore.update(oldList => {
             oldList.push({
                 type: "warning",
-                text: "Buzz failed"
+                text: "You have been outbuzzed"
             })
             return oldList
         })
@@ -387,8 +387,11 @@ export function createSocket() {
 
     socket.on('timerStart', (length: number) => {
         timerStore.start(length)
-        const questionOpen = !myMember.moderator && 
-            (!game.state.currentQuestion?.bonus || game.state.currentQuestion.teamId === myMember.team?.id )
+        const tossupOpen = !game.state.currentQuestion?.bonus && !game.state.buzzedTeamIds.includes(myMember.team!.id)
+        const bonusOpen = !!game.state.currentQuestion?.bonus
+            && (game.state.currentQuestion?.teamId === myMember.team?.id
+            && (teams[myMember.team?.id].captainId === myMember.id || teams[myMember.team?.id].captainId === null))
+        const questionOpen = !myMember.moderator && (tossupOpen || bonusOpen)
         gameStore.openQuestion(questionOpen)
     })
 

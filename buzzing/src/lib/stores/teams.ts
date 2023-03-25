@@ -42,7 +42,7 @@ export function createTeamStore(teamData: TeamData) {
         id: teamData.id,
         name: teamData.name,
         type: teamData.type,
-        captainId: null
+        captainId: teamData.captainId
     })
     const derivedTeamStore = derived([players, teamDataStore], ([ players, data ]) => ({
         ...data,

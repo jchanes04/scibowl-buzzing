@@ -48,7 +48,7 @@
             </div>`
     }
 
-    $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""].captainId === $myMember.id || $gameStore.state.questionState !== "idle"
+    $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""].captainId === $myMember.id
     $: visualBonusEnabled = $gameStore.state.questionState === "open"
             && $gameStore.state.currentQuestion.bonus
             && $gameStore.state.currentQuestion.visual
