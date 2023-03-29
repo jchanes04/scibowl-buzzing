@@ -1,10 +1,14 @@
-import type { Actions } from "./$types";
+import type { Actions, PageServerLoad } from "./$types";
 import argon2 from 'argon2'
 import { createUser, generateConfirmationCode, type User } from "$lib/mongo";
 import { generateToken } from "$lib/authentication";
 import { redirect, fail } from "@sveltejs/kit";
 import { userSchema } from "$lib/schemas/user";
 import { sendVerificationEmail } from "$lib/mail";
+
+export const load: PageServerLoad = () => {
+    throw redirect("/", 302)
+}
 
 export const actions: Actions = {
     default: async ({ request, cookies }) => {

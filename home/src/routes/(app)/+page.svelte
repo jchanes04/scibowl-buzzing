@@ -5,14 +5,14 @@
 
 <svelte:head>
     <title>Enloe Science Bowl Online Tournament</title>
-    <meta name="description" content="An online Science Bowl tournament hosted by Enloe High School. Registration is open now, sign up soon before spots run out!" />
+    <meta name="description" content="An online Science Bowl tournament hosted by Enloe High School." />
 </svelte:head>
 
 <main>    
     <section id="hero">
         <h1>ESBOT</h1>
         <h3 style="margin-top: 0;">Enloe Science Bowl Online Tournament</h3>
-        <h3 style="margin-bottom: 0.2em;"><a href="/register">Registration</a> for ESBOT 2023 is open</h3>
+        <h3 style="margin-bottom: 0.2em;">Registration for ESBOT 2023 has closed</h3>
         <br /><br />
     </section>
 
