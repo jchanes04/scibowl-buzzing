@@ -77,6 +77,7 @@
         border-radius: 0 0.5em 0.5em 0;
         font-size: 16px;
         height: 100%;
-        width: 9ch;
+        width: 10ch;
+        padding: 0.2em 0.3em;
     }
 </style>

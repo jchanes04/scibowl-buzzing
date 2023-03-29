@@ -12,6 +12,7 @@
     }
 
     async function handleMinuteInput() {
+        await tick()
         updateValue()
         if (minutesString.length >= 2) {
             minutesInput.blur()
@@ -28,7 +29,7 @@
         on:focus={() => minutesString = ""} on:input={handleMinuteInput} />
     <span>:</span>
     <input type="text" bind:this={secondsInput} bind:value={secondsString}
-        on:focus={async () => {await tick(); secondsString = ""; console.log('x')}} on:change={updateValue} />
+        on:focus={async () => {await tick(); secondsString = ""}} on:change={updateValue} />
 </div>
 
 <style lang="scss">

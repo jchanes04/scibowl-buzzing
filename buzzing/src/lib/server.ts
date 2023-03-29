@@ -21,9 +21,7 @@ export const io = new Server(httpsServer, {
         credentials: true
     },
     allowRequest: async (req, callback) => {
-        console.log('allowing')
         const gameToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
-        console.log(gameToken)
         const tokenData = await getDataFromToken(gameToken || "")
         if (!gameToken || !tokenData) {
             return callback(null, false)
@@ -66,7 +64,7 @@ io.on('connection', async socket => {
 
     if (!spectator) {
         socket.emit('authenticated', { name: game.people[memberId].name })
-        if (game.gameClock.time > 0) {
+        if (game.gameClock.time > 0 && game.gameClock.live) {
             socket.emit('gameClockUpdate', game.gameClock.time)
         }
     }
@@ -102,6 +100,8 @@ io.on('connection', async socket => {
     socket.on('newQuestion', (question: NewQuestionData) => {
         if (member.type !== "moderator")  return
         
+        console.log("question", question)
+
         game.newQuestion(question)
         socket.to(gameId).emit('questionOpen', question)
     })
@@ -114,7 +114,7 @@ io.on('connection', async socket => {
 
     socket.on('startTimer', () => {
         if (member.type !== "moderator" || game.state.questionState !== "open") return
-        
+
         const serverLength = game.state.currentQuestion.bonus ?
             game.state.currentQuestion.visual
                 ? game.times.visual[0] + game.times.visual[1]
@@ -134,6 +134,14 @@ io.on('connection', async socket => {
         game.timer.once('end', () => {
             socket.to(gameId).emit('timerEnd')
         })
+    })
+
+    socket.on('stopTimer', () => {
+        if (member.type !== "moderator") return
+
+        game.timer.end()
+        game.timer.removeAllListeners('end')
+        socket.to(gameId).emit('timerEnd')
     })
 
     socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
@@ -214,7 +222,7 @@ io.on('connection', async socket => {
     socket.on('kickPlayer', (id: string) => {
         if (member.type !== "moderator") return
         
-        const removed = game.removeMember(id)
+        const removed = game.kickPlayer(id)
         
         if (removed !== null) {
             socket.to(id).emit('kicked')

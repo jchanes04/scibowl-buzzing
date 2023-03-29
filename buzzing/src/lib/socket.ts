@@ -5,7 +5,6 @@ import playersStore, { createPlayerStore, type PlayerStore } from "./stores/play
 import myMemberStore, { type MyMember } from "./stores/myMember"
 import chatMessagesStore, { type ChatMessage } from "./stores/chatMessages"
 import gameStore, { type ClientGameData } from "./stores/game"
-import buzzAudioStore from "./stores/buzzAudio"
 import { timerStore, gameClockStore } from "./stores/timer"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import visualBonusStore from "./stores/visualBonus"
@@ -36,14 +35,13 @@ gameStore.subscribe(value => game = value)
 let myMember: MyMember
 myMemberStore.subscribe(value => myMember = value)
 
-let buzzAudio: HTMLAudioElement | null
-buzzAudioStore.subscribe(value => buzzAudio = value)
-
 let timer: number
 timerStore.subscribe(value => timer = value)
 
 let visualBonus: { url: string | null, window: Window | null }
 visualBonusStore.subscribe(value => visualBonus = value)
+
+const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
 let existingSocket: Socket
 
@@ -201,7 +199,7 @@ export function createSocket() {
         chatMessagesStore.update(oldList => {
             oldList.push({
                 type: "warning",
-                text: "Buzz failed"
+                text: "You have been outbuzzed"
             })
             return oldList
         })
@@ -247,7 +245,6 @@ export function createSocket() {
                     })
                 }
             } else {
-                console.log('correct tossup')
                 gameStore.scoreboard.correctTossup(number, playerId, teamId, category)
             }
 
@@ -293,7 +290,7 @@ export function createSocket() {
             })
         }
 
-        if (open) {
+        if (open && game.state.currentQuestion) {
             if (myMember.team && game.state.buzzedTeamIds.includes(myMember.team.id)) {
                 gameStore.openQuestion(false)
             } else {
@@ -386,13 +383,15 @@ export function createSocket() {
             url,
             window: value.window
         }))
-        console.log("url updated", url)
     })
 
     socket.on('timerStart', (length: number) => {
         timerStore.start(length)
-        const questionOpen = !myMember.moderator && 
-            (!game.state.currentQuestion?.bonus || game.state.currentQuestion.teamId === myMember.team?.id )
+        const tossupOpen = !game.state.currentQuestion?.bonus && !game.state.buzzedTeamIds.includes(myMember.team!.id)
+        const bonusOpen = !!game.state.currentQuestion?.bonus
+            && (game.state.currentQuestion?.teamId === myMember.team?.id
+            && (teams[myMember.team?.id].captainId === myMember.id || teams[myMember.team?.id].captainId === null))
+        const questionOpen = !myMember.moderator && (tossupOpen || bonusOpen)
         gameStore.openQuestion(questionOpen)
     })
 

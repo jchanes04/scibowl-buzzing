@@ -10,7 +10,7 @@ export const actions = {
         const game = getGameFromCode(joinCode)
 
         if (joinCode && game) {
-            throw redirect(302, "/join/" + game.id)
+            throw redirect(302, "/join/" + game.id + "?code=" + game.joinCode)
         } else {
             return fail(400, { error: "Invalid code" })
         }

@@ -30,16 +30,18 @@
     <ul>
         {#each Object.values($teamsStore) as team}
             <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
-                {team.name + ": " + sumQuestionScores($gameStore.scores, team.id)}
+                <h1><span style="font-weight:200;">{team.name} –</span> {sumQuestionScores($gameStore.scores, team.id)}</h1>
                 {#if team.type !== "individual"}
                     <ul>
                         {#each Object.values(team.players) as player}
-                            <li class:captain={player.id === team.captainId}>
+                            <li class:captain={player.id === team.captainId} style="margin-left:.75em; font-size:20px;">
                                 {player.name}
                             </li>
                         {/each}
                     </ul>
+                    
                 {/if}
+                <br>
             </li>
         {/each}
     </ul>
@@ -63,11 +65,18 @@
         border-radius: 1em;
         background: $background-1;
     }
+    h1{
+        font-size: 30px;
+        margin-left: 0.5em;
+        margin-top:.25em;
+        margin-bottom:0;
+    }
 
     h2 {
         font-size: 26px;
         margin-top: 0.25em;
         margin-left: 0.5em;
+        margin-bottom:0;
     }
 
     ul {

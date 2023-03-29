@@ -6,6 +6,9 @@
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "./Confirm.svelte";
+    import Icon from "./Icon.svelte";
+    import kickSvg from "$lib/icons/kick.svg?raw"
+    import badgeSvg from "$lib/icons/badge.svg?raw"
 
     export let member: PlayerStore | ModeratorStore
     export let showControls = false
@@ -62,8 +65,12 @@
         <span class="team">({$teamsStore[$member.team.id]?.name})</span>
         {#if showControls}
             <div class="controls">
-                <button class="icon kick" on:click={kick} />
-                <button class="icon promote" on:click={promote} />
+                <button on:click={kick}>
+                    <Icon svg={kickSvg} />
+                </button>
+                <button on:click={promote}>
+                    <Icon svg={badgeSvg} />
+                </button>
             </div>
         {/if}
     </li>
@@ -99,18 +106,14 @@
         visibility: hidden;
     }
 
-    .icon {
+    button {
         display: inline-block;
         height: 1em;
         width: 1em;
         cursor: pointer;
-    }
-
-    .kick {
-        background-image: url('/shield.svg');
-    }
-
-    .promote {
-        background-image: url('/badge.svg');
+        border: none;
+        background: transparent;
+        padding: 0;
+        font-size: 20px;
     }
 </style>

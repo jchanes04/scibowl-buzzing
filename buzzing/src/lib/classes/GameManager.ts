@@ -3,11 +3,6 @@ import { createJoinCode } from '$lib/functions/createId'
 import { Team } from './Team'
 import type { Moderator } from './Moderator'
 
-const defaultTimes = {
-    tossup: [5, 2],
-    bonus: [20, 2]
-} satisfies GameTimes
-
 // basically just a fancy array with methods and shit
 
 export class GameManager {
@@ -37,7 +32,7 @@ export class GameManager {
         this.joinCodes.push(joinCode)
         const teams = options.teamNames.map(n => new Team(n))
 
-        const game = new Game({ ...options, teams, joinCode, times: defaultTimes })
+        const game = new Game({ ...options, teams, joinCode })
         this.games[game.id] = game
         
         return game

@@ -7,12 +7,16 @@
     import chatMessagesStore from '$lib/stores/chatMessages';
     import teamsStore, { type ClientTeamData } from '$lib/stores/teams';
     import gameStore from '$lib/stores/game';
-    import { gameClockStore } from '$lib/stores/timer';
+    import { gameClockStore, timerStore } from '$lib/stores/timer';
     import getSocket from "$lib/socket"
     import type { Writable } from 'svelte/store';
     import Confirm from './Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
     import ExpandedScoreboard from './ExpandedScoreboard.svelte';
+    import Icon from './Icon.svelte';
+    import playSvg from "$lib/icons/play.svg?raw"
+    import pausePlaySvg from "$lib/icons/pause-play.svg?raw"
+    import stopSvg from "$lib/icons/stop.svg?raw"
     
     let teamSelectValue: ClientTeamData | undefined
     let selectedCategory: Category | ""
@@ -243,6 +247,12 @@
         socket.emit('stopGameClock')
         debug.addEvent("stopGameClock", {})
     }
+
+    function stopTimer() {
+        timerStore.stop()
+
+        socket.emit("stopTimer")
+    }
 </script>
 
 <div id="buttons">
@@ -299,7 +309,12 @@
         </div>
     </ControlSection>
     <ControlSection title="Scoring" style="display: flex; flex-direction: column; align-items: center;">
-        <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
+        <div>
+            <button on:click={startTimer} id="start-timer" disabled={startTimerDisabled || $gameStore.state.questionState !== "open"}>Start Timer</button>
+            <button on:click={stopTimer} disabled={$timerStore === 0}>
+                <Icon svg={stopSvg} />
+            </button>
+        </div>
         <br />
         <div class="multi-choice" class:disabled={!scoringEnabled}>
             <label for="correct-radio">
@@ -325,9 +340,15 @@
     <ControlSection title="Game Control">
         <TimeEntry bind:value={gameClockTime} />
         <br /><br />
-        <button disabled={startGameClockDisabled || gameClockTime === 0} on:click={startGameClock}>▶</button>
-        <button disabled={pauseGameClockDisabled} on:click={pauseGameClock}>⏯</button>
-        <button disabled={stopGameClockDisabled} on:click={stopGameClock}>⏹</button>
+        <button disabled={startGameClockDisabled || gameClockTime === 0} on:click={startGameClock}>
+            <Icon svg={playSvg} />
+        </button>
+        <button disabled={pauseGameClockDisabled} on:click={pauseGameClock}>
+            <Icon svg={pausePlaySvg} />
+        </button>
+        <button disabled={stopGameClockDisabled} on:click={stopGameClock}>
+            <Icon svg={stopSvg} />
+        </button>
         <br /><br />
         <button on:click={endGame} id="endGame">End Game</button>
     </ControlSection>

@@ -6,21 +6,15 @@
     import Scoreboard from '$lib/components/Scoreboard.svelte'
 
     import type { PageServerData } from "./$types"
-    import { browser } from '$app/environment'
 
-    import Debugger from '$lib/classes/Debugger';
-    import { setContext } from 'svelte';
-    import { timerStore } from "$lib/stores/timer"
     import gameStore from "$lib/stores/game";
     import teamsStore, { createTeamStore } from "$lib/stores/teams";
     import playersStore, { createPlayerStore } from "$lib/stores/players";
     import moderatorsStore, { createModeratorStore } from "$lib/stores/moderators";
-    import myMemberStore from "$lib/stores/myMember"
     import { page } from "$app/stores";
-    import socket from "$lib/socket";
 
     export let data: Required<PageServerData>
-    let { gameInfo, teamList, moderatorList, playerList } = data
+    let { gameInfo, teamList, moderatorList, playerList, scores } = data
 
     $gameStore = {
         id: $page.params.id,
@@ -31,7 +25,8 @@
             currentQuestion: null,
             buzzingEnabled: false,
             buzzedTeamIds: []
-        }
+        },
+        scores
     }
 
     for (const t of Object.values(teamList)) {
@@ -60,7 +55,7 @@
 
 <main>
     <TopBar gameName={gameInfo.name} joinCode="X" spectator={true}>
-        <Timer on:end={() => gameStore.disableBuzzing()} />
+        <Timer />
     </TopBar>
     <MemberList />
     <Scoreboard />

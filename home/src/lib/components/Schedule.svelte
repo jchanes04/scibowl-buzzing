@@ -18,23 +18,23 @@
         </tr>
         <tr>
             <td>Round Robin 2</td>
-            <td>10:45 - 11:25</td>
+            <td>10:40 - 11:20</td>
         </tr>
         <tr>
             <td>Round Robin 3</td>
-            <td>11:30 - 12:10</td>
+            <td>11:20 - 12:00</td>
         </tr>
         <tr>
             <td>Round Robin 4</td>
-            <td>12:15 - 12:55</td>
+            <td>12:00 - 12:40</td>
         </tr>
         <tr>
             <td>Round Robin 5</td>
-            <td>1:00 - 1:40</td>
+            <td>12:40 - 1:20</td>
         </tr>
         <tr>
             <td>Lunch</td>
-            <td>1:45 - 2:45</td>
+            <td>1:20 - 2:20</td>
         </tr>
     </table>
     <table>
@@ -44,35 +44,39 @@
         </tr>
         <tr>
             <td>DE 6</td>
-            <td>2:50 - 3:20</td>
+            <td>2:20 - 2:55</td>
         </tr>
         <tr>
             <td>DE 7</td>
-            <td>3:25 - 3:55</td>
+            <td>2:55 - 3:30</td>
         </tr>
         <tr>
             <td>DE 8</td>
-            <td>4:00 - 4:30</td>
+            <td>3:30 - 4:05</td>
         </tr>
         <tr>
             <td>DE 9</td>
-            <td>4:35 - 5:05</td>
+            <td>4:05 - 4:40</td>
         </tr>
         <tr>
             <td>DE 10</td>
-            <td>5:10 - 5:40</td>
+            <td>4:40 - 5:15</td>
         </tr>
         <tr>
-            <td>DE 11 (Semifinals)</td>
-            <td>5:45 - 6:15</td>
+            <td>DE 11</td>
+            <td>5:15 - 5:50</td>
         </tr>
         <tr>
-            <td>DE 12 (Finals)</td>
-            <td>6:20 - 6:50</td>
+            <td>DE 12 (Semifinals)</td>
+            <td>5:50 - 6:25</td>
+        </tr>
+        <tr>
+            <td>DE 13 (Finals)</td>
+            <td>6:25 - 7:00</td>
         </tr>
         <tr>
             <td>Closing and Awards</td>
-            <td>7:00 - 7:15</td>
+            <td>7:00 - 7:20</td>
         </tr>
     </table>
 </div>

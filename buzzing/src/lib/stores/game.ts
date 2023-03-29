@@ -74,7 +74,6 @@ export default {
     },
     stopQuestion: () => {
         store.update(value => {
-            value.state.questionState = "open"
             value.state.buzzingEnabled = false
             return value
         })
@@ -108,7 +107,6 @@ export default {
                 teamId,
                 category
             )
-            console.log(scoreboard.scores)
             store.update(value => {
                 value.scores = scoreboard.scores
                 return value

@@ -36,6 +36,7 @@ export const load = async function({ params, cookies, isDataRequest }) {
             settings: game.settings,
             times: game.times
         },
+        scores: game.scoreboard.scores,
         playerList,
         teamList,
         moderatorList

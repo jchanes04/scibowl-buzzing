@@ -84,7 +84,7 @@
 
 <main>
     <TopBar gameName={gameInfo.name} joinCode={gameInfo.joinCode}>
-        <Timer on:end={() => {gameStore.disableBuzzing(); console.log('end')}} />
+        <Timer on:end={() => gameStore.disableBuzzing()} />
     </TopBar>
     <MemberList />
     <Scoreboard />

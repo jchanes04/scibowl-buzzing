@@ -1,15 +1,23 @@
-<script lang="ts" context="module">
-    import { timerStore, gameClockStore } from "$lib/stores/timer"
-</script>
-
 <script lang="ts">
+    import { browser } from "$app/environment";
+    import { timerStore, gameClockStore } from "$lib/stores/timer"
+    import gameStore from "$lib/stores/game"
     import { createEventDispatcher } from "svelte";
 
     const dispatch = createEventDispatcher()
+    const fiveSecondAudio = browser ? new Audio('/five-second.mp3') : null
 
     timerStore.addEventListener?.("end", () => {
         dispatch("end")
     })
+
+    function handleTimerUpdate() {
+        if ($timerStore === 5 && $gameStore.state.currentQuestion?.bonus) {
+            fiveSecondAudio?.play()
+        }
+    }
+
+    $: $timerStore, handleTimerUpdate()
 </script>
 
 <div>
