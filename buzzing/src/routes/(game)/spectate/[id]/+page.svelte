@@ -1,5 +1,5 @@
 <script lang="ts">
-    import MemberList from "$lib/components/MemberList.svelte";
+    import MemberList from "../../MemberList.svelte";
     import Chatbox from '../../Chatbox.svelte'
     import TopBar from '$lib/components/TopBar.svelte'
     import Timer from '../../Timer.svelte'

@@ -1,6 +1,5 @@
 import { Collection, MongoClient, type Filter } from "mongodb"
 import { env } from "$env/dynamic/private"
-import type { Scores } from "$lib/classes/GameScoreboard"
 import type { NamedScores } from "$lib/functions/scoreboard"
 
 const client = new MongoClient(env.DATABASE_URL, { directConnection: true })
