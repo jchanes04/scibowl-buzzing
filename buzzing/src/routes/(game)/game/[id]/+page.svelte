@@ -1,11 +1,11 @@
 <script lang="ts">
-    import MemberList from "$lib/components/MemberList.svelte";
-    import Chatbox from '$lib/components/Chatbox.svelte'
+    import MemberList from "../../MemberList.svelte";
+    import Chatbox from '../../Chatbox.svelte'
     import TopBar from '$lib/components/TopBar.svelte'
-    import Timer from '$lib/components/Timer.svelte'
-    import PlayerControls from '$lib/components/PlayerControls.svelte'
-    import ReaderControls from '$lib/components/ReaderControls.svelte'
-    import Scoreboard from '$lib/components/Scoreboard.svelte'
+    import Timer from '../../Timer.svelte'
+    import PlayerControls from '../PlayerControls.svelte'
+    import ReaderControls from '../ReaderControls.svelte'
+    import Scoreboard from '../../Scoreboard.svelte'
 
     import type { PageServerData } from "./$types"
     import { browser } from '$app/environment'

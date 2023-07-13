@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ConnectedIndicator from '$lib/components/ConnectedIndicator.svelte';
+    import ConnectedIndicator from '../ConnectedIndicator.svelte';
     import HeaderCompact from '$lib/components/HeaderCompact.svelte'
     import { setContext } from 'svelte';
     import { writable } from 'svelte/store';

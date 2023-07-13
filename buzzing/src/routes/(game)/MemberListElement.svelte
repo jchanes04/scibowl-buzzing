@@ -5,8 +5,8 @@
     import teamsStore from "$lib/stores/teams";
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
-    import Confirm from "./Confirm.svelte";
-    import Icon from "./Icon.svelte";
+    import Confirm from "$lib/components/Confirm.svelte";
+    import Icon from "$lib/components/Icon.svelte";
     import kickSvg from "$lib/icons/kick.svg?raw"
     import badgeSvg from "$lib/icons/badge.svg?raw"
 

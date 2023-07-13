@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ControlSection from '$lib/components/ControlSection.svelte'
+    import ControlSection from './ControlSection.svelte'
     import Select from 'svelte-select'
     import type { Category } from '$lib/classes/Game';
     import { getContext } from 'svelte';
@@ -10,10 +10,10 @@
     import { gameClockStore, timerStore } from '$lib/stores/timer';
     import getSocket from "$lib/socket"
     import type { Writable } from 'svelte/store';
-    import Confirm from './Confirm.svelte';
+    import Confirm from '$lib/components/Confirm.svelte';
     import TimeEntry from './TimeEntry.svelte';
     import ExpandedScoreboard from './ExpandedScoreboard.svelte';
-    import Icon from './Icon.svelte';
+    import Icon from '$lib/components/Icon.svelte';
     import playSvg from "$lib/icons/play.svg?raw"
     import pausePlaySvg from "$lib/icons/pause-play.svg?raw"
     import stopSvg from "$lib/icons/stop.svg?raw"

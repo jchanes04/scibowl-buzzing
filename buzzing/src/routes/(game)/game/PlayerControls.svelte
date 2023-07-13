@@ -8,7 +8,7 @@
     import visualBonus from "$lib/stores/visualBonus";
     import teamsStore from "$lib/stores/teams"
     import { browser } from "$app/environment";
-    import ExpandedScoreboardPlayer from "./ExpandedScoreboardPlayer.svelte";
+    import ExpandedScoreboardPlayer from "../ExpandedScoreboardPlayer.svelte";
     
     const socket = getSocket()
     const debug: Debugger = getContext('debug')

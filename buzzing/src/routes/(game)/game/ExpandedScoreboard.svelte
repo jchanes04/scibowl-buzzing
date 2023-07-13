@@ -7,7 +7,7 @@
     import { convertToCSV } from "$lib/functions/scoreboard";
     import ScoreboardTableCell from "./ScoreboardTableCell.svelte";
     import getSocket from "$lib/socket";
-    import Confirm from "./Confirm.svelte";
+    import Confirm from "$lib/components/Confirm.svelte";
     import type { Writable } from "svelte/store";
 
     const socket = getSocket()
