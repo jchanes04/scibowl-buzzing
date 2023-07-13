@@ -14,20 +14,22 @@ type TossupScore = {
     scoreType: ScoreType
 }
 
+export type Scores = Record<number, QuestionPairScore>
+
 export interface GameScoreboard {
     pointValues: {
         tossup: number,
         bonus: number,
         penalty: number
     },
-    scores: Record<number, QuestionPairScore>
+    scores: Scores
 }
 
 // main purpose is to keep track of point values for the game
 
 export class GameScoreboard {
     constructor(
-        scores: Record<number, QuestionPairScore> = {},
+        scores: Scores = {},
         pointValues: {
             tossup?: number,
             bonus?: number,

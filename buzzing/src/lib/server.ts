@@ -9,6 +9,8 @@ import type { Category, GameSettings, NewQuestionData, ScoreType } from '$lib/cl
 import { getDataFromToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
+import { updateGameScores } from './mongo'
+import { addNamesToScores } from './functions/scoreboard'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -100,8 +102,6 @@ io.on('connection', async socket => {
     socket.on('newQuestion', (question: NewQuestionData) => {
         if (member.type !== "moderator")  return
         
-        console.log("question", question)
-
         game.newQuestion(question)
         socket.to(gameId).emit('questionOpen', question)
     })
@@ -172,6 +172,9 @@ io.on('connection', async socket => {
         } else {
             game.timer.end()
         }
+
+        const scoresWithNames = addNamesToScores(game, game.scoreboard.scores)
+        updateGameScores(gameId, game.name, scoresWithNames)
     })
 
     socket.on("markDead", () => {

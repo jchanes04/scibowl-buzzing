@@ -1,7 +1,6 @@
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
-import type { ClientTeam } from "$lib/classes/client/ClientTeam"
-import type { Category, ScoreType } from "$lib/classes/Game"
-import type { QuestionPairScore } from "$lib/classes/GameScoreboard"
+import type { Category, Game, ScoreType } from "$lib/classes/Game"
+import type { QuestionPairScore, Scores } from "$lib/classes/GameScoreboard"
 import type { ClientTeamData } from "$lib/stores/teams"
 import { json2csv } from "json-2-csv"
 
@@ -129,4 +128,49 @@ export async function convertToCSV(
     })
 
     return csv
+}
+
+export type NamedQuestionPairScore = {
+    category: Category,
+    tossup: Record<string, NamedTossupScore>,
+    bonus: {
+        teamName: string,
+        correct: boolean
+    } | null
+}
+
+type NamedTossupScore = {
+    playerName: string,
+    scoreType: ScoreType
+}
+
+export type NamedScores = Record<number, NamedQuestionPairScore>
+
+export function addNamesToScores(game: Game, scores: Scores): NamedScores {
+    function getTeamName(teamId: string) {
+        const teamData = game.teams[teamId]?.data ?? Object.values(game.leftPlayers).find(x => x.teamID === teamId)?.team
+        return teamData?.name || teamId
+    }
+
+    function getPlayerName(playerId: string) {
+        const player = game.players[playerId] ?? game.leftPlayers[playerId]
+        return player.name || playerId
+    }
+
+    return Object.fromEntries(Object.entries(scores).map(([number, pair]) => {
+        const namedPair: NamedQuestionPairScore = {
+            category: pair.category,
+            tossup: Object.fromEntries(Object.entries(pair.tossup).map(([teamId, tossupScore]) => {
+                return [getTeamName(teamId), {
+                    playerName: getPlayerName(tossupScore.playerId),
+                    scoreType: tossupScore.scoreType
+                }]
+            })),
+            bonus: pair.bonus ? { 
+                teamName: getTeamName(pair.bonus.teamId),
+                correct: pair.bonus.correct
+            } : null
+        }
+        return [number, namedPair]
+    }))
 }
