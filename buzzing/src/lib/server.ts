@@ -72,13 +72,13 @@ io.on('connection', async socket => {
     }
 
     socket.on('disconnect', () => {
-        if (!spectator) {
+        if (spectator) {
+            game.removeSpectator(memberId)
+        } else {
             const removed = game.removeMember(memberId)
             if (removed !== null) {
                 socket.to(gameId).emit('memberLeave', memberId)
             }
-        } else {
-            game.removeSpectator(memberId)
         }
     })
 

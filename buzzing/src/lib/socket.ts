@@ -8,7 +8,7 @@ import gameStore, { type ClientGameData } from "./stores/game"
 import { timerStore, gameClockStore } from "./stores/timer"
 import moderatorsStore, { createModeratorStore } from "./stores/moderators"
 import visualBonusStore from "./stores/visualBonus"
-import { goto } from "$app/navigation"
+import { goto, invalidateAll } from "$app/navigation"
 import type { Category, NewQuestionData, ScoreType } from "$lib/classes/Game"
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
 import type { ClientModerator } from "$lib/classes/client/ClientModerator"
@@ -142,7 +142,7 @@ export function createSocket() {
         }
     })
 
-    socket.on('promotion', (memberId: string) => {
+    socket.on('promotion', async (memberId: string) => {
         const player = players[memberId]
         const team = player.team
         if (team && player) {
@@ -164,6 +164,11 @@ export function createSocket() {
             
             if (player.id === myMember.id) {
                 myMemberStore.setMember({ memberStore: newModerator, moderator: true })
+                socket.once("disconnect", async () => {
+                    await invalidateAll()
+                    socket.connect()
+                })
+                socket.disconnect()
             }
         }
     })
