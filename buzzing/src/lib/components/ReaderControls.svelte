@@ -45,7 +45,7 @@
         || (!teamSelectValue && questionType === "bonus")
         || ((!teamSelectValue || !visualBonusFiles) && questionType === "visual")
 
-    let questionNumber: number = 0
+    let questionNumber: number = 1
     async function newQuestion() {
         if (questionType === "visual") {
             socket.emit('openVisualBonus', visualBonusFiles[0])
@@ -162,7 +162,7 @@
 
     function handleQuestionNumberChange() {
         if (questionNumber < 1) {
-            questionNumber = 0
+            questionNumber = 1
         }
     }
     
@@ -217,6 +217,15 @@
         }
 
         debug.addEvent('scoreQuestion', { selectedScore })
+    }
+
+    function markDead() {
+        socket.emit("markDead")
+
+        selectedScore = ""
+        questionNumber++
+
+        debug.addEvent("markDead", {})
     }
 
     let gameClockTime: number
@@ -334,6 +343,8 @@
             </label>
         </div>
         <button on:click={scoreQuestion} disabled={!scoringEnabled || !selectedScore}>Score</button>
+        <br />
+        <button on:click={markDead} disabled={$gameStore.state.questionState !== "open" || $gameStore.state.currentQuestion.bonus}>Mark Dead</button>
         <br />
         <button on:click={() => scoreboardExpanded = true}>Expand Scoreboard</button>
     </ControlSection>

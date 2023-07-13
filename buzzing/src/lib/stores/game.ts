@@ -136,6 +136,13 @@ export default {
                 return value
             })
         },
+        dead: (number: number, category: Category) => {
+            scoreboard.dead(number, category),
+            store.update(value => {
+                value.scores = scoreboard.scores
+                return value
+            })
+        },
         editTossup: (
             number: number,
             playerId: string,

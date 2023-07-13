@@ -146,7 +146,7 @@ io.on('connection', async socket => {
 
     socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
         if (member.type !== "moderator") return
-        if (!(game.state.questionState === "buzzed" || game.state.currentQuestion?.bonus)) return
+        if (game.state.questionState !== "buzzed" && !game.state.currentQuestion?.bonus) return
 
         const result = game.scoreQuestion(scoreType)
 
@@ -172,6 +172,18 @@ io.on('connection', async socket => {
         } else {
             game.timer.end()
         }
+    })
+
+    socket.on("markDead", () => {
+        if (member.type !== "moderator") return
+        const result = game.markDead()
+        game.timer.end()
+
+        if (!result) return
+
+        const { number, category } = result
+
+        io.to(gameId).emit('deadQuestion', number, category)
     })
 
     socket.on("editTossup", (

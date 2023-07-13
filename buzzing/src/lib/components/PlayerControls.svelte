@@ -8,10 +8,13 @@
     import visualBonus from "$lib/stores/visualBonus";
     import teamsStore from "$lib/stores/teams"
     import { browser } from "$app/environment";
+    import ExpandedScoreboardPlayer from "./ExpandedScoreboardPlayer.svelte";
     
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
     const buzzAudio = browser ? new Audio('/buzz.mp3') : null
+
+    let scoreboardExpanded = false
 
     function buzz() {
         socket.emit('buzz');
@@ -75,12 +78,21 @@
         <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
         <br />
         <button on:click={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
+        <br />
+        <br />
+        <button on:click={() => scoreboardExpanded = true}>Expand Scoreboard</button>
         {#if visualBonusEnabled}
             <br />
             <br />
             <button on:click={openVisual}>Open Visual Bonus</button>
         {/if}
     </div>
+
+    {#if scoreboardExpanded}
+        <div class="expanded-scoreboard-wrapper">
+            <ExpandedScoreboardPlayer on:close={() => scoreboardExpanded = false} />
+        </div>
+    {/if}
 </div>
 
 <style lang="scss">
@@ -96,6 +108,7 @@
         border-radius: 1em;
         background: $background-1;
         padding: 2em;
+        position: relative;
     }
 
     button {
@@ -117,5 +130,10 @@
     h3 {
         font-size: 32px;
         margin: 0;
+    }
+
+    .expanded-scoreboard-wrapper {
+        inset: 0;
+        position: absolute;
     }
 </style>

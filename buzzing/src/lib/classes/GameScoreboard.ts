@@ -105,6 +105,14 @@ export class GameScoreboard {
         }
     }
 
+    dead(number: number, category: Category) {
+        this.scores[number] = {
+            category,
+            tossup: {},
+            bonus: null
+        }
+    }
+
     editTossup(
         number: number,
         playerId: string,

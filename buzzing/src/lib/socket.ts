@@ -302,6 +302,19 @@ export function createSocket() {
         }
     })
 
+    socket.on("deadQuestion", (number: number, category: Category) => {
+        gameStore.scoreboard.dead(number, category)
+        timerStore.end()
+        gameStore.clearQuestion()
+        chatMessagesStore.update(oldList => {
+            oldList.push({
+                type: "warning",
+                text: "Question marked dead"
+            })
+            return oldList
+        })
+    })
+
     socket.on('tossupEdit', (
         number: number,
         playerId: string,

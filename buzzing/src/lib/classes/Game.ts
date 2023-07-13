@@ -11,24 +11,24 @@ export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
 export type Question = {
     bonus: false,
     category: Category
-    number?: number
+    number: number
 } | {
     bonus: true,
     category: Category,
     team: Team,
-    number?: number,
+    number: number,
     visual?: boolean
 }
 
 export type NewQuestionData = {
     bonus: false,
     category: Category
-    number?: number
+    number: number
 } | {
     bonus: true,
     category: Category,
     teamId: string,
-    number?: number,
+    number: number,
     visual?: boolean
 }
 
@@ -440,6 +440,25 @@ export class Game {
             category: currentQuestion.category,
             number,
             bonus
+        }
+    }
+
+    markDead() {
+        if (!this.state.currentQuestion) return null
+        const number = this.state.currentQuestion.number
+        const category = this.state.currentQuestion.category
+        this.scoreboard.dead(number, category)
+
+        this.state = {
+            questionState: "idle",
+            currentBuzzer: null,
+            currentQuestion: null,
+            buzzedTeams: {}
+        }
+
+        return {
+            number,
+            category
         }
     }
 
