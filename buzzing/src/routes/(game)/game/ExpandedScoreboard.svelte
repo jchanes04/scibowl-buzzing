@@ -55,12 +55,6 @@
         "energy": "EN"
     }
 
-    const scoreTypes: Record<ScoreType, string> = {
-        "correct": "C",
-        "incorrect": "I",
-        "penalty": "P"
-    }
-
     async function exportScores() {
         const csv = await convertToCSV($teamsStore, $playersStore, players, $gameStore.scores)
         const url = window.URL.createObjectURL(new Blob([csv], { type: "plain/text" }))

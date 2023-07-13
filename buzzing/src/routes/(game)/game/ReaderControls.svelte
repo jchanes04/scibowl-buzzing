@@ -338,7 +338,7 @@
             </label>
             <label for="penalty-radio">
                 <input type="radio" id="penalty-radio" name="selected-score" value="penalty"
-                    bind:group={selectedScore} disabled={!scoringEnabled}>
+                    bind:group={selectedScore} disabled={!scoringEnabled || $gameStore.state.currentQuestion?.bonus}>
                 <span>Penalty</span>
             </label>
         </div>
