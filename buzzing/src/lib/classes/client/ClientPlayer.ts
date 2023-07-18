@@ -15,4 +15,8 @@ export class ClientPlayer {
         this.type = "player"
         this.team = teamStore
     }
+
+    rename(name: string) {
+        this.name = name
+    }
 }

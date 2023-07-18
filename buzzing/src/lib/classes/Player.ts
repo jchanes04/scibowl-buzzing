@@ -30,6 +30,10 @@ export class Player {
         this.socket = socket
     }
 
+    rename(name: string) {
+        this.name = name
+    }
+
     get data(): PlayerData {
         return {
             name: this.name,

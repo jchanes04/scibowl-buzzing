@@ -256,6 +256,18 @@ io.on('connection', async socket => {
         }
     })
 
+    socket.on('renamePlayer', (id: string, name: string) => {
+        if (member.type !== "moderator") return 
+
+        const player = game.players[id]
+
+        if (!player) return
+
+        player.rename(name)
+
+        io.to(gameId).emit("nameChange", id, name)
+    })
+
     socket.on('clearScores', () => {
         if (member.type !== "moderator") return
 

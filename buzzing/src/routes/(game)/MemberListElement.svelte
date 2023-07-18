@@ -9,6 +9,8 @@
     import Icon from "$lib/components/Icon.svelte";
     import kickSvg from "$lib/icons/kick.svg?raw"
     import badgeSvg from "$lib/icons/badge.svg?raw"
+    import editNameSvg from "$lib/icons/edit-name.svg?raw"
+    import TextField from "$lib/components/TextField.svelte";
 
     export let member: PlayerStore | ModeratorStore
     export let showControls = false
@@ -26,9 +28,7 @@
             props: {
                 title: 'Promote ' + $member.name,
                 message: 'Are you sure you want to promote ' + $member.name + ' to moderator?',
-                cancelCallback: () => {
-                    $modalStore = null
-                },
+                cancelCallback: () => $modalStore = null,
                 confirmCallback: () => {
                     socket.emit('promotePlayer', member.id)
                     $modalStore = null
@@ -43,11 +43,28 @@
             props: {
                 title: 'Kick ' + $member.name,
                 message: 'Are you sure you want to kick ' + $member.name + '?',
-                cancelCallback: () => {
-                    $modalStore = null
-                },
+                cancelCallback: () => $modalStore = null,
                 confirmCallback: () => {
                     socket.emit('kickPlayer', member.id)
+                    $modalStore = null
+                }
+            }
+        }
+    }
+
+    function rename() {
+        $modalStore = {
+            component: TextField,
+            props: {
+                title: "Rename Player",
+                message: `Change player name "${$member.name}" to :`,
+                options: {
+                    defaultValue: $member.name,
+                    fieldName: "New name"
+                },
+                cancelCallback: () => $modalStore = null,
+                confirmCallback: (value: string) => {
+                    socket.emit("renamePlayer", member.id, value)
                     $modalStore = null
                 }
             }
@@ -65,11 +82,14 @@
         <span class="team">({$teamsStore[$member.team.id]?.name})</span>
         {#if showControls}
             <div class="controls">
+                <button on:click={promote}>
+                    <Icon svg={badgeSvg} />
+                </button>
                 <button on:click={kick}>
                     <Icon svg={kickSvg} />
                 </button>
-                <button on:click={promote}>
-                    <Icon svg={badgeSvg} />
+                <button on:click={rename}>
+                    <Icon svg={editNameSvg} />
                 </button>
             </div>
         {/if}

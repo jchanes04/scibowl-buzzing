@@ -173,6 +173,10 @@ export function createSocket() {
         }
     })
 
+    socket.on('nameChange', (id: string, name: string) => {
+        playersStore.renamePlayer(id, name)
+    })
+
     socket.on('buzz', (id: string) => {
         const player = players[id]
         if (player) {

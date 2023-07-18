@@ -1,5 +1,6 @@
 <script lang="ts">
     import teamsStore from "$lib/stores/teams"
+    import playersStore from "$lib/stores/players"
     import gameStore from "$lib/stores/game"
     import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
 
@@ -28,22 +29,24 @@
 <div class="scoreboard">
     <h2>Scoreboard</h2>
     <ul>
-        {#each Object.values($teamsStore) as team}
-            <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
-                <h1><span style="font-weight:200;">{team.name} –</span> {sumQuestionScores($gameStore.scores, team.id)}</h1>
-                {#if team.type !== "individual"}
-                    <ul>
-                        {#each Object.values(team.players) as player}
-                            <li class:captain={player.id === team.captainId} style="margin-left:.75em; font-size:20px;">
-                                {player.name}
-                            </li>
-                        {/each}
-                    </ul>
-                    
-                {/if}
-                <br>
-            </li>
-        {/each}
+        {#key $playersStore}
+            {#each Object.values($teamsStore) as team}
+                <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
+                    <h1><span style="font-weight:200;">{team.name} –</span> {sumQuestionScores($gameStore.scores, team.id)}</h1>
+                    {#if team.type !== "individual"}
+                        <ul>
+                            {#each Object.values(team.players) as player}
+                                <li class:captain={player.id === team.captainId} style="margin-left:.75em; font-size:20px;">
+                                    {player.name}
+                                </li>
+                            {/each}
+                        </ul>
+                        
+                    {/if}
+                    <br>
+                </li>
+            {/each}
+        {/key}
     </ul>
 </div>
 
