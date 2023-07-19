@@ -153,8 +153,14 @@ export function addNamesToScores(game: Game, scores: Scores): NamedScores {
     }
 
     function getPlayerName(playerId: string) {
-        const player = game.players[playerId] ?? game.leftPlayers[playerId]
-        return player.name || playerId
+        const allPeople = {
+            ...game.leftModerators,
+            ...game.moderators,
+            ...game.leftPlayers,
+            ...game.players
+        }
+        const player = allPeople[playerId]
+        return player?.name || playerId
     }
 
     return Object.fromEntries(Object.entries(scores).map(([number, pair]) => {
