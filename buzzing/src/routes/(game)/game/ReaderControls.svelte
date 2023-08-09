@@ -194,9 +194,8 @@
 
     let scoreboardExpanded = false
 
-    let selectedScore: "correct" | "incorrect" | "penalty" | ""
     $: scoringEnabled = $gameStore.state.questionState === "buzzed" || $gameStore.state.currentQuestion?.bonus
-    function scoreQuestion() {
+    function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
         socket.emit('scoreQuestion', selectedScore)
 
         if (
@@ -210,7 +209,6 @@
         if (selectedScore === "correct") {
             teamSelectValue = $teamsStore[$gameStore.state.buzzedTeamIds[$gameStore.state.buzzedTeamIds.length - 1]]
         }
-        selectedScore = ""
 
         if ($gameStore.state.currentQuestion?.bonus && questionNumber !== 0) {
             questionNumber++
@@ -221,8 +219,6 @@
 
     function markDead() {
         socket.emit("markDead")
-
-        selectedScore = ""
         questionNumber++
 
         debug.addEvent("markDead", {})
@@ -325,24 +321,14 @@
             </button>
         </div>
         <br />
-        <div class="multi-choice" class:disabled={!scoringEnabled}>
-            <label for="correct-radio">
-                <input type="radio" id="correct-radio" name="selected-score" value="correct"
-                    bind:group={selectedScore} disabled={!scoringEnabled}>
-                <span>Correct</span>
-            </label>
-            <label for="incorrect-radio">
-                <input type="radio" id="incorrect-radio" name="selected-score" value="incorrect"
-                    bind:group={selectedScore} disabled={!scoringEnabled}>
-                <span>Incorrect</span>
-            </label>
-            <label for="penalty-radio">
-                <input type="radio" id="penalty-radio" name="selected-score" value="penalty"
-                    bind:group={selectedScore} disabled={!scoringEnabled || $gameStore.state.currentQuestion?.bonus}>
-                <span>Penalty</span>
-            </label>
+        <div class="scoring-buttons">
+            <button on:click={() => scoreQuestion("correct")}
+                class="scoring score-correct" disabled={!scoringEnabled}>Correct</button>
+            <button on:click={() => scoreQuestion("incorrect")}
+                class="scoring score-incorrect" disabled={!scoringEnabled}>Incorrect</button>
+            <button on:click={() => scoreQuestion("penalty")}
+                class="scoring score-penalty" disabled={!scoringEnabled || $gameStore.state.currentQuestion?.bonus}>Penalty</button>
         </div>
-        <button on:click={scoreQuestion} disabled={!scoringEnabled || !selectedScore}>Score</button>
         <br />
         <button on:click={markDead} disabled={$gameStore.state.questionState !== "open" || $gameStore.state.currentQuestion.bonus}>Mark Dead</button>
         <br />
@@ -417,27 +403,6 @@
         border: 0.1em solid $green;
     }
 
-    .multi-choice.disabled {
-        cursor: default;
-
-        label {
-            cursor: default;
-
-            span {
-                color: #333;
-
-                &:hover {
-                    text-decoration: none;
-                }
-            }
-
-            input:checked ~ span {
-                padding: 0.3em;
-                border: none;
-            }
-        }
-    }
-
     .multi-choice label {
         cursor: pointer;
         position: relative;
@@ -477,6 +442,29 @@
                 text-decoration: underline black 2px;
             }
         }
+    }
+
+    button.scoring {
+        background: transparent;
+        font-size: 18px;
+        color: black;
+        border: none;
+        padding: 0.3em;
+        width: 9ch;
+        text-align: center;
+
+        &:disabled {
+            color: #444;
+            font-weight: 500;
+        }
+    }
+
+    .score-correct:hover:not(:disabled) {
+        text-decoration: underline $green 3px;
+    }
+
+    .score-incorrect:hover:not(:disabled), .score-penalty:hover:not(:disabled) {
+        text-decoration: underline $red 3px;
     }
     
     .file-input-wrapper {
