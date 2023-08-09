@@ -46,6 +46,7 @@ export const io = new Server(httpsServer, {
 io.on('connection', async socket => {
     console.log("Socket connected")
     const cookie = socket.request.headers.cookie
+    const spectatorParam = socket.handshake.query.spectator === "true"
     const gameToken = cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
     const tokenData = await getDataFromToken(gameToken || "")
     if (!gameToken || !tokenData) {
@@ -57,7 +58,12 @@ io.on('connection', async socket => {
     const game = getGame(gameId)
     const member = game.people[memberId]
     
-    if (!game || (!member && !game.settings.spectatorsAllowed)) {
+    if (
+        !game
+        || spectator !== spectatorParam
+        || (spectator && !game.settings.spectatorsAllowed)
+        || (!spectator && !member)
+    ) {
         socket.emit('authFailed')
         return socket.disconnect()
     }

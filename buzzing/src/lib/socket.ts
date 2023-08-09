@@ -45,13 +45,16 @@ const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
 let existingSocket: Socket
 
-export function createSocket() {
+export function createSocket(spectator: boolean = false) {
     if (existingSocket) existingSocket.disconnect()
 
     const socket = io(env.PUBLIC_WS_URL as string, {
         autoConnect: false,
         secure: true,
-        withCredentials: true
+        withCredentials: true,
+        query: {
+            spectator
+        }
     })
     existingSocket = socket
 

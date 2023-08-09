@@ -12,9 +12,18 @@
     import playersStore, { createPlayerStore } from "$lib/stores/players";
     import moderatorsStore, { createModeratorStore } from "$lib/stores/moderators";
     import { page } from "$app/stores";
+    import { createSocket } from "$lib/socket";
+    import { beforeNavigate, invalidateAll } from "$app/navigation";
+    import SpectatorScoreboard from "../SpectatorScoreboard.svelte";
 
     export let data: Required<PageServerData>
     let { gameInfo, teamList, moderatorList, playerList, scores } = data
+    $: ({ gameInfo, teamList, moderatorList, playerList, scores } = data)
+
+    const socket = createSocket(true)
+    playersStore.clear()
+    moderatorsStore.clear()
+    teamsStore.clear()
 
     $gameStore = {
         id: $page.params.id,
@@ -47,6 +56,11 @@
         const moderator = createModeratorStore(m)
         moderatorsStore.addModerator(moderator)
     }
+
+    beforeNavigate(() => {
+        socket.disconnect()
+        invalidateAll()
+    })
 </script>
 
 <svelte:head>
@@ -58,30 +72,22 @@
         <Timer />
     </TopBar>
     <MemberList />
-    <Scoreboard />
+    <SpectatorScoreboard />
     <Chatbox />
 </main>
 
 <style lang="scss">
     main {
         display: grid;
-        grid-template-columns: .1fr 1fr 1fr 1fr .1fr;
+        grid-template-columns: .1fr 1fr 1fr .1fr;
         grid-template-rows: max(10vh, 80px) auto;
         grid-template-areas: 
-            "top-bar top-bar top-bar top-bar top-bar"
-            ". member-list scoreboard chat-box .";
+            "top-bar top-bar top-bar top-bar"
+            ". member-list chat-box ."
+            ". scoreboard scoreboard .";
         column-gap: 1em;
         row-gap: 1em;
         justify-self: stretch;
-
-        @media (max-width: 800px) {
-            grid-template-columns: .1fr 1fr 1fr .1fr;
-            grid-template-rows: max(10vh, 80px) auto auto;
-            grid-template-areas: 
-                "top-bar top-bar top-bar top-bar"
-                ". chat-box chat-box ."
-                ". member-list scoreboard .";
-        }
 
         @media (max-width: 500px) {
             grid-template-columns: .05fr 1fr.05fr;
