@@ -180,3 +180,109 @@ export function addNamesToScores(game: Game, scores: Scores): NamedScores {
         return [number, namedPair]
     }))
 }
+
+type CSVColumnNamed = {
+    type: "player",
+    teamName: string,
+    playerName: string,
+    entries: string[]
+} | {
+    type: "bonus",
+    teamName: string,
+    entries: string[]
+} | {
+    type: "number",
+    entries: string[]
+} | {
+    type: "category",
+    entries: string[]
+}
+
+export async function convertToCSVNamed(players: Record<string, string[]>, scores: NamedScores) {
+    const cols: CSVColumnNamed[] = [
+        {
+            type: "number",
+            entries: []
+        },
+        {
+            type: "category",
+            entries: []
+        }
+    ]
+
+    for (const [teamName, pList] of Object.entries(players)) {
+        for (const playerName of pList) {
+            cols.push({
+                type: "player",
+                teamName,
+                playerName,
+                entries: []
+            })
+        }
+        cols.push({
+            type: "bonus",
+            teamName,
+            entries: []
+        })
+    }
+
+    for (const [num, s] of Object.entries(scores)) {
+        for (const col of cols) {
+            if (col.type === "number") {
+                col.entries.push(num)
+            } else if (col.type === "category") {
+                col.entries.push(categories[s.category])
+            } else if (col.type === "player") {
+                if (s.tossup[col.teamName]?.playerName === col.playerName) {
+                    col.entries.push(scoreTypes[s.tossup[col.teamName].scoreType])
+                } else {
+                    col.entries.push("")
+                }
+            } else if (col.type === "bonus") {
+                if (s.bonus?.teamName === col.teamName) {
+                    col.entries.push(s.bonus.correct ? "C" : "I")
+                } else {
+                    col.entries.push("")
+                }
+            }
+        }
+    }
+
+    const columnNames = ["number", "category"]
+    for (const col of cols) {
+        if (col.type === "player") {
+            columnNames.push(col.playerName)
+        } else if (col.type === "bonus") {
+            columnNames.push(col.teamName + " Bonus")
+        }
+    }
+
+    const data: Record<string, string>[] = []
+    for (let i = 0; i < Object.keys(scores).length; i++) {
+        const doc: Record<string, string> = {}
+        for (const col of cols) {
+            if (col.type === "number") {
+                doc.number = col.entries[i]
+            } else if (col.type === "category") {
+                doc.category = col.entries[i]
+            } else if (col.type === "player") {
+                doc[col.playerName] = col.entries[i]
+            } else if (col.type === "bonus") {
+                doc[col.teamName + " Bonus"] = col.entries[i]
+            }
+        }
+        data.push(doc)
+    }
+
+    const csv: string = await new Promise((res, rej) => {
+        json2csv(data, (err, result) => {
+            if (err) {
+                rej(err)
+            } else {
+                res(result as string)
+            }
+        })
+    })
+
+    return csv
+}

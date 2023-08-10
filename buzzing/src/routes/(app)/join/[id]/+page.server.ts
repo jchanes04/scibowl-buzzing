@@ -1,4 +1,4 @@
-import { generateToken } from "$lib/authentication"
+import { generateGameToken } from "$lib/authentication"
 import type { Game } from "$lib/classes/Game"
 import { Player } from "$lib/classes/Player"
 import { Team } from "$lib/classes/Team"
@@ -51,7 +51,7 @@ export const actions = {
 
         io.to(game.id).emit('playerJoin', { player: player.data, team: player.team.data })
     
-        const gameToken = generateToken({ memberId: player.id, gameId: game.id }, '6h')
+        const gameToken = generateGameToken({ memberId: player.id, gameId: game.id }, '6h')
         cookies.set("gameToken", gameToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname

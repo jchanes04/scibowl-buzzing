@@ -5,13 +5,22 @@
 
     export let form: ActionData
 
+    const errors = {
+        "InvalidTournamentCode": "The provided tournament code is invalid"
+    } as Record<string, string>
+
     let newTeamsAllowed: boolean = false
     let individualTeamsAllowed: boolean
+    let inTournament: boolean
+    let tournamentCode: string
     let ownerName: string
     let gameName: string
     let defaultTeams: string[] = []
     let newTeamName: string
-    $: submitEnabled = ownerName && gameName && !(!individualTeamsAllowed && !newTeamsAllowed && defaultTeams.length === 0)
+    $: submitEnabled = ownerName
+        && gameName
+        && !(!individualTeamsAllowed && !newTeamsAllowed && defaultTeams.length === 0)
+        && !(inTournament && !tournamentCode)
 
     function handleSubmit() {
         if (newTeamName)
@@ -24,46 +33,59 @@
     <title>Create Game</title>
 </svelte:head>
 
-<form id="form" method="POST" autocomplete="off" on:submit={handleSubmit}>
+<main>
     <h1>Create Game</h1>
-
-    {#if form?.error}
-        <p class="error">{form.error}</p>
-    {/if}
-
-    <input type="text" placeholder="Game Name" name="game-name" id="game-name-input" bind:value={gameName} />
-    <br />
-    <input type="text" placeholder="Your Name" name="owner-name" id="owner-name-input" bind:value={ownerName} />
-    <br />
-
-    <h2>Team Settings</h2>
-    <div class="checkbox-wrapper">
-        <label for="new-teams">
-            <input id="new-teams" type="checkbox" name="new-teams-allowed" bind:checked={newTeamsAllowed} />
-            <span />
-            Members can create their own teams that others can join
-        </label>
+    <form id="form" method="POST" autocomplete="off" on:submit={handleSubmit} use:enhance>
+        {#if form?.message}
+            <p class="error">{errors[form.message] || form.message}</p>
+        {/if}
+    
+        <input type="text" placeholder="Game Name" name="game-name" id="game-name-input" bind:value={gameName} />
         <br />
-        <label for="individual-teams">
-            <input id="individual-teams" type="checkbox" name="individual-teams-allowed" bind:checked={individualTeamsAllowed} />
-            <span />
-            Members can join the game on a team of just themselves
-        </label>
+        <input type="text" placeholder="Your Name" name="owner-name" id="owner-name-input" bind:value={ownerName} />
         <br />
-        <label for="spectators">
-            <input id="spectators" type="checkbox" name="spectators-allowed" />
-            <span />
-            Spectators allowed
-        </label>
+    
+        <h2>Team Settings</h2>
+        <div class="checkbox-wrapper">
+            <label for="new-teams">
+                <input id="new-teams" type="checkbox" name="new-teams-allowed" bind:checked={newTeamsAllowed} />
+                <span />
+                Members can create their own teams that others can join
+            </label>
+            <br />
+            <label for="individual-teams">
+                <input id="individual-teams" type="checkbox" name="individual-teams-allowed" bind:checked={individualTeamsAllowed} />
+                <span />
+                Members can join the game on a team of just themselves
+            </label>
+            <br />
+            <label for="spectators">
+                <input id="spectators" type="checkbox" name="spectators-allowed" />
+                <span />
+                Spectators allowed
+            </label>
+            <br />
+            <label for="tournament-checkbox">
+                <input id="tournament-checkbox" type="checkbox" name="in-tournament" bind:checked={inTournament} />
+                <span />
+                Add game to tournament
+            </label>
+            {#if inTournament}
+                <br />
+                <div style:text-align="center">
+                    <input type="text" placeholder="Tournament Code" name="tournament-code" id="tournament-code-input" bind:value={tournamentCode} />
+                </div>
+            {/if}
+            <br />
+            <br />
+        </div>
         <br />
+        <label for="default-team-name"><h2>Default Teams</h2></label>
+        <TeamList bind:teams={defaultTeams} bind:newTeamName={newTeamName} />
         <br />
-    </div>
-    <br />
-    <label for="default-team-name"><h2>Default Teams</h2></label>
-    <TeamList bind:teams={defaultTeams} bind:newTeamName={newTeamName} />
-    <br />
-    <button type="submit" disabled={!submitEnabled}>Create Game</button>
-</form>
+        <button type="submit" disabled={!submitEnabled}>Create Game</button>
+    </form>
+</main>
 
 <style lang="scss">
     @use '$styles/_global.scss' as *;
@@ -80,6 +102,7 @@
         font-size: 44px;
         text-decoration: underline $blue 3px;
         text-underline-offset: 0.2em;
+        text-align: center;
     }
 
     h2 {

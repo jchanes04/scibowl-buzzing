@@ -6,7 +6,7 @@ import { Server } from 'socket.io'
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
 import type { Category, GameSettings, NewQuestionData, ScoreType } from '$lib/classes/Game'
-import { getDataFromToken } from './authentication'
+import { getDataFromGameToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
 import { updateGameScores } from './mongo'
@@ -24,7 +24,7 @@ export const io = new Server(httpsServer, {
     },
     allowRequest: async (req, callback) => {
         const gameToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
-        const tokenData = await getDataFromToken(gameToken || "")
+        const tokenData = await getDataFromGameToken(gameToken || "")
         if (!gameToken || !tokenData) {
             return callback(null, false)
         }
@@ -48,7 +48,7 @@ io.on('connection', async socket => {
     const cookie = socket.request.headers.cookie
     const spectatorParam = socket.handshake.query.spectator === "true"
     const gameToken = cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
-    const tokenData = await getDataFromToken(gameToken || "")
+    const tokenData = await getDataFromGameToken(gameToken || "")
     if (!gameToken || !tokenData) {
         socket.emit('authFailed')
         return socket.disconnect()

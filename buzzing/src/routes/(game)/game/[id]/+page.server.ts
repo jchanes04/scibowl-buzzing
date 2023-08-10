@@ -1,4 +1,4 @@
-import { getDataFromToken } from "$lib/authentication"
+import { getDataFromGameToken } from "$lib/authentication"
 import { getGame, io } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
@@ -11,7 +11,7 @@ export const load = async function({ params, locals, cookies }) {
         throw redirect(302, "/join")
 
     const gameToken = cookies.get("gameToken")
-    const tokenData = gameToken ? await getDataFromToken(gameToken) : null
+    const tokenData = gameToken ? await getDataFromGameToken(gameToken) : null
 
     const memberId = tokenData?.memberId
     if (!memberId) {

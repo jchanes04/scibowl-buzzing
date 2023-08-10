@@ -1,4 +1,4 @@
-import { generateToken } from "$lib/authentication"
+import { generateGameToken } from "$lib/authentication"
 import { getGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
@@ -13,7 +13,7 @@ export const load = async function({ params, cookies, isDataRequest }) {
 
     const gameToken = cookies.get('gameToken')
     if (!gameToken) {
-        const newToken = generateToken({ gameId: id, spectator: true, memberId: "" })
+        const newToken = generateGameToken({ gameId: id, spectator: true, memberId: "" })
         cookies.set("gameToken", newToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
