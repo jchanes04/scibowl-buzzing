@@ -2,14 +2,15 @@
     import { browser } from "$app/environment";
     import { timerStore, gameClockStore } from "$lib/stores/timer"
     import gameStore from "$lib/stores/game"
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, onDestroy } from "svelte";
 
     const dispatch = createEventDispatcher()
     const fiveSecondAudio = browser ? new Audio('/five-second.mp3') : null
 
-    timerStore.addEventListener?.("end", () => {
+    const onTimerEnd = () => {
         dispatch("end")
-    })
+    }
+    if (browser) timerStore.addEventListener?.("end", onTimerEnd)
 
     function handleTimerUpdate() {
         if ($timerStore === 5 && $gameStore.state.currentQuestion?.bonus) {
@@ -18,6 +19,10 @@
     }
 
     $: $timerStore, handleTimerUpdate()
+
+    onDestroy(() => {
+        timerStore.removeEventListener("end", onTimerEnd)
+    })
 </script>
 
 <div>
