@@ -65,6 +65,12 @@ export default {
             return value
         })
     },
+    removeTeamBuzz: (teamId: string) => {
+        store.update(value => {
+            value.state.buzzedTeamIds = value.state.buzzedTeamIds.filter(x => x !== teamId)
+            return value
+        })
+    },
     openQuestion: (buzzingEnabled: boolean) => {
         store.update(value => {
             value.state.questionState = "open"

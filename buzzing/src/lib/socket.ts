@@ -208,6 +208,7 @@ export function createSocket(spectator: boolean = false) {
     })
 
     socket.on('buzzFailed', () => {
+        if (myMember.team) gameStore.removeTeamBuzz(myMember.team.id)
         chatMessagesStore.update(oldList => {
             oldList.push({
                 type: "warning",
