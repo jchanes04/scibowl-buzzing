@@ -290,7 +290,6 @@ io.on('connection', async socket => {
         game.timer.end()
         game.gameClock.end()
         games.deleteGame(gameId)
-        io.removeAllListeners()
         io.in(gameId).disconnectSockets(true)
     })
 
