@@ -56,7 +56,7 @@ io.on('connection', async socket => {
     
     const { gameId, memberId, spectator } = tokenData
     const game = getGame(gameId)
-    const member = game.people[memberId]
+    const member = game?.people[memberId]
     
     if (
         !game
@@ -71,7 +71,7 @@ io.on('connection', async socket => {
     socket.join([gameId, memberId])
 
     if (!spectator) {
-        socket.emit('authenticated', { name: game.people[memberId].name })
+        socket.emit('authenticated', { name: member.name })
         if (game.gameClock.time > 0 && game.gameClock.live) {
             socket.emit('gameClockUpdate', game.gameClock.time)
         }
@@ -165,7 +165,7 @@ io.on('connection', async socket => {
             bonus,
             scoreType,
             playerId: buzzer?.id,
-            teamId: team.id,
+            teamId: team?.id,
             category,
             number
         })
@@ -257,7 +257,7 @@ io.on('connection', async socket => {
 
         const promoted = game.promotePlayer(id)
 
-        if (promoted != null) {
+        if (promoted !== null) {
             io.to(gameId).emit('promotion', id)
         }
     })
@@ -290,6 +290,7 @@ io.on('connection', async socket => {
         game.timer.end()
         game.gameClock.end()
         games.deleteGame(gameId)
+        io.removeAllListeners()
         io.in(gameId).disconnectSockets(true)
     })
 

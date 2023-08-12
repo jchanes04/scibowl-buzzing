@@ -339,20 +339,20 @@ export class Game {
         this.state.currentBuzzer = null
         this.state.buzzedTeams = {}
 
-        if (question.bonus) {
-            const team = this.teams[question.teamId]
+        if (question?.bonus) {
+            const team = this.teams[question?.teamId]
             this.state.currentQuestion = {
-                category: question.category,
+                category: question?.category,
                 bonus: true,
-                visual: question.visual,
+                visual: question?.visual,
                 team,
-                number: question.number
+                number: question?.number
             }
         } else {
             this.state.currentQuestion = {
-                category: question.category,
+                category: question?.category,
                 bonus: false,
-                number: question.number
+                number: question?.number
             }
         }
         return true
@@ -375,13 +375,13 @@ export class Game {
             if (score === "correct") {
                 this.scoreboard.correctBonus(
                     number,
-                    team.id,
+                    team?.id,
                     currentQuestion.category
                 )
             } else if (score === 'incorrect') {
                 this.scoreboard.incorrectBonus(
                     number,
-                    team.id,
+                    team?.id,
                     currentQuestion.category
                 )
             }
@@ -392,22 +392,22 @@ export class Game {
                 this.scoreboard.correctTossup(
                     number,
                     buzzer.id,
-                    team.id,
-                    this.state.currentQuestion.category
+                    team?.id,
+                    currentQuestion.category
                 )
             } else if (score === 'incorrect') {
                 this.scoreboard.incorrectTossup(
                     number,
                     buzzer.id,
-                    team.id,
-                    this.state.currentQuestion.category
+                    team?.id,
+                    currentQuestion.category
                 )
             } else if (score === 'penalty') {
                 this.scoreboard.penalty(
                     number,
                     buzzer.id,
-                    team.id,
-                    this.state.currentQuestion.category
+                    team?.id,
+                    currentQuestion.category
                 )
             }
         }
