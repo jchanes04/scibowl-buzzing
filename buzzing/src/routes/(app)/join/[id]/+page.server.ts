@@ -43,6 +43,8 @@ export const actions = {
         const { id } = params
         const game = getGame(id)
 
+        if (!game) return fail(400, { error: "Invalid game" })
+
         const player = createPlayer(name, teamOrIndiv, game, body)
         if (!player) {
             return fail(400, { error: "Invalid team" })
