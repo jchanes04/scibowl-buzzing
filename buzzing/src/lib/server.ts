@@ -5,7 +5,7 @@ import { Server } from 'socket.io'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
-import type { Category, GameSettings, NewQuestionData, ScoreType } from '$lib/classes/Game'
+import type { Category, Game, GameSettings, NewQuestionData, ScoreType } from '$lib/classes/Game'
 import { getDataFromGameToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
@@ -70,7 +70,7 @@ io.on('connection', async socket => {
 
     socket.join([gameId, memberId])
 
-    if (!spectator) {
+    if (!spectator && member) {
         socket.emit('authenticated', { name: member.name })
         if (game.gameClock.time > 0 && game.gameClock.live) {
             socket.emit('gameClockUpdate', game.gameClock.time)
@@ -106,20 +106,20 @@ io.on('connection', async socket => {
     })
 
     socket.on('newQuestion', (question: NewQuestionData) => {
-        if (member.type !== "moderator")  return
+        if (member?.type !== "moderator")  return
         
         game.newQuestion(question)
         socket.to(gameId).emit('questionOpen', question)
     })
 
     socket.on("openVisualBonus", (data: Buffer) => {
-        if (member.type !== "moderator")  return
+        if (member?.type !== "moderator")  return
 
         socket.to(gameId).emit("visualBonusOpen", data)
     })
 
     socket.on('startTimer', () => {
-        if (member.type !== "moderator" || game.state.questionState !== "open") return
+        if (member?.type !== "moderator" || game.state.questionState !== "open") return
 
         const serverLength = game.state.currentQuestion.bonus ?
             game.state.currentQuestion.visual
@@ -143,7 +143,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('stopTimer', () => {
-        if (member.type !== "moderator") return
+        if (member?.type !== "moderator") return
 
         game.timer.end()
         game.timer.removeAllListeners('end')
@@ -151,7 +151,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
-        if (member.type !== "moderator") return
+        if (member?.type !== "moderator") return
         if (game.state.questionState !== "buzzed" && !game.state.currentQuestion?.bonus) return
 
         const result = game.scoreQuestion(scoreType)
@@ -184,7 +184,7 @@ io.on('connection', async socket => {
     })
 
     socket.on("markDead", () => {
-        if (member.type !== "moderator") return
+        if (member?.type !== "moderator") return
         const result = game.markDead()
         game.timer.end()
 
@@ -241,7 +241,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('kickPlayer', (id: string) => {
-        if (member.type !== "moderator") return
+        if (member?.type !== "moderator") return
         
         const removed = game.kickPlayer(id)
         
@@ -253,7 +253,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('promotePlayer', (id: string) => {
-        if (member.type !== "moderator") return 
+        if (member?.type !== "moderator") return 
 
         const promoted = game.promotePlayer(id)
 
@@ -263,7 +263,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('renamePlayer', (id: string, name: string) => {
-        if (member.type !== "moderator") return 
+        if (member?.type !== "moderator") return 
 
         const player = game.players[id]
 
@@ -275,7 +275,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('clearScores', () => {
-        if (member.type !== "moderator") return
+        if (member?.type !== "moderator") return
 
         game.clearScores()
         socket.to(gameId).emit('scoresClear')
@@ -283,7 +283,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('endGame', () => {
-        if (member.type !== "moderator")  return
+        if (member?.type !== "moderator")  return
 
         socket.to(gameId).emit('gameEnd')
         socket.emit('gameEnd')
@@ -308,7 +308,7 @@ io.on('connection', async socket => {
     })
 
     socket.on("startGameClock", (length) => {
-        if (member.type !== "moderator") return 
+        if (member?.type !== "moderator") return 
 
         game.gameClock.start(length)
         game.gameClock.on("update", (time: number) => {
@@ -322,7 +322,7 @@ io.on('connection', async socket => {
     })
 
     socket.on('pauseGameClock', () => {
-        if (member.type !== "moderator") return 
+        if (member?.type !== "moderator") return 
 
         if (game.gameClock.live) {
             game.gameClock.pause()
@@ -334,14 +334,14 @@ io.on('connection', async socket => {
     })
 
     socket.on('stopGameClock', () => {
-        if (member.type !== "moderator") return 
+        if (member?.type !== "moderator") return 
 
         game.gameClock.end()
         io.to(gameId).emit('gameClockStop')
     })
 
     socket.on('claimCaptain', () => {
-        if (member.type !== "player") return
+        if (member?.type !== "player") return
 
         member.team.captainId = member.id
         io.to(gameId).emit('changeCaptain', member.team.id, member.id)
@@ -379,6 +379,6 @@ export function gameExists(id: string) {
     return games.has(id)
 }
 
-export function getGameFromCode(code: string) {
+export function getGameFromCode(code: string): Game | null {
     return games.find(x => x.joinCode === code)
 }

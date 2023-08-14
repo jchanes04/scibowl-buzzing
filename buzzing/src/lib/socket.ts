@@ -130,7 +130,7 @@ export function createSocket(spectator: boolean = false) {
             })
         } else if (player) {
             playersStore.removePlayer(id)
-            if (teams[player.team.id].type !== "default" && Object.values(teams[player.team.id].players).length === 1) {
+            if (teams[player.team.id]?.type !== "default" && Object.values(teams[player.team.id]!.players).length === 1) {
                 teamsStore.removeTeam(player.team.id)
             } else {
                 player.team.removePlayer(id)
@@ -147,7 +147,7 @@ export function createSocket(spectator: boolean = false) {
 
     socket.on('promotion', async (memberId: string) => {
         const player = players[memberId]
-        const team = player.team
+        const team = player?.team
         if (team && player) {
             team.removePlayer(player.id)
             playersStore.removePlayer(player.id)
@@ -264,7 +264,7 @@ export function createSocket(spectator: boolean = false) {
             chatMessagesStore.update(oldList => {
                 oldList.push({
                     type: 'success',
-                    text: `Correct answer (${category[0].toUpperCase() + category.slice(1)})`
+                    text: `Correct answer (${(category[0] || "").toUpperCase() + category.slice(1)})`
                 })
                 return oldList
             })
@@ -361,7 +361,7 @@ export function createSocket(spectator: boolean = false) {
     })
 
     socket.on('questionOpen', (question: NewQuestionData) => {
-        const buzzingEnabled = !question.bonus || (question.teamId === myMember.team?.id && teams[question.teamId].captainId === myMember.id)
+        const buzzingEnabled = !question.bonus || !!(question.teamId && question.teamId === myMember.team?.id && teams[question.teamId]?.captainId === myMember.id)
         gameStore.newQuestion(question, buzzingEnabled)
 
         if (!question.bonus && question.number && game.scores[question.number]) {
@@ -416,7 +416,7 @@ export function createSocket(spectator: boolean = false) {
         const tossupOpen = !game.state.currentQuestion?.bonus && !game.state.buzzedTeamIds.includes(myMember.team!.id)
         const bonusOpen = !!game.state.currentQuestion?.bonus
             && (game.state.currentQuestion?.teamId === myMember.team?.id
-            && (teams[myMember.team?.id].captainId === myMember.id || teams[myMember.team?.id].captainId === null))
+            && (teams[myMember.team?.id]?.captainId === myMember.id || teams[myMember.team?.id]?.captainId === null))
         const questionOpen = !myMember.moderator && (tossupOpen || bonusOpen)
         gameStore.openQuestion(questionOpen)
     })

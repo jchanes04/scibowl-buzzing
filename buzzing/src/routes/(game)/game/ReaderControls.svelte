@@ -76,7 +76,7 @@
 
         $chatMessagesStore = [...$chatMessagesStore, {
             type: 'notification',
-            text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${questionType[0].toUpperCase() + questionType.slice(1)} - ${selectedCategory[0].toUpperCase() + selectedCategory.slice(1)}`
+            text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`
         }]
 
         if (questionType === "bonus") {
@@ -207,7 +207,7 @@
         }
 
         if (selectedScore === "correct") {
-            teamSelectValue = $teamsStore[$gameStore.state.buzzedTeamIds[$gameStore.state.buzzedTeamIds.length - 1]]
+            teamSelectValue = $teamsStore[$gameStore.state.buzzedTeamIds[$gameStore.state.buzzedTeamIds.length - 1]!]
         }
 
         if ($gameStore.state.currentQuestion?.bonus && questionNumber !== 0) {

@@ -70,7 +70,7 @@ export function createTeamID(): string {
 function getSumDigit(targetSum: string, body: string) {
     let sum: number = 0
     for (let i = 0; i < body.length; i++) {
-        sum += parseInt(body[i], 36)
+        sum += parseInt(body[i]!, 36)
     }
     const lastNumber: number = ((parseInt(targetSum, 36) - sum % 36) + 36) % 36
     return lastNumber.toString(36)

@@ -37,7 +37,7 @@ export const actions = {
 
         const game = createNewGame(ownerName, gameData)
 
-        const gameToken = generateGameToken({ memberId: Object.values(game.moderators)[0].id, gameId: game.id })
+        const gameToken = generateGameToken({ memberId: Object.values(game.moderators)[0]!.id, gameId: game.id })
         cookies.set("gameToken", gameToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname

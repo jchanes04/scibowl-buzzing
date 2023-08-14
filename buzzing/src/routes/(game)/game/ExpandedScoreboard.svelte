@@ -24,9 +24,9 @@
     $: playersFromScores = Object.values($gameStore.scores).reduce((acc, s) => {
             for (const t of Object.keys(s.tossup)) {
                 if (!acc[t]) {
-                    acc[t] = [s.tossup[t].playerId]
-                } else if (!acc[t].includes(s.tossup[t].playerId)) {
-                    acc[t].push(s.tossup[t].playerId)
+                    acc[t] = [s.tossup[t]!.playerId]
+                } else if (!acc[t]!.includes(s.tossup[t]!.playerId)) {
+                    acc[t]!.push(s.tossup[t]!.playerId)
                 }
             }
             return acc
@@ -148,7 +148,10 @@
         <tr>
             <th colspan="2"></th>
             {#each Object.keys(players) as teamId}
-                <th colspan={players[teamId].length + 1} style:font-weight="bold">{$teamsStore[teamId].name}</th>
+                {@const teamPlayers = players[teamId]}
+                {#if teamPlayers}
+                    <th colspan={teamPlayers.length + 1} style:font-weight="bold">{$teamsStore[teamId]?.name || teamId}</th>
+                {/if}
             {/each}
             <th></th>
         </tr>
@@ -163,22 +166,24 @@
             <th></th>
         </tr>
         {#each rowArray as i}
+            {@const scoreRow = $gameStore.scores[i]}
             <tr>
                 <td>#{i}</td>
-                {#if $gameStore.scores[i]}
-                    <td>{categories[$gameStore.scores[i].category]}</td>
+                {#if scoreRow}
+                    <td>{categories[scoreRow.category]}</td>
                     {#each Object.entries(players) as [teamId, p]}
+                        {@const tossupEntry = scoreRow.tossup[teamId]}
                         {#each p as playerId}
-                            {#if $gameStore.scores[i].tossup[teamId]?.playerId === playerId}
-                                <td class="tossup {$gameStore.scores[i].tossup[teamId].scoreType}">
+                            {#if tossupEntry?.playerId === playerId}
+                                <td class="tossup {tossupEntry.scoreType}">
                                     <ScoreboardTableCell
-                                        scoreType={$gameStore.scores[i].tossup[teamId].scoreType}
+                                        scoreType={tossupEntry.scoreType}
                                         bonus={false}
                                         on:change={(e) => handleTossupChange(
                                             i,
                                             playerId,
                                             teamId,
-                                            $gameStore.scores[i].category,
+                                            scoreRow.category,
                                             e.detail
                                         )} />
                                 </td>
@@ -191,16 +196,16 @@
                                             i,
                                             playerId,
                                             teamId,
-                                            $gameStore.scores[i].category,
+                                            scoreRow.category,
                                             e.detail
                                         )} />
                                 </td>
                             {/if}
                         {/each}
-                        {#if $gameStore.scores[i].bonus?.teamId === teamId}
-                            <td class="bonus {$gameStore.scores[i].bonus?.correct ? "correct" : "incorrect"}">
+                        {#if scoreRow.bonus?.teamId === teamId}
+                            <td class="bonus {scoreRow.bonus?.correct ? "correct" : "incorrect"}">
                                 <ScoreboardTableCell
-                                    scoreType={$gameStore.scores[i].bonus?.correct ? "correct" : "incorrect"}
+                                    scoreType={scoreRow.bonus?.correct ? "correct" : "incorrect"}
                                     bonus={true} 
                                     on:change={(e) => handleBonusChange(i, teamId, e.detail)} />
                             </td>

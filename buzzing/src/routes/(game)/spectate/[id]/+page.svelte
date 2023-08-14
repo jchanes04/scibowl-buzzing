@@ -26,7 +26,6 @@
     teamsStore.clear()
 
     $gameStore = {
-        id: $page.params.id,
         ...gameInfo,
         state: {
             questionState: 'idle',
@@ -44,8 +43,8 @@
     }
 
     for (const p of Object.values(playerList)) {
-        if ($teamsStore[p.teamID]) {
-            const team = $teamsStore[p.teamID]
+        const team = $teamsStore[p.teamID]
+        if (team) {
             const player = createPlayerStore(p, team.store)
             team.store.addPlayer(player)
             playersStore.addPlayer(player)

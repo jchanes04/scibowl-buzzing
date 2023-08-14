@@ -61,7 +61,7 @@ export function createTeamStore(teamData: TeamData) {
             return players
         },
         removePlayer: (id: string) => {
-            playerUnsubscribeFunctions[id]()
+            playerUnsubscribeFunctions[id]?.()
             players.update(oldList => Object.fromEntries(
                 Object.entries(oldList).filter(([k, ]) => k !== id)
             ))

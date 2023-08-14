@@ -37,6 +37,7 @@ export const load = async function({ params, locals, cookies }) {
         
         return {
             gameInfo: {
+                id,
                 name: game.name,
                 joinCode: game.joinCode,
                 settings: game.settings,
@@ -70,6 +71,7 @@ export const load = async function({ params, locals, cookies }) {
             
             return {
                 gameInfo: {
+                    id,
                     name: game.name,
                     joinCode: game.joinCode,
                     settings: game.settings,
@@ -98,6 +100,7 @@ export const load = async function({ params, locals, cookies }) {
             
             return {
                 gameInfo: {
+                    id,
                     name: game.name,
                     joinCode: game.joinCode,
                     settings: game.settings,

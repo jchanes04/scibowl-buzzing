@@ -18,9 +18,9 @@ export class GameManager {
     }
 
     find(func: (game: Game) => boolean) {
-        for (const id in this.games) {
-            if (func(this.games[id])) {
-                return this.games[id]
+        for (const game of Object.values(this.games)) {
+            if (func(game)) {
+                return game
             }
         }
 

@@ -45,12 +45,13 @@ export class GameScoreboard {
     }
 
     correctTossup(number: number, playerId: string, teamId: string, category: Category) {
-        if (this.scores[number]) {
-            this.scores[number].tossup[teamId] = {
+        const questionRow = this.scores[number]
+        if (questionRow) {
+            questionRow.tossup[teamId] = {
                 playerId,
                 scoreType: "correct"
             }
-            this.scores[number].bonus = null
+            questionRow.bonus = null
         } else {
             this.scores[number] = {
                 category,
@@ -66,12 +67,13 @@ export class GameScoreboard {
     }
 
     incorrectTossup(number: number, playerId: string, teamId: string, category: Category) {
-        if (this.scores[number]) {
-            this.scores[number].tossup[teamId] = {
+        const questionRow = this.scores[number]
+        if (questionRow) {
+            questionRow.tossup[teamId] = {
                 playerId,
                 scoreType: "incorrect"
             }
-            this.scores[number].bonus = null
+            questionRow.bonus = null
         } else {
             this.scores[number] = {
                 category,
@@ -87,12 +89,13 @@ export class GameScoreboard {
     }
 
     penalty(number: number, playerId: string, teamId: string, category: Category) {
-        if (this.scores[number]) {
-            this.scores[number].tossup[teamId] = {
+        const questionRow = this.scores[number]
+        if (questionRow) {
+            questionRow.tossup[teamId] = {
                 playerId,
                 scoreType: "penalty"
             }
-            this.scores[number].bonus = null
+            questionRow.bonus = null
         } else {
             this.scores[number] = {
                 category,
@@ -124,11 +127,12 @@ export class GameScoreboard {
         category: Category,
         scoreType: ScoreType | "none"
     ) {
-        if (this.scores[number]) {
+        const questionRow = this.scores[number]
+        if (questionRow) {
             if (scoreType === "none") {
-                delete this.scores[number].tossup[teamId]
+                delete questionRow.tossup[teamId]
             } else {
-                this.scores[number].tossup[teamId] = {
+                questionRow.tossup[teamId] = {
                     playerId,
                     scoreType
                 }
@@ -148,8 +152,9 @@ export class GameScoreboard {
     }
 
     correctBonus(number: number, teamId: string, category: Category) {
-        if (this.scores[number]) {
-            this.scores[number].bonus = {
+        const questionRow = this.scores[number]
+        if (questionRow) {
+            questionRow.bonus = {
                 teamId,
                 correct: true
             }
@@ -166,8 +171,9 @@ export class GameScoreboard {
     }
 
     incorrectBonus(number: number, teamId: string, category: Category) {
-        if (this.scores[number]) {
-            this.scores[number].bonus = {
+        const questionRow = this.scores[number]
+        if (questionRow) {
+            questionRow.bonus = {
                 teamId,
                 correct: false
             }
@@ -188,10 +194,11 @@ export class GameScoreboard {
         teamId: string,
         scoreType: "correct" | "incorrect" | "none"
     ) {
-        if (this.scores[number] && scoreType === "none") {
-            this.scores[number].bonus = null
-        } else if (this.scores[number]) {
-            this.scores[number].bonus = {
+        const questionRow = this.scores[number]
+        if (questionRow && scoreType === "none") {
+            questionRow.bonus = null
+        } else if (questionRow) {
+            questionRow.bonus = {
                 teamId,
                 correct: scoreType === "correct"
             }
@@ -206,8 +213,9 @@ export class GameScoreboard {
         delete this.scores[number]
         const max = Math.max(...Object.keys(this.scores).map(Number))
         for (let i = number + 1; i <= max; i++) {
-            if (this.scores[i]) {
-                this.scores[i - 1] = this.scores[i]
+            const questionRow = this.scores[i]
+            if (questionRow) {
+                this.scores[i - 1] = questionRow
                 delete this.scores[i]
             }
         }

@@ -76,8 +76,9 @@ export async function convertToCSV(
             } else if (col.type === "category") {
                 col.entries.push(categories[s.category])
             } else if (col.type === "player") {
-                if (s.tossup[col.teamId]?.playerId === col.playerId) {
-                    col.entries.push(scoreTypes[s.tossup[col.teamId].scoreType])
+                const tossupEntry = s.tossup[col.teamId]
+                if (tossupEntry?.playerId === col.playerId) {
+                    col.entries.push(scoreTypes[tossupEntry.scoreType])
                 } else {
                     col.entries.push("")
                 }
@@ -105,13 +106,13 @@ export async function convertToCSV(
         const doc: Record<string, string> = {}
         for (const col of cols) {
             if (col.type === "number") {
-                doc.number = col.entries[i]
+                doc.number = col.entries[i]!
             } else if (col.type === "category") {
-                doc.category = col.entries[i]
+                doc.category = col.entries[i]!
             } else if (col.type === "player") {
-                doc[playerList[col.playerId]?.name || col.playerId] = col.entries[i]
+                doc[playerList[col.playerId]?.name || col.playerId] = col.entries[i]!
             } else if (col.type === "bonus") {
-                doc[(teamList[col.teamId]?.name || col.teamId) + " Bonus"] = col.entries[i]
+                doc[(teamList[col.teamId]?.name || col.teamId) + " Bonus"] = col.entries[i]!
             }
         }
         data.push(doc)
@@ -233,8 +234,9 @@ export async function convertToCSVNamed(players: Record<string, string[]>, score
             } else if (col.type === "category") {
                 col.entries.push(categories[s.category])
             } else if (col.type === "player") {
-                if (s.tossup[col.teamName]?.playerName === col.playerName) {
-                    col.entries.push(scoreTypes[s.tossup[col.teamName].scoreType])
+                const tossupEntry = s.tossup[col.teamName]
+                if (tossupEntry?.playerName === col.playerName) {
+                    col.entries.push(scoreTypes[tossupEntry.scoreType])
                 } else {
                     col.entries.push("")
                 }
@@ -262,13 +264,13 @@ export async function convertToCSVNamed(players: Record<string, string[]>, score
         const doc: Record<string, string> = {}
         for (const col of cols) {
             if (col.type === "number") {
-                doc.number = col.entries[i]
+                doc.number = col.entries[i]!
             } else if (col.type === "category") {
-                doc.category = col.entries[i]
+                doc.category = col.entries[i]!
             } else if (col.type === "player") {
-                doc[col.playerName] = col.entries[i]
+                doc[col.playerName] = col.entries[i]!
             } else if (col.type === "bonus") {
-                doc[col.teamName + " Bonus"] = col.entries[i]
+                doc[col.teamName + " Bonus"] = col.entries[i]!
             }
         }
         data.push(doc)

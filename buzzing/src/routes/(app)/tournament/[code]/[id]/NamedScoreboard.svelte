@@ -8,9 +8,9 @@
     $: players = Object.values(scores).reduce((acc, s) => {
             for (const t of Object.keys(s.tossup)) {
                 if (!acc[t]) {
-                    acc[t] = [s.tossup[t].playerName]
-                } else if (!acc[t].includes(s.tossup[t].playerName)) {
-                    acc[t].push(s.tossup[t].playerName)
+                    acc[t] = [s.tossup[t]!.playerName]
+                } else if (!acc[t]!.includes(s.tossup[t]!.playerName)) {
+                    acc[t]!.push(s.tossup[t]!.playerName)
                 }
             }
             if (s.bonus?.teamName && !acc[s.bonus?.teamName]) {
@@ -86,7 +86,10 @@
         <tr>
             <th colspan="2"></th>
             {#each Object.keys(players) as teamName}
-                <th colspan={players[teamName].length + 1} class="team-name"><span>{teamName}</span>: {sumQuestionScores(teamName)}</th>
+                {@const teamPlayers = players[teamName]}
+                {#if teamPlayers}
+                    <th colspan={teamPlayers.length + 1} class="team-name"><span>{teamName}</span>: {sumQuestionScores(teamName)}</th>
+                {/if}
             {/each}
         </tr>
         {#if rowArray.length}
@@ -101,23 +104,25 @@
             </tr>
         {/if}
         {#each rowArray as i}
+            {@const scoreRow = scores[i]}
             <tr>
                 <td>#{i}</td>
-                {#if scores[i]}
-                    <td>{categories[scores[i].category]}</td>
+                {#if scoreRow}
+                    <td>{categories[scoreRow.category]}</td>
                     {#each Object.entries(players) as [teamName, p]}
+                        {@const tossupEntry = scoreRow.tossup[teamName]}
                         {#each p as playerName}
-                            {#if scores[i].tossup[teamName]?.playerName === playerName}
-                                <td class="tossup {scores[i].tossup[teamName].scoreType}">
-                                    {scoreTypes[scores[i].tossup[teamName].scoreType]}
+                            {#if tossupEntry?.playerName === playerName}
+                                <td class="tossup {tossupEntry.scoreType}">
+                                    {scoreTypes[tossupEntry.scoreType]}
                                 </td>
                             {:else}
                                 <td></td>
                             {/if}
                         {/each}
-                        {#if scores[i].bonus?.teamName === teamName}
-                            <td class="bonus {scores[i].bonus?.correct ? "correct" : "incorrect"}">
-                                {scoreTypes[scores[i].bonus?.correct ? "correct" : "incorrect"]}
+                        {#if scoreRow.bonus?.teamName === teamName}
+                            <td class="bonus {scoreRow.bonus?.correct ? "correct" : "incorrect"}">
+                                {scoreTypes[scoreRow.bonus?.correct ? "correct" : "incorrect"]}
                             </td>
                         {:else}
                             <td class="bonus"></td>

@@ -243,6 +243,7 @@ export class Game {
             }
         } else if (this.leftModerators[memberId]) {
             const rejoiningPlayerData = this.leftModerators[memberId]
+            if (!rejoiningPlayerData) return
 
             delete this.leftModerators[memberId]
 
@@ -257,8 +258,9 @@ export class Game {
     }
 
     removeMember(id: string) {
-        if (this.players[id]) {
-            const member = this.players[id]
+        const member = this.players[id]
+        const moderator = this.moderators[id]
+        if (member) {
             delete this.players[id]
 
             if (member.team) {
@@ -278,8 +280,7 @@ export class Game {
             }
 
             return member
-        } else if (this.moderators[id]) {
-            const moderator = this.moderators[id]
+        } else if (moderator) {
             delete this.moderators[id]
 
             this.leftModerators[id] = moderator.data
@@ -290,8 +291,8 @@ export class Game {
     }
 
     kickPlayer(id: string) {
-        if (this.players[id]) {
-            const member = this.players[id]
+        const member = this.players[id]
+        if (member) {
             delete this.players[id]
 
             if (member.team) {
@@ -335,24 +336,26 @@ export class Game {
     }
 
     newQuestion(question: NewQuestionData) {
+        if (!question || (question.bonus && !this.teams[question.teamId])) return
+
         this.state.questionState = 'open'
         this.state.currentBuzzer = null
         this.state.buzzedTeams = {}
 
-        if (question?.bonus) {
-            const team = this.teams[question?.teamId]
+        if (question.bonus) {
+            const team = this.teams[question.teamId]
             this.state.currentQuestion = {
-                category: question?.category,
+                category: question.category,
                 bonus: true,
-                visual: question?.visual,
-                team,
-                number: question?.number
+                visual: question.visual,
+                team: team!,
+                number: question.number
             }
         } else {
             this.state.currentQuestion = {
-                category: question?.category,
+                category: question.category,
                 bonus: false,
-                number: question?.number
+                number: question.number
             }
         }
         return true

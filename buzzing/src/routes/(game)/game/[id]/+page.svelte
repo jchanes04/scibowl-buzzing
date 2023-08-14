@@ -31,7 +31,6 @@
     teamsStore.clear()
 
     $gameStore = {
-        id: $page.params.id,
         ...gameInfo,
         state: {
             questionState: 'idle',
@@ -50,8 +49,8 @@
     }
 
     for (const p of Object.values(playerList)) {
-        if ($teamsStore[p.teamID]) {
-            const team = $teamsStore[p.teamID]
+        const team = $teamsStore[p.teamID]
+        if (team) {
             const player = createPlayerStore(p, team.store)
             if (p.id === myMemberId) {
                 myMemberStore.setMember({ memberStore: player, moderator: false })
@@ -69,7 +68,7 @@
         }
     }
 
-    const debug = browser ? new Debugger($page.params.id, gameInfo.name, $myMemberStore, socket) : null
+    const debug = browser ? new Debugger(gameInfo.id, gameInfo.name, $myMemberStore, socket) : null
     setContext('debug', debug)
 
     beforeNavigate(() => {

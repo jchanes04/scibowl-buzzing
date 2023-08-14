@@ -4,7 +4,7 @@ import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { env } from "$env/dynamic/public"
 
-export const load = async function({ params, cookies, isDataRequest }) {
+export const load = async function({ params, cookies }) {
     const { id } = params
     const game = getGame(id)
 
@@ -32,6 +32,7 @@ export const load = async function({ params, cookies, isDataRequest }) {
         
     return {
         gameInfo: {
+            id,
             name: game.name,
             settings: game.settings,
             times: game.times
