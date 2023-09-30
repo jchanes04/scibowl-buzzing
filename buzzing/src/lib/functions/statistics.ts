@@ -1,5 +1,6 @@
 import type { Category } from "$lib/classes/Game";
 import type { Stats } from "$lib/mongo";
+import { json2csv } from "json-2-csv";
 import type { NamedScores } from "./scoreboard";
 
 export type InputRequestData = {
@@ -260,4 +261,68 @@ function generateCombinedKey(playerName: string, teamName: string) {
 
 function weightedAvg(base: number, baseWeight: number, num: number, numWeight: number = 1) {
     return (base * baseWeight + num * numWeight) / Math.max(baseWeight + numWeight, 1)
+}
+
+type CSVColumn = {
+    field: keyof Stats | "name",
+    entries: string[]
+}
+const statsFields: Omit<Record<keyof Stats, string>, "categories"> = {
+    gamesPlayed: "GP",
+    tuh: "TUH",
+    buzzes: "Buzzes",
+    ppg: "PPG",
+    npg: "NPG",
+    bpg: "BPG",
+    accuracy: "Acc."
+}
+
+type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+export type OptionalCategoryStats = Optional<Stats, "categories">
+
+export async function convertStatsToCSV(stats: Record<string, OptionalCategoryStats>) {
+    const cols: CSVColumn[] = [
+        ...Object.keys(statsFields).map(k => ({
+            field: k,
+            entries: []
+        })),
+        {
+            field: "name",
+            entries: []
+        }
+    ] as CSVColumn[]
+
+    for (const [name, s] of Object.entries(stats)) {
+        for (const col of cols) {
+            if (col.field === "name") {
+                col.entries.push(name)
+            } else if (col.field === "accuracy") {
+                const val = s[col.field] as number
+                col.entries.push((Math.round(val * 1000) / 10) + "%")
+            } else {
+                col.entries.push((Math.round(s[col.field] as number * 100) / 100).toString())
+            }
+        }
+    }
+
+    const data: Record<string, string>[] = []
+    for (let i = 0; i < Object.keys(stats).length; i++) {
+        const doc: Record<string, string> = {}
+        for (const col of cols) {
+            doc[col.field] = col.entries[i]!
+        }
+        data.push(doc)
+    }
+
+    const csv: string = await new Promise((res, rej) => {
+        json2csv(data, (err, result) => {
+            if (err) {
+                rej(err)
+            } else {
+                res(result as string)
+            }
+        })
+    })
+
+    return csv
 }
