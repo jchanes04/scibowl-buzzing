@@ -1,6 +1,8 @@
 <script lang="ts">
     import type { NamedScores } from "$lib/functions/scoreboard";
     import type { LayoutData } from "./$types";
+    import { setContext } from "svelte";
+    import { writable } from "svelte/store";
 
     export let data: LayoutData
     let { games, code, name } = data
@@ -36,6 +38,12 @@
             return acc
         }, 0)
     }
+
+    const modalStore = writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null>(null)
+    setContext('modalStore', modalStore)
 </script>
 
 <svelte:head>
@@ -47,25 +55,33 @@
         <h1>{name}</h1>
         <span>{code}</span>
     </div>
-    <div class="games">
-        {#each games as g}
-            <a href="/tournament/{code}/{g.gameId}">
-                <div class="game-card">
-                    <span class="game-name">{g.name}</span>
-                    <br />
-                    <ul>
-                        {#each getTeamNames(g.scores) as team}
-                            <li>{team}: {sumQuestionScores(team, g.scores)}</li>
-                        {/each}
-                    </ul>
-                </div>
-            </a>
-        {/each}
+    <div>
+        <a href="/tournament/{code}/stats" class="stats-link">Statistics</a>
+        <div class="games">
+            {#each games as g}
+                <a href="/tournament/{code}/{g.gameId}">
+                    <div class="game-card">
+                        <span class="game-name">{g.name}</span>
+                        <br />
+                        <ul>
+                            {#each getTeamNames(g.scores) as team}
+                                <li>{team}: {sumQuestionScores(team, g.scores)}</li>
+                            {/each}
+                        </ul>
+                    </div>
+                </a>
+            {/each}
+        </div>
     </div>
     <div class="game-scores">
         <slot></slot>
     </div>
 </main>
+{#if $modalStore}
+    <div class="modal-background" />
+    <svelte:component this={$modalStore.component} {...$modalStore.props} />
+{/if}
+
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
@@ -80,17 +96,26 @@
     .games {
         display: flex;
         flex-direction: column;
-        gap: 1em;
         height: max(70vh, 400px);
         overflow: auto;
+        margin-top: 1em;
 
         ul {
             list-style: none;
+            margin: 0;
+        }
+
+        .game-name {
+            font-size: 18px;
         }
     }
 
+    .stats-link {
+        font-size: 1.3em;
+    }
+
     .game-card {
-        padding: 1em;
+        padding: 0.5em 1em;
 
         &:hover {
             background-color: rgba(45, 45, 45, 0.15);
@@ -99,5 +124,14 @@
 
     a {
         color: $blue;
+    }
+
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 100vw;
+        background-color: rgba(0, 0, 0, 0.3);
     }
 </style>

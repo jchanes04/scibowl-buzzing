@@ -1,7 +1,17 @@
 <script lang="ts">
     export let scores: NamedScores
+    export let name: string
+
     import type { Category, ScoreType } from "$lib/classes/Game";
     import { convertToCSVNamed, type NamedScores } from "$lib/functions/scoreboard";
+    import { getContext } from "svelte";
+    import type { Writable } from "svelte/store";
+    import EditNames from "./EditNames.svelte";
+    import ShortUniqueId from "short-unique-id";
+    import { page } from "$app/stores";
+    import { goto, invalidateAll } from "$app/navigation";
+    import EditGameName from "./EditGameName.svelte";
+    import Confirm from "$lib/components/Confirm.svelte";
 
     $: rowNumber = Math.max(...Object.keys(scores).map(Number))
     $: rowArray = Array.from({length: rowNumber}, (_, i) => i + 1)
@@ -76,6 +86,121 @@
         }
         return Array.from(teamNames)
     }
+
+    type ModalStore = Writable<{
+        component: ConstructorOfATypedSvelteComponent,
+        props: Record<string, unknown>
+    } | null>
+    const modalStore: ModalStore = getContext('modalStore')
+
+    const generateId = new ShortUniqueId({
+        dictionary: "alphanum",
+        length: 8
+    })
+
+    function editNames() {
+        const teamPlayers = Object.fromEntries(
+            Object.entries(players).map(([teamName, playerNames]) => [generateId(), {
+                teamName,
+                players: Object.fromEntries(playerNames.map(playerName => [generateId(), playerName]))
+            }])
+        ) as Record<string, {
+            teamName: string,
+            players: Record<string, string>
+        }>
+
+        $modalStore = {
+            component: EditNames,
+            props: {
+                teamPlayers,
+                confirmCallback: async (teamNames: Record<string, string>, playerNames: Record<string, string>) => {
+                    $modalStore = null
+                    let teamNameChanges: Record<string, string> = {}
+                    let playerNameChanges: Record<string, Record<string, string>> = {}
+
+                    for (const [id, name] of Object.entries(teamNames)) {
+                        const originalName = teamPlayers[id]?.teamName
+                        if (originalName && name !== originalName) {
+                            teamNameChanges[originalName] = name
+                        }
+                    }
+
+                    for (const [id, name] of Object.entries(playerNames)) {
+                        const teamEntry = Object.values(teamPlayers).find(({ players }) => Object.keys(players).includes(id))
+                        if (teamEntry) {
+                            const { teamName, players } = teamEntry
+                            const originalName = players[id]
+
+                            if (originalName && Object.hasOwn(playerNameChanges, teamName)) {
+                                playerNameChanges[teamName]![originalName] = name
+                            } else if (originalName) {
+                                playerNameChanges[teamName] = {
+                                    [originalName]: name
+                                }
+                            }
+                        }
+                    }
+
+                    await fetch(`/api/tournament/${$page.params.code}/${$page.params.id}`, {
+                        method: "PATCH",
+                        body: JSON.stringify({
+                            teamNameChanges,
+                            playerNameChanges
+                        })
+                    })
+
+                    await invalidateAll()
+                },
+                cancelCallback: () => {
+                    $modalStore = null
+                }
+            }
+        }
+    }
+
+    function editGameName() {
+        $modalStore = {
+            component: EditGameName,
+            props: {
+                confirmCallback: async (newName: string) => {
+                    await fetch(`/api/tournament/${$page.params.code}/${$page.params.id}`, {
+                        method: "PATCH",
+                        body: JSON.stringify({
+                            newName
+                        })
+                    })
+
+                    $modalStore = null
+                },
+                cancelCallback: () => {
+                    $modalStore = null
+                },
+                oldName: name
+            }
+        }
+    }
+
+    function deleteGame() {
+        $modalStore = {
+            component: Confirm,
+            props: {
+                title: "Delete Game",
+                message: `Are you sure you want to delete ${name}?`,
+                confirmCallback: async () => {
+                    await fetch(`/api/tournament/${$page.params.code}/${$page.params.id}`, {
+                        method: "DELETE"
+                    })
+
+                    $modalStore = null
+                    goto(`/tournament/${$page.params.code}`)
+                    invalidateAll()
+                },
+                cancelCallback: () => {
+                    $modalStore = null
+                }
+            }
+        }
+    }
 </script>
 
 <div class="scoreboard">
@@ -148,6 +273,9 @@
     </table>
     <br />
     <button on:click={exportScores}>Export Scores</button>
+    <button on:click={editNames}>Edit Names</button>
+    <button on:click={editGameName}>Rename Game</button>
+    <button on:click={deleteGame}>Delete Game</button>
 </div>
 
 <style lang="scss">
@@ -240,5 +368,6 @@
         @extend %button;
 
         font-size: 22px;
+        margin: 0.25em;
     }
 </style>

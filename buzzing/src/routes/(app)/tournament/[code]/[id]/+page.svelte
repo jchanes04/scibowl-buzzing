@@ -10,7 +10,7 @@
 <div>
     {#if selectedGame}
         <h1>{selectedGame.name}</h1>
-        <NamedScoreboard scores={selectedGame.scores} />
+        <NamedScoreboard scores={selectedGame.scores} name={selectedGame.name} />
     {:else}
         <h1>Game not found</h1>
     {/if}

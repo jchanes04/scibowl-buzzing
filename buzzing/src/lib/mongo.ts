@@ -1,6 +1,7 @@
 import { Collection, MongoClient } from "mongodb"
 import { env } from "$env/dynamic/private"
 import type { NamedScores } from "$lib/functions/scoreboard"
+import type { Category } from "./classes/Game"
 
 type GameScoreRecord = {
     gameId: string,
@@ -16,10 +17,35 @@ type Tournament = {
     admin?: boolean
 }
 
+export type Stats = {
+    gamesPlayed: number,
+    tuh: number,
+    buzzes: number,
+    ppg: number,
+    npg: number,
+    bpg: number,
+    accuracy: number,
+    categories: Record<Category, {
+        tuh: number,
+        buzzes: number,
+        ppg: number,
+        npg: number,
+        bpg: number,
+        accuracy: number
+    }>
+}
+
+type TournamentStatistics = {
+    code: string,
+    playerStats: Record<string, Stats>,
+    teamStats: Record<string, Stats>
+}
+
 const client = new MongoClient(env.DATABASE_URL, { directConnection: true })
 type Collections = {
     gameScores: Collection<GameScoreRecord>,
-    tournaments: Collection<Tournament>
+    tournaments: Collection<Tournament>,
+    tournamentStatistics: Collection<TournamentStatistics>
 }
 async function init(): Promise<Collections> {
     try {
@@ -30,7 +56,8 @@ async function init(): Promise<Collections> {
         console.log('Connected')
         return {
             gameScores: db.collection('gameScores'),
-            tournaments: db.collection('tournaments')
+            tournaments: db.collection('tournaments'),
+            tournamentStatistics: db.collection('tournamentStatistics')
         }
     } catch (e) {
         console.log(e)
@@ -41,7 +68,7 @@ async function init(): Promise<Collections> {
     }
 }
 
-const { gameScores, tournaments } = await init()
+const { gameScores, tournaments, tournamentStatistics } = await init()
 
 export async function updateGameScores(gameId: string, name: string, scores: NamedScores) {
     try {
@@ -57,6 +84,20 @@ export async function updateGameScores(gameId: string, name: string, scores: Nam
             }
         }, {
             upsert: true
+        })
+    } catch {
+
+    }
+}
+
+export async function updateGameName(gameId: string, name: string) {
+    try {
+        await gameScores.updateOne({
+            gameId
+        }, {
+            $set: {
+                name
+            }
         })
     } catch {
 
@@ -110,7 +151,7 @@ export async function createTournament({ code, passwordHash, name}: { code: stri
 
 export async function addGameToTournament(code: string, gameId: string) {
     try {
-        await tournaments.updateOne({
+        tournaments.updateOne({
             code
         }, {
             $push: {
@@ -119,5 +160,47 @@ export async function addGameToTournament(code: string, gameId: string) {
         })
     } catch {
         
+    }
+}
+
+export async function deleteGame(gameId: string) {
+    try {
+        gameScores.deleteOne({ gameId })
+    } catch {
+        
+    }
+}
+
+export async function getStatistics(code: string) {
+    try {
+        return tournamentStatistics.findOne({
+            code
+        })
+    } catch {
+        return null
+    }
+}
+
+type GameStatistics = {
+    teamStats: Record<string, Stats>,
+    playerStats: Record<string, Stats>
+}
+
+export async function updateStatistics(code: string, statistics: GameStatistics) {
+    try {
+        tournamentStatistics.updateOne({
+            code
+        }, {
+            $set: {
+                ...statistics
+            },
+            $setOnInsert: {
+                code
+            }
+        }, {
+            upsert: true
+        })
+    } catch {
+
     }
 }
