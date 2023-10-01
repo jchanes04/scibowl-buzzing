@@ -32,7 +32,9 @@
     let selectedStatsType: "Team Stats" | "Player Stats" = "Team Stats"
 
     function pickSelectedStats(category: string, type: "Team Stats" | "Player Stats") {
-        const s = type === "Team Stats" ? stats!.teamStats : stats!.playerStats
+        if (!stats) return {}
+
+        const s = type === "Team Stats" ? stats.teamStats : stats.playerStats
         return category === "Overall"
             ? s
             : Object.fromEntries(
