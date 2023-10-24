@@ -38,6 +38,7 @@
             <form method="POST" use:enhance={() => {
                 return ({ update }) => {
                     invalidateAll()
+                    newTournamentName = ""
                     update()
                 }
             }}>
