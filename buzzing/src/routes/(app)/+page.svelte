@@ -1,6 +1,10 @@
 <script lang="ts">
 </script>
 
+<svelte:head>
+    <title>ESBOT Buzzing System</title>
+</svelte:head>
+
 <main>    
     <section id="hero">
         <h1>Welcome to the Enloe Science Bowl Buzzing System</h1>
