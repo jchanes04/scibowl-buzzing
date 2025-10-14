@@ -1,24 +1,25 @@
- <script lang="ts">
-    import chatMessagesStore from '$lib/stores/chatMessages';
-    import { afterUpdate } from 'svelte'
+<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
+<script lang="ts">
+    import chatMessages from "$lib/stores/chatMessages.svelte";
+    import { afterUpdate } from "svelte";
 
-    let chatMessagesElement: HTMLElement
+    let chatMessagesElement: HTMLElement;
     afterUpdate(() => {
-        chatMessagesElement.scrollTo(0, chatMessagesElement.scrollHeight)
-    })
+        chatMessagesElement.scrollTo(0, chatMessagesElement.scrollHeight);
+    });
 </script>
 
 <div class="chatbox">
     <h2>Chat</h2>
     <div class="chat-messages" bind:this={chatMessagesElement}>
-        {#each $chatMessagesStore as message}
+        {#each chatMessages as message}
             <p class={message.type}>{message.text}</p>
         {/each}
     </div>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .chatbox {
         grid-area: chat-box;

@@ -1,23 +1,31 @@
 <script lang="ts">
+    import { run } from "svelte/legacy";
+
     import { enhance } from "$app/forms";
     import Select from "svelte-select/Select.svelte";
-    import type { PageData } from "./$types"
+    import type { PageData } from "./$types";
     import PlayerStatistics from "./PlayerStatistics.svelte";
     import TeamStatistics from "./TeamStatistics.svelte";
-   
+
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import type { Category } from "$lib/classes/Game";
 
-    export let data: PageData
-    let { stats, code } = data
-    $: ({ stats, code } = data)
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+    let { stats, code } = $state(data);
+    run(() => {
+        ({ stats, code } = data);
+    });
 
     type ModalStore = Writable<{
-        component: ConstructorOfATypedSvelteComponent,
-        props: Record<string, unknown>
-    } | null>
-    const modalStore: ModalStore = getContext('modalStore')
+        component: ConstructorOfATypedSvelteComponent;
+        props: Record<string, unknown>;
+    } | null>;
+    const modalStore: ModalStore = getContext("modalStore");
 
     const categoryMappings: Record<string, string> = {
         "Overall": "Overall",
@@ -27,36 +35,47 @@
         "Physics": "physics",
         "Math": "math",
         "Energy": "energy"
-    }
-    let selectedCategory: string = "Overall"
-    let selectedStatsType: "Team Stats" | "Player Stats" = "Team Stats"
+    };
+    let selectedCategory: string = $state("Overall");
+    let selectedStatsType: "Team Stats" | "Player Stats" = $state("Team Stats");
 
     function pickSelectedStats(category: string, type: "Team Stats" | "Player Stats") {
-        if (!stats) return {}
+        if (!stats) return {};
 
-        const s = type === "Team Stats" ? stats.teamStats : stats.playerStats
+        const s = type === "Team Stats" ? stats.teamStats : stats.playerStats;
         return category === "Overall"
             ? s
             : Object.fromEntries(
-                Object.entries(s).map(([name, val]) => {
-                    const cat = categoryMappings[category] as Category
-                    return [name, {
-                        ...val.categories[cat],
-                        gamesPlayed: val.gamesPlayed
-                    }]
-                })
-            )
+                  Object.entries(s).map(([name, val]) => {
+                      const cat = categoryMappings[category] as Category;
+                      return [
+                          name,
+                          {
+                              ...val.categories[cat],
+                              gamesPlayed: val.gamesPlayed
+                          }
+                      ];
+                  })
+              );
     }
-    $: selectedStats = pickSelectedStats(selectedCategory, selectedStatsType)
+    let selectedStats = $derived(pickSelectedStats(selectedCategory, selectedStatsType));
 </script>
 
 <main>
     {#if stats}
         <div class="menu">
-            <Select items={Object.keys(categoryMappings)} value={{ label: "Overall", value: "Overall" }}
-                bind:justValue={selectedCategory} showChevron clearable={false} />
-            <Select items={["Team Stats", "Player Stats"]} value={{ label: "Team Stats", value: "Team Stats" }}
-                bind:justValue={selectedStatsType} showChevron clearable={false} />
+            <Select
+                items={Object.keys(categoryMappings)}
+                value={{ label: "Overall", value: "Overall" }}
+                bind:justValue={selectedCategory}
+                showChevron
+                clearable={false} />
+            <Select
+                items={["Team Stats", "Player Stats"]}
+                value={{ label: "Team Stats", value: "Team Stats" }}
+                bind:justValue={selectedStatsType}
+                showChevron
+                clearable={false} />
         </div>
         {#if selectedStatsType === "Team Stats"}
             <TeamStatistics teamStats={selectedStats} category={selectedCategory} />
@@ -72,7 +91,7 @@
 </main>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .menu {
         display: flex;

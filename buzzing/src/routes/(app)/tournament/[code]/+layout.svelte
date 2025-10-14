@@ -1,49 +1,58 @@
 <script lang="ts">
+    import { run } from "svelte/legacy";
+
     import type { NamedScores } from "$lib/functions/scoreboard";
     import type { LayoutData } from "./$types";
     import { setContext } from "svelte";
     import { writable } from "svelte/store";
 
-    export let data: LayoutData
-    let { games, code, name } = data
-    $: ({ games, code, name } = data)
+    interface Props {
+        data: LayoutData;
+        children?: import("svelte").Snippet;
+    }
+
+    let { data, children }: Props = $props();
+    let { games, code, name } = $state(data);
+    run(() => {
+        ({ games, code, name } = data);
+    });
 
     function getTeamNames(scores: NamedScores) {
-        const teamNames = new Set<string>()
+        const teamNames = new Set<string>();
         for (const row of Object.values(scores)) {
             if (row.bonus?.teamName) {
-                teamNames.add(row.bonus.teamName)
+                teamNames.add(row.bonus.teamName);
             }
         }
-        return Array.from(teamNames)
+        return Array.from(teamNames);
     }
 
     const pointValues = {
         tossup: 4,
         bonus: 10,
         penalty: -4
-    }
+    };
 
     function sumQuestionScores(teamName: string, scores: NamedScores) {
         return Object.values(scores).reduce((acc, q) => {
             if (q.tossup[teamName]?.scoreType === "correct") {
-                acc += pointValues.tossup 
+                acc += pointValues.tossup;
             } else if (q.tossup[teamName]?.scoreType === "penalty") {
-                acc += pointValues.penalty
+                acc += pointValues.penalty;
             }
 
             if (q.bonus?.teamName === teamName && q.bonus?.correct) {
-                acc += pointValues.bonus
+                acc += pointValues.bonus;
             }
-            return acc
-        }, 0)
+            return acc;
+        }, 0);
     }
 
     const modalStore = writable<{
-        component: ConstructorOfATypedSvelteComponent,
-        props: Record<string, unknown>
-    } | null>(null)
-    setContext('modalStore', modalStore)
+        component: ConstructorOfATypedSvelteComponent;
+        props: Record<string, unknown>;
+    } | null>(null);
+    setContext("modalStore", modalStore);
 </script>
 
 <svelte:head>
@@ -74,14 +83,14 @@
         </div>
     </div>
     <div class="game-scores">
-        <slot></slot>
+        {@render children?.()}
     </div>
 </main>
 {#if $modalStore}
-    <div class="modal-background" />
-    <svelte:component this={$modalStore.component} {...$modalStore.props} />
+    <div class="modal-background"></div>
+    {@const SvelteComponent = $modalStore.component}
+    <SvelteComponent {...$modalStore.props} />
 {/if}
-
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;

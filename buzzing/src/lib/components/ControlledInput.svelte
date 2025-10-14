@@ -1,23 +1,32 @@
 <script lang="ts">
-    export let validateFunction: (value: string) => boolean
-    export let name: string
-    export let value: string = ""
-    export let placeholderValue: string = ""
-    
-    let lastValue = value
+    interface Props {
+        validateFunction: (value: string) => boolean;
+        name: string;
+        value?: string;
+        placeholderValue?: string;
+    }
+
+    let { validateFunction, name, value = $bindable(""), placeholderValue = "" }: Props = $props();
+
+    let lastValue = $state(value);
 </script>
 
-<input type="text" placeholder={placeholderValue} name={name} bind:value on:input={() => {
-    if (validateFunction(value)) {
-        lastValue = value.toUpperCase()
-        value = value.toUpperCase()
-    } else {
-        value = lastValue
-    }
-}} />
+<input
+    type="text"
+    placeholder={placeholderValue}
+    {name}
+    bind:value
+    oninput={() => {
+        if (validateFunction(value)) {
+            lastValue = value.toUpperCase();
+            value = value.toUpperCase();
+        } else {
+            value = lastValue;
+        }
+    }} />
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     input[type="text"] {
         @extend %text-input;

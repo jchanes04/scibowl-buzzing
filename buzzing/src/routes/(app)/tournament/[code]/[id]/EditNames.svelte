@@ -1,20 +1,31 @@
 <script lang="ts">
-    export let teamPlayers: Record<string, {
-        teamName: string,
-        players: Record<string, string>
-    }>
-    export let confirmCallback: (teamNames: Record<string, string>, playerNames: Record<string, string>) => void
-    export let cancelCallback: () => void
+    interface Props {
+        teamPlayers: Record<
+            string,
+            {
+                teamName: string;
+                players: Record<string, string>;
+            }
+        >;
+        confirmCallback: (teamNames: Record<string, string>, playerNames: Record<string, string>) => void;
+        cancelCallback: () => void;
+    }
 
-    let teamNames: Record<string, string> = Object.fromEntries(
-        Object.entries(teamPlayers).map(([teamId, { teamName }]) => [teamId, teamName])
-    )
-    let playerNames: Record<string, string> = Object.fromEntries(
-        Object.values(teamPlayers).map(({ players }) => Object.entries(players)).flat()
-    )
+    let { teamPlayers, confirmCallback, cancelCallback }: Props = $props();
+
+    let teamNames: Record<string, string> = $state(
+        Object.fromEntries(Object.entries(teamPlayers).map(([teamId, { teamName }]) => [teamId, teamName]))
+    );
+    let playerNames: Record<string, string> = $state(
+        Object.fromEntries(
+            Object.values(teamPlayers)
+                .map(({ players }) => Object.entries(players))
+                .flat()
+        )
+    );
 
     function confirm() {
-        confirmCallback(teamNames, playerNames)
+        confirmCallback(teamNames, playerNames);
     }
 </script>
 
@@ -35,12 +46,12 @@
         {/each}
     </ul>
 
-    <button on:click={confirm}>Save Changes</button>
-    <button on:click={cancelCallback}>Cancel</button>
+    <button onclick={confirm}>Save Changes</button>
+    <button onclick={cancelCallback}>Cancel</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .modal {
         background: $background-2;
@@ -54,7 +65,7 @@
 
     button {
         @extend %button;
-        
+
         font-size: 20px;
         padding: 0.6em;
         border-radius: 0.6em;

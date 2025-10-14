@@ -1,28 +1,42 @@
 <script lang="ts">
-    import JoinMemberList from '$lib/components/JoinMemberList.svelte'
+    import JoinMemberList from "$lib/components/JoinMemberList.svelte";
     import Select from "svelte-select";
-    import type { PageData } from './$types'
+    import type { PageProps } from "./$types";
     import type { TeamData } from "$lib/classes/Team";
 
-    export let data: PageData
-    let { memberNames, gameName, settings, teams } = data
-    $: ({ memberNames, gameName, settings, teams } = data)
+    let { data }: PageProps = $props();
+    let memberNames = $derived(data.memberNames);
+    let gameName = $derived(data.gameName);
+    let settings = $derived(data.settings);
+    let teams = $derived(data.teams);
 
-    let memberName = ''
-    let teamOrIndiv: "indiv" | "team" | "new-team" | null = null
-    let selectedTeam: TeamData
-    let newTeamName: string
-    let showRadio: boolean = true
-    if (settings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv"
-    if (settings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team"
-    if (!(settings.individualsAllowed || settings.newTeamsAllowed)) teamOrIndiv = "team"
+    let memberName = $state("");
+    // TODO: update select component
+    let selectedTeam: TeamData | null = null;
+    let newTeamName: string = $state("");
+    let teamOrIndiv: "indiv" | "team" | "new-team" | null = $derived.by(() => {
+        if (settings.individualsAllowed && teams.length == 0) {
+            return "indiv";
+        } else if (settings.newTeamsAllowed && teams.length == 0) {
+            return "new-team";
+        } else if (!(settings.individualsAllowed || settings.newTeamsAllowed)) {
+            return "team";
+        } else {
+            return null;
+        }
+    });
+    let showRadio: boolean = $derived(teamOrIndiv === null);
 
-    if (teamOrIndiv !== null) showRadio = false
-    $: disabled = !memberName || !teamOrIndiv || (teamOrIndiv === "new-team" && !newTeamName) || (teamOrIndiv === "team" && !selectedTeam)
-        
+    let disabled = $derived(
+        !memberName ||
+            !teamOrIndiv ||
+            (teamOrIndiv === "new-team" && !newTeamName) ||
+            (teamOrIndiv === "team" && !selectedTeam)
+    );
+
     function handleTeamNameInput() {
         if (newTeamName.length > 30) {
-            newTeamName = newTeamName.slice(0, 30)
+            newTeamName = newTeamName.slice(0, 30);
         }
     }
 </script>
@@ -44,7 +58,7 @@
                 <div class="radio-wrapper">
                     <label for="indiv">
                         <input id="indiv" type="radio" name="team-or-indiv" value="indiv" bind:group={teamOrIndiv} />
-                        <span />
+                        <span></span>
                         Play on my own
                     </label>
                 </div>
@@ -54,24 +68,34 @@
                 {#if showRadio}
                     <div class="radio-wrapper">
                         <label for="new-team">
-                            <input id="new-team" type="radio" name="team-or-indiv" value="new-team" bind:group={teamOrIndiv} />
-                            <span />
+                            <input
+                                id="new-team"
+                                type="radio"
+                                name="team-or-indiv"
+                                value="new-team"
+                                bind:group={teamOrIndiv} />
+                            <span></span>
                             Create a new team:
                         </label>
                     </div>
                 {/if}
                 <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
-                    <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} on:input={handleTeamNameInput} />
+                    <input
+                        type="text"
+                        placeholder="Team Name"
+                        name="new-team-name"
+                        bind:value={newTeamName}
+                        oninput={handleTeamNameInput} />
                 </div>
                 <br />
-            {/if} 
+            {/if}
             {#if teams.length > 0}
                 {#if showRadio}
                     <div class="radio-wrapper">
                         <label for="team">
                             <input id="team" type="radio" name="team-or-indiv" value="team" bind:group={teamOrIndiv} />
-                            <span />
-                                Play with an existing team:                        
+                            <span></span>
+                            Play with an existing team:
                         </label>
                     </div>
                 {:else}
@@ -79,20 +103,27 @@
                 {/if}
 
                 <div class="select-wrapper" style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
-                    <Select itemId="id" label="name" items={teams} bind:value={selectedTeam} placeholder="Team" searchable={false} showChevron={true} />
-                    <input type="hidden" name="team-id" value={selectedTeam?.id}>
+                    <Select
+                        itemId="id"
+                        label="name"
+                        items={teams}
+                        bind:value={selectedTeam}
+                        placeholder="Team"
+                        searchable={false}
+                        showChevron={true} />
+                    <input type="hidden" name="team-id" value={selectedTeam?.id} />
                 </div>
                 <br />
                 <br />
             {/if}
             <button id="join-game" {disabled}>Join</button>
         </div>
-        <JoinMemberList memberNames={memberNames} />
+        <JoinMemberList {memberNames} />
     </form>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     form {
         margin: 0em auto;
@@ -140,15 +171,15 @@
             width: 1em;
             height: 1em;
             border-radius: 50%;
-            border: #CCC 2px solid;
+            border: #ccc 2px solid;
             display: inline-grid;
             place-content: center;
-            background: #FFF;
+            background: #fff;
             vertical-align: text-top;
             margin-right: 0.3em;
 
             &::after {
-                content: '';
+                content: "";
                 display: none;
                 width: 0.7em;
                 height: 0.7em;

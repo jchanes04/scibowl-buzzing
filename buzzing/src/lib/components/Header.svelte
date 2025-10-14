@@ -1,6 +1,4 @@
 <script lang="ts">
-
-    
 </script>
 
 <div class="header">
@@ -12,7 +10,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .header {
         background: white;
@@ -26,7 +24,7 @@
         width: 100%;
         z-index: 5;
     }
-    
+
     h1 {
         display: inline-block;
         margin-left: 0.75em;
@@ -45,7 +43,7 @@
         margin: 0.5em 1em 0.5em auto;
         font-size: 32px;
     }
-    
+
     a {
         text-decoration: none;
         color: inherit;

@@ -1,23 +1,24 @@
+<!-- @migration-task Error while migrating Svelte code: `<tr>` is invalid inside `<table>` -->
 <script lang="ts">
     import { convertStatsToCSV, type OptionalCategoryStats } from "$lib/functions/statistics";
 
-    export let playerStats: Record<string, OptionalCategoryStats>
-    export let category: string
-    
+    export let playerStats: Record<string, OptionalCategoryStats>;
+    export let category: string;
+
     function round(num: number) {
-        return Math.round((num + Number.EPSILON) * 100) / 100
+        return Math.round((num + Number.EPSILON) * 100) / 100;
     }
 
     async function exportStats() {
-        const csv = await convertStatsToCSV(playerStats)
-        const url = window.URL.createObjectURL(new Blob([csv], { type: "plain/text" }))
-        const a = document.createElement('a')
-        a.style.display = 'none'
-        a.href = url
-        a.download = `playerStats${category}.csv`
-        document.body.appendChild(a)
-        a.click()
-        URL.revokeObjectURL(url)
+        const csv = await convertStatsToCSV(playerStats);
+        const url = window.URL.createObjectURL(new Blob([csv], { type: "plain/text" }));
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = `playerStats${category}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
     }
 </script>
 
@@ -51,12 +52,5 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
-
-    button {
-        @extend %button;
-
-        font-size: 22px;
-        margin: 0.25em;
-    }
+    /*$$__STYLE_CONTENT__$$*/
 </style>

@@ -1,5 +1,9 @@
 <script lang="ts">
-    export let memberNames: string[] = []
+    interface Props {
+        memberNames?: string[];
+    }
+
+    let { memberNames = [] }: Props = $props();
 </script>
 
 <div>
@@ -12,7 +16,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     div {
         margin-top: 1em;

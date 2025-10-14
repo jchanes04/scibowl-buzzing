@@ -1,17 +1,20 @@
 <script lang="ts">
-    export let names: {
-        item: string,
-        score: number
-    }[]
-    export let original: string
+    interface Props {
+        names: {
+            item: string;
+            score: number;
+        }[];
+        original: string;
+        confirmCallback: (alias: string | null) => void;
+    }
 
-    export let confirmCallback: (alias: string | null) => void
+    let { names, original, confirmCallback }: Props = $props();
 
-    let alias: string | null | undefined = undefined
+    let alias: string | null | undefined = $state(undefined);
 
     function confirm() {
         if (alias !== undefined) {
-            confirmCallback(alias)
+            confirmCallback(alias);
         }
     }
 </script>
@@ -35,11 +38,11 @@
         </li>
     </ul>
 
-    <button on:click={confirm} disabled={alias === undefined}>Confirm selection</button>
+    <button onclick={confirm} disabled={alias === undefined}>Confirm selection</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .modal {
         background: $background-2;
@@ -53,7 +56,7 @@
 
     button {
         @extend %button;
-        
+
         font-size: 20px;
         padding: 0.6em;
         border-radius: 0.6em;

@@ -1,43 +1,48 @@
 <script lang="ts">
-    import JoinLinkDialog from "./JoinLinkDialog.svelte"
+    import JoinLinkDialog from "./JoinLinkDialog.svelte";
 
-    export let gameName: string
-    export let joinCode: string
-    export let spectator = false
+    interface Props {
+        gameName: string;
+        joinCode: string;
+        spectator?: boolean;
+        children?: import("svelte").Snippet;
+    }
 
-    let dialogOpen = false
-    let clickLock = false
-    let joinCodeElement: HTMLElement
+    let { gameName, joinCode, spectator = false, children }: Props = $props();
+
+    let dialogOpen = $state(false);
+    let clickLock = false;
+    let joinCodeElement: HTMLElement = $state();
 
     function openDialog() {
-        dialogOpen = !dialogOpen
+        dialogOpen = !dialogOpen;
     }
 
     function handleWindowClick(e: MouseEvent) {
-    if (!joinCodeElement.contains(e.target as Node) && !clickLock) {
-            dialogOpen = false
+        if (!joinCodeElement.contains(e.target as Node) && !clickLock) {
+            dialogOpen = false;
         }
     }
 
     function handleMouseDown(e: MouseEvent) {
         if (joinCodeElement.contains(e.target as Node)) {
-            clickLock = true
+            clickLock = true;
         }
     }
 
     function handleMouseUp() {
-        clickLock = false
+        clickLock = false;
     }
 </script>
 
-<svelte:window on:click={handleWindowClick} on:mousedown={handleMouseDown} on:mouseup={handleMouseUp} />
+<svelte:window onclick={handleWindowClick} onmousedown={handleMouseDown} onmouseup={handleMouseUp} />
 
 <div id="top-bar">
     <div>
         <h1 class="game-name">{gameName}</h1>
     </div>
     <div style="position: relative;" bind:this={joinCodeElement}>
-        <h1 class="join-code" on:click={openDialog}>{joinCode}<span class="icon open" /></h1>
+        <h1 class="join-code" onclick={openDialog}>{joinCode}<span class="icon open"></span></h1>
         {#if dialogOpen}
             <div class="join-link-wrapper">
                 <JoinLinkDialog {spectator} />
@@ -45,16 +50,16 @@
         {/if}
     </div>
     <div>
-        <slot></slot>
+        {@render children?.()}
     </div>
 </div>
 <div id="mobile-top-bar">
     <h1>{joinCode}</h1>
-    <slot></slot>
+    {@render children?.()}
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     #top-bar {
         grid-area: top-bar;
@@ -98,7 +103,7 @@
     }
 
     .open {
-        background-image: url('/cheveron-down.svg');
+        background-image: url("/cheveron-down.svg");
     }
 
     .join-link-wrapper {

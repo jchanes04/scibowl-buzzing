@@ -1,11 +1,13 @@
 <script lang="ts">
-    import MemberList from "../../MemberList.svelte";
-    import Chatbox from '../../Chatbox.svelte'
-    import TopBar from '$lib/components/TopBar.svelte'
-    import Timer from '../../Timer.svelte'
-    import Scoreboard from '../../Scoreboard.svelte'
+    import { run } from "svelte/legacy";
 
-    import type { PageServerData } from "./$types"
+    import MemberList from "../../MemberList.svelte";
+    import Chatbox from "../../Chatbox.svelte";
+    import TopBar from "$lib/components/TopBar.svelte";
+    import Timer from "../../Timer.svelte";
+    import Scoreboard from "../../Scoreboard.svelte";
+
+    import type { PageServerData } from "./$types";
 
     import gameStore from "$lib/stores/game";
     import teamsStore, { createTeamStore } from "$lib/stores/teams";
@@ -16,50 +18,56 @@
     import { beforeNavigate, invalidateAll } from "$app/navigation";
     import SpectatorScoreboard from "../SpectatorScoreboard.svelte";
 
-    export let data: Required<PageServerData>
-    let { gameInfo, teamList, moderatorList, playerList, scores } = data
-    $: ({ gameInfo, teamList, moderatorList, playerList, scores } = data)
+    interface Props {
+        data: Required<PageServerData>;
+    }
 
-    const socket = createSocket(true)
-    playersStore.clear()
-    moderatorsStore.clear()
-    teamsStore.clear()
+    let { data }: Props = $props();
+    let { gameInfo, teamList, moderatorList, playerList, scores } = $state(data);
+    run(() => {
+        ({ gameInfo, teamList, moderatorList, playerList, scores } = data);
+    });
+
+    const socket = createSocket(true);
+    playersStore.clear();
+    moderatorsStore.clear();
+    teamsStore.clear();
 
     $gameStore = {
         ...gameInfo,
         state: {
-            questionState: 'idle',
+            questionState: "idle",
             currentBuzzer: null,
             currentQuestion: null,
             buzzingEnabled: false,
             buzzedTeamIds: []
         },
         scores
-    }
+    };
 
     for (const t of Object.values(teamList)) {
-        const newStore = createTeamStore(t)
-        teamsStore.addTeam(newStore)
+        const newStore = createTeamStore(t);
+        teamsStore.addTeam(newStore);
     }
 
     for (const p of Object.values(playerList)) {
-        const team = $teamsStore[p.teamID]
+        const team = $teamsStore[p.teamID];
         if (team) {
-            const player = createPlayerStore(p, team.store)
-            team.store.addPlayer(player)
-            playersStore.addPlayer(player)
+            const player = createPlayerStore(p, team.store);
+            team.store.addPlayer(player);
+            playersStore.addPlayer(player);
         }
     }
 
     for (const m of Object.values(moderatorList)) {
-        const moderator = createModeratorStore(m)
-        moderatorsStore.addModerator(moderator)
+        const moderator = createModeratorStore(m);
+        moderatorsStore.addModerator(moderator);
     }
 
     beforeNavigate(() => {
-        socket.disconnect()
-        invalidateAll()
-    })
+        socket.disconnect();
+        invalidateAll();
+    });
 </script>
 
 <svelte:head>
@@ -78,9 +86,9 @@
 <style lang="scss">
     main {
         display: grid;
-        grid-template-columns: .1fr 1fr 1fr .1fr;
+        grid-template-columns: 0.1fr 1fr 1fr 0.1fr;
         grid-template-rows: max(10vh, 80px) auto;
-        grid-template-areas: 
+        grid-template-areas:
             "top-bar top-bar top-bar top-bar"
             ". member-list chat-box ."
             ". scoreboard scoreboard .";
@@ -89,9 +97,9 @@
         justify-self: stretch;
 
         @media (max-width: 500px) {
-            grid-template-columns: .05fr 1fr.05fr;
+            grid-template-columns: 0.05fr 1fr.05fr;
             grid-template-rows: max(10vh, 80px) auto auto auto;
-            grid-template-areas: 
+            grid-template-areas:
                 "top-bar top-bar top-bar"
                 ". chat-box ."
                 ". scoreboard ."

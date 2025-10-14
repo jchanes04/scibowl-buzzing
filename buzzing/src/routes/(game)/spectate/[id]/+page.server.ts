@@ -1,35 +1,28 @@
-import { generateGameToken } from "$lib/authentication"
-import { getGame } from "$lib/server"
-import { redirect } from "@sveltejs/kit"
-import type { PageServerLoad } from "./$types"
-import { env } from "$env/dynamic/public"
+import { generateGameToken } from "$lib/authentication";
+import { getGame } from "$lib/server";
+import { redirect } from "@sveltejs/kit";
+import type { PageServerLoad } from "./$types";
+import { env } from "$env/dynamic/public";
 
-export const load = async function({ params, cookies }) {
-    const { id } = params
-    const game = getGame(id)
+export const load = async function ({ params, cookies }) {
+    const { id } = params;
+    const game = getGame(id);
 
-    if (!game)
-        throw redirect(302, "/join")
+    if (!game) redirect(302, "/join");
 
-    const gameToken = cookies.get('gameToken')
+    const gameToken = cookies.get("gameToken");
     if (!gameToken) {
-        const newToken = generateGameToken({ gameId: id, spectator: true, memberId: "" })
+        const newToken = generateGameToken({ gameId: id, spectator: true, memberId: "" });
         cookies.set("gameToken", newToken, {
             path: "/",
-            domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
-        })
+            domain: new URL(env.PUBLIC_COOKIE_URL as string).hostname
+        });
     }
 
-    const playerList = Object.fromEntries(
-        Object.entries(game.players).map(([id, m]) => [id, m.data])
-    )
-    const teamList = Object.fromEntries(
-        Object.entries(game.teams).map(([id, t]) => [id, t.data])
-    )
-    const moderatorList = Object.fromEntries(
-        Object.entries(game.moderators).map(([id, m]) => [id, m.data])
-    )
-        
+    const playerList = Object.fromEntries(Object.entries(game.players).map(([id, m]) => [id, m.data]));
+    const teamList = Object.fromEntries(Object.entries(game.teams).map(([id, t]) => [id, t.data]));
+    const moderatorList = Object.fromEntries(Object.entries(game.moderators).map(([id, m]) => [id, m.data]));
+
     return {
         gameInfo: {
             id,
@@ -41,5 +34,5 @@ export const load = async function({ params, cookies }) {
         playerList,
         teamList,
         moderatorList
-    }
-} satisfies PageServerLoad
+    };
+} satisfies PageServerLoad;

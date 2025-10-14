@@ -1,6 +1,4 @@
 <script lang="ts">
-
-    
 </script>
 
 <div class="header">
@@ -14,7 +12,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .header {
         background: white;
@@ -22,17 +20,17 @@
         width: 100%;
         z-index: 5;
     }
-    
+
     h1 {
         display: inline-block;
-        margin: 0.25em 0em 0.25em 0.75em; 
+        margin: 0.25em 0em 0.25em 0.75em;
         font-size: 32px;
 
         @media (max-width: 800px) {
             display: none;
         }
     }
-    
+
     .right {
         margin-right: 1em;
         display: inline-flex;
@@ -48,7 +46,7 @@
         flex-direction: row;
         gap: 1em;
     }
-    
+
     a {
         text-decoration: none;
         color: inherit;

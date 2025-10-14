@@ -1,25 +1,33 @@
 <script lang="ts">
-    export let title: string
-    export let message: string
-    export let options: Record<string, unknown>
-    export let confirmCallback: (value: string) => void
-    export let cancelCallback: () => void;
+    import { run } from "svelte/legacy";
 
-    let opts = options as { defaultValue: string, fieldName: string }
-    $: opts = options as { defaultValue: string, fieldName: string }
-    let value = opts.defaultValue
+    interface Props {
+        title: string;
+        message: string;
+        options: Record<string, unknown>;
+        confirmCallback: (value: string) => void;
+        cancelCallback: () => void;
+    }
+
+    let { title, message, options, confirmCallback, cancelCallback }: Props = $props();
+
+    let opts = $state(options as { defaultValue: string; fieldName: string });
+    run(() => {
+        opts = options as { defaultValue: string; fieldName: string };
+    });
+    let value = $state(opts.defaultValue);
 </script>
 
 <div class="text-field-modal">
     <h2>{title}</h2>
     <p>{message}</p>
     <input type="text" bind:value placeholder={opts.fieldName} /><br /><br />
-    <button on:click={cancelCallback}>Cancel</button>
-    <button on:click={() => confirmCallback(value)}>Confirm</button>
+    <button onclick={cancelCallback}>Cancel</button>
+    <button onclick={() => confirmCallback(value)}>Confirm</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .text-field-modal {
         background: $background-2;
@@ -33,7 +41,7 @@
 
     button {
         @extend %button;
-        
+
         font-size: 20px;
         padding: 0.6em;
         border-radius: 0.6em;

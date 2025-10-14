@@ -1,20 +1,24 @@
 <script lang="ts">
-    export let title: string
-    export let message: string
-    export let confirmCallback: () => void
-    export let cancelCallback: () => void
+    interface Props {
+        title: string;
+        message: string;
+        confirmCallback: () => void;
+        cancelCallback: () => void;
+    }
+
+    let { title, message, confirmCallback, cancelCallback }: Props = $props();
 </script>
 
 <div class="confirm-modal">
     <h2>{title}</h2>
     <p>{message}</p>
-    <button on:click={cancelCallback}>Cancel</button>
-    <button on:click={confirmCallback}>Confirm</button>
+    <button onclick={cancelCallback}>Cancel</button>
+    <button onclick={confirmCallback}>Confirm</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
-    
+    @use "$styles/_global.scss" as *;
+
     .confirm-modal {
         background: $background-2;
         border-radius: 15px;
@@ -27,7 +31,7 @@
 
     button {
         @extend %button;
-        
+
         font-size: 20px;
         padding: 0.6em;
         border-radius: 0.6em;

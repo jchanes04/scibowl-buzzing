@@ -1,10 +1,18 @@
 <script lang="ts">
-    import type { PageData } from "./$types"
+    import { run } from "svelte/legacy";
+
+    import type { PageData } from "./$types";
     import NamedScoreboard from "./NamedScoreboard.svelte";
 
-    export let data: PageData
-    let { selectedGame } = data
-    $: ({ selectedGame } = data)
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+    let { selectedGame } = $state(data);
+    run(() => {
+        ({ selectedGame } = data);
+    });
 </script>
 
 <div>

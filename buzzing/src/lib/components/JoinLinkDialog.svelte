@@ -1,45 +1,50 @@
 <script lang="ts">
     import gameStore from "$lib/stores/game";
     import { tick } from "svelte";
-    import { env } from "$env/dynamic/public"
+    import { env } from "$env/dynamic/public";
 
-    export let spectator = false
+    interface Props {
+        spectator?: boolean;
+    }
 
-    let joinLink = spectator
-        ? `${env.PUBLIC_HOST_URL}/spectate/${$gameStore.id}`
-        : `${env.PUBLIC_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`
-    let inputElement: HTMLInputElement
-    let copied = false
+    let { spectator = false }: Props = $props();
 
-    async function handleInput() {
-        await tick()
-        joinLink = spectator
+    let joinLink = $state(
+        spectator
             ? `${env.PUBLIC_HOST_URL}/spectate/${$gameStore.id}`
             : `${env.PUBLIC_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`
-        await tick()
-        inputElement.setSelectionRange(0, 0)
+    );
+    let inputElement: HTMLInputElement | null = $state(null);
+    let copied = $state(false);
+
+    async function handleInput() {
+        await tick();
+        joinLink = spectator
+            ? `${env.PUBLIC_HOST_URL}/spectate/${$gameStore.id}`
+            : `${env.PUBLIC_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`;
+        await tick();
+        inputElement?.setSelectionRange(0, 0);
     }
 
     function copyLink() {
-        inputElement.select()
-        inputElement.setSelectionRange(0, joinLink.length)
-        navigator.clipboard.writeText(joinLink)
-        copied = true
-        setTimeout(() => copied = false, 2000)
+        inputElement?.select();
+        inputElement?.setSelectionRange(0, joinLink.length);
+        navigator.clipboard.writeText(joinLink);
+        copied = true;
+        setTimeout(() => (copied = false), 2000);
     }
 </script>
 
 <div class="join-link-dialog">
-    <input type="text" bind:value={joinLink} on:input={handleInput} bind:this={inputElement}
-        spellcheck={false} />
-    <button on:click={copyLink}>{copied ? "Copied" : "Copy"}</button>
+    <input type="text" bind:value={joinLink} oninput={handleInput} bind:this={inputElement} spellcheck={false} />
+    <button onclick={copyLink}>{copied ? "Copied" : "Copy"}</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .join-link-dialog {
-        background-color: #EEE;
+        background-color: #eee;
         position: relative;
         display: flex;
         flex-direction: row;
@@ -49,13 +54,13 @@
         border: 1px solid black;
 
         &::after {
-            content: '';
+            content: "";
             position: absolute;
             top: 0px;
             left: 50%;
             height: 20px;
             width: 20px;
-            background-color: #EEE;
+            background-color: #eee;
             border-top: 1px solid black;
             border-right: 1px solid black;
             transform: translate(-50%, -50%) rotate(-45deg);

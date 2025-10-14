@@ -1,17 +1,18 @@
-import calculateStatistics from "$lib/functions/statistics"
-import { getStatistics, getTournament, getTournamentScores, updateStatistics } from "$lib/mongo"
-import { fail, redirect } from "@sveltejs/kit"
-import type { PageServerLoad, Actions } from "./$types"
+import calculateStatistics from "$lib/functions/statistics";
+import { getStatistics, getTournament, getTournamentScores, updateStatistics } from "$lib/mongo";
+import { fail, redirect } from "@sveltejs/kit";
+import type { PageServerLoad, Actions } from "./$types";
 
-export const load = async function({ params }) {
-    const { code } = params
-    const stats = await getStatistics(code)
+export const load = async function ({ params }) {
+    const { code } = params;
+    const stats = await getStatistics(code);
 
-    if (!stats) return {
-        code
-    }
+    if (!stats)
+        return {
+            code
+        };
 
-    const { playerStats, teamStats } = stats
+    const { playerStats, teamStats } = stats;
 
     return {
         stats: {
@@ -19,19 +20,19 @@ export const load = async function({ params }) {
             teamStats
         },
         code
-    }
-} satisfies PageServerLoad
+    };
+} satisfies PageServerLoad;
 
 export const actions = {
-    calculate: async function({ params }) {
-        const tournament = await getTournament(params.code)
-        if (!tournament) return fail(400)
+    calculate: async function ({ params }) {
+        const tournament = await getTournament(params.code);
+        if (!tournament) return fail(400);
 
-        const games = await getTournamentScores(tournament.gameIds)
-        const statistics = await calculateStatistics(games.map(g => g.scores))
+        const games = await getTournamentScores(tournament.gameIds);
+        const statistics = await calculateStatistics(games.map((g) => g.scores));
 
-        await updateStatistics(params.code, statistics)
+        await updateStatistics(params.code, statistics);
 
-        throw redirect(302, `/tournament/${params.code}/stats`)
+        redirect(302, `/tournament/${params.code}/stats`);
     }
-} satisfies Actions
+} satisfies Actions;

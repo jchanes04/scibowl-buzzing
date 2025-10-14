@@ -1,31 +1,32 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
-    import TeamList from '$lib/components/TeamList.svelte'
-    import type { ActionData } from './$types';
+    import { enhance } from "$app/forms";
+    import TeamList from "$lib/components/TeamList.svelte";
+    import type { PageProps } from "./$types";
 
-    export let form: ActionData
+    let { form }: PageProps = $props();
 
     const errors = {
-        "InvalidTournamentCode": "The provided tournament code is invalid"
-    } as Record<string, string>
+        InvalidTournamentCode: "The provided tournament code is invalid"
+    } as Record<string, string>;
 
-    let newTeamsAllowed: boolean = false
-    let individualTeamsAllowed: boolean
-    let inTournament: boolean
-    let tournamentCode: string
-    let ownerName: string
-    let gameName: string
-    let defaultTeams: string[] = []
-    let newTeamName: string
-    $: submitEnabled = ownerName
-        && gameName
-        && !(!individualTeamsAllowed && !newTeamsAllowed && defaultTeams.length === 0)
-        && !(inTournament && !tournamentCode)
+    let newTeamsAllowed: boolean = $state(false);
+    let individualTeamsAllowed: boolean = $state(false);
+    let inTournament: boolean = $state(false);
+    let tournamentCode: string = $state("");
+    let ownerName: string = $state("");
+    let gameName: string = $state("");
+    let defaultTeams: string[] = $state([]);
+    let newTeamName: string = $state("");
+    let submitEnabled: boolean = $derived(
+        !!ownerName &&
+            !!gameName &&
+            !(!individualTeamsAllowed && !newTeamsAllowed && defaultTeams.length === 0) &&
+            !(inTournament && !tournamentCode)
+    );
 
     function handleSubmit() {
-        if (newTeamName)
-            defaultTeams = [...defaultTeams, newTeamName]
-        newTeamName = ''
+        if (newTeamName) defaultTeams = [...defaultTeams, newTeamName];
+        newTeamName = "";
     }
 </script>
 
@@ -35,45 +36,54 @@
 
 <main>
     <h1>Create Game</h1>
-    <form id="form" method="POST" autocomplete="off" on:submit={handleSubmit} use:enhance>
+    <form id="form" method="POST" autocomplete="off" onsubmit={handleSubmit} use:enhance>
         {#if form?.message}
             <p class="error">{errors[form.message] || form.message}</p>
         {/if}
-    
+
         <input type="text" placeholder="Game Name" name="game-name" id="game-name-input" bind:value={gameName} />
         <br />
         <input type="text" placeholder="Your Name" name="owner-name" id="owner-name-input" bind:value={ownerName} />
         <br />
-    
+
         <h2>Team Settings</h2>
         <div class="checkbox-wrapper">
             <label for="new-teams">
                 <input id="new-teams" type="checkbox" name="new-teams-allowed" bind:checked={newTeamsAllowed} />
-                <span />
+                <span></span>
                 Members can create their own teams that others can join
             </label>
             <br />
             <label for="individual-teams">
-                <input id="individual-teams" type="checkbox" name="individual-teams-allowed" bind:checked={individualTeamsAllowed} />
-                <span />
+                <input
+                    id="individual-teams"
+                    type="checkbox"
+                    name="individual-teams-allowed"
+                    bind:checked={individualTeamsAllowed} />
+                <span></span>
                 Members can join the game on a team of just themselves
             </label>
             <br />
             <label for="spectators">
                 <input id="spectators" type="checkbox" name="spectators-allowed" />
-                <span />
+                <span></span>
                 Spectators allowed
             </label>
             <br />
             <label for="tournament-checkbox">
                 <input id="tournament-checkbox" type="checkbox" name="in-tournament" bind:checked={inTournament} />
-                <span />
+                <span></span>
                 Add game to tournament
             </label>
             {#if inTournament}
                 <br />
                 <div style:text-align="center">
-                    <input type="text" placeholder="Tournament Code" name="tournament-code" id="tournament-code-input" bind:value={tournamentCode} />
+                    <input
+                        type="text"
+                        placeholder="Tournament Code"
+                        name="tournament-code"
+                        id="tournament-code-input"
+                        bind:value={tournamentCode} />
                 </div>
             {/if}
             <br />
@@ -81,14 +91,14 @@
         </div>
         <br />
         <label for="default-team-name"><h2>Default Teams</h2></label>
-        <TeamList bind:teams={defaultTeams} bind:newTeamName={newTeamName} />
+        <TeamList bind:teams={defaultTeams} bind:newTeamName />
         <br />
         <button type="submit" disabled={!submitEnabled}>Create Game</button>
     </form>
 </main>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     form {
         margin: 0em auto;
@@ -150,15 +160,15 @@
             width: 1em;
             height: 1em;
             border-radius: 0.2em;
-            border: #CCC 2px solid;
+            border: #ccc 2px solid;
             display: inline-block;
             position: relative;
-            background: #FFF;
+            background: #fff;
             vertical-align: text-top;
             margin-right: 0.3em;
 
             &::after {
-                content: '';
+                content: "";
                 position: absolute;
                 display: none;
                 top: 50%;

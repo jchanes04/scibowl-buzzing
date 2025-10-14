@@ -1,12 +1,16 @@
 <script lang="ts">
-    export let oldName: string
-    export let confirmCallback: (newName: string) => void
-    export let cancelCallback: () => void
+    interface Props {
+        oldName: string;
+        confirmCallback: (newName: string) => void;
+        cancelCallback: () => void;
+    }
 
-    let newName = oldName
+    let { oldName, confirmCallback, cancelCallback }: Props = $props();
+
+    let newName = $state(oldName);
 
     function confirm() {
-        confirmCallback(newName)
+        confirmCallback(newName);
     }
 </script>
 
@@ -14,12 +18,12 @@
     <h2>Edit Game Name</h2>
     <input type="text" bind:value={newName} />
     <br />
-    <button on:click={confirm}>Save Changes</button>
-    <button on:click={cancelCallback}>Cancel</button>
+    <button onclick={confirm}>Save Changes</button>
+    <button onclick={cancelCallback}>Cancel</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .modal {
         background: $background-2;
@@ -33,7 +37,7 @@
 
     button {
         @extend %button;
-        
+
         font-size: 20px;
         padding: 0.6em;
         border-radius: 0.6em;

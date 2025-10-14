@@ -1,24 +1,30 @@
 <script lang="ts">
-    import ConnectedIndicator from '../ConnectedIndicator.svelte';
-    import HeaderCompact from '$lib/components/HeaderCompact.svelte'
-    import { setContext } from 'svelte';
-    import { writable } from 'svelte/store';
+    import ConnectedIndicator from "../ConnectedIndicator.svelte";
+    import HeaderCompact from "$lib/components/HeaderCompact.svelte";
+    import { setContext } from "svelte";
+    import { writable } from "svelte/store";
+    interface Props {
+        children?: import("svelte").Snippet;
+    }
+
+    let { children }: Props = $props();
 
     const modalStore = writable<{
-        component: ConstructorOfATypedSvelteComponent,
-        props: Record<string, unknown>
-    } | null>(null)
-    setContext('modalStore', modalStore)
+        component: ConstructorOfATypedSvelteComponent;
+        props: Record<string, unknown>;
+    } | null>(null);
+    setContext("modalStore", modalStore);
 </script>
 
 <div id="page">
     <HeaderCompact />
-    <slot></slot>
+    {@render children?.()}
     <ConnectedIndicator />
 </div>
 {#if $modalStore}
-    <svelte:component this={$modalStore.component} {...$modalStore.props} />
-    <div class="modal-background" />
+    {@const SvelteComponent = $modalStore.component}
+    <SvelteComponent {...$modalStore.props} />
+    <div class="modal-background"></div>
 {/if}
 
 <style lang="scss">

@@ -1,60 +1,62 @@
-import type { Category, GameSettings, LastScoredQuestion } from "$lib/classes/Game"
-import type { GameScoreboard } from "$lib/classes/GameScoreboard"
-import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
-import type { ClientTeam } from "$lib/classes/client/ClientTeam"
+import type { Category, GameSettings, LastScoredQuestion } from "$lib/classes/Game";
+import type { GameScoreboard } from "$lib/classes/GameScoreboard";
+import type { ClientPlayer } from "$lib/classes/client/ClientPlayer";
+import type { ClientTeam } from "$lib/classes/client/ClientTeam";
 
 export interface ClientGame {
-    id: string,
-    joinCode: string,
-    name: string,
-    
-    scoreboard: GameScoreboard
+    id: string;
+    joinCode: string;
+    name: string;
 
-    moderators: ClientPlayer[],
-    players: ClientPlayer[],
-    teams: ClientTeam[],
-    spectators: Set<string>
+    scoreboard: GameScoreboard;
 
-    settings: GameSettings
+    moderators: ClientPlayer[];
+    players: ClientPlayer[];
+    teams: ClientTeam[];
+    spectators: Set<string>;
 
-    times: { //times [client, server extratime]
-        tossup: [number, number],
-        bonus:  [number, number],
-        visual: [number, number]
-    }
-        
-    state: { // idle means no question open
-        questionState: 'idle' | 'open' | 'buzzed'
-        currentBuzzer: ClientPlayer | null,
+    settings: GameSettings;
+
+    times: {
+        //times [client, server extratime]
+        tossup: [number, number];
+        bonus: [number, number];
+        visual: [number, number];
+    };
+
+    state: {
+        // idle means no question open
+        questionState: "idle" | "open" | "buzzed";
+        currentBuzzer: ClientPlayer | null;
         currentQuestion: {
-            category: Category,
-            bonus: boolean,
-            visual?: boolean
-        } | null
-        buzzedTeams: ClientTeam[],
-        lastScored: LastScoredQuestion | null
-    }
+            category: Category;
+            bonus: boolean;
+            visual?: boolean;
+        } | null;
+        buzzedTeams: ClientTeam[];
+        lastScored: LastScoredQuestion | null;
+    };
 }
 
 export type ClientGameParameters = {
-    id: string,
-    name: string,
-    joinCode: string,
-    settings: GameSettings,
+    id: string;
+    name: string;
+    joinCode: string;
+    settings: GameSettings;
     times: {
-        tossup: [number, number],
-        bonus: [number, number],
-        visual: [number, number]
-    }
-}
+        tossup: [number, number];
+        bonus: [number, number];
+        visual: [number, number];
+    };
+};
 
 export class ClientGame {
     constructor({ id, name, joinCode, settings, times }: ClientGameParameters) {
-        this.id = id,
-        this.name = name,
-        this.joinCode = joinCode,
-        this.settings = settings,
-        this.times = times
+        ((this.id = id),
+            (this.name = name),
+            (this.joinCode = joinCode),
+            (this.settings = settings),
+            (this.times = times));
 
         this.state = {
             questionState: "idle",
@@ -62,6 +64,6 @@ export class ClientGame {
             currentQuestion: null,
             buzzedTeams: [],
             lastScored: null
-        }
+        };
     }
 }

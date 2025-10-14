@@ -1,7 +1,7 @@
 <script lang="ts">
     import membersStore from "$lib/stores/players";
     import moderatorsStore from "$lib/stores/moderators";
-    import myMemberStore from "$lib/stores/myMember"
+    import myMemberStore from "$lib/stores/myMember";
     import MemberListElement from "./MemberListElement.svelte";
 </script>
 
@@ -20,7 +20,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .member-list {
         grid-area: member-list;
@@ -53,7 +53,7 @@
         text-decoration: underline;
         margin: 0.5em 0;
     }
-    
+
     ul {
         list-style: none;
         padding-left: 0px;

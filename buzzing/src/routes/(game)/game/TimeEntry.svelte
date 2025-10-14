@@ -1,35 +1,60 @@
 <script lang="ts">
+    import { run } from "svelte/legacy";
+
     import { tick } from "svelte";
-    
-    export let value = 0
-    $: minutesString = Math.floor(value / 60).toString().padStart(2, "0")
-    $: secondsString = (value % 60).toString().padStart(2, "0")
-    $: minutes = Number(minutesString) || 0
-    $: seconds = Number(secondsString) || 0
-    
+
+    interface Props {
+        value?: number;
+    }
+
+    let { value = $bindable(0) }: Props = $props();
+    let minutesString = $state("");
+    run(() => {
+        minutesString = Math.floor(value / 60)
+            .toString()
+            .padStart(2, "0");
+    });
+    let secondsString = $state("");
+    run(() => {
+        secondsString = (value % 60).toString().padStart(2, "0");
+    });
+    let minutes = $derived(Number(minutesString) || 0);
+    let seconds = $derived(Number(secondsString) || 0);
+
     function updateValue() {
-        value = seconds + minutes * 60
+        value = seconds + minutes * 60;
     }
 
     async function handleMinuteInput() {
-        await tick()
-        updateValue()
+        await tick();
+        updateValue();
         if (minutesString.length >= 2) {
-            minutesInput.blur()
-            secondsInput.focus()
+            minutesInput?.blur();
+            secondsInput?.focus();
         }
     }
 
-    let minutesInput: HTMLInputElement
-    let secondsInput: HTMLInputElement
+    let minutesInput: HTMLInputElement | null = $state(null);
+    let secondsInput: HTMLInputElement | null = $state(null);
 </script>
 
 <div>
-    <input type="text" bind:this={minutesInput} bind:value={minutesString}
-        on:focus={() => minutesString = ""} on:input={handleMinuteInput} />
+    <input
+        type="text"
+        bind:this={minutesInput}
+        bind:value={minutesString}
+        onfocus={() => (minutesString = "")}
+        oninput={handleMinuteInput} />
     <span>:</span>
-    <input type="text" bind:this={secondsInput} bind:value={secondsString}
-        on:focus={async () => {await tick(); secondsString = ""}} on:change={updateValue} />
+    <input
+        type="text"
+        bind:this={secondsInput}
+        bind:value={secondsString}
+        onfocus={async () => {
+            await tick();
+            secondsString = "";
+        }}
+        onchange={updateValue} />
 </div>
 
 <style lang="scss">

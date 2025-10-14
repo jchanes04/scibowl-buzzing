@@ -1,24 +1,28 @@
 <script lang="ts">
-    export let teams: string[] = []
-    export let newTeamName: string
-    $: teamsJSON = JSON.stringify(teams)
+    interface Props {
+        teams?: string[];
+        newTeamName: string;
+    }
+
+    let { teams = $bindable([]), newTeamName = $bindable() }: Props = $props();
+    let teamsJSON = $derived(JSON.stringify(teams));
 
     function addTeam() {
         if (newTeamName && !teams.includes(newTeamName)) {
-            teams = [...teams, newTeamName]
+            teams = [...teams, newTeamName];
         }
-        newTeamName = ''
+        newTeamName = "";
     }
 
     function handleKeydown(e: KeyboardEvent) {
         if (e.code === "Enter" || e.keyCode === 13) {
-            addTeam()
+            addTeam();
         }
     }
 
     function handleInput() {
         if (newTeamName.length > 30) {
-            newTeamName = newTeamName.slice(0, 30)
+            newTeamName = newTeamName.slice(0, 30);
         }
     }
 </script>
@@ -28,25 +32,28 @@
     <ul>
         {#each teams as team}
             <li>
-                <span on:click={() => {teams = teams.filter(x => x !== team)}}>
-                    <span class="remove" />
+                <span
+                    onclick={() => {
+                        teams = teams.filter((x) => x !== team);
+                    }}>
+                    <span class="remove"></span>
                 </span>
                 {team}
             </li>
         {/each}
         <li>
-            <input type="text" id="default-team-name" bind:value={newTeamName} on:input={handleInput} />
-            <span on:click={addTeam}>
-                <span class="add" />
+            <input type="text" id="default-team-name" bind:value={newTeamName} oninput={handleInput} />
+            <span onclick={addTeam}>
+                <span class="add"></span>
             </span>
         </li>
     </ul>
 </div>
 
-<svelte:body on:keydown={handleKeydown}></svelte:body>
+<svelte:body onkeydown={handleKeydown} />
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     ul {
         list-style: none;
@@ -77,14 +84,40 @@
 
     .add {
         background: $blue;
-        clip-path: polygon(0 40%, 40% 40%, 40% 0, 60% 0, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%);
+        clip-path: polygon(
+            0 40%,
+            40% 40%,
+            40% 0,
+            60% 0,
+            60% 40%,
+            100% 40%,
+            100% 60%,
+            60% 60%,
+            60% 100%,
+            40% 100%,
+            40% 60%,
+            0 60%
+        );
         margin-left: 0.2em;
         float: right;
     }
 
     .remove {
         background: $red;
-        clip-path: polygon(15% 0, 0 15%, 35% 50%, 0 85%, 15% 100%, 50% 65%, 85% 100%, 100% 85%, 65% 50%, 100% 15%, 85% 0, 50% 35%);
+        clip-path: polygon(
+            15% 0,
+            0 15%,
+            35% 50%,
+            0 85%,
+            15% 100%,
+            50% 65%,
+            85% 100%,
+            100% 85%,
+            65% 50%,
+            100% 15%,
+            85% 0,
+            50% 35%
+        );
         margin-right: 0.5em;
     }
 

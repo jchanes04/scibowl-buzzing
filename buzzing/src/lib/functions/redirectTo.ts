@@ -1,8 +1,8 @@
 export function redirectTo(location: string) {
     return new Response(null, {
         headers: {
-            'Location': location
+            Location: location
         },
         status: 302
-    })
+    });
 }
