@@ -19,7 +19,7 @@
     import myMemberStore from "$lib/stores/myMember"
     import { page } from "$app/stores";
     import { createSocket } from "$lib/socket";
-    import { beforeNavigate, invalidateAll } from "$app/navigation";
+    import { beforeNavigate } from "$app/navigation";
 
     export let data: PageServerData
     let { gameInfo, teamList, moderatorList, playerList, myMemberId, scores } = data
@@ -71,9 +71,10 @@
     const debug = browser ? new Debugger(gameInfo.id, gameInfo.name, $myMemberStore, socket) : null
     setContext('debug', debug)
 
+    $: buzzed = $gameStore.state.questionState === 'buzzed' && $gameStore.state.currentBuzzer?.id === $myMemberStore.id
+
     beforeNavigate(() => {
         socket.disconnect()
-        invalidateAll()
     })
 </script>
 
@@ -81,7 +82,7 @@
     <title>{gameInfo.name}</title>
 </svelte:head>
 
-<main>
+<main class:buzzed>
     <TopBar gameName={gameInfo.name} joinCode={gameInfo.joinCode}>
         <Timer on:end={() => gameStore.disableBuzzing()} />
     </TopBar>
@@ -102,7 +103,22 @@
 
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
+    @keyframes pulse {
+        0% {
+            box-shadow: inset 0 0 30px 10px $primary;
+        }
+        50% {
+            box-shadow: inset 0 0 50px 20px $primary;
+        }
+        100% {
+            box-shadow: inset 0 0 30px 10px $primary;
+        }
+    }
+
     main {
+        position: relative;
         display: grid;
         grid-template-columns: .1fr 1fr 1fr 1fr .1fr;
         grid-template-rows: max(10vh, 80px) auto auto;
@@ -114,6 +130,19 @@
         row-gap: 1em;
         justify-self: stretch;
 
+        &.buzzed::before {
+            content: '';
+            position: absolute;
+            top: max(10vh, 80px);
+            left: 0;
+            right: 0;
+            bottom: -1em;
+            box-shadow: inset 0 0 30px 10px $primary;
+            pointer-events: none;
+            z-index: 1;
+            animation: pulse 2s infinite;
+        }
+
         @media (max-width: 800px) {
             grid-template-columns: .1fr 1fr 1fr .1fr;
             grid-template-rows: max(10vh, 80px) auto auto auto;
@@ -122,6 +151,10 @@
                 ". chat-box chat-box ."
                 ". control-panel control-panel ."
                 ". member-list scoreboard .";
+
+            &.buzzed::before {
+                top: max(10vh, 80px);
+            }
         }
 
         @media (max-width: 500px) {
@@ -133,6 +166,10 @@
                 ". control-panel ."
                 ". scoreboard ."
                 ". member-list .";
+
+            &.buzzed::before {
+                top: max(10vh, 80px);
+            }
         }
     }
 </style>

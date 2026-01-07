@@ -100,40 +100,65 @@
     @use '$styles/_global.scss' as *;
 
     li {
-        font-size: 20px;
-        margin-left: 1em;
+        font-size: 1rem;
+        padding: 0.5em 0.75em;
+        border-radius: 0.5em;
         display: flex;
         flex-direction: row;
         align-items: center;
+        transition: background-color 0.2s;
 
-        .team {
-            color: grey;
-            font-size: 16px;
-            margin-left: 0.5em;
+        &:hover {
+            background-color: $background-2;
+
+            .controls {
+                opacity: 1;
+            }
         }
 
-        &:hover .controls {
-            visibility: visible;
+        .team {
+            color: $gray-2;
+            font-size: 0.8rem;
+            margin-left: 0.5em;
         }
     }
 
     .moderator {
         color: $orange;
+        font-weight: 600;
     }
 
     .controls {
         margin-left: auto;
-        visibility: hidden;
+        opacity: 0;
+        display: flex;
+        gap: 0.25em;
+        transition: opacity 0.2s;
     }
 
     button {
-        display: inline-block;
-        height: 1em;
-        width: 1em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 1.75em;
+        width: 1.75em;
         cursor: pointer;
         border: none;
         background: transparent;
         padding: 0;
-        font-size: 20px;
+        font-size: 1.1rem;
+        border-radius: 0.25em;
+        transition: all 0.2s;
+        color: $gray-2;
+
+        &:hover {
+            background: rgba($primary, 0.1);
+            color: $primary;
+        }
+
+        &:nth-child(2):hover {
+            background: rgba($red, 0.1);
+            color: $red;
+        }
     }
 </style>

@@ -1,19 +1,43 @@
 :root {
-    --blue: hsl(210, 100%, 38%);
-    --green: #2C8250;
-    --red: #D14444;
-    --orange: #F5C13D;
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    
+    /* Theme variables - updated by theme store */
+    --primary: #22c584;
+    --primary-rgb: 34, 197, 132;
+    
+    --background-1: #ffffff;
+    --background-2: #f8fafc;
+    --background: #f8fafc;
+    
+    --text: #1e293b;
+    --text-light: #ffffff;
+    --text-muted: #64748b;
+    
+    --border-color: #e2e8f0;
+    
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
 }
 
 html, body {
     margin: 0;
-    font-family: 'Ubuntu';
-    background-color: #d4d9d9;
+    font-family: 'Ubuntu', sans-serif;
+    background-color: var(--background);
+    color: var(--text);
 }
 
 input {
     outline: none;
     font-family: 'Ubuntu';
+    color: var(--text);
+    background-color: var(--background-1);
 }
 
 input:focus {
@@ -26,6 +50,11 @@ button:focus {
 
 select:focus {
     outline: none;
+}
+
+select, textarea {
+    color: var(--text);
+    font-family: 'Ubuntu';
 }
 
 body::-webkit-scrollbar {
@@ -41,7 +70,7 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-    background: var(--green);
+    background: var(--primary, var(--green));
     width: 7px;
     border-radius: 7px;
 }

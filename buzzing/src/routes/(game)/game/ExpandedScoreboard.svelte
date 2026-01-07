@@ -36,6 +36,32 @@
             return acc
         }, {} as Record<string, string[]>)
     $: players = combinePlayersLists(playersFromScores, playersFromTeams)
+    $: runningScores = (() => {
+            // Compute running total for each team row by row.
+            let totals: Record<string, number> = {};
+            let scoreHistory: Record<number, Record<string, number>> = {};
+            Object.entries($gameStore.scores).forEach(([rowNumStr, row]) => {
+                const i = Number(rowNumStr);
+                // Copy previous
+                totals = { ...totals };
+                if (row) {
+                    // Tossups
+                    for (const [teamId, entry] of Object.entries(row.tossup)) {
+                        if (!totals[teamId]) totals[teamId] = 0;
+                        if (entry.scoreType === "correct") totals[teamId] += 4;
+                        else if (entry.scoreType === "incorrect") totals[teamId] -= 1;
+                        else if (entry.scoreType === "penalty") totals[teamId] -= 4;
+                    }
+                    // Bonus
+                    if (row.bonus && row.bonus.teamId) {
+                        if (!totals[row.bonus.teamId]) totals[row.bonus.teamId] = 0;
+                        totals[row.bonus.teamId] += row.bonus.correct ? 10 : 0;
+                    }
+                }
+                scoreHistory[i] = { ...totals };
+            });
+            return scoreHistory;
+        })()
 
     function combinePlayersLists(list1: Record<string, string[]>, list2: Record<string, string[]>) {
         const list: Record<string, string[]> = {}
@@ -140,7 +166,6 @@
 </script>
 
 <div>
-    <button on:click={() => dispatch('close')} class="close-button">Close</button>
     <table>
         <colgroup>
             <col span="2" class="question-info" />
@@ -150,7 +175,7 @@
             {#each Object.keys(players) as teamId}
                 {@const teamPlayers = players[teamId]}
                 {#if teamPlayers}
-                    <th colspan={teamPlayers.length + 1} style:font-weight="bold">{$teamsStore[teamId]?.name || teamId}</th>
+                    <th colspan={teamPlayers.length + 2} style:font-weight="bold">{$teamsStore[teamId]?.name || teamId}</th>
                 {/if}
             {/each}
             <th></th>
@@ -162,15 +187,16 @@
                     <th class="player-name" style:font-weight="normal">{$playersStore[playerId]?.name || "Unknown"}</th>
                 {/each}
                 <th class="player-name" style:font-weight="bold">Bonus</th>
+                <th class="player-name" style:font-weight="bold">Score</th>
             {/each}
             <th></th>
         </tr>
         {#each rowArray as i}
             {@const scoreRow = $gameStore.scores[i]}
             <tr>
-                <td>#{i}</td>
+                <td class="question-number">#{i}</td>
                 {#if scoreRow}
-                    <td>{categories[scoreRow.category]}</td>
+                    <td class="question-category">{categories[scoreRow.category]}</td>
                     {#each Object.entries(players) as [teamId, p]}
                         {@const tossupEntry = scoreRow.tossup[teamId]}
                         {#each p as playerId}
@@ -217,24 +243,28 @@
                                     on:change={(e) => handleBonusChange(i, teamId, e.detail)} />
                             </td>
                         {/if}
+                        <td class="scores">
+                            {runningScores[i]?.[teamId] ?? 0}
+                        </td>
                     {/each}
                 {:else}
                     <td></td>
-                    {#each Object.values(players) as p}
+                    {#each Object.entries(players) as [teamId, p]}
                         {#each p as _}
                             <td></td>
                         {/each}
                         <td class="bonus"></td>
+                        <td class="scores"></td>
                     {/each}
                 {/if}
-                <td>
+                <td class="delete-button-cell">
                     <button class="delete-button" on:click={() => deleteQuestion(i)}>Delete</button>
                 </td>
             </tr>
         {:else}
             <tr>
                 <td colspan="2"></td>
-                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length + 1, 0)}>
+                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length + 2, 0)}>
                     No questions
                 </td>
                 <td></td>
@@ -264,79 +294,107 @@
         position: absolute;
         top: 0.5em;
         right: 0.5em;
+        background: $gray-1;
+        color: $text-dark;
+        box-shadow: none;
+        padding: 0.4em 0.8em;
+        font-size: 0.9rem;
+        
+        &:hover {
+            filter: brightness(0.95);
+        }
     }
 
     table {
         border-collapse: collapse;
-        border: 1px solid black;
+        border: 2px solid $border-color;
+        border-radius: 0.5em;
+        overflow: hidden;
+        margin-top: 1em;
+        min-width: min-content;
     }
 
     th {
-        border: 1px solid black;
-        padding: 0.3em;
+        border: 2px solid $border-color;
+        background: $gray-1;
+        color: $text-muted;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.6em;
+        min-width: 2em;
 
         &.player-name {
+            border-right: 1px solid $border-color;
+            border-left: 1px solid $border-color;
             writing-mode: vertical-lr;
             transform: rotate(180deg);
-            padding: 0.2em;
+            padding: 0.8em 0.4em;
+            height: 120px;
+            text-align: left;
+            width: 2em;
         }
     }
 
     .question-info {
-        border-top: 1px solid #333;
-        border-right: 1px solid black;
-        border-bottom: 1px solid #333;
-        border-left: 1px solid black;
+        background: $gray-1;
     }
 
     tr td {
-        border: 1px solid #BBB;
+        border: 1px solid $border-color;
+        color: $text-dark;
+        font-size: 0.95rem;
 
         &:first-child {
-            border-left: 1px solid black;
+            font-weight: 600;
+            color: $text-muted;
+            background: $gray-1;
+            padding: 0em;
         }
-    }
-
-    tr:last-child td {
-        border-bottom: 1px solid black;
     }
 
     td {
         text-align: center;
+        height: 0em;
+        min-width: 2.5em;
 
-        &:first-child, &:nth-child(2) {
-            padding: 0.1em 0.2em;
+        &.scores {
+            border-right: 2px solid $gray-2;
         }
 
-        &.bonus {
-            border-right: 1px solid black;
+        &.delete-button-cell {
+            border: 2px solid $border-color;
         }
 
-        &.correct {
-            background: adjust($green, $lightness: 20%);
+        &.question-number {
+            border: 2px solid $border-color;
         }
 
-        &.incorrect {
-            background: adjust($red, $lightness: 20%);
-        }
-
-        &.penalty {
-            background: adjust($red, $lightness: 20%);
+        &.question-category {
+            border: 2px solid $border-color;
         }
     }
 
     button {
         @extend %button;
 
-        font-size: 20px;
-        padding: 0.6em;
-        border-radius: 0.6em;
+        font-size: 1rem;
+        padding: 0.5em 1em;
+        margin: 0.25em;
     }
 
     .delete-button {
-        font-size: inherit;
-        padding: 0.2em;
-        border: solid black 2px;
-        border-radius: 0.2em;
+        background: transparent;
+        color: $red;
+        border: 1px solid rgba($red, 0.2);
+        box-shadow: none;
+        font-size: 0.8rem;
+        padding: 0.3em 0.6em;
+
+        &:hover {
+            background: rgba($red, 0.1);
+            border-color: $red;
+            transform: none;
+        }
     }
 </style>

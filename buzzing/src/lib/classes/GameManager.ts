@@ -45,6 +45,10 @@ export class GameManager {
     sweepGames() {
         const swept: string[] = []
 
+        if (process.env.DISABLE_GAME_SWEEPING === 'true') {
+            return swept
+        }
+
         for (const [ id, g ] of Object.entries(this.games)) {
             if (Date.now() - g.lastActive > 600_000) {
                 swept.push(id)

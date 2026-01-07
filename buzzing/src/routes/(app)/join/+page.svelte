@@ -42,22 +42,23 @@
         text-align: center;
         padding: 1em;
         position: relative;
+        font-size: 1.5rem;
     }
 
     h1 {
         font-size: 44px;
-        text-decoration: underline var(--blue) 3px;
+        text-decoration: underline var(--primary) 3px;
         text-underline-offset: 0.2em;
     }
 
     .error {
         color: red;
+        margin-top: .5em;
     }
 
     button {
         @extend %button;
-
-        font-size: 18px;
         width: 8ch;
+        font-size: inherit;
     }
 </style>

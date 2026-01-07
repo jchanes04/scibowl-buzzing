@@ -31,20 +31,28 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     div {
         display: flex;
         flex-direction: column;
     }
 
-    h3 {
-        margin: 0;
-        text-align: right;
-        font-size: 18px;
-    }
-
     h2 {
         margin: 0;
         text-align: right;
-        font-size: 32px;
+        font-size: 2.25rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        color: $primary;
+    }
+
+    h3 {
+        margin: 0;
+        text-align: right;
+        font-size: 1.1rem;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        color: $gray-2;
     }
 </style>

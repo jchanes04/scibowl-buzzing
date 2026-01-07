@@ -1,9 +1,25 @@
 @use 'sass:color';
 
-$green: hsl(145, 49%, 34%);
-$red: hsl(0, 61%, 54%);
-$orange: hsl(43, 90%, 60%);
-$blue: hsl(210, 100%, 38%);
-$background-1: hsl(0, 0%, 93%);
-$background-2: hsl(180, 6%, 84%);
-$text-light: hsl(0, 0%, 93%);
+$green: #1eaa72;
+$green-dark: #117552;
+$red: #ef4444;
+$red-dark: #dc2626;
+$orange: #f59e0b;
+$orange-dark: #d97706;
+$blue: #3b82f6;
+$blue-dark: #2563eb;
+// Themeable colors - use CSS variables with fallbacks
+$primary: var(--primary, #22c584);
+$primary-rgb: var(--primary-rgb, 34, 197, 132);
+$purple: #a855f7;
+$purple-dark: #9333ea;
+$gray-static: #8494a3;
+$background-1: var(--background-1, #ffffff);
+$background-2: var(--background-2, #f8fafc);
+$gray-1: var(--gray-1, #e2e8f0);
+$gray-2: var(--gray-2, #64748b);
+$text-dark: var(--text, #1e293b);
+$text-light: var(--text-light, #ffffff);
+$text-muted: var(--text-muted, #64748b);
+$border-color: var(--border-color, #e2e8f0);
+$shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);

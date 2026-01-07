@@ -22,6 +22,32 @@
             return acc
         }, {} as Record<string, string[]>)
     $: players = combinePlayersLists(playersFromScores, playersFromTeams)
+    $: runningScores = (() => {
+            // Compute running total for each team row by row.
+            let totals: Record<string, number> = {};
+            let scoreHistory: Record<number, Record<string, number>> = {};
+            Object.entries($gameStore.scores).forEach(([rowNumStr, row]) => {
+                const i = Number(rowNumStr);
+                // Copy previous
+                totals = { ...totals };
+                if (row) {
+                    // Tossups
+                    for (const [teamId, entry] of Object.entries(row.tossup)) {
+                        if (!totals[teamId]) totals[teamId] = 0;
+                        if (entry.scoreType === "correct") totals[teamId] += 4;
+                        else if (entry.scoreType === "incorrect") totals[teamId] -= 1;
+                        else if (entry.scoreType === "penalty") totals[teamId] -= 4;
+                    }
+                    // Bonus
+                    if (row.bonus && row.bonus.teamId) {
+                        if (!totals[row.bonus.teamId]) totals[row.bonus.teamId] = 0;
+                        totals[row.bonus.teamId] += row.bonus.correct ? 10 : 0;
+                    }
+                }
+                scoreHistory[i] = { ...totals };
+            });
+            return scoreHistory;
+        })()
 
     function combinePlayersLists(list1: Record<string, string[]>, list2: Record<string, string[]>) {
         const list: Record<string, string[]> = {}
@@ -91,7 +117,7 @@
             {#each Object.keys(players) as teamId}
                 {@const teamPlayers = players[teamId]}
                 {#if teamPlayers}
-                    <th colspan={teamPlayers.length + 1} class="team-name"><span>{$teamsStore[teamId]?.name || teamId}</span>: {sumQuestionScores(teamId)}</th>
+                    <th colspan={teamPlayers.length + 2} class="team-name"><span>{$teamsStore[teamId]?.name || teamId}</span>: {sumQuestionScores(teamId)}</th>
                 {/if}
             {/each}
         </tr>
@@ -103,6 +129,7 @@
                         <th class="player-name" style:font-weight="normal">{$playersStore[playerId]?.name || "Unknown"}</th>
                     {/each}
                     <th class="player-name" style:font-weight="bold">Bonus</th>
+                    <th class="player-name" style:font-weight="bold">Score</th>
                 {/each}
             </tr>
         {/if}
@@ -130,20 +157,24 @@
                         {:else}
                             <td class="bonus"></td>
                         {/if}
+                        <td class="running-total">
+                            {runningScores[i]?.[teamId] ?? 0}
+                        </td>
                     {/each}
                 {:else}
                     <td></td>
-                    {#each Object.values(players) as p}
+                    {#each Object.entries(players) as [teamId, p]}
                         {#each p as _}
                             <td></td>
                         {/each}
                         <td class="bonus"></td>
+                        <td class="running-total"></td>
                     {/each}
                 {/if}
             </tr>
         {:else}
             <tr>
-                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length, 0) + Object.values($teamsStore).length + 2}>
+                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length + 2, 0) + 2}>
                     No questions
                 </td>
             </tr>
@@ -158,7 +189,7 @@
 
     .scoreboard {
         grid-area: scoreboard;
-        padding: 1em;
+        padding: 2em;
         box-sizing: border-box;
         border-radius: 1em;
         background: $background-1;
@@ -167,69 +198,91 @@
 
     table {
         border-collapse: collapse;
-        border: 1px solid black;
+        border: 1px solid $border-color;
+        border-radius: 0.5em;
+        overflow: hidden;
+        min-width: min-content;
     }
 
     th {
-        border: 1px solid black;
-        padding: 0.3em;
-        font-weight: normal;
+        border: 1px solid $border-color;
+        background: $gray-1;
+        color: $text-muted;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.6em;
+        min-width: 2em;
 
         &.player-name {
             writing-mode: vertical-lr;
             transform: rotate(180deg);
-            padding: 0.2em;
+            padding: 0.8em 0.4em;
+            height: 120px;
+            text-align: left;
+            width: 2em;
         }
 
         &.team-name {
             span {
                 font-weight: bold;
+                color: $text-dark;
             }
-            font-size: 1.3em;
+            font-size: 1.1rem;
+            color: $primary;
+            text-transform: none;
+            letter-spacing: normal;
         }
     }
 
     .question-info {
-        border-top: 1px solid #333;
-        border-right: 1px solid black;
-        border-bottom: 1px solid #333;
-        border-left: 1px solid black;
+        background: $gray-1;
     }
 
     tr td {
-        border: 1px solid #BBB;
+        border: 1px solid $gray-2;
+        color: $text-dark;
+        font-size: 0.95rem;
 
         &:first-child {
-            border-left: 1px solid black;
+            font-weight: 600;
+            color: $text-muted;
+            background: $gray-1;
+            padding: 0 0.8em;
         }
-    }
-
-    tr:last-child td {
-        border-bottom: 1px solid black;
-        border-right: 1px solid black;
     }
 
     td {
         text-align: center;
-
-        &:first-child, &:nth-child(2) {
-            padding: 0.1em 0.2em;
-        }
+        height: 2.5em;
+        min-width: 2.5em;
 
         &.bonus {
-            border-right: 1px solid black;
+            border-right: 2px solid $gray-2;
         }
 
         &.correct {
-            background: adjust($green, $lightness: 20%);
+            background: rgba($green, 0.05);
+            color: $green-dark;
+            font-weight: bold;
         }
 
         &.incorrect {
-            background: adjust($red, $lightness: 20%);
+            background: rgba($red, 0.05);
+            color: $red-dark;
+            font-weight: bold;
         }
 
         &.penalty {
-            background: adjust($red, $lightness: 20%);
+            background: rgba($purple, 0.05);
+            color: $purple-dark;
+            font-weight: bold;
         }
+    }
+
+    button {
+        @extend %button;
+        font-size: 1rem;
+        padding: 0.5em 1em;
     }
 </style>

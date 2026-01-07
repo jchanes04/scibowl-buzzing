@@ -33,18 +33,23 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     div {
-        background: white;
+        background: $background-1;
         border-radius: 0.3em;
-        font-size: 18px;
+        font-size: 30px;
+        font-weight: 600;
         display: inline-block;
     }
 
     input {
         border: none;
-        width: 4ch;
+        width: 2ch;
         font-size: inherit;
         border-radius: 0.3em;
         padding: 0.3em;
+        background: transparent;
+        color: inherit;
     }
 </style>

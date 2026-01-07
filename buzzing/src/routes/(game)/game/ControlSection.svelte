@@ -9,20 +9,29 @@
 </div>
 
 <style lang="scss">
+    @use '$styles/_global.scss' as *;
+
     div {
-        border: solid #333 2px;
+        border: 3px solid $border-color;
         border-radius: 1em;
         position: relative;
-        padding: 1em;
+        padding: 1.5em;
         margin: 1em;
+        background: $background-1;
     }
 
     h3 {
         margin: 0;
-        padding: 0 0.3em;
+        padding: 0 0.5em;
         position: absolute;
         top: -0.6em;
         left: 1em;
-        background: #EEE;
+        background: $background-1;
+        border-radius: 1em;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: $gray-2;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 </style>

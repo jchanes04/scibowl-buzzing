@@ -29,7 +29,7 @@
 
     h1 {
         font-size: 44px;
-        text-decoration: underline $blue 3px;
+        text-decoration: underline $primary 3px;
         text-underline-offset: 0.2em;
     }
 

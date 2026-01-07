@@ -29,6 +29,33 @@
             return acc
         }, {} as Record<string, string[]>)
 
+    $: runningScores = (() => {
+            // Compute running total for each team row by row.
+            let totals: Record<string, number> = {};
+            let scoreHistory: Record<number, Record<string, number>> = {};
+            Object.entries(scores).forEach(([rowNumStr, row]) => {
+                const i = Number(rowNumStr);
+                // Copy previous
+                totals = { ...totals };
+                if (row) {
+                    // Tossups
+                    for (const [teamName, entry] of Object.entries(row.tossup)) {
+                        if (!totals[teamName]) totals[teamName] = 0;
+                        if (entry.scoreType === "correct") totals[teamName] += 4;
+                        else if (entry.scoreType === "incorrect") totals[teamName] -= 1;
+                        else if (entry.scoreType === "penalty") totals[teamName] -= 4;
+                    }
+                    // Bonus
+                    if (row.bonus && row.bonus.teamName) {
+                        if (!totals[row.bonus.teamName]) totals[row.bonus.teamName] = 0;
+                        totals[row.bonus.teamName] += row.bonus.correct ? 10 : 0;
+                    }
+                }
+                scoreHistory[i] = { ...totals };
+            });
+            return scoreHistory;
+        })()
+
     const categories: Record<Category, string> = {
         "bio": "B",
         "earth": "ES",
@@ -213,7 +240,7 @@
             {#each Object.keys(players) as teamName}
                 {@const teamPlayers = players[teamName]}
                 {#if teamPlayers}
-                    <th colspan={teamPlayers.length + 1} class="team-name"><span>{teamName}</span>: {sumQuestionScores(teamName)}</th>
+                    <th colspan={teamPlayers.length + 2} class="team-name"><span>{teamName}</span>: {sumQuestionScores(teamName)}</th>
                 {/if}
             {/each}
         </tr>
@@ -225,6 +252,7 @@
                         <th class="player-name" style:font-weight="normal">{playerName}</th>
                     {/each}
                     <th class="player-name" style:font-weight="bold">Bonus</th>
+                    <th class="player-name" style:font-weight="bold">Score</th>
                 {/each}
             </tr>
         {/if}
@@ -252,20 +280,24 @@
                         {:else}
                             <td class="bonus"></td>
                         {/if}
+                        <td class="running-total">
+                            {runningScores[i]?.[teamName] ?? 0}
+                        </td>
                     {/each}
                 {:else}
                     <td></td>
-                    {#each Object.values(players) as p}
+                    {#each Object.entries(players) as [teamName, p]}
                         {#each p as _}
                             <td></td>
                         {/each}
                         <td class="bonus"></td>
+                        <td class="running-total"></td>
                     {/each}
                 {/if}
             </tr>
         {:else}
             <tr>
-                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length, 0) + getTeamNames(scores).length + 2}>
+                <td colspan={Object.values(players).reduce((acc, x) => acc + x.length + 2, 0) + 2}>
                     No questions
                 </td>
             </tr>
@@ -282,7 +314,7 @@
     @use '$styles/_global.scss' as *;
 
     .scoreboard {
-        padding: 1em;
+        padding: 2em;
         box-sizing: border-box;
         border-radius: 1em;
         background: $background-1;
@@ -291,83 +323,92 @@
 
     table {
         border-collapse: collapse;
-        border: 1px solid black;
+        border: 1px solid $border-color;
+        border-radius: 0.5em;
+        overflow: hidden;
+        min-width: min-content;
     }
 
     th {
-        border: 1px solid black;
-        padding: 0.3em;
-        font-weight: normal;
+        border: 1px solid $border-color;
+        background: $gray-1;
+        color: $text-muted;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.6em;
+        min-width: 2em;
 
         &.player-name {
             writing-mode: vertical-lr;
             transform: rotate(180deg);
-            padding: 0.2em;
+            padding: 0.8em 0.4em;
+            height: 120px;
+            text-align: left;
+            width: 2em;
         }
 
         &.team-name {
             span {
                 font-weight: bold;
+                color: $text-dark;
             }
-            font-size: 1.3em;
+            font-size: 1.1rem;
+            color: $primary;
+            text-transform: none;
+            letter-spacing: normal;
         }
     }
 
     .question-info {
-        border-top: 1px solid #333;
-        border-right: 1px solid black;
-        border-bottom: 1px solid #333;
-        border-left: 1px solid black;
+        background: $gray-1;
     }
 
     tr td {
-        border: 1px solid #BBB;
+        border: 1px solid $gray-2;
+        color: $text-dark;
+        font-size: 0.95rem;
 
         &:first-child {
-            border-left: 1px solid black;
+            font-weight: 600;
+            color: $text-muted;
+            background: $gray-1;
+            padding: 0 0.8em;
         }
-
-        &:last-child {
-            border-right: 1px solid black;
-        }
-    }
-
-    tr:last-child td {
-        border-bottom: 1px solid black;
     }
 
     td {
         text-align: center;
-
-        &:first-child, &:nth-child(2) {
-            padding: 0.1em 0.2em;
-        }
+        height: 2.5em;
+        min-width: 2.5em;
 
         &.bonus {
-            border-right: 1px solid black;
-        }
-
-        &:has(+ .bonus) {
-            border-right: 1px solid black;
+            border-right: 2px solid $gray-2;
         }
 
         &.correct {
-            background: adjust($green, $lightness: 20%);
+            background: rgba($green, 0.05);
+            color: $green-dark;
+            font-weight: bold;
         }
 
         &.incorrect {
-            background: adjust($red, $lightness: 20%);
+            background: rgba($red, 0.05);
+            color: $red-dark;
+            font-weight: bold;
         }
 
         &.penalty {
-            background: adjust($red, $lightness: 20%);
+            background: rgba($purple, 0.05);
+            color: $purple-dark;
+            font-weight: bold;
         }
     }
 
     button {
         @extend %button;
-
-        font-size: 22px;
+        font-size: 1rem;
+        padding: 0.5em 1em;
         margin: 0.25em;
     }
 </style>

@@ -39,14 +39,14 @@
     @use '$styles/_global.scss' as *;
 
     .join-link-dialog {
-        background-color: #EEE;
+        background-color: $background-2;
         position: relative;
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
         padding: 1em;
         border-radius: 1em;
-        border: 1px solid black;
+        border: 1px solid $border-color;
 
         &::after {
             content: '';
@@ -55,19 +55,21 @@
             left: 50%;
             height: 20px;
             width: 20px;
-            background-color: #EEE;
-            border-top: 1px solid black;
-            border-right: 1px solid black;
+            background-color: $background-2;
+            border-top: 1px solid $border-color;
+            border-right: 1px solid $border-color;
             transform: translate(-50%, -50%) rotate(-45deg);
             clip-path: polygon(100% 0, 0 0, 100% 100%);
         }
     }
 
     input {
-        border: 1px solid black;
+        border: 1px solid $border-color;
         padding: 0.1em 0.3em;
         border-top-left-radius: 0.5em;
         border-bottom-left-radius: 0.5em;
+        background: $background-1;
+        color: $text-dark;
     }
 
     button {

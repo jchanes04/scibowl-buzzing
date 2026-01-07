@@ -22,7 +22,7 @@
     input[type="text"] {
         @extend %text-input;
 
-        font-size: 24px;
+        font-size: inherit;
         margin: 0.5em auto;
         box-sizing: border-box;
         width: 25ch;

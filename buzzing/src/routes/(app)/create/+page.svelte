@@ -52,35 +52,28 @@
                 <span />
                 Members can create their own teams that others can join
             </label>
-            <br />
             <label for="individual-teams">
                 <input id="individual-teams" type="checkbox" name="individual-teams-allowed" bind:checked={individualTeamsAllowed} />
                 <span />
                 Members can join the game on a team of just themselves
             </label>
-            <br />
             <label for="spectators">
                 <input id="spectators" type="checkbox" name="spectators-allowed" />
                 <span />
                 Spectators allowed
             </label>
-            <br />
             <label for="tournament-checkbox">
                 <input id="tournament-checkbox" type="checkbox" name="in-tournament" bind:checked={inTournament} />
                 <span />
                 Add game to tournament
             </label>
             {#if inTournament}
-                <br />
                 <div style:text-align="center">
                     <input type="text" placeholder="Tournament Code" name="tournament-code" id="tournament-code-input" bind:value={tournamentCode} />
                 </div>
             {/if}
-            <br />
-            <br />
         </div>
-        <br />
-        <label for="default-team-name"><h2>Default Teams</h2></label>
+        <h2 style="margin-bottom: 0rem">Default Teams</h2>
         <TeamList bind:teams={defaultTeams} bind:newTeamName={newTeamName} />
         <br />
         <button type="submit" disabled={!submitEnabled}>Create Game</button>
@@ -90,99 +83,124 @@
 <style lang="scss">
     @use '$styles/_global.scss' as *;
 
+    main {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
     form {
-        margin: 0em auto;
-        border-radius: 1em;
+        margin: 0 auto;
+        border-radius: 1.5rem;
         text-align: center;
-        padding: 1em;
-        position: relative;
+        padding: 3rem;
+        background: $background-1;
+        box-shadow: $shadow;
+        border: 3px solid $border-color;
     }
 
     h1 {
-        font-size: 44px;
-        text-decoration: underline $blue 3px;
-        text-underline-offset: 0.2em;
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 2rem;
+        color: $text-dark;
         text-align: center;
+        text-decoration: underline var(--primary) 3px;
+        text-underline-offset: 0.2em;
     }
 
     h2 {
-        font-size: 24px;
-        text-decoration: underline $blue 2px;
-        text-underline-offset: 0.1em;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-top: 1.5rem;
+        margin-bottom: .5rem;
+        color: $primary;
+        text-align: left;
     }
 
     .error {
         color: $red;
+        background: rgba($red, 0.1);
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
     }
 
     .checkbox-wrapper {
         text-align: left;
-        display: inline-block;
+        display: block;
+        
+        label {
+            cursor: pointer;
+            display: flex;
+            margin: 0.25rem;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 0.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+
+            &:hover {
+                background: $background-2;
+                border-color: $border-color;
+            }
+
+            input {
+                position: absolute;
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            span {
+                width: 1.25rem;
+                height: 1.25rem;
+                border-radius: 0.4rem;
+                border: $gray-2 2px solid;
+                display: grid;
+                place-content: center;
+                background: $background-1;
+                transition: all 0.2s;
+
+                &::after {
+                    content: '';
+                    display: block;
+                    width: 0.8rem;
+                    height: 0.8rem;
+                    border-radius: 0.15rem;
+                    background: $primary;
+                    transform: #{"scale(0)"};
+                    transition: transform 0.1s;
+                }
+            }
+
+            input:checked ~ span {
+                border-color: $primary;
+                &::after {
+                    transform: #{"scale(1)"};
+                }
+            }
+        }
     }
 
     input[type="text"] {
         @extend %text-input;
-
-        font-size: 24px;
-        margin: 0.5em auto;
-        width: 25ch;
-        max-width: 80vw;
-        text-align: center;
+        font-size: 1.1rem;
+        width: 90%;
+        text-align: left;
+        margin-bottom: 1rem;
     }
 
-    label {
-        cursor: pointer;
-        padding-top: 0.3em;
-        padding-bottom: 0.3em;
-        display: inline-block;
-
-        h2 {
-            margin: 0;
-        }
-
-        input {
-            visibility: hidden;
-            width: 0;
-            height: 0;
-        }
-
-        span {
-            width: 1em;
-            height: 1em;
-            border-radius: 0.2em;
-            border: #CCC 2px solid;
-            display: inline-block;
-            position: relative;
-            background: #FFF;
-            vertical-align: text-top;
-            margin-right: 0.3em;
-
-            &::after {
-                content: '';
-                position: absolute;
-                display: none;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 0.6em;
-                height: 0.6em;
-                border-radius: 0.1em;
-                background: var(--blue);
-            }
-        }
-
-        &:hover > span {
-            border-color: $green;
-        }
-
-        input:checked ~ span::after {
-            display: inline-block;
-        }
-    }
-
-    button {
+    button[type="submit"] {
         @extend %button;
-
-        font-size: 18px;
+        font-size: 1.25rem;
+        width: 90%;
+        padding: 0.8rem;
+        margin-top: 2rem;
+        background: $primary;
     }
 </style>

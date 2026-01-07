@@ -12,3 +12,6 @@ localhost-key.js
 debugLogs.json
 jwt.key
 jwt.key.pub
+# Local SQLite database
+*.db
+buzzing-local.db

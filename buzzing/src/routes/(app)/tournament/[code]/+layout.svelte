@@ -123,7 +123,7 @@
     }
 
     a {
-        color: $blue;
+        color: $primary;
     }
 
     .modal-background {

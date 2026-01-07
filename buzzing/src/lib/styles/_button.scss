@@ -3,18 +3,31 @@
 
 %button {
     color: variables.$text-light;
-    background: variables.$green;
-    font-weight: bold;
-    padding: 0.6em;
-    border-radius: 0.6em;
-    border: solid black 3px;
+    background: variables.$primary;
+    font-weight: 600;
+    padding: 0.6em 1.2em;
+    border-radius: 0.5em;
+    border: 3px solid variables.$border-color;
     cursor: pointer;
     box-sizing: border-box;
+    transition: all 0.2s ease;
+    box-shadow: variables.$shadow;
+
+    &:hover:not(:disabled) {
+        filter: brightness(1.2);
+        transform: translateY(-1px) translateX(1px);
+    }
+
+    &:active {
+        transform: translateY(0);
+        filter: brightness(0.95);
+    }
 
     &:disabled {
-        border: solid variables.$green 3px;
-        background: transparent;
-        color: #444;
-        cursor: default;
+        background: variables.$background-1;
+        color: variables.$gray-2;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
     }
 }

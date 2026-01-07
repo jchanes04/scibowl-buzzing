@@ -26,10 +26,12 @@
         grid-area: member-list;
         display: grid;
         grid-template-rows: auto 1fr;
-        padding: 1em;
+        padding: 1.5em;
         box-sizing: border-box;
         border-radius: 1em;
         background: $background-1;
+        box-shadow: $shadow;
+        border: 1px solid $border-color;
         min-height: 10em;
         max-height: 25em;
     }
@@ -40,23 +42,29 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
-    }
-
-    h2 {
-        font-size: 26px;
-        margin: 0.25em 0.5em;
-    }
-
-    h3 {
-        font-size: 20px;
-        font-weight: 600;
-        text-decoration: underline;
-        margin: 0.5em 0;
-    }
-    
-    ul {
+        gap: 0.5em;
         list-style: none;
         padding-left: 0px;
         margin: 0;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin: 0 0 1em 0;
+        color: $primary;
+    }
+
+    h3 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: $gray-2;
+        margin: 1em 0 0.5em 0;
+        
+        &:first-of-type {
+            margin-top: 0;
+        }
     }
 </style>

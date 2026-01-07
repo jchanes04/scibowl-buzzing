@@ -7,6 +7,7 @@
     import myMember from "$lib/stores/myMember";
     import visualBonus from "$lib/stores/visualBonus";
     import teamsStore from "$lib/stores/teams"
+    import playersStore from "$lib/stores/players"
     import { browser } from "$app/environment";
     import ExpandedScoreboardPlayer from "../ExpandedScoreboardPlayer.svelte";
     
@@ -20,7 +21,10 @@
         socket.emit('buzz');
         buzzAudio?.play()
 
-        gameStore.buzz($myMember.team?.id || "")
+        const player = $playersStore[$myMember.id]
+        if (player) {
+            gameStore.buzz($myMember.team?.id || "", player.store)
+        }
         timerStore.pause()
         
         debug.addEvent('buzz', {})
@@ -41,14 +45,7 @@
         const img = new Image()
         img.src = $visualBonus.url
         newWindow.document.body.innerHTML = 
-            `<style>
-                img {
-                    width: 100%;
-                }
-            </style>
-            <div>
-                ${img.outerHTML}
-            </div>`
+            `<style>img { width: 100%; }</style><div>${img.outerHTML}</div>`
     }
 
     $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""]?.captainId === $myMember.id
@@ -71,29 +68,39 @@
     }
 }} />
 
-<div class="player-controls">
-    <button id="buzz" on:click={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
-    <div class="timer-wrapper">
-        <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
-        <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
-        <br />
-        <button on:click={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
-        <br />
-        <br />
-        <button on:click={() => scoreboardExpanded = true}>Expand Scoreboard</button>
-        {#if visualBonusEnabled}
+<div class="player-controls" class:scoreboard-expanded={scoreboardExpanded}>
+    <div class="controls-element">
+        <button id="buzz" on:click={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
+        <div class="timer-wrapper">
+            <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
+            <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
+            <br />
+            <button on:click={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
             <br />
             <br />
-            <button on:click={openVisual}>Open Visual Bonus</button>
-        {/if}
+            <button on:click={() => scoreboardExpanded = !scoreboardExpanded}>
+                {#if scoreboardExpanded}
+                    Collapse Scoreboard
+                {:else}
+                    Expand Scoreboard
+                {/if}
+            </button>
+            {#if visualBonusEnabled}
+                <br />
+                <br />
+                <button on:click={openVisual}>Open Visual Bonus</button>
+            {/if}
+        </div>
     </div>
 
     {#if scoreboardExpanded}
-        <div class="expanded-scoreboard-wrapper">
+        <div class="controls-element">
             <ExpandedScoreboardPlayer on:close={() => scoreboardExpanded = false} />
         </div>
     {/if}
 </div>
+
+
 
 <style lang="scss">
     @use '$styles/_global.scss' as *;
@@ -101,39 +108,74 @@
     .player-controls {
         grid-area: control-panel;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2em;
+        gap: 3em;
         box-sizing: border-box;
-        border-radius: 1em;
-        background: $background-1;
-        padding: 2em;
+        
         position: relative;
+        
+    }
+
+    .controls-element {
+        box-shadow: $shadow;
+        border: 1px solid $border-color;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3em;
+        position: relative;
+        width: 100%;
+        background: $background-1;
+        border-radius: 1.5em;
+        padding: 3em 0;
     }
 
     button {
         @extend %button;
-
-        border-radius: 0.5em;
-        padding: 1em 2em;
+        padding: 0.75em 1.5em;
+        font-size: 1rem;
     }
 
     #buzz {
-        font-size: 36px;
+        font-size: 3rem;
+        padding: 1.5em 2.5em;
+        border-radius: 1em;
+        background: $primary;
+        box-shadow: 0 10px 15px -3px rgba($primary-rgb, 0.3), 0 4px 6px -2px rgba($primary-rgb, 0.05);
+        
+        &:disabled {
+            background: $gray-1;
+            box-shadow: none;
+            color: $gray-2;
+        }
+
+        &:active:not(:disabled) {
+            transform: #{"scale(0.95)"};
+        }
+    }
+
+    .timer-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5em;
     }
 
     h2 {
-        font-size: 48px;
+        font-size: 3.5rem;
+        font-weight: 800;
         margin: 0;
+        color: $primary;
+        font-variant-numeric: tabular-nums;
     }
 
     h3 {
-        font-size: 32px;
+        font-size: 1.5rem;
+        font-weight: 600;
         margin: 0;
-    }
-
-    .expanded-scoreboard-wrapper {
-        inset: 0;
-        position: absolute;
+        color: $gray-2;
+        font-variant-numeric: tabular-nums;
     }
 </style>

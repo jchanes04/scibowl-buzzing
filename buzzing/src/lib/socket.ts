@@ -183,7 +183,7 @@ export function createSocket(spectator: boolean = false) {
     socket.on('buzz', (id: string) => {
         const player = players[id]
         if (player) {
-            gameStore.buzz(player.team.id)
+            gameStore.buzz(player.team.id, player.store)
             buzzAudio?.play()
             timerStore.pause()
         

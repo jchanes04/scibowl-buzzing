@@ -12,7 +12,7 @@
     <h2>Chat</h2>
     <div class="chat-messages" bind:this={chatMessagesElement}>
         {#each $chatMessagesStore as message}
-            <p class={message.type}>{message.text}</p>
+            <p class={message.text.startsWith("Penalty") ? "penalty" : message.type}>{message.text}</p>
         {/each}
     </div>
 </div>
@@ -24,10 +24,12 @@
         grid-area: chat-box;
         display: grid;
         grid-template-rows: auto 1fr;
-        padding: 1em;
+        padding: 1.5em;
         box-sizing: border-box;
         border-radius: 1em;
         background: $background-1;
+        box-shadow: $shadow;
+        border: 1px solid $border-color;
         min-height: 10em;
         max-height: 25em;
     }
@@ -37,36 +39,56 @@
 
         display: flex;
         flex-direction: column;
-        overflow-y: scroll;
+        overflow-y: auto;
+        gap: 0.5em;
+        padding-right: 0.5em;
     }
 
     h2 {
-        font-size: 26px;
-        margin-top: 0.25em;
-        margin-left: 0.5em;
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin: 0 0 1em 0;
+        color: $primary;
     }
 
     p {
-        margin: 3px 3px 10px 10px;
-        margin-block-start: 0em;
-        margin-block-end: 0em;
+        margin: 0;
         font-weight: 500;
-        font-size: 18px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        padding: 0.5em 0.75em;
+        border-radius: 0.5em;
+        background: $background-2;
+        color: $text-dark;
     }
 
     .buzz {
-        color: $orange;
+        color: $orange-dark;
+        background: rgba($orange, 0.1);
+        border-left: 3px solid $orange;
     }
 
     .notif {
-        color: #000000;
+        color: $text-dark;
+        background: transparent;
+        padding: 0.25em 0.75em;
     }
 
     .warning {
-        color: $red;
+        color: $red-dark;
+        background: rgba($red, 0.1);
+        border-left: 3px solid $red;
+    }
+
+    .penalty {
+        color: $purple-dark;
+        background: rgba($purple, 0.1);
+        border-left: 3px solid $purple;
     }
 
     .success {
-        color: $green;
+        color: $green-dark;
+        background: rgba($green, 0.1);
+        border-left: 3px solid $green;
     }
 </style>

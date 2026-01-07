@@ -57,11 +57,18 @@ export default {
             return value
         })
     },
-    buzz: (teamId: string) => {
+    buzz: (teamId: string, playerStore: PlayerStore) => {
         store.update(value => {
             value.state.buzzingEnabled = false
             value.state.buzzedTeamIds.push(teamId)
             value.state.questionState = "buzzed"
+            value.state = {
+                ...value.state,
+                questionState: "buzzed",
+                currentBuzzer: playerStore,
+                buzzingEnabled: false,
+                buzzedTeamIds: value.state.buzzedTeamIds
+            } as BuzzedState
             return value
         })
     },
@@ -73,8 +80,12 @@ export default {
     },
     openQuestion: (buzzingEnabled: boolean) => {
         store.update(value => {
-            value.state.questionState = "open"
-            value.state.buzzingEnabled = buzzingEnabled
+            value.state = {
+                ...value.state,
+                questionState: "open",
+                currentBuzzer: null,
+                buzzingEnabled
+            } as OpenState
             return value
         })
     },
@@ -86,10 +97,13 @@ export default {
     },
     clearQuestion: () => {
         store.update(value => {
-            value.state.currentQuestion = null
-            value.state.buzzingEnabled = false
-            value.state.buzzedTeamIds = []
-            value.state.questionState = "idle"
+            value.state = {
+                questionState: "idle",
+                currentBuzzer: null,
+                currentQuestion: null,
+                buzzingEnabled: false,
+                buzzedTeamIds: []
+            }
             return value
         })
     },

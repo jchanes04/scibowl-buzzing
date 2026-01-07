@@ -13,7 +13,7 @@
     import moderatorsStore, { createModeratorStore } from "$lib/stores/moderators";
     import { page } from "$app/stores";
     import { createSocket } from "$lib/socket";
-    import { beforeNavigate, invalidateAll } from "$app/navigation";
+    import { beforeNavigate } from "$app/navigation";
     import SpectatorScoreboard from "../SpectatorScoreboard.svelte";
 
     export let data: Required<PageServerData>
@@ -58,7 +58,6 @@
 
     beforeNavigate(() => {
         socket.disconnect()
-        invalidateAll()
     })
 </script>
 

@@ -60,13 +60,14 @@
         grid-area: top-bar;
         display: grid;
         grid-template-columns: 1fr auto 1fr;
-        padding: 0 2em;
+        padding: 0.5em 2em;
         align-items: center;
         position: sticky;
-        top: -0.5em;
+        top: 0;
         left: 0;
         background-color: $background-2;
-        z-index: 5;
+        z-index: 4;
+        box-shadow: $shadow;
 
         * {
             min-width: 1px;
@@ -80,12 +81,26 @@
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 100%;
-        font-size: 24px;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: $text-dark;
     }
 
     .join-code {
-        font-size: 32px;
+        font-size: 1.8rem;
+        font-weight: 800;
         cursor: pointer;
+        color: $primary;
+        display: flex;
+        align-items: center;
+        gap: 0.2em;
+        padding: 0.2em 0.5em;
+        border-radius: 0.4em;
+        transition: background-color 0.2s;
+
+        &:hover {
+            background-color: $background-2;
+        }
     }
 
     .icon {

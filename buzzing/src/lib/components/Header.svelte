@@ -1,6 +1,5 @@
 <script lang="ts">
-
-    
+    import ThemeSelector from "./ThemeSelector.svelte";
 </script>
 
 <div class="header">
@@ -8,6 +7,7 @@
     <nav>
         <a href="/join">Join Game</a>
         <a href="/create">Create Game</a>
+        <ThemeSelector />
     </nav>
 </div>
 
@@ -15,7 +15,7 @@
     @use '$styles/_global.scss' as *;
 
     .header {
-        background: white;
+        background: $background-2;
         text-align: left;
         position: sticky;
         top: 0;
@@ -25,12 +25,17 @@
         align-items: center;
         width: 100%;
         z-index: 5;
+        padding: 0.5em 1.5em;
+        box-shadow: $shadow;
+        box-sizing: border-box;
     }
     
     h1 {
         display: inline-block;
-        margin-left: 0.75em;
-        margin-top: 0.75em;
+        margin: 0;
+        font-size: 3rem;
+        font-weight: 700;
+        color: $primary;
 
         @media (max-width: 800px) {
             display: none;
@@ -41,18 +46,20 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 1em;
-        margin: 0.5em 1em 0.5em auto;
-        font-size: 32px;
+        gap: 1.5em;
+        margin-left: auto;
+        font-size: 2rem;
+        font-weight: 500;
     }
     
     a {
         text-decoration: none;
-        color: inherit;
-        transition: color 0.3s;
+        color: $text-dark;
+        
+        transition: all 0.2s;
 
         &:hover {
-            color: adjust($green, $lightness: -20%);
+            color: $primary;
         }
     }
 </style>

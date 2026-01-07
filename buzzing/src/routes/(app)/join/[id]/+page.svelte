@@ -1,6 +1,7 @@
 <script lang="ts">
     import JoinMemberList from '$lib/components/JoinMemberList.svelte'
     import Select from "svelte-select";
+    import { slide } from "svelte/transition";
     import type { PageData } from './$types'
     import type { TeamData } from "$lib/classes/Team";
 
@@ -36,7 +37,7 @@
         <h1>Join {gameName}</h1>
         <div>
             <input type="text" placeholder="Your Name" name="name" id="name-input" bind:value={memberName} />
-            <br />
+            <h2>Team:</h2>
             {#if !showRadio}
                 <input type="hidden" name="team-or-indiv" value={teamOrIndiv} />
             {/if}
@@ -48,8 +49,7 @@
                         Play on my own
                     </label>
                 </div>
-                <br />
-            {/if}
+            {/if} 
             {#if settings.newTeamsAllowed}
                 {#if showRadio}
                     <div class="radio-wrapper">
@@ -60,10 +60,11 @@
                         </label>
                     </div>
                 {/if}
-                <div style={`display: ${teamOrIndiv === "new-team" ? "default" : "none"}`}>
-                    <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} on:input={handleTeamNameInput} />
-                </div>
-                <br />
+                {#if teamOrIndiv === "new-team"}
+                    <div transition:slide={{ duration: 200 }}>
+                        <input type="text" placeholder="Team Name" name="new-team-name" bind:value={newTeamName} on:input={handleTeamNameInput} />
+                    </div>
+                {/if}
             {/if} 
             {#if teams.length > 0}
                 {#if showRadio}
@@ -74,16 +75,14 @@
                                 Play with an existing team:                        
                         </label>
                     </div>
-                {:else}
-                    <label for="team-select">Team:</label>
                 {/if}
 
-                <div class="select-wrapper" style={`display: ${teamOrIndiv === "team" ? "default" : "none"}`}>
-                    <Select itemId="id" label="name" items={teams} bind:value={selectedTeam} placeholder="Team" searchable={false} showChevron={true} />
-                    <input type="hidden" name="team-id" value={selectedTeam?.id}>
-                </div>
-                <br />
-                <br />
+                {#if teamOrIndiv === "team"}
+                    <div class="select-wrapper" transition:slide={{ duration: 200 }} style="align: center;">
+                        <Select itemId="id" label="name" items={teams} bind:value={selectedTeam} placeholder="Team" searchable={false} showChevron={true} />
+                        <input type="hidden" name="team-id" value={selectedTeam?.id}>
+                    </div>
+                {/if}
             {/if}
             <button id="join-game" {disabled}>Join</button>
         </div>
@@ -95,89 +94,109 @@
     @use '$styles/_global.scss' as *;
 
     form {
-        margin: 0em auto;
-        border-radius: 1em;
+        margin: 2rem auto;
+        max-width: 500px;
+        border-radius: 1.5rem;
         text-align: center;
-        padding: 1em;
-        position: relative;
+        padding: 3rem;
+        background: $background-1;
+        box-shadow: $shadow;
+        border: 1px solid $border-color;
     }
 
     h1 {
-        font-size: 44px;
-        text-decoration: underline $blue 3px;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 2rem;
+        color: $text-dark;
+        text-decoration: underline var(--primary) 3px;
         text-underline-offset: 0.2em;
+    }
+    
+    h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        color: $primary;
+        text-align: left;
     }
 
     .radio-wrapper {
         text-align: left;
-        display: inline-block;
+        display: block;
+        margin-top: 0.5rem;
     }
 
     input[type="text"] {
         @extend %text-input;
-
-        font-size: 24px;
-        margin: 0.5em auto;
-        width: 25ch;
-        max-width: 80vw;
-        text-align: center;
+        font-size: 1.1rem;
+        width: calc(90% - 1.75rem); 
+        text-align: left;
+        margin-bottom: 0rem;
     }
 
     label {
         cursor: pointer;
-        padding-top: 0.3em;
-        padding-bottom: 0.3em;
-        display: inline-block;
-        font-size: 20px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        transition: all 0.2s;
+        border: 1px solid transparent;
 
         input {
-            visibility: hidden;
+            position: absolute;
+            opacity: 0;
             width: 0;
             height: 0;
         }
 
         span {
-            width: 1em;
-            height: 1em;
+            width: 1.25rem;
+            height: 1.25rem;
             border-radius: 50%;
-            border: #CCC 2px solid;
-            display: inline-grid;
+            border: $gray-2 2px solid;
+            display: grid;
             place-content: center;
-            background: #FFF;
-            vertical-align: text-top;
-            margin-right: 0.3em;
+            background: $background-1;
+            transition: all 0.2s;
 
             &::after {
                 content: '';
-                display: none;
-                width: 0.7em;
-                height: 0.7em;
-                border-radius: 0.35em;
-                background: $blue;
+                display: block;
+                width: 0.6rem;
+                height: 0.6rem;
+                border-radius: 50%;
+                background: $primary;
+                transform: #{"scale(0)"};
+                transition: transform 0.2s;
             }
         }
 
-        &:hover > span {
-            border-color: $green;
-        }
-
-        input:checked ~ span::after {
-            display: inline-block;
+        input:checked ~ span {
+            border-color: $primary;
+            &::after {
+                transform: #{"scale(1)"};
+            }
         }
     }
 
     .select-wrapper {
-        width: max-content;
-        min-width: 25ch;
-        margin: auto;
-        font-size: 20px;
-        text-align: center;
+        width: 90%;
+        margin: 0.5rem auto 1.5rem auto;
+        --border-radius: 0.5rem;
     }
 
-    button {
+    button#join-game {
         @extend %button;
-
-        font-size: 18px;
-        width: 8ch;
+        font-size: 1.25rem;
+        width: 90%;
+        padding: 0.8rem;
+        margin-top: 1rem;
+        background: $primary;
     }
 </style>

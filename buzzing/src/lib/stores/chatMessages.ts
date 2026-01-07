@@ -6,4 +6,7 @@ export type ChatMessage = {
 }
 
 const chatMessagesStore: Writable<ChatMessage[]> = writable([])
+
+export const clearChatMessages = () => chatMessagesStore.set([])
+
 export default chatMessagesStore

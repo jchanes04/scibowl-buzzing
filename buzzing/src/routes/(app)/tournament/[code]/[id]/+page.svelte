@@ -20,9 +20,10 @@
     @use "$styles/_global.scss" as *;
 
     h1 {
-        font-size: 44px;
-        text-decoration: underline $blue 3px;
-        text-underline-offset: 0.2em;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 2rem;
+        color: $text-dark;
         text-align: center;
     }
 </style>
