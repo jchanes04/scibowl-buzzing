@@ -9,7 +9,7 @@ import { addNamesToScores } from "$lib/functions/scoreboard"
 // TODO: zod validation
 
 export const actions = {
-    default: async function({ request, cookies }) {
+    default: async function ({ request, cookies }) {
         const body = await request.formData()
         const ownerName = body.get("owner-name") as string
         const gameName = body.get("game-name") as string
@@ -49,6 +49,6 @@ export const actions = {
             await updateGameScores(game.id, game.name, scoresWithNames)
         }
 
-        throw redirect(302, "/game/" + game.id)
+        redirect(302, "/game/" + game.id)
     }
 } satisfies Actions

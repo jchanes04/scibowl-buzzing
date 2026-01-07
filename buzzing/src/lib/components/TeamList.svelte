@@ -28,6 +28,8 @@
     <ul>
         {#each teams as team}
             <li>
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <span on:click={() => {teams = teams.filter(x => x !== team)}}>
                     <span class="remove" />
                 </span>
@@ -36,6 +38,8 @@
         {/each}
         <li>
             <input type="text" id="default-team-name" bind:value={newTeamName} on:input={handleInput} />
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
             <span on:click={addTeam}>
                 <span class="add" />
             </span>

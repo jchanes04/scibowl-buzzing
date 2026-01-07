@@ -3,15 +3,15 @@ import { redirect } from "@sveltejs/kit"
 import type { LayoutServerLoad } from "./$types"
 import { getDataFromLoginToken } from "$lib/authentication"
 
-export const load = async function({ params, cookies }) {
+export const load = async function ({ params, cookies }) {
     const { code } = params
     const tournament = await getTournament(code)
-    if (!tournament) throw redirect(302, "/tournament/login")
+    if (!tournament) redirect(302, "/tournament/login")
 
     const token = cookies.get("loginToken")
     const tokenData = await getDataFromLoginToken(token || "")
     if (!tokenData?.admin && tokenData?.code !== code) {
-        throw redirect(302, "/tournament/login")
+        redirect(302, "/tournament/login")
     }
 
     const games = getTournamentScores(tournament.gameIds)

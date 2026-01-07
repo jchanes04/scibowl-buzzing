@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite"
 import { fileURLToPath } from "url"
 import { dirname } from 'path'
+import fs from 'fs'
 
 const filePath = fileURLToPath(import.meta.url)
 const dirPath = dirname(filePath)
@@ -11,29 +12,26 @@ const certPath = "./localhost.pem"
 /** @type {import('vite').UserConfig} */
 const config = {
     plugins: [
-        sveltekit(),
-        {
-            name: "vite:cert-plugin",
-            async config() {
-                const https = () => ({
-                    https: {
-                        key: keyPath,
-                        cert: certPath,
-                    },
-                });
-                return {
-                    server: https(),
-                };
-            },
-        }
+        sveltekit()
     ],
     server: {
-        https: true
+        https: {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
+        },
+        proxy: {}  // Empty proxy disables HTTP/2, fixing the undici headers issue
     },
     resolve: {
         alias: {
             "$styles": `${dirPath}/src/lib/styles`,
             "$styles/": `${dirPath}/src/lib/styles/`
+        }
+    },
+    css: {
+        preprocessorOptions: {
+            scss: {
+                api: 'modern-compiler'
+            }
         }
     }
 }

@@ -5,11 +5,11 @@ import { createTournament, getAllTournaments } from "$lib/mongo"
 import { createTournamentCode, createTournamentPassword } from "$lib/functions/createId"
 import argon2 from "argon2"
 
-export const load = async function({ cookies }) {
+export const load = async function ({ cookies }) {
     const token = cookies.get("loginToken")
     const tokenData = await getDataFromLoginToken(token || "")
     if (!tokenData?.admin) {
-        throw redirect(302, "/tournament/login")
+        redirect(302, "/tournament/login")
     }
 
     const tournaments = await getAllTournaments()
@@ -23,10 +23,10 @@ export const load = async function({ cookies }) {
 } satisfies PageServerLoad
 
 export const actions = {
-    default: async function({ request }) {
+    default: async function ({ request }) {
         const data = await request.formData()
         const tournamentName = data.get("tournament-name")
-        
+
         if (typeof tournamentName !== "string") {
             return fail(400)
         }

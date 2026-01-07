@@ -1,6 +1,7 @@
 import type { Category } from "$lib/classes/Game";
 import type { Stats } from "$lib/mongo";
-import { json2csv } from "json-2-csv";
+import pkg from "json-2-csv";
+const { json2csv } = pkg;
 import type { NamedScores } from "./scoreboard";
 
 export type InputRequestData = {
@@ -37,7 +38,7 @@ export default async function calculateStatistics(games: NamedScores[]) {
     for (const game of games) {
         const { playerCounts, teamCounts } = gameStatistics(game)
         for (const name of Object.keys(teamCounts)) {
-            const c  = teamCounts[name]!
+            const c = teamCounts[name]!
             if (Object.hasOwn(teamStats, name)) {
                 const s = teamStats[name]!
                 s.bpg = weightedAvg(s.bpg, s.gamesPlayed, c.bonus)
@@ -156,7 +157,7 @@ export default async function calculateStatistics(games: NamedScores[]) {
             }
         }
     }
-    
+
     return {
         teamStats,
         playerStats
@@ -228,7 +229,7 @@ function gameStatistics(game: NamedScores) {
             counts.tuh++
             counts.categories[question.category].tuh++
         }
-        for (const [teamName, { playerName, scoreType } ] of Object.entries(question.tossup)) {
+        for (const [teamName, { playerName, scoreType }] of Object.entries(question.tossup)) {
             const pCounts = playerCounts[generateCombinedKey(playerName, teamName)]
             const tCounts = teamCounts[teamName]
             if (pCounts) {

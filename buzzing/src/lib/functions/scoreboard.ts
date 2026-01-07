@@ -2,7 +2,8 @@ import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
 import type { Category, Game, ScoreType } from "$lib/classes/Game"
 import type { QuestionPairScore, Scores } from "$lib/classes/GameScoreboard"
 import type { ClientTeamData } from "$lib/stores/teams"
-import { json2csv } from "json-2-csv"
+import pkg from "json-2-csv"
+const { json2csv } = pkg
 
 type CSVColumn = {
     type: "player",
@@ -173,7 +174,7 @@ export function addNamesToScores(game: Game, scores: Scores): NamedScores {
                     scoreType: tossupScore.scoreType
                 }]
             })),
-            bonus: pair.bonus ? { 
+            bonus: pair.bonus ? {
                 teamName: getTeamName(pair.bonus.teamId),
                 correct: pair.bonus.correct
             } : null

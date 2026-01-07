@@ -108,9 +108,12 @@
     >
         <svg class="icon" viewBox="0 0 22 22" fill="none">
             <g transform="rotate(25 12 12)">
-                <!-- Left half: Primary color -->
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <path on:click|stopPropagation={cycleTheme} d="M12 3 A9 9 0 0 0 12 21 Z" fill={currentThemeName === 'custom' ? customColor : (colorSchemes[currentThemeName]?.primary || colorSchemes['default']?.primary)} />
                 <!-- Right half: Mode color -->
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <path on:click|stopPropagation={toggleDarkMode} d="M12 3 A9 9 0 0 1 12 21 Z" fill={isDarkMode ? '#000000' : '#ffffff'} />
             </g>
             <circle cx="12" cy="12" r="9" stroke="{isDarkMode ? '#ffffff' : '#000000'}" stroke-width="2" fill="none"/>

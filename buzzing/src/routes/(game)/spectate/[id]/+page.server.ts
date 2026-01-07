@@ -4,12 +4,12 @@ import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { env } from "$env/dynamic/public"
 
-export const load = async function({ params, cookies }) {
+export const load = async function ({ params, cookies }) {
     const { id } = params
     const game = getGame(id)
 
     if (!game)
-        throw redirect(302, "/join")
+        redirect(302, "/join")
 
     const gameToken = cookies.get('gameToken')
     if (!gameToken) {
@@ -29,7 +29,7 @@ export const load = async function({ params, cookies }) {
     const moderatorList = Object.fromEntries(
         Object.entries(game.moderators).map(([id, m]) => [id, m.data])
     )
-        
+
     return {
         gameInfo: {
             id,

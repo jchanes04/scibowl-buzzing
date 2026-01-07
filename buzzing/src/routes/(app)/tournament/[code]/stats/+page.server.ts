@@ -3,7 +3,7 @@ import { getStatistics, getTournament, getTournamentScores, updateStatistics } f
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
-export const load = async function({ params }) {
+export const load = async function ({ params }) {
     const { code } = params
     const stats = await getStatistics(code)
 
@@ -23,7 +23,7 @@ export const load = async function({ params }) {
 } satisfies PageServerLoad
 
 export const actions = {
-    calculate: async function({ params }) {
+    calculate: async function ({ params }) {
         const tournament = await getTournament(params.code)
         if (!tournament) return fail(400)
 
@@ -32,6 +32,6 @@ export const actions = {
 
         await updateStatistics(params.code, statistics)
 
-        throw redirect(302, `/tournament/${params.code}/stats`)
+        redirect(302, `/tournament/${params.code}/stats`)
     }
 } satisfies Actions

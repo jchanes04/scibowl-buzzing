@@ -7,7 +7,7 @@ import fs from "fs/promises"
 import { generateLoginToken } from "$lib/authentication"
 
 export const actions = {
-    default: async function({ request, cookies }) {
+    default: async function ({ request, cookies }) {
         const data = await request.formData()
         const tournamentCode = data.get("tournament-code")
         const password = data.get("password")
@@ -27,8 +27,8 @@ export const actions = {
         const authorized = await argon2.verify(tournament.passwordHash, password)
         if (authorized) {
             const token = await generateLoginToken({ admin: !!tournament.admin, code: tournamentCode })
-            cookies.set("loginToken", token)
-            throw redirect(302, "/tournament/" + tournament.code)
+            cookies.set("loginToken", token, { path: "/" })
+            redirect(302, "/tournament/" + tournament.code)
         } else {
             return fail(401)
         }

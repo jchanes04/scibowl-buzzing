@@ -7,18 +7,18 @@ import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
 
-export const load = async function({ params, url }) {
+export const load = async function ({ params, url }) {
     const { id } = params
     const code = url.searchParams.get('code')
     const game = getGame(id)
 
-    if (!game) throw redirect(302, "/join")
+    if (!game) redirect(302, "/join")
 
     if (code !== game.joinCode) {
         if (game.settings.spectatorsAllowed) {
-            throw redirect(302, "/spectate/" + id)
+            redirect(302, "/spectate/" + id)
         } else {
-            throw redirect(302, "/join")
+            redirect(302, "/join")
         }
     }
 
@@ -35,7 +35,7 @@ export const load = async function({ params, url }) {
 } satisfies PageServerLoad
 
 export const actions = {
-    default: async function({ request, params, cookies }) {
+    default: async function ({ request, params, cookies }) {
         const body = await request.formData()
         const name = body.get("name") as string
         const teamOrIndiv = body.get("team-or-indiv") as string
@@ -52,13 +52,13 @@ export const actions = {
         game.addPlayer(player)
 
         io.to(game.id).emit('playerJoin', { player: player.data, team: player.team.data })
-    
+
         const gameToken = generateGameToken({ memberId: player.id, gameId: game.id }, '6h')
         cookies.set("gameToken", gameToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
         })
-        throw redirect(302, "/game/" + game.id)
+        redirect(302, "/game/" + game.id)
     }
 } satisfies Actions
 

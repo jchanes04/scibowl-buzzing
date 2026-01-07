@@ -5,13 +5,13 @@ import type { NamedQuestionPairScore, NamedScores } from "$lib/functions/scorebo
 
 // TODO: authentication
 
-export const DELETE = async function({ params }) {
+export const DELETE = async function ({ params }) {
     await deleteGame(params.id)
 
     return new Response(null)
 }
 
-export const PATCH = async function({ request, params }) {
+export const PATCH = async function ({ request, params }) {
     const { teamNameChanges, playerNameChanges, newName } = await request.json() as {
         teamNameChanges: Record<string, string> | null,
         playerNameChanges: Record<string, Record<string, string>> | null,
@@ -23,9 +23,9 @@ export const PATCH = async function({ request, params }) {
     }
 
     if (teamNameChanges && playerNameChanges) {
-        const [ game ] = await getTournamentScores([ params.id ])
+        const [game] = await getTournamentScores([params.id])
 
-        if (!game) throw error(404)
+        if (!game) error(404)
 
         let newGameScores: NamedScores = {}
 

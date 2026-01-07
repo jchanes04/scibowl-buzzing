@@ -1,4 +1,4 @@
-import { vitePreprocess } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import node from '@sveltejs/adapter-node'
 import { fileURLToPath } from "url"
 import { dirname } from 'path'
