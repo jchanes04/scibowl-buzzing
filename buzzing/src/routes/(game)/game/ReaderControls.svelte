@@ -40,17 +40,17 @@
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
     import TimeEntry from "./TimeEntry.svelte";
-    import ExpandedScoreboard from "./ExpandedScoreboard.svelte";
+    import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import playSvg from "$lib/icons/play.svg?raw";
     import pausePlaySvg from "$lib/icons/pause-play.svg?raw";
     import stopSvg from "$lib/icons/stop.svg?raw";
 
-    let teamSelectValue: ClientTeamData | undefined;
-    let selectedCategory: Category | "";
-    let questionType: "tossup" | "bonus" | "visual" | "";
-    let visualBonusFiles: FileList;
-    let visualBonusFilename: string;
+    let teamSelectValue = $state<ClientTeamData | undefined>();
+    let selectedCategory: Category | "" = $state("");
+    let questionType: "tossup" | "bonus" | "visual" | "" = $state("");
+    let visualBonusFiles: FileList | undefined = $state();
+    let visualBonusFilename: string = $state("");
     const categories: { id: Category; value: string }[] = [
         { id: "earth", value: "Earth and Space" },
         { id: "bio", value: "Biology" },
@@ -63,20 +63,22 @@
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
     type ModalStore = Writable<{
-        component: ConstructorOfATypedSvelteComponent;
+        component: any;
         props: Record<string, unknown>;
     } | null>;
     const modalStore: ModalStore = getContext("modalStore");
 
-    $: newQuestionDisabled =
+    let newQuestionDisabled = $derived(
         !questionType ||
-        !selectedCategory ||
-        (!teamSelectValue && questionType === "bonus") ||
-        ((!teamSelectValue || !visualBonusFiles) && questionType === "visual");
+            !selectedCategory ||
+            (!teamSelectValue && questionType === "bonus") ||
+            ((!teamSelectValue || !visualBonusFiles) &&
+                questionType === "visual"),
+    );
 
-    let questionNumber: number = 1;
+    let questionNumber: number = $state(1);
     async function newQuestion() {
-        if (questionType === "visual") {
+        if (questionType === "visual" && visualBonusFiles?.[0]) {
             socket.emit("openVisualBonus", visualBonusFiles[0]);
         }
 
@@ -217,7 +219,7 @@
         }
     }
 
-    let startTimerDisabled = false;
+    let startTimerDisabled = $state(false);
     function startTimer() {
         startTimerDisabled = true;
         setTimeout(() => (startTimerDisabled = false), 500);
@@ -243,11 +245,12 @@
         };
     }
 
-    let scoreboardExpanded = false;
+    let scoreboardExpanded = $state(false);
 
-    $: scoringEnabled =
+    let scoringEnabled = $derived(
         $gameStore.state.questionState === "buzzed" ||
-        $gameStore.state.currentQuestion?.bonus;
+            $gameStore.state.currentQuestion?.bonus,
+    );
     function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
         socket.emit("scoreQuestion", selectedScore);
 
@@ -283,8 +286,8 @@
         debug.addEvent("markDead", {});
     }
 
-    let gameClockTime: number;
-    let startGameClockDisabled = false;
+    let gameClockTime: number = $state(0);
+    let startGameClockDisabled = $state(false);
     function startGameClock() {
         startGameClockDisabled = true;
         setTimeout(() => (startGameClockDisabled = false), 1000);
@@ -294,7 +297,7 @@
         gameClockTime = 0;
     }
 
-    let pauseGameClockDisabled = false;
+    let pauseGameClockDisabled = $state(false);
     function pauseGameClock() {
         pauseGameClockDisabled = true;
         setTimeout(() => (pauseGameClockDisabled = false), 1000);
@@ -303,7 +306,7 @@
         debug.addEvent("pauseGameClock", {});
     }
 
-    let stopGameClockDisabled = false;
+    let stopGameClockDisabled = $state(false);
     function stopGameClock() {
         stopGameClockDisabled = true;
         setTimeout(() => (stopGameClockDisabled = false), 1000);
@@ -415,10 +418,10 @@
                 <input
                     type="number"
                     bind:value={questionNumber}
-                    on:change={handleQuestionNumberChange}
+                    onchange={handleQuestionNumberChange}
                 />
                 <button
-                    on:click={confirmNewQuestion}
+                    onclick={confirmNewQuestion}
                     disabled={newQuestionDisabled}>New Question</button
                 >
             </div>
@@ -430,14 +433,14 @@
         >
             <div style="width: 100%; display: flex; gap: 0.5rem;">
                 <button
-                    on:click={startTimer}
+                    onclick={startTimer}
                     class="start-timer"
                     disabled={startTimerDisabled ||
                         $gameStore.state.questionState !== "open"}
                     >Start Timer</button
                 >
                 <button
-                    on:click={stopTimer}
+                    onclick={stopTimer}
                     disabled={$timerStore === 0}
                     class="icon-btn stop-btn"
                 >
@@ -446,25 +449,25 @@
             </div>
             <div class="scoring-buttons">
                 <button
-                    on:click={() => scoreQuestion("correct")}
+                    onclick={() => scoreQuestion("correct")}
                     class="scoring score-correct"
                     disabled={!scoringEnabled}>Correct</button
                 >
                 <button
-                    on:click={() => scoreQuestion("incorrect")}
+                    onclick={() => scoreQuestion("incorrect")}
                     class="scoring score-incorrect"
                     disabled={!scoringEnabled}>Incorrect</button
                 >
             </div>
             <div class="scoring-buttons">
                 <button
-                    on:click={() => scoreQuestion("penalty")}
+                    onclick={() => scoreQuestion("penalty")}
                     class="scoring score-penalty"
                     disabled={!scoringEnabled ||
                         $gameStore.state.currentQuestion?.bonus}>Penalty</button
                 >
                 <button
-                    on:click={markDead}
+                    onclick={markDead}
                     class="scoring mark-dead-btn"
                     disabled={$gameStore.state.questionState !== "open" ||
                         $gameStore.state.currentQuestion.bonus}
@@ -472,7 +475,7 @@
                 >
             </div>
             <button
-                on:click={() => (scoreboardExpanded = !scoreboardExpanded)}
+                onclick={() => (scoreboardExpanded = !scoreboardExpanded)}
                 class="expand-scoreboard"
             >
                 {#if scoreboardExpanded}
@@ -493,14 +496,14 @@
             <div class="game-control-buttons">
                 <button
                     disabled={startGameClockDisabled || gameClockTime === 0}
-                    on:click={startGameClock}
+                    onclick={startGameClock}
                     class="icon-btn control-btn"
                 >
                     <Icon svg={playSvg} />
                 </button>
                 <button
                     disabled={pauseGameClockDisabled || $gameClockStore === 0}
-                    on:click={pauseGameClock}
+                    onclick={pauseGameClock}
                     class="icon-btn control-btn"
                 >
                     <Icon svg={pausePlaySvg} />
@@ -508,20 +511,20 @@
                 <button
                     disabled={stopGameClockDisabled ||
                         ($gameClockStore === 0 && !gameClockStore.ended)}
-                    on:click={stopGameClock}
+                    onclick={stopGameClock}
                     class="icon-btn control-btn"
                 >
                     <Icon svg={stopSvg} />
                 </button>
             </div>
 
-            <button on:click={endGame} id="endGame">End Game</button>
+            <button onclick={endGame} id="endGame">End Game</button>
         </ControlSection>
     </div>
 
     {#if scoreboardExpanded}
         <div class="expanded-scoreboard-wrapper">
-            <ExpandedScoreboard />
+            <ExpandedScoreboard isModerator={true} />
         </div>
     {/if}
 </div>

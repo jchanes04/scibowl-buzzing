@@ -9,9 +9,13 @@
     import type { Writable } from "svelte/store";
     import type { Category } from "$lib/classes/Game";
 
-    export let data: PageData;
-    let { stats, code } = data;
-    $: ({ stats, code } = data);
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+    let stats = $derived(data.stats);
+    let code = $derived(data.code);
 
     type ModalStore = Writable<{
         component: ConstructorOfATypedSvelteComponent;
@@ -28,8 +32,8 @@
         Math: "math",
         Energy: "energy",
     };
-    let selectedCategory: string = "Overall";
-    let selectedStatsType: "Team Stats" | "Player Stats" = "Team Stats";
+    let selectedCategory: string = $state("Overall");
+    let selectedStatsType: "Team Stats" | "Player Stats" = $state("Team Stats");
 
     function pickSelectedStats(
         category: string,
@@ -53,7 +57,9 @@
                   }),
               );
     }
-    $: selectedStats = pickSelectedStats(selectedCategory, selectedStatsType);
+    let selectedStats = $derived(
+        pickSelectedStats(selectedCategory, selectedStatsType),
+    );
 </script>
 
 <main>

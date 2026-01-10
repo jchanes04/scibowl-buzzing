@@ -14,7 +14,7 @@ export const load = async function ({ params, cookies }) {
         redirect(302, "/tournament/login")
     }
 
-    const games = getTournamentScores(tournament.gameIds)
+    const games = await getTournamentScores(tournament.gameIds)
 
     return {
         code: tournament.code,

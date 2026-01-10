@@ -10,7 +10,11 @@ export type MyMember = {
     team?: TeamStore
 }
 
-const store = writable<MyMember>()
+const store = writable<MyMember>({
+    name: "",
+    id: "",
+    moderator: false
+})
 
 type SetParams = {
     memberStore: ModeratorStore,

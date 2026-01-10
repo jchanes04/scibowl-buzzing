@@ -3,7 +3,7 @@ import { writable } from "svelte/store";
 function createTimerStore() {
     const timeStore = writable(0)
     let time = 0
-    let interval: NodeJS.Timer
+    let interval: ReturnType<typeof setInterval> | undefined
     let live = false
     let ended = false
     const target = new EventTarget()
@@ -13,7 +13,7 @@ function createTimerStore() {
         addEventListener: target.addEventListener.bind(target),
         removeEventListener: target.removeEventListener.bind(target),
         subscribe: timeStore.subscribe,
-        start: function(length: number) {
+        start: function (length: number) {
             timeStore.set(length)
             time = length
             live = true
@@ -30,7 +30,7 @@ function createTimerStore() {
             }, 1000)
             this.dispatchEvent(new Event("start"))
         },
-        end: function() {
+        end: function () {
             timeStore.set(0)
             time = 0
             live = false
@@ -39,7 +39,7 @@ function createTimerStore() {
             if (interval) clearInterval(interval)
             this.dispatchEvent(new Event("end"))
         },
-        stop: function() {
+        stop: function () {
             timeStore.set(0)
             time = 0
             live = false
@@ -48,12 +48,12 @@ function createTimerStore() {
             if (interval) clearInterval(interval)
             this.dispatchEvent(new Event("end"))
         },
-        pause: function() {
+        pause: function () {
             live = false
             if (interval) clearInterval(interval)
             this.dispatchEvent(new Event("pause"))
         },
-        resume: function() {
+        resume: function () {
             if (interval) clearInterval(interval)
             if (time <= 0) return
 

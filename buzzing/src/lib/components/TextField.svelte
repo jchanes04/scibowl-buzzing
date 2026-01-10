@@ -1,25 +1,32 @@
 <script lang="ts">
-    export let title: string
-    export let message: string
-    export let options: Record<string, unknown>
-    export let confirmCallback: (value: string) => void
-    export let cancelCallback: () => void;
+    interface Props {
+        title: string;
+        message: string;
+        options: Record<string, unknown>;
+        confirmCallback: (value: string) => void;
+        cancelCallback: () => void;
+    }
 
-    let opts = options as { defaultValue: string, fieldName: string }
-    $: opts = options as { defaultValue: string, fieldName: string }
-    let value = opts.defaultValue
+    let { title, message, options, confirmCallback, cancelCallback }: Props =
+        $props();
+
+    let opts = $derived(options as { defaultValue: string; fieldName: string });
+    let value = $state("");
+    $effect.pre(() => {
+        value = (options as { defaultValue: string }).defaultValue;
+    });
 </script>
 
 <div class="text-field-modal">
     <h2>{title}</h2>
     <p>{message}</p>
     <input type="text" bind:value placeholder={opts.fieldName} /><br /><br />
-    <button on:click={cancelCallback}>Cancel</button>
-    <button on:click={() => confirmCallback(value)}>Confirm</button>
+    <button onclick={cancelCallback}>Cancel</button>
+    <button onclick={() => confirmCallback(value)}>Confirm</button>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .text-field-modal {
         background: $background-1;
@@ -68,7 +75,7 @@
             background: $gray-1;
             color: $gray-2;
             box-shadow: none;
-            
+
             &:hover {
                 filter: brightness(0.95);
             }

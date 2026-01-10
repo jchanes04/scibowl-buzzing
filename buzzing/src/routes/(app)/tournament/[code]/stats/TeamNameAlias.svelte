@@ -1,13 +1,17 @@
 <script lang="ts">
-    export let names: {
+
+    interface Props {
+        names: {
         item: string,
         score: number
-    }[]
-    export let original: string
+    }[];
+        original: string;
+        confirmCallback: (alias: string | null) => void;
+    }
 
-    export let confirmCallback: (alias: string | null) => void
+    let { names, original, confirmCallback }: Props = $props();
 
-    let alias: string | null | undefined = undefined
+    let alias: string | null | undefined = $state(undefined)
 
     function confirm() {
         if (alias !== undefined) {
@@ -35,7 +39,7 @@
         </li>
     </ul>
 
-    <button on:click={confirm} disabled={alias === undefined}>Confirm selection</button>
+    <button onclick={confirm} disabled={alias === undefined}>Confirm selection</button>
 </div>
 
 <style lang="scss">

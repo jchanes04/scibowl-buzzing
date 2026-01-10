@@ -9,13 +9,13 @@
     import teamsStore from "$lib/stores/teams"
     import playersStore from "$lib/stores/players"
     import { browser } from "$app/environment";
-    import ExpandedScoreboardPlayer from "../ExpandedScoreboardPlayer.svelte";
+    import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
     
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
     const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
-    let scoreboardExpanded = false
+    let scoreboardExpanded = $state(false)
 
     function buzz() {
         socket.emit('buzz');
@@ -48,14 +48,14 @@
             `<style>img { width: 100%; }</style><div>${img.outerHTML}</div>`
     }
 
-    $: claimCaptainDisabled = $teamsStore[$myMember.team?.id || ""]?.captainId === $myMember.id
-    $: visualBonusEnabled = $gameStore.state.questionState === "open"
+    let claimCaptainDisabled = $derived($teamsStore[$myMember.team?.id || ""]?.captainId === $myMember.id)
+    let visualBonusEnabled = $derived($gameStore.state.questionState === "open"
             && $gameStore.state.currentQuestion.bonus
             && $gameStore.state.currentQuestion.visual
-            && !!$visualBonus.url
+            && !!$visualBonus.url)
 </script>
 
-<svelte:body on:keydown={(e) => {
+<svelte:body onkeydown={(e) => {
     const { code, keyCode } = e
     if ((code === "Space" || code === "Enter") && $gameStore.state.buzzingEnabled) {
         e.preventDefault()
@@ -70,15 +70,15 @@
 
 <div class="player-controls" class:scoreboard-expanded={scoreboardExpanded}>
     <div class="controls-element">
-        <button id="buzz" on:click={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
+        <button id="buzz" onclick={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
         <div class="timer-wrapper">
             <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
             <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
             <br />
-            <button on:click={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
+            <button onclick={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
             <br />
             <br />
-            <button on:click={() => scoreboardExpanded = !scoreboardExpanded}>
+            <button onclick={() => scoreboardExpanded = !scoreboardExpanded}>
                 {#if scoreboardExpanded}
                     Collapse Scoreboard
                 {:else}
@@ -88,15 +88,13 @@
             {#if visualBonusEnabled}
                 <br />
                 <br />
-                <button on:click={openVisual}>Open Visual Bonus</button>
+                <button onclick={openVisual}>Open Visual Bonus</button>
             {/if}
         </div>
     </div>
 
     {#if scoreboardExpanded}
-        <div class="controls-element">
-            <ExpandedScoreboardPlayer on:close={() => scoreboardExpanded = false} />
-        </div>
+        <ExpandedScoreboard isModerator={false} />
     {/if}
 </div>
 
@@ -120,7 +118,7 @@
 
     .controls-element {
         box-shadow: $shadow;
-        border: 1px solid $border-color;
+        border: 3px solid $border-color;
         display: flex;
         align-items: center;
         justify-content: center;

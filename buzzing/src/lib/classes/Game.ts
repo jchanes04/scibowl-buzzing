@@ -20,6 +20,11 @@ export type Question = {
     visual?: boolean
 }
 
+export type LastScoredQuestion = {
+    number: number,
+    bonus: boolean
+}
+
 export type NewQuestionData = {
     bonus: false,
     category: Category
@@ -74,7 +79,7 @@ export interface Game {
     id: string,
     joinCode: string,
     name: string,
-    
+
     scoreboard: GameScoreboard
 
     moderators: Record<string, Moderator>,
@@ -88,12 +93,12 @@ export interface Game {
     gameClock: Timer,
     times: { //times [client, server extratime]
         tossup: [number, number],
-        bonus:  [number, number],
+        bonus: [number, number],
         visual: [number, number]
     }
-    
+
     lastActive: number,
-    
+
     state: IdleState | OpenState | BuzzedState
 
     //stores ids of all players that have left 
@@ -123,7 +128,7 @@ export class Game {
 
         this.name = name
         this.scoreboard = new GameScoreboard({})
-        
+
         this.moderators = {
             [owner.id]: owner
         }
@@ -143,13 +148,13 @@ export class Game {
 
         this.timer = new Timer()
         this.gameClock = new Timer()
-        this.times = {  
+        this.times = {
             tossup: times?.tossup || [5, 2],
             bonus: times?.bonus || [20, 2],
             visual: times?.visual || [30, 2]
         }
         // time format: [client side time, extra time allowed for latency]
-        
+
         this.lastActive = Date.now()
 
         /*
@@ -163,7 +168,7 @@ export class Game {
             currentQuestion: null,      // the current question information (category, is bonus)
             buzzedTeams: {}    // the teams who have buzzed, prevents different players on the same team from buzzing again
         }
-        
+
         this.leftPlayers = {}   // players who have left the game, used for players to rejoin
         this.leftModerators = {}
     }
@@ -181,12 +186,12 @@ export class Game {
             return this.players
         } else {
             this.players[player.id] = player
-    
+
             // if player's team is not already in the list of teams add their team to the list
             if (player.team && !this.teams[player.team.id]) {
                 this.teams[player.team.id] = player.team
             }
-            
+
             return this.players
         }
     }
@@ -202,14 +207,14 @@ export class Game {
 
             if (team) { // team exists
                 delete this.leftPlayers[memberId]
-    
+
                 const newMember = new Player({
                     name: rejoiningPlayerData.name,
                     id: memberId,
                     team,
                 })
                 this.players[memberId] = newMember
-    
+
                 return newMember
             } else if (rejoiningPlayerData.team) {
                 // team existed but was removed
@@ -220,25 +225,25 @@ export class Game {
                 )
 
                 delete this.leftPlayers[memberId]
-    
+
                 const newMember = new Player({
                     name: rejoiningPlayerData.name,
                     id: memberId,
                     team: newTeam
                 })
                 this.players[memberId] = newMember
-    
+
                 return newMember
             } else {
                 // individual team
                 delete this.leftPlayers[memberId]
-    
+
                 const newMember = new Player({
                     name: rejoiningPlayerData.name,
                     id: memberId,
                 })
                 this.players[memberId] = newMember
-    
+
                 return newMember
             }
         } else if (this.leftModerators[memberId]) {
@@ -284,7 +289,7 @@ export class Game {
             delete this.moderators[id]
 
             this.leftModerators[id] = moderator.data
-            
+
             return moderator
         }
         return null
@@ -414,7 +419,7 @@ export class Game {
                 )
             }
         }
-        
+
         const open = !bonus
             && Object.values(this.state.buzzedTeams).length < Math.min(3, Object.values(this.teams).length)
             && score !== 'correct'

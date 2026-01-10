@@ -1,8 +1,8 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
 
-    let tournamentCode = ""
-    let password = ""
+    let tournamentCode = $state("")
+    let password = $state("")
 </script>
 
 <svelte:head>

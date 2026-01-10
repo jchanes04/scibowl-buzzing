@@ -69,7 +69,7 @@
         border-radius: 1em;
         background: $background-1;
         box-shadow: $shadow;
-        border: 1px solid $border-color;
+        border: 3px solid $border-color;
     }
 
     h1 {
@@ -100,7 +100,7 @@
         font-weight: 800;
         margin-top: 0;
         margin-bottom: 1.25rem;
-        color: $text-dark;
+        color: $primary;
         border-bottom: 2px solid $gray-2;
         padding-bottom: 0.5rem;
     }

@@ -1,12 +1,20 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import type { NamedScores } from "$lib/functions/scoreboard";
     import type { LayoutData } from "./$types";
     import { setContext } from "svelte";
     import { writable } from "svelte/store";
 
-    export let data: LayoutData
-    let { games, code, name } = data
-    $: ({ games, code, name } = data)
+    interface Props {
+        data: LayoutData;
+        children?: import('svelte').Snippet;
+    }
+
+    let { data, children }: Props = $props();
+    let games = $derived(data.games);
+    let code = $derived(data.code);
+    let name = $derived(data.name);
 
     function getTeamNames(scores: NamedScores) {
         const teamNames = new Set<string>()
@@ -74,12 +82,13 @@
         </div>
     </div>
     <div class="game-scores">
-        <slot></slot>
+        {@render children?.()}
     </div>
 </main>
 {#if $modalStore}
-    <div class="modal-background" />
-    <svelte:component this={$modalStore.component} {...$modalStore.props} />
+    <div class="modal-background"></div>
+    {@const SvelteComponent = $modalStore.component}
+    <SvelteComponent {...$modalStore.props} />
 {/if}
 
 

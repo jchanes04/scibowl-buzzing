@@ -1,16 +1,22 @@
 <script lang="ts">
-    import type { PageData } from "./$types"
+    import type { PageData } from "./$types";
     import NamedScoreboard from "./NamedScoreboard.svelte";
 
-    export let data: PageData
-    let { selectedGame } = data
-    $: ({ selectedGame } = data)
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+    let { selectedGame } = $derived(data);
 </script>
 
 <div>
     {#if selectedGame}
         <h1>{selectedGame.name}</h1>
-        <NamedScoreboard scores={selectedGame.scores} name={selectedGame.name} />
+        <NamedScoreboard
+            scores={selectedGame.scores}
+            name={selectedGame.name}
+        />
     {:else}
         <h1>Game not found</h1>
     {/if}

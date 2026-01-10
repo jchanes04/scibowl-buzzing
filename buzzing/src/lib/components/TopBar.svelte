@@ -1,56 +1,72 @@
 <script lang="ts">
-    import JoinLinkDialog from "./JoinLinkDialog.svelte"
+    import gameStore from "$lib/stores/game";
+    import { env } from "$env/dynamic/public";
+    import { fade } from "svelte/transition";
 
-    export let gameName: string
-    export let joinCode: string
-    export let spectator = false
-
-    let dialogOpen = false
-    let clickLock = false
-    let joinCodeElement: HTMLElement
-
-    function openDialog() {
-        dialogOpen = !dialogOpen
+    interface Props {
+        gameName: string;
+        joinCode: string;
+        spectator?: boolean;
+        children?: import('svelte').Snippet;
     }
 
-    function handleWindowClick(e: MouseEvent) {
-    if (!joinCodeElement.contains(e.target as Node) && !clickLock) {
-            dialogOpen = false
-        }
-    }
+    let {
+        gameName,
+        joinCode,
+        spectator = false,
+        children
+    }: Props = $props();
 
-    function handleMouseDown(e: MouseEvent) {
-        if (joinCodeElement.contains(e.target as Node)) {
-            clickLock = true
-        }
-    }
+    let copied = $state(false);
+    let joinLink = $derived(
+        spectator
+            ? `${env.PUBLIC_HOST_URL}/spectate/${$gameStore.id}`
+            : `${env.PUBLIC_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`,
+    );
 
-    function handleMouseUp() {
-        clickLock = false
+    function copyLink() {
+        navigator.clipboard.writeText(joinLink);
+        copied = true;
+        setTimeout(() => (copied = false), 1000);
     }
 </script>
-
-<svelte:window on:click={handleWindowClick} on:mousedown={handleMouseDown} on:mouseup={handleMouseUp} />
 
 <div id="top-bar">
     <div>
         <h1 class="game-name">{gameName}</h1>
     </div>
-    <div style="position: relative;" bind:this={joinCodeElement}>
-        <h1 class="join-code" on:click={openDialog}>{joinCode}<span class="icon open" /></h1>
-        {#if dialogOpen}
-            <div class="join-link-wrapper">
-                <JoinLinkDialog {spectator} />
+    <div style="position: relative;">
+        <button class="join-code" onclick={copyLink}>
+            {joinCode}
+            <div class="icon-wrapper">
+                {#if !copied}
+                    <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon copy"></span>
+                {:else}
+                    <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon check"></span>
+                {/if}
             </div>
-        {/if}
+        </button>
     </div>
     <div>
-        <slot></slot>
+        {#if children}
+            {@render children()}
+        {/if}
     </div>
 </div>
 <div id="mobile-top-bar">
-    <h1>{joinCode}</h1>
-    <slot></slot>
+    <button class="join-code" onclick={copyLink}>
+        {joinCode}
+        <div class="icon-wrapper">
+            {#if !copied}
+                <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon copy"></span>
+            {:else}
+                <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon check"></span>
+            {/if}
+        </div>
+    </button>
+    {#if children}
+        {@render children()}
+    {/if}
 </div>
 
 <style lang="scss">
@@ -86,41 +102,67 @@
         color: $text-dark;
     }
 
+    button {
+        @extend %button;
+    }
+
     .join-code {
         font-size: 1.8rem;
         font-weight: 800;
-        cursor: pointer;
+        background-color: $background-2;
         color: $primary;
         display: flex;
         align-items: center;
+
         gap: 0.2em;
         padding: 0.2em 0.5em;
-        border-radius: 0.4em;
-        transition: background-color 0.2s;
 
-        &:hover {
-            background-color: $background-2;
+        &:hover:not(:disabled) {
+            transform: none;
         }
     }
 
-    .icon {
-        display: inline-block;
+    .icon-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         height: 1em;
         width: 1em;
-        cursor: pointer;
         vertical-align: middle;
         margin-bottom: 0.1em;
     }
 
-    .open {
-        background-image: url('/cheveron-down.svg');
+    .icon {
+        position: absolute;
+        display: inline-block;
+        height: 1em;
+        width: 1em;
+        cursor: pointer;
     }
 
-    .join-link-wrapper {
-        position: absolute;
-        left: 50%;
-        top: 3.2em;
-        transform: translateX(-50%);
+    .copy {
+        background-color: $primary;
+        mask-image: url('/copy.svg');
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: center;
+        -webkit-mask-image: url('/copy.svg');
+        -webkit-mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+    }
+
+    .check {
+        background-color: $green;
+        mask-image: url('/check.svg');
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: center;
+        -webkit-mask-image: url('/check.svg');
+        -webkit-mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
     }
 
     #mobile-top-bar {
@@ -135,11 +177,11 @@
         box-sizing: border-box;
         background: $background-2;
         z-index: 5;
-    }
 
-    h1 {
-        display: inline-block;
-        width: max-content;
+        .join-code {
+            font-size: 1.2rem;
+            padding: 0.1em 0.3em;
+        }
     }
 
     @media (max-width: 500px) {

@@ -1,7 +1,11 @@
 <script lang="ts">
-    export let teams: string[] = []
-    export let newTeamName: string
-    $: teamsJSON = JSON.stringify(teams)
+    interface Props {
+        teams?: string[];
+        newTeamName: string;
+    }
+
+    let { teams = $bindable([]), newTeamName = $bindable() }: Props = $props();
+    let teamsJSON = $derived(JSON.stringify(teams))
 
     function addTeam() {
         if (newTeamName && !teams.includes(newTeamName)) {
@@ -28,26 +32,26 @@
     <ul>
         {#each teams as team}
             <li>
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <!-- svelte-ignore a11y-no-static-element-interactions -->
-                <span on:click={() => {teams = teams.filter(x => x !== team)}}>
-                    <span class="remove" />
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <span onclick={() => {teams = teams.filter(x => x !== team)}}>
+                    <span class="remove"></span>
                 </span>
                 {team}
             </li>
         {/each}
         <li>
-            <input type="text" id="default-team-name" bind:value={newTeamName} on:input={handleInput} />
-            <!-- svelte-ignore a11y-click-events-have-key-events -->
-            <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <span on:click={addTeam}>
-                <span class="add" />
+            <input type="text" id="default-team-name" bind:value={newTeamName} oninput={handleInput} />
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <span onclick={addTeam}>
+                <span class="add"></span>
             </span>
         </li>
     </ul>
 </div>
 
-<svelte:body on:keydown={handleKeydown}></svelte:body>
+<svelte:body onkeydown={handleKeydown}></svelte:body>
 
 <style lang="scss">
     @use '$styles/_global.scss' as *;

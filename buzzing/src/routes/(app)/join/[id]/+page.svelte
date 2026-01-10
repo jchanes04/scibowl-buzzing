@@ -1,30 +1,44 @@
 <script lang="ts">
+    import { run } from "svelte/legacy";
+
     import JoinMemberList from "$lib/components/JoinMemberList.svelte";
     import Select from "svelte-select";
     import { slide } from "svelte/transition";
     import type { PageData } from "./$types";
     import type { TeamData } from "$lib/classes/Team";
 
-    export let data: PageData;
-    let { memberNames, gameName, settings, teams } = data;
-    $: ({ memberNames, gameName, settings, teams } = data);
+    interface Props {
+        data: PageData;
+    }
 
-    let memberName = "";
-    let teamOrIndiv: "indiv" | "team" | "new-team" | null = null;
-    let selectedTeam: TeamData;
-    let newTeamName: string;
-    let showRadio: boolean = true;
-    if (settings.individualsAllowed && teams.length == 0) teamOrIndiv = "indiv";
-    if (settings.newTeamsAllowed && teams.length == 0) teamOrIndiv = "new-team";
-    if (!(settings.individualsAllowed || settings.newTeamsAllowed))
-        teamOrIndiv = "team";
+    let { data }: Props = $props();
+    let memberNames = $derived(data.memberNames);
+    let gameName = $derived(data.gameName);
+    let settings = $derived(data.settings);
+    let teams = $derived(data.teams);
 
-    if (teamOrIndiv !== null) showRadio = false;
-    $: disabled =
+    let memberName = $state("");
+    let teamOrIndiv: "indiv" | "team" | "new-team" | null = $state(null);
+    let selectedTeam: TeamData | undefined = $state();
+    let newTeamName: string = $state("");
+    let showRadio: boolean = $state(true);
+
+    $effect.pre(() => {
+        if (settings.individualsAllowed && teams.length == 0)
+            teamOrIndiv = "indiv";
+        if (settings.newTeamsAllowed && teams.length == 0)
+            teamOrIndiv = "new-team";
+        if (!(settings.individualsAllowed || settings.newTeamsAllowed))
+            teamOrIndiv = "team";
+
+        if (teamOrIndiv !== null) showRadio = false;
+    });
+    let disabled = $derived(
         !memberName ||
-        !teamOrIndiv ||
-        (teamOrIndiv === "new-team" && !newTeamName) ||
-        (teamOrIndiv === "team" && !selectedTeam);
+            !teamOrIndiv ||
+            (teamOrIndiv === "new-team" && !newTeamName) ||
+            (teamOrIndiv === "team" && !selectedTeam),
+    );
 
     function handleTeamNameInput() {
         if (newTeamName.length > 30) {
@@ -62,7 +76,7 @@
                             value="indiv"
                             bind:group={teamOrIndiv}
                         />
-                        <span />
+                        <span></span>
                         Play on my own
                     </label>
                 </div>
@@ -78,7 +92,7 @@
                                 value="new-team"
                                 bind:group={teamOrIndiv}
                             />
-                            <span />
+                            <span></span>
                             Create a new team:
                         </label>
                     </div>
@@ -90,7 +104,7 @@
                             placeholder="Team Name"
                             name="new-team-name"
                             bind:value={newTeamName}
-                            on:input={handleTeamNameInput}
+                            oninput={handleTeamNameInput}
                         />
                     </div>
                 {/if}
@@ -106,7 +120,7 @@
                                 value="team"
                                 bind:group={teamOrIndiv}
                             />
-                            <span />
+                            <span></span>
                             Play with an existing team:
                         </label>
                     </div>

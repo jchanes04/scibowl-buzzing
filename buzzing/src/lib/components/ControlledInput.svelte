@@ -1,13 +1,22 @@
 <script lang="ts">
-    export let validateFunction: (value: string) => boolean
-    export let name: string
-    export let value: string = ""
-    export let placeholderValue: string = ""
+    interface Props {
+        validateFunction: (value: string) => boolean;
+        name: string;
+        value?: string;
+        placeholderValue?: string;
+    }
+
+    let {
+        validateFunction,
+        name,
+        value = $bindable(""),
+        placeholderValue = ""
+    }: Props = $props();
     
-    let lastValue = value
+    let lastValue = $state(value)
 </script>
 
-<input type="text" placeholder={placeholderValue} name={name} bind:value on:input={() => {
+<input type="text" placeholder={placeholderValue} name={name} bind:value oninput={() => {
     if (validateFunction(value)) {
         lastValue = value.toUpperCase()
         value = value.toUpperCase()

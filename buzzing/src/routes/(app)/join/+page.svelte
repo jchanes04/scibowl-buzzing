@@ -1,40 +1,55 @@
- <script lang="ts">
-    import Controlled from '$lib/components/ControlledInput.svelte'
-    import type { ActionData } from './$types';
+<script lang="ts">
+    import Controlled from "$lib/components/ControlledInput.svelte";
+    import type { ActionData } from "./$types";
 
-    export let form: ActionData
-    let actionError = form?.error
+    interface Props {
+        form: ActionData;
+    }
 
-    let codeExists = false
+    let { form }: Props = $props();
+    let actionError = $state<string | undefined>();
+
+    $effect(() => {
+        if (form?.error) actionError = form.error;
+    });
+
+    let codeExists = $state(false);
 
     async function handleFormInput() {
-        actionError = undefined
+        actionError = undefined;
         if (joinCodeValue.length === 4) {
-            const res = await fetch('/api/code-exists?code=' + joinCodeValue)
-            const response = await res.json()
-            codeExists = response.exists
+            const res = await fetch("/api/code-exists?code=" + joinCodeValue);
+            const response = await res.json();
+            codeExists = response.exists;
         }
     }
 
-    let joinCodeValue: string = ""
+    let joinCodeValue: string = $state("");
 </script>
 
 <svelte:head>
     <title>Join a Game</title>
 </svelte:head>
 
-<form method="POST" on:input={handleFormInput} autocomplete="off">
+<form method="POST" oninput={handleFormInput} autocomplete="off">
     <h1>Enter a join code</h1>
-    <Controlled validateFunction={value => /^[a-zA-Z0-9]{0,4}$/.test(value)} name="join-code" placeholderValue="Join Code" bind:value={joinCodeValue}/>
+    <Controlled
+        validateFunction={(value) => /^[a-zA-Z0-9]{0,4}$/.test(value)}
+        name="join-code"
+        placeholderValue="Join Code"
+        bind:value={joinCodeValue}
+    />
     <br />
     {#if actionError || (!codeExists && joinCodeValue?.length === 4)}
         <p class="error">Invalid code</p>
     {/if}
-    <button id="join-game" disabled={!codeExists || joinCodeValue.length !== 4}>Join</button>
+    <button id="join-game" disabled={!codeExists || joinCodeValue.length !== 4}
+        >Join</button
+    >
 </form>
 
 <style lang="scss">
-    @use '$styles/_global.scss';
+    @use "$styles/_global.scss";
 
     form {
         margin: 0em auto;
@@ -53,7 +68,7 @@
 
     .error {
         color: red;
-        margin-top: .5em;
+        margin-top: 0.5em;
     }
 
     button {

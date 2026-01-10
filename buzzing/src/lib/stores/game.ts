@@ -39,7 +39,28 @@ export type ClientGameData = {
     scores: Record<number, QuestionPairScore>
 }
 
-const store = writable<ClientGameData>()
+const store = writable<ClientGameData>({
+    id: "",
+    name: "",
+    settings: {
+        individualsAllowed: false,
+        newTeamsAllowed: true,
+        spectatorsAllowed: false
+    },
+    times: {
+        tossup: [5, 2],
+        bonus: [20, 2],
+        visual: [30, 2]
+    },
+    state: {
+        questionState: "idle",
+        currentBuzzer: null,
+        currentQuestion: null,
+        buzzingEnabled: false,
+        buzzedTeamIds: []
+    },
+    scores: {}
+})
 let scoreboard = new GameScoreboard({})
 
 export default {
@@ -158,10 +179,10 @@ export default {
         },
         dead: (number: number, category: Category) => {
             scoreboard.dead(number, category),
-            store.update(value => {
-                value.scores = scoreboard.scores
-                return value
-            })
+                store.update(value => {
+                    value.scores = scoreboard.scores
+                    return value
+                })
         },
         editTossup: (
             number: number,

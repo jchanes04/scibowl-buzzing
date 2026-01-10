@@ -1,5 +1,4 @@
 <script lang="ts">
-
     import ThemeSelector from "./ThemeSelector.svelte";
 </script>
 
@@ -15,7 +14,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .header {
         background: $background-1;
@@ -23,10 +22,10 @@
         width: 100%;
         z-index: 5;
     }
-    
+
     h1 {
         display: inline-block;
-        margin: 0.25em 0em 0.25em 0.75em; 
+        margin: 0.25em 0em 0.25em 0.75em;
         font-size: 36px;
         font-weight: 600;
 
@@ -34,7 +33,7 @@
             display: none;
         }
     }
-    
+
     .right {
         display: inline-flex;
         float: right;
@@ -52,15 +51,15 @@
         flex-direction: row;
         gap: 1em;
     }
-    
+
     a {
         text-decoration: none;
         color: inherit;
         transition: color 0.3s;
         margin: auto;
-        
+
         &:hover {
-            //color: adjust($primary, $lightness: -20%);
+            color: $primary;
         }
 
         @media (max-width: 800px) {

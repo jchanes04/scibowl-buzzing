@@ -3,48 +3,48 @@
     import getSocket from "$lib/socket";
     import { onDestroy } from "svelte";
 
-    const socket = getSocket()
-    let connected = false
-    $: displayText = connected ? "Connected" : "Disconnected"
+    const socket = getSocket();
+    let connected = $state(false);
+    let displayText = $derived(connected ? "Connected" : "Disconnected");
 
-    let interval: number | NodeJS.Timer = 0
+    let interval: ReturnType<typeof setInterval> | number | undefined = 0;
 
     function pollForConnected() {
-        clearInterval(interval)
+        clearInterval(interval);
         interval = setInterval(() => {
             if (socket.connected) {
-                pollForDisconnected()
+                pollForDisconnected();
             }
 
-            connected = socket.connected
-        }, 50)
+            connected = socket.connected;
+        }, 50);
     }
- 
+
     function pollForDisconnected() {
-        clearInterval(interval)
+        clearInterval(interval);
         interval = setInterval(() => {
             if (!socket.connected) {
-                pollForConnected()
+                pollForConnected();
             }
 
-            connected = socket.connected
-        }, 2500)
+            connected = socket.connected;
+        }, 2500);
     }
 
-    if (browser) pollForConnected()
+    if (browser) pollForConnected();
 
     onDestroy(() => {
-        clearInterval(interval)
-    })
+        clearInterval(interval);
+    });
 </script>
 
 <div class="indicator" class:connected class:disconnected={!connected}>
-    <span class="circle" />
+    <span class="circle"></span>
     <p>{displayText}</p>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .indicator {
         position: fixed;

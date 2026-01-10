@@ -92,8 +92,8 @@ export function createSocket(spectator: boolean = false) {
         })
     })
 
-    socket.on('memberRejoin', ({ member, team }: { member: PlayerData | ModeratorData, team: TeamData })=>{
-        if (member.type === "moderator"){
+    socket.on('memberRejoin', ({ member, team }: { member: PlayerData | ModeratorData, team: TeamData }) => {
+        if (member.type === "moderator") {
             const newModerator = createModeratorStore(member)
             moderatorsStore.addModerator(newModerator)
         } else {
@@ -164,7 +164,7 @@ export function createSocket(spectator: boolean = false) {
                     text: player.name + ' has been promoted to a moderator'
                 }
             ])
-            
+
             if (player.id === myMember.id) {
                 myMemberStore.setMember({ memberStore: newModerator, moderator: true })
                 socket.once("disconnect", async () => {
@@ -186,7 +186,7 @@ export function createSocket(spectator: boolean = false) {
             gameStore.buzz(player.team.id, player.store)
             buzzAudio?.play()
             timerStore.pause()
-        
+
             chatMessagesStore.update(oldList => {
                 oldList.push({
                     type: 'buzz',
@@ -220,7 +220,7 @@ export function createSocket(spectator: boolean = false) {
 
     socket.on('scoresClear', () => {
         gameStore.scoreboard.clear()
-        
+
         chatMessagesStore.update(oldList => {
             oldList.push({
                 type: "notification",
@@ -374,7 +374,7 @@ export function createSocket(spectator: boolean = false) {
                 url: null,
                 window: value.window
             }))
-            if (visualBonus.window) visualBonus.window.document.body.innerHTML = 
+            if (visualBonus.window) visualBonus.window.document.body.innerHTML =
                 `<style>
                     img {
                         width: 100%;
@@ -403,7 +403,7 @@ export function createSocket(spectator: boolean = false) {
     socket.on("visualBonusOpen", (data: Buffer) => {
         if (myMember.moderator) return
 
-        const blob = new Blob([data])
+        const blob = new Blob([new Uint8Array(data)])
         const url = URL.createObjectURL(blob)
         visualBonusStore.update(value => ({
             url,
@@ -416,7 +416,7 @@ export function createSocket(spectator: boolean = false) {
         const tossupOpen = !game.state.currentQuestion?.bonus && !game.state.buzzedTeamIds.includes(myMember.team!.id)
         const bonusOpen = !!game.state.currentQuestion?.bonus
             && (game.state.currentQuestion?.teamId === myMember.team?.id
-            && (teams[myMember.team?.id]?.captainId === myMember.id || teams[myMember.team?.id]?.captainId === null))
+                && (teams[myMember.team?.id]?.captainId === myMember.id || teams[myMember.team?.id]?.captainId === null))
         const questionOpen = !myMember.moderator && (tossupOpen || bonusOpen)
         gameStore.openQuestion(questionOpen)
     })

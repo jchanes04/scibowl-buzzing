@@ -2,25 +2,28 @@
     import type { ScoreType } from "$lib/classes/Game";
     import { createEventDispatcher } from "svelte";
 
-    export let scoreType: ScoreType | "none"
-    export let bonus: boolean
+    interface Props {
+        scoreType: ScoreType | "none";
+        bonus: boolean;
+        onchange: (type: ScoreType | "none") => void;
+    }
 
-    const dispatch = createEventDispatcher()
+    let { scoreType, bonus, onchange }: Props = $props();
 
     function handleClick() {
         if (scoreType === "none") {
-            dispatch("change", "correct")
+            onchange("correct");
         } else if (scoreType === "correct") {
-            dispatch("change", "incorrect")
+            onchange("incorrect");
         } else if (scoreType === "incorrect" && !bonus) {
-            dispatch("change", "penalty")
+            onchange("penalty");
         } else {
-            dispatch("change", "none")
+            onchange("none");
         }
     }
 </script>
 
-<button on:click={handleClick} class={scoreType}>
+<button onclick={handleClick} class={scoreType}>
     {#if scoreType === "correct"}
         C
     {:else if scoreType === "incorrect"}
@@ -31,7 +34,7 @@
 </button>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     button {
         border: none;

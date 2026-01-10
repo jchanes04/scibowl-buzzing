@@ -1,17 +1,20 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import { invalidateAll } from "$app/navigation";
-    import type { ActionData, PageData } from "./$types"
+    import type { ActionData, PageData } from "./$types";
 
-    export let data: PageData
-    export let form: ActionData
-    let { tournaments } = data
-    $: ({ tournaments } = data)
+    interface Props {
+        data: PageData;
+        form: ActionData;
+    }
 
-    let newTournamentName = ""
+    let { data, form = $bindable() }: Props = $props();
+    let tournaments = $derived(data.tournaments);
+
+    let newTournamentName = $state("");
 
     function clearForm() {
-        form = null
+        form = null;
     }
 </script>
 
@@ -31,18 +34,29 @@
         {#if form}
             <h1>Tournament Created</h1>
             <p><span style:font-weight="bold">Code:</span> {form.code}</p>
-            <p><span style:font-weight="bold">Password:</span> {form.password}</p>
-            <button on:click={clearForm}>Close</button>
+            <p>
+                <span style:font-weight="bold">Password:</span>
+                {form.password}
+            </p>
+            <button onclick={clearForm}>Close</button>
         {:else}
             <h1>New Tournament</h1>
-            <form method="POST" use:enhance={() => {
-                return ({ update }) => {
-                    invalidateAll()
-                    newTournamentName = ""
-                    update()
-                }
-            }}>
-                <input type="text" placeholder="Name" name="tournament-name" bind:value={newTournamentName} />
+            <form
+                method="POST"
+                use:enhance={() => {
+                    return ({ update }) => {
+                        invalidateAll();
+                        newTournamentName = "";
+                        update();
+                    };
+                }}
+            >
+                <input
+                    type="text"
+                    placeholder="Name"
+                    name="tournament-name"
+                    bind:value={newTournamentName}
+                />
                 <br />
                 <button type="submit">Create</button>
             </form>

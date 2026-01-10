@@ -1,5 +1,9 @@
 <script lang="ts">
-    export let memberNames: string[] = []
+    interface Props {
+        memberNames?: string[];
+    }
+
+    let { memberNames = [] }: Props = $props();
 </script>
 
 <div>
