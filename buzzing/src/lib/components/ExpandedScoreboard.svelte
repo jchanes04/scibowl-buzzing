@@ -458,7 +458,7 @@
         &.team-name {
             span {
                 font-weight: bold;
-                color: $text-dark;
+                color: $text;
             }
             font-size: 1.1rem;
             color: $primary;
@@ -473,7 +473,7 @@
 
     tr td {
         border: 1px solid $border-color;
-        color: $text-dark;
+        color: $text;
         font-size: 0.95rem;
 
         &:first-child {

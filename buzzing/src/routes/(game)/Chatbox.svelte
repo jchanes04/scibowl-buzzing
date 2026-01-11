@@ -63,7 +63,7 @@
         padding: 0.5em 0.75em;
         border-radius: 0.5em;
         background: $background-2;
-        color: $text-dark;
+        color: $text;
     }
 
     .buzz {
@@ -73,7 +73,7 @@
     }
 
     .notif {
-        color: $text-dark;
+        color: $text;
         background: transparent;
         padding: 0.25em 0.75em;
     }

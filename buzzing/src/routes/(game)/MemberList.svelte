@@ -53,7 +53,7 @@
         font-weight: 800;
         margin-top: 0;
         margin-bottom: 1.25rem;
-        color: $text-dark;
+        color: $text;
         border-bottom: 2px solid $gray-2;
         padding-bottom: 0.5rem;
     }

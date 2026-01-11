@@ -22,7 +22,7 @@
 
     h1 {
         font-size: 2rem;
-        color: $text-dark;
+        color: $text;
         margin-bottom: 1rem;
     }
 

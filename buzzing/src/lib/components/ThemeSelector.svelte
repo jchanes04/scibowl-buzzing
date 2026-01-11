@@ -286,7 +286,7 @@
         border-radius: 0.5em;
         cursor: pointer;
         transition: all 0.2s;
-        color: $text-dark;
+        color: $text;
         font-size: inherit;
 
         &:hover {
@@ -352,7 +352,7 @@
         padding: 0.75em 1em;
         cursor: pointer;
         transition: background-color 0.15s;
-        color: $text-dark;
+        color: $text;
 
         &:hover {
             background-color: $background-2;
@@ -420,7 +420,7 @@
         cursor: pointer;
         transition: background-color 0.15s;
         text-align: left;
-        color: $text-dark;
+        color: $text;
 
         &:hover {
             background-color: $background-2;
@@ -503,7 +503,7 @@
         &:focus {
             border-color: $border-color;
             background: $background-2;
-            color: $text-dark;
+            color: $text;
             outline: none;
         }
     }

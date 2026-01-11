@@ -56,7 +56,7 @@
     
     a {
         text-decoration: none;
-        color: $text-dark;
+        color: $text;
 
         transition: all 0.2s;
 

@@ -435,7 +435,7 @@ https://svelte.dev/e/node_invalid_placement -->
         &.team-name {
             span {
                 font-weight: bold;
-                color: $text-dark;
+                color: $text;
             }
             font-size: 1.1rem;
             color: $primary;
@@ -450,7 +450,7 @@ https://svelte.dev/e/node_invalid_placement -->
 
     tr td {
         border: 1px solid $gray-2;
-        color: $text-dark;
+        color: $text;
         font-size: 0.95rem;
 
         &:first-child {

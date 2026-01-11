@@ -25,31 +25,6 @@
 <style lang="scss">
     @use '$styles/_global.scss' as *;
 
-    .auth-message {
-        max-width: 600px;
-        margin: 2rem auto;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        text-align: center;
-        font-weight: 500;
-
-        &.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        &.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        p {
-            margin: 0.5rem 0;
-            font-size: 1.1rem;
-        }
-    }
 
     main {
         max-width: 1000px;
@@ -62,7 +37,7 @@
         font-weight: 800;
         line-height: 1.1;
         margin-bottom: 2rem;
-        color: $text-dark;
+        color: $text;
     }
     
     .hero-actions {

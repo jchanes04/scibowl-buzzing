@@ -29,7 +29,7 @@
         font-size: 2.5rem;
         font-weight: 800;
         margin-bottom: 2rem;
-        color: $text-dark;
+        color: $text;
         text-align: center;
     }
 </style>

@@ -191,7 +191,7 @@
         font-size: 2.5rem;
         font-weight: 800;
         margin-bottom: 2rem;
-        color: $text-dark;
+        color: $text;
         text-decoration: underline var(--primary) 3px;
         text-underline-offset: 0.2em;
     }

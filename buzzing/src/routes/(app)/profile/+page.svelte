@@ -189,20 +189,10 @@
         border-bottom: 3px solid $border-color;
 
         h1 {
-            color: $text-dark;
+            color: $text;
             margin: 0;
             font-size: 2rem;
         }
-    }
-
-    .success-message {
-        background: $green;
-        color: white;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        font-weight: 600;
     }
 
     .profile-form {
@@ -233,7 +223,7 @@
 
     label {
         font-weight: 600;
-        color: $text-dark;
+        color: $text;
         font-size: 1rem;
     }
 
@@ -257,7 +247,7 @@
 
     .email-text {
         font-size: 1.25rem;
-        color: $text-dark;
+        color: $text;
         padding: 0.5rem 0;
     }
 

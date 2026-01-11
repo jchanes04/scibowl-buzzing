@@ -81,7 +81,7 @@
         .team-name {
             font-size: 1.1rem;
             font-weight: 700;
-            color: $text-dark;
+            color: $text;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
