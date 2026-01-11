@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+Use the templatized styles (buzzing/src/lib/styles) where possible and ensure that styles for new features match the styles used in the rest of the project. 
+
+THERE IS NO SUCH THING AS DARKEN in sass. NEVER TRY TO USE IT.

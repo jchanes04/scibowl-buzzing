@@ -1,5 +1,6 @@
 <script lang="ts">
     import ThemeSelector from "./ThemeSelector.svelte";
+    import LoginButton from "./LoginButton.svelte";
 </script>
 
 <div class="header">
@@ -7,6 +8,7 @@
     <nav>
         <a href="/join">Join Game</a>
         <a href="/create">Create Game</a>
+        <LoginButton />
         <ThemeSelector />
     </nav>
 </div>
@@ -55,11 +57,12 @@
     a {
         text-decoration: none;
         color: $text-dark;
-        
+
         transition: all 0.2s;
 
         &:hover {
             color: $primary;
         }
     }
+
 </style>

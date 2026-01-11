@@ -6,6 +6,7 @@
     import { slide } from "svelte/transition";
     import type { PageData } from "./$types";
     import type { TeamData } from "$lib/classes/Team";
+    import { user } from "$lib/stores/auth";
 
     interface Props {
         data: PageData;
@@ -22,6 +23,23 @@
     let selectedTeam: TeamData | undefined = $state();
     let newTeamName: string = $state("");
     let showRadio: boolean = $state(true);
+
+    // Auto-populate member name from user profile on page load
+    let hasAutoPopulated = $state(false);
+    $effect(() => {
+        if (!hasAutoPopulated) {
+            user.subscribe((currentUser) => {
+                if (currentUser && !memberName) {
+                    // Use username by default, fallback to firstName
+                    const displayName = currentUser.username || currentUser.firstName;
+                    if (displayName) {
+                        memberName = displayName;
+                        hasAutoPopulated = true;
+                    }
+                }
+            });
+        }
+    });
 
     $effect.pre(() => {
         if (settings.individualsAllowed && teams.length == 0)

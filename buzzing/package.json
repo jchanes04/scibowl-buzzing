@@ -27,6 +27,8 @@
   },
   "type": "module",
   "dependencies": {
+    "@workos-inc/authkit-js": "^0.18.0",
+    "@workos-inc/node": "^7.82.0",
     "argon2": "^0.31.0",
     "better-sqlite3": "^9.2.2",
     "env-cmd": "^10.1.0",

@@ -3,7 +3,6 @@ import { writable, get } from "svelte/store";
 export interface ColorScheme {
     name: string;
     primary: string;
-    primaryDark: string;
     }
 
 // Only store the brand colors here. Backgrounds/text are handled by the dark mode logic.
@@ -11,27 +10,22 @@ export const colorSchemes: Record<string, ColorScheme> = {
     default: {
         name: "Green",
         primary: "#285",
-        primaryDark: "#173",
     },
     ocean: {
         name: "Blue",
         primary: "#159",
-        primaryDark: "#124",
     },
     sunset: {
         name: "Orange",
         primary: "#d80",
-        primaryDark: "#840",
     },
     purple: {
         name: "Purple",
         primary: "#83b",
-        primaryDark: "#416",
     },
     rose: {
         name: "Pink",
         primary: "#b27",
-        primaryDark: "#612",
     }
 };
 
@@ -86,7 +80,7 @@ function createThemeStore() {
     // Apply theme to CSS variables
     function applyTheme(state: ThemeState) {
         const { themeName, darkMode, customColor } = state;
-        
+
         let primaryColor: string;
         if (themeName === 'custom') {
             primaryColor = customColor;
@@ -96,68 +90,19 @@ function createThemeStore() {
         }
 
         const root = document.documentElement;
-        
+
         // Apply Brand Colors
         root.style.setProperty('--primary', primaryColor);
         root.style.setProperty('--primary-rgb', hexToRgb(primaryColor));
-        
-        // Apply Mode Colors (Light/Dark)
-        if (darkMode) {
-            root.style.setProperty('color-scheme', 'dark');
-            
-            // Dark Mode Palette
-            root.style.setProperty('--background-1', '#000000'); // Pure black
-            root.style.setProperty('--background-2', '#000000'); // Pure black
-            root.style.setProperty('--background', '#000000');
-            
-            root.style.setProperty('--text', '#f1f5f9'); // Light gray text
-            root.style.setProperty('--text-light', '#ffffff');
-            root.style.setProperty('--text-muted', '#94a3b8'); // Muted text for dark mode
-            
-            root.style.setProperty('--border-color', '#333333'); // Dark border
-            
-            // Grays (inverted-ish for dark mode)
-            root.style.setProperty('--gray-1', '#1e293b'); // Dark gray for backgrounds
-            root.style.setProperty('--gray-2', '#94a3b8'); // Light gray for text
-            // Remove old grays
-            root.style.removeProperty('--gray-50');
-            root.style.removeProperty('--gray-100');
-            root.style.removeProperty('--gray-200');
-            root.style.removeProperty('--gray-300');
-            root.style.removeProperty('--gray-400');
-            root.style.removeProperty('--gray-500');
 
-        } else {
-            root.style.setProperty('color-scheme', 'light');
+        // Set color-scheme - theme colors are now handled by light-dark() in SCSS
+        root.style.setProperty('color-scheme', darkMode ? 'dark' : 'light');
 
-            // Light Mode Palette
-            root.style.setProperty('--background-1', 'hsl(0,0%,93%)');
-            root.style.setProperty('--background-2', '#d4d9d9');
-            root.style.setProperty('--background', '#d4d9d9');
-            
-            root.style.setProperty('--text', '#1e293b');
-            root.style.setProperty('--text-light', '#ffffff');
-            root.style.setProperty('--text-muted', '#64748b');
-            
-            root.style.setProperty('--border-color', '#666');
-            
-            // Standard Grays
-            root.style.setProperty('--gray-1', '#e2e8f0'); // Light gray for backgrounds
-            root.style.setProperty('--gray-2', '#64748b'); // Dark gray for text
-            // Remove old grays
-            root.style.removeProperty('--gray-50');
-            root.style.removeProperty('--gray-100');
-            root.style.removeProperty('--gray-200');
-            root.style.removeProperty('--gray-300');
-            root.style.removeProperty('--gray-400');
-            root.style.removeProperty('--gray-500');
-        }
-        
         if (typeof window !== 'undefined') {
             localStorage.setItem('colorScheme', themeName);
             localStorage.setItem('darkMode', String(darkMode));
             localStorage.setItem('customColor', customColor);
-            
+
             if (darkMode) {
                 document.documentElement.classList.add('dark');
             } else {

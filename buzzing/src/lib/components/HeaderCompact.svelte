@@ -1,5 +1,6 @@
 <script lang="ts">
     import ThemeSelector from "./ThemeSelector.svelte";
+    import LoginButton from "./LoginButton.svelte";
 </script>
 
 <div class="header">
@@ -8,10 +9,12 @@
         <nav>
             <a href="/join">Join Game</a>
             <a href="/create">Create Game</a>
+            <LoginButton />
             <ThemeSelector />
         </nav>
     </div>
 </div>
+
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
@@ -66,4 +69,5 @@
             margin: 0.5em 0;
         }
     }
+
 </style>

@@ -2,6 +2,7 @@
     import { enhance } from "$app/forms";
     import TeamList from "$lib/components/TeamList.svelte";
     import type { ActionData } from "./$types";
+    import { user } from "$lib/stores/auth";
 
     interface Props {
         form: ActionData;
@@ -21,6 +22,23 @@
     let gameName = $state("");
     let defaultTeams = $state<string[]>([]);
     let newTeamName = $state("");
+
+    // Auto-populate owner name from user profile on page load
+    let hasAutoPopulated = $state(false);
+    $effect(() => {
+        if (!hasAutoPopulated) {
+            user.subscribe((currentUser) => {
+                if (currentUser && !ownerName) {
+                    // Use username by default, fallback to firstName
+                    const displayName = currentUser.username || currentUser.firstName;
+                    if (displayName) {
+                        ownerName = displayName;
+                        hasAutoPopulated = true;
+                    }
+                }
+            });
+        }
+    });
     let submitEnabled = $derived(
         ownerName &&
             gameName &&
