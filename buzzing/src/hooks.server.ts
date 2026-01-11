@@ -1,4 +1,3 @@
-import "$lib/mongo";
 import type { Handle } from '@sveltejs/kit';
 
 export const handle = async function({ event, resolve }) {

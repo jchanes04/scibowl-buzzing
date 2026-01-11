@@ -37,6 +37,7 @@
     let playerList = $derived(data.playerList);
     let myMemberId = $derived(data.myMemberId);
     let scores = $derived(data.scores);
+    let currentGameState = $derived(data.currentGameState);
 
     const socket = createSocket();
 
@@ -48,11 +49,11 @@
         $gameStore = {
             ...data.gameInfo,
             state: {
-                questionState: "idle",
-                currentBuzzer: null,
-                currentQuestion: null,
-                buzzingEnabled: false,
-                buzzedTeamIds: [],
+                questionState: data.currentGameState.questionState,
+                currentBuzzer: data.currentGameState.currentBuzzer,
+                currentQuestion: data.currentGameState.currentQuestion,
+                buzzingEnabled: data.currentGameState.questionState === "open",
+                buzzedTeamIds: data.currentGameState.buzzedTeamIds,
             },
             scores: data.scores,
         };

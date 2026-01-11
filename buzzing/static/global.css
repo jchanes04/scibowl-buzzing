@@ -3,9 +3,8 @@
     --primary: #285;
     --primary-rgb: 32, 128, 80;
     
-    --background-1: hsl(0,0%,93%);
-    --background-2: #d4d9d9;
-    --background: #d4d9d9;
+    --background-1: light-dark(hsl(0,0%,93%), #000000);
+    --background-2: light-dark(#d4d9d9, #000000);
     
     --text: #1e293b;
     --text-light: #ffffff;
@@ -18,7 +17,7 @@
 html, body {
     margin: 0;
     font-family: 'Ubuntu', sans-serif;
-    background-color: var(--background);
+    background-color: light-dark(#d4d9d9, #000000);
     color: var(--text);
 }
 

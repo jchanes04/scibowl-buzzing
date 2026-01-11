@@ -47,7 +47,13 @@ export const load = async function ({ params, locals, cookies }) {
             playerList,
             teamList,
             moderatorList,
-            myMemberId: tokenData.memberId
+            myMemberId: tokenData.memberId,
+            currentGameState: {
+                questionState: game.state.questionState,
+                currentBuzzer: game.state.currentBuzzer?.data || null,
+                currentQuestion: game.state.currentQuestion,
+                buzzedTeamIds: Object.keys(game.state.buzzedTeams)
+            }
         }
     } else if (game && memberId) {
         const rejoinedMember = game.rejoinMember(memberId)
@@ -81,7 +87,13 @@ export const load = async function ({ params, locals, cookies }) {
                 playerList,
                 teamList,
                 moderatorList,
-                myMemberId: tokenData.memberId
+                myMemberId: tokenData.memberId,
+                currentGameState: {
+                    questionState: game.state.questionState,
+                    currentBuzzer: game.state.currentBuzzer?.data || null,
+                    currentQuestion: game.state.currentQuestion,
+                    buzzedTeamIds: Object.keys(game.state.buzzedTeams)
+                }
             }
         } else if (rejoinedMember?.type === "moderator") {
             io.to(id).emit("memberRejoin", {
@@ -110,7 +122,13 @@ export const load = async function ({ params, locals, cookies }) {
                 playerList,
                 teamList,
                 moderatorList,
-                myMemberId: tokenData.memberId
+                myMemberId: tokenData.memberId,
+                currentGameState: {
+                    questionState: game.state.questionState,
+                    currentBuzzer: game.state.currentBuzzer?.data || null,
+                    currentQuestion: game.state.currentQuestion,
+                    buzzedTeamIds: Object.keys(game.state.buzzedTeams)
+                }
             }
         } else if (game.settings.spectatorsAllowed) {
             redirect(302, "/spectate/" + id)

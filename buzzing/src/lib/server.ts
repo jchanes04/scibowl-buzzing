@@ -10,8 +10,6 @@ import type { Category, Game, GameSettings, NewQuestionData, ScoreType } from '$
 import { getDataFromGameToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
-import { updateGameScores } from './mongo'
-import { addNamesToScores } from './functions/scoreboard'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -195,9 +193,6 @@ if (!globalAny._io_listeners_attached) {
             } else {
                 game.timer.end()
             }
-
-            const scoresWithNames = addNamesToScores(game, game.scoreboard.scores)
-            updateGameScores(gameId, game.name, scoresWithNames)
         })
 
         socket.on("markDead", () => {

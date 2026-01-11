@@ -5,19 +5,15 @@
     import { user } from "$lib/stores/auth";
 
     interface Props {
-        form: ActionData;
+        form?: { message?: string };
     }
 
     let { form }: Props = $props();
 
-    const errors = {
-        InvalidTournamentCode: "The provided tournament code is invalid",
-    } as Record<string, string>;
+    const errors = {} as Record<string, string>;
 
     let newTeamsAllowed = $state(false);
     let individualTeamsAllowed = $state(false);
-    let inTournament = $state(false);
-    let tournamentCode = $state("");
     let ownerName = $state("");
     let gameName = $state("");
     let defaultTeams = $state<string[]>([]);
@@ -46,8 +42,7 @@
                 !individualTeamsAllowed &&
                 !newTeamsAllowed &&
                 defaultTeams.length === 0
-            ) &&
-            !(inTournament && !tournamentCode),
+            ),
     );
 
     function handleSubmit() {
@@ -121,27 +116,6 @@
                 <span></span>
                 Spectators allowed
             </label>
-            <label for="tournament-checkbox">
-                <input
-                    id="tournament-checkbox"
-                    type="checkbox"
-                    name="in-tournament"
-                    bind:checked={inTournament}
-                />
-                <span></span>
-                Add game to tournament
-            </label>
-            {#if inTournament}
-                <div style:text-align="center">
-                    <input
-                        type="text"
-                        placeholder="Tournament Code"
-                        name="tournament-code"
-                        id="tournament-code-input"
-                        bind:value={tournamentCode}
-                    />
-                </div>
-            {/if}
         </div>
         <h2 style="margin-bottom: 0rem">Default Teams</h2>
         <TeamList bind:teams={defaultTeams} bind:newTeamName />

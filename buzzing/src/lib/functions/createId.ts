@@ -1,13 +1,5 @@
 import ShortUniqueId from "short-unique-id"
 
-const tournamentCode = new ShortUniqueId({
-    dictionary: "alphanum_upper",
-    length: 8
-})
-const tournamentPassword = new ShortUniqueId({
-    dictionary: "alphanum",
-    length: 14
-})
 
 
 let seed = Math.floor(Math.random() * 1296).toString(36).toUpperCase()
@@ -81,12 +73,4 @@ function incrementSeed() {
     const newNum = (num + 1) % 1296
     seed = newNum.toString(36)
     return seed
-}
-
-export function createTournamentCode(): string {
-    return tournamentCode()
-}
-
-export function createTournamentPassword(): string {
-    return tournamentPassword()
 }
