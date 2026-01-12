@@ -1,23 +1,24 @@
 :root {
-    
+
     --primary: #285;
     --primary-rgb: 32, 128, 80;
-    
-    --background-1: light-dark(hsl(0,0%,93%), #000000);
+
+    --background-1: light-dark(hsl(0, 0%, 93%), #000000);
     --background-2: light-dark(#d4d9d9, #000000);
-    
-    --text: #1e293b;
+
+    --text: light-dark(#1e293b, #f1f5f9);
     --text-light: #ffffff;
-    --text-muted: #64748b;    
+    --text-muted: #64748b;
     --border-color: #666;
     --gray-1: #e2e8f0;
     --gray-2: #64748b;
 }
 
-html, body {
+html,
+body {
     margin: 0;
     font-family: 'Ubuntu', sans-serif;
-    background-color: light-dark(#d4d9d9, #000000);
+    background-color: var(--background-2);
     color: var(--text);
 }
 
@@ -40,7 +41,8 @@ select:focus {
     outline: none;
 }
 
-select, textarea {
+select,
+textarea {
     color: var(--text);
     font-family: 'Ubuntu';
 }

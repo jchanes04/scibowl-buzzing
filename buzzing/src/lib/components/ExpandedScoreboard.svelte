@@ -1,15 +1,21 @@
 <script lang="ts">
     import gameStore from "$lib/stores/game";
-    import teamsStore from "$lib/stores/teams";
-    import playersStore from "$lib/stores/players";
-    import { createEventDispatcher, getContext } from "svelte";
+    // Removed teamsStore and playersStore
+    import {  getContext } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
     import { convertToCSV } from "$lib/functions/scoreboard";
     import ScoreboardTableCell from "./ScoreboardTableCell.svelte";
-    import getSocket from "$lib/socket";
+    import getSocket from "$lib/socket.svelte";
     import Confirm from "$lib/components/Confirm.svelte";
     import type { Writable } from "svelte/store";
-
+    import { useQuery } from "convex-svelte";
+    import { api } from "../../../convex/_generated/api";
+    import { convex } from "$lib/convexClient";
+    import { page } from "$app/state";
+    import type { ClientTeamData } from "$lib/classes/client/ClientTeam";
+    import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer";
+    import type { Scores } from "$lib/classes/GameScoreboard";
+    
     interface Props {
         isModerator?: boolean;
         showTotalInHeader?: boolean;
@@ -17,21 +23,35 @@
 
     let { isModerator = false, showTotalInHeader = false }: Props = $props();
 
-    const socket = getSocket();
-    const dispatch = createEventDispatcher();
-
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
-
-    let rowNumber = $derived(
-        Math.max(0, ...Object.keys($gameStore.scores).map(Number)),
+    // Load convex teams and players
+    const rawTeams = useQuery(api.teams.getByGameId, { gameId : page.params.id ?? "" });
+    const teams : ClientTeamData[] = $derived(
+        (rawTeams.data ?? []).map(team => ({
+            id: team.externalId,
+            name: team.name,
+            type: team.type
+        }))
     );
-    let rowArray = $derived(Array.from({ length: rowNumber }, (_, i) => i + 1));
+
+    const rawPlayers = useQuery(api.players.getByGameId, { gameId : page.params.id ?? "" });
+    const playersList : ClientPlayerData[] = $derived(
+        (rawPlayers.data ?? []).map(player => ({
+            name: player.name,
+            id: player.externalId,
+            connected: player.connected,
+            type: "player",
+            team: teams.find(team => team.id === player.teamId)?.id ?? null,
+            isCaptain: player.isCaptain ?? false
+        }))
+    );
+
+    const rawGame = useQuery(api.games.getGameById, { gameId : page.params.id ?? "" as any});
+    const gameScores : Scores = $derived(JSON.parse(rawGame.data?.scoreboard ?? "{}"));
+
+    // For compatibility with scoreboard layout, keep 'playersByTeam' mapping.
+    // playersByTeam will be of type: Record<string /* teamId */, string[] /* playerIds */>
     let playersFromScores = $derived(
-        Object.values($gameStore.scores).reduce(
+        Object.values(gameScores).reduce(
             (acc, s) => {
                 for (const t of Object.keys(s.tossup)) {
                     if (!acc[t]) {
@@ -46,23 +66,41 @@
         ),
     );
     let playersFromTeams = $derived(
-        Object.entries($teamsStore).reduce(
-            (acc, [teamId, team]) => {
-                acc[teamId] = Object.keys(team.players);
-                return acc;
-            },
-            {} as Record<string, string[]>,
-        ),
+        teams.reduce((acc, team) => {
+            acc[team.id] = playersList.filter(p => p.team === team.id).map(p => p.id);
+            return acc;
+        }, {} as Record<string, string[]>)
     );
     let players = $derived(
         combinePlayersLists(playersFromScores, playersFromTeams),
     );
+
+    // Helper lookup maps for efficient access (team id → team, player id → player):
+    let teamsMap = $derived(
+        teams.reduce((acc, t) => { acc[t.id] = t; return acc; }, {} as Record<string, ClientTeamData>)
+    );
+    let playersMap = $derived(
+        playersList.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, ClientPlayerData>)
+    );
+
+    const socket = getSocket();
+
+    type ModalStore = Writable<{
+        component: any;
+        props: Record<string, unknown>;
+    } | null>;
+    const modalStore: ModalStore = getContext("modalStore");
+
+    let rowNumber = $derived(
+        Math.max(0, ...Object.keys(gameScores).map(Number)),
+    );
+    let rowArray = $derived(Array.from({ length: rowNumber }, (_, i) => i + 1));
     let runningScores = $derived(
         (() => {
             // Compute running total for each team row by row.
             let totals: Record<string, number> = {};
             let scoreHistory: Record<number, Record<string, number>> = {};
-            Object.entries($gameStore.scores).forEach(([rowNumStr, row]) => {
+            Object.entries(gameScores).forEach(([rowNumStr, row]) => {
                 const i = Number(rowNumStr);
                 // Copy previous
                 totals = { ...totals };
@@ -123,11 +161,13 @@
     };
 
     async function exportScores() {
+        // Use convex-sourced teams and players.
+        // For compatibility, supply teamsMap and playersMap to export function if its API allows
         const csv = await convertToCSV(
-            $teamsStore,
-            $playersStore,
+            teamsMap,
+            playersMap,
             players,
-            $gameStore.scores,
+            gameScores,
         );
         const url = window.URL.createObjectURL(
             new Blob([csv], { type: "plain/text" }),
@@ -149,21 +189,16 @@
         scoreType: ScoreType | "none",
     ) {
         if (!isModerator) return;
-        gameStore.scoreboard.editTossup(
+
+        const gameId = page.params.id as string;
+        convex.mutation(api.games.editTossup, {
+            gameId: gameId as any,
             number,
             playerId,
             teamId,
             category,
-            scoreType,
-        );
-        socket.emit(
-            "editTossup",
-            number,
-            playerId,
-            teamId,
-            category,
-            scoreType,
-        );
+            scoreType
+        }).catch(console.error);
     }
 
     function handleBonusChange(
@@ -172,8 +207,15 @@
         scoreType: "correct" | "incorrect" | "none",
     ) {
         if (!isModerator) return;
-        gameStore.scoreboard.editBonus(number, teamId, scoreType);
-        socket.emit("editBonus", number, teamId, scoreType);
+
+        const gameId = page.params.id as string;
+
+        convex.mutation(api.games.editBonus, {
+            gameId: gameId as any,
+            number,
+            teamId,
+            scoreType
+        }).catch(console.error);
     }
 
     function deleteQuestion(number: number) {
@@ -184,8 +226,11 @@
                 title: "Delete Question #" + number,
                 message: `Are you sure you want to delete question #${number}?`,
                 confirmCallback: () => {
-                    gameStore.scoreboard.deleteQuestion(number);
-                    socket.emit("deleteQuestion", number);
+                    const gameId = page.params.id as string;
+                    convex.mutation(api.games.deleteQuestion, {
+                        gameId: gameId as any,
+                        number
+                    }).catch(console.error);
                     $modalStore = null;
                 },
                 cancelCallback: () => {
@@ -206,7 +251,10 @@
                     $modalStore = null;
                 },
                 confirmCallback: () => {
-                    socket.emit("clearScores");
+                    const gameId = page.params.id as string;
+                    convex.mutation(api.games.clearScores, {
+                        gameId: gameId as any
+                    }).catch(console.error);
                     $modalStore = null;
                 },
             },
@@ -220,7 +268,7 @@
     };
 
     function sumQuestionScores(teamId: string) {
-        return Object.values($gameStore.scores).reduce((acc, q) => {
+        return Object.values(gameScores).reduce((acc, q) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
                 acc += pointValues.tossup;
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
@@ -252,10 +300,10 @@
                             style:font-weight="bold"
                         >
                             {#if showTotalInHeader}
-                                <span>{$teamsStore[teamId]?.name || teamId}</span
+                                <span>{teamsMap[teamId]?.name || teamId}</span
                                 >: {sumQuestionScores(teamId)}
                             {:else}
-                                {$teamsStore[teamId]?.name || teamId}
+                                {teamsMap[teamId]?.name || teamId}
                             {/if}
                         </th>
                     {/if}
@@ -270,7 +318,7 @@
                     {#each Object.values(players) as p}
                         {#each p as playerId}
                             <th class="player-name" style:font-weight="normal"
-                                >{$playersStore[playerId]?.name || "Unknown"}</th
+                                >{playersMap[playerId]?.name || "Unknown"}</th
                             >
                         {/each}
                         <th class="player-name" style:font-weight="bold">Bonus</th>
@@ -284,7 +332,7 @@
         </thead>
         <tbody>
             {#each rowArray as i}
-                {@const scoreRow = $gameStore.scores[i]}
+                {@const scoreRow = gameScores[i]}
                 <tr>
                     <td class="question-number">#{i}</td>
                     {#if scoreRow}

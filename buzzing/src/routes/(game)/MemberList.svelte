@@ -1,20 +1,60 @@
 <script lang="ts">
-    import membersStore from "$lib/stores/players";
-    import moderatorsStore from "$lib/stores/moderators";
-    import myMemberStore from "$lib/stores/myMember"
+    import { useQuery } from "convex-svelte";
+    import { api } from "../../../convex/_generated/api";
     import MemberListElement from "./MemberListElement.svelte";
+    import { page } from "$app/state";
+    import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer";
+    import type { ClientModeratorData } from "$lib/classes/client/ClientModerator";
+    import type { ClientTeamData } from "$lib/classes/client/ClientTeam";
+    import { browser } from "$app/environment";
+    
+    const rawModerators = useQuery(api.moderators.getByGameId, { gameId : page.params.id ?? "" });
+    const moderators : ClientModeratorData[] = $derived(
+        (rawModerators.data ?? []).map(mod => ({
+            name: mod.name,
+            id: mod.externalId,
+            connected: mod.connected,
+            type: "moderator"
+        }))
+    );
+
+    let memberId = $state(browser ? sessionStorage.getItem("memberId") : null);
+
+    let showControls = $derived(moderators.some(m => m.id === memberId));
+
+    const rawTeams = useQuery(api.teams.getByGameId, { gameId : page.params.id ?? "" });
+    const teams : ClientTeamData[] = $derived(
+        (rawTeams.data ?? []).map(team => ({
+            id: team.externalId,
+            name: team.name,
+            type: team.type
+        }))
+    );
+
+    const rawPlayers = useQuery(api.players.getByGameId, { gameId : page.params.id ?? "" });
+    const players : ClientPlayerData[] = $derived(
+        (rawPlayers.data ?? []).map(player => ({
+            name: player.name,
+            id: player.externalId,
+            connected: player.connected,
+            type: "player",
+            team: teams.find(team => team.id === player.teamId)?.id ?? null,
+            isCaptain: player.isCaptain ?? false
+        }))
+    );
+
 </script>
 
 <div class="member-list">
     <h2>Members</h2>
     <ul>
         <h3>Moderators</h3>
-        {#each Object.values($moderatorsStore) as member}
-            <MemberListElement member={member.store} />
+        {#each moderators as member}
+            <MemberListElement member={member} />
         {/each}
         <h3>Members</h3>
-        {#each Object.values($membersStore) as member}
-            <MemberListElement member={member.store} showControls={$myMemberStore.moderator} />
+        {#each players as member}
+            <MemberListElement member={member} showControls={showControls} />
         {/each}
     </ul>
 </div>

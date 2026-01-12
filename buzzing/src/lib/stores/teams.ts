@@ -1,5 +1,4 @@
 import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
-import { Scoreboard } from "$lib/classes/Scoreboard"
 import type { TeamData } from "$lib/classes/Team"
 import { derived, writable, type Readable, type Unsubscriber, type Writable } from "svelte/store"
 import type { PlayerStore } from "./players"

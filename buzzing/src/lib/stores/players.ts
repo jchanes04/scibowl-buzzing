@@ -39,7 +39,7 @@ export default {
 }
 
 export function createPlayerStore(playerData: PlayerData, team: TeamStore) {
-    const store = writable<ClientPlayer>(new ClientPlayer(playerData, team))
+    const store = writable<ClientPlayer>(new ClientPlayer({ ...playerData, connected: playerData.connected }, team))
 
     return {
         id: playerData.id,
@@ -49,11 +49,19 @@ export function createPlayerStore(playerData: PlayerData, team: TeamStore) {
                 value.rename(name)
                 return value
             })
+        },
+        setConnected: (connected: boolean) => {
+            store.update(value => {
+                value.connected = connected
+                return value
+            })
         }
     }
 }
 
 export type PlayerStore = {
     subscribe: Writable<ClientPlayer>['subscribe'],
+    setConnected: (connected: boolean) => void,
+    rename: (name: string) => void,
     id: string
 }

@@ -1,8 +1,36 @@
 <script lang="ts">
-    import teamsStore from "$lib/stores/teams"
-    import playersStore from "$lib/stores/players"
+    import { useQuery } from "convex-svelte";
     import gameStore from "$lib/stores/game"
-    import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
+    import type { QuestionPairScore, Scores } from "$lib/classes/GameScoreboard";
+    import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer";
+    import type { ClientTeamData } from "$lib/classes/client/ClientTeam";
+    import { page } from "$app/state";
+    import { api } from "../../../convex/_generated/api";
+
+
+    const rawTeams = useQuery(api.teams.getByGameId, { gameId : page.params.id ?? "" });
+    const teams : ClientTeamData[] = $derived(
+        (rawTeams.data ?? []).map(team => ({
+            id: team.externalId,
+            name: team.name,
+            type: team.type
+        }))
+    );
+
+    const rawPlayers = useQuery(api.players.getByGameId, { gameId : page.params.id ?? "" });
+    const players : ClientPlayerData[] = $derived(
+        (rawPlayers.data ?? []).map(player => ({
+            name: player.name,
+            id: player.externalId,
+            connected: player.connected,
+            type: "player",
+            team: teams.find(team => team.id === player.teamId)?.id ?? null,
+            isCaptain: player.isCaptain ?? false
+        }))
+    );
+
+    const rawGame = useQuery(api.games.getGameById, { gameId : page.params.id ?? "" as any});
+    const gameScores : Scores = $derived(JSON.parse(rawGame.data?.scoreboard ?? "{}"));
 
     const pointValues = {
         tossup: 4,
@@ -10,7 +38,7 @@
         penalty: -4
     }
 
-    function sumQuestionScores(scores: Record<number, QuestionPairScore>, teamId: string) {
+    function sumQuestionScores(scores: Scores, teamId: string) {
         return Object.values(scores).reduce((acc, q) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
                 acc += pointValues.tossup 
@@ -29,19 +57,19 @@
 <div class="scoreboard">
     <h2>Scoreboard</h2>
     <ul>
-        {#key $playersStore}
-            {#each Object.values($teamsStore) as team}
+        {#key players}
+            {#each teams as team}
                 <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
                     <h1>
                         <span class="team-name">{team.name}</span>
-                        <span class="team-score">{sumQuestionScores($gameStore.scores, team.id)}</span>
+                        <span class="team-score">{sumQuestionScores(gameScores, team.id)}</span>
                     </h1>
                     {#if team.type !== "individual"}
                         <ul>
-                            {#each Object.values(team.players) as player}
-                                <li class="player-row" class:captain={player.id === team.captainId}>
+                            {#each players.filter(p => p.team === team.id) as player}
+                                <li class="player-row" class:captain={player.isCaptain}>
                                     {player.name}
-                                </li>
+                                </li>   
                             {/each}
                         </ul>
                     {/if}

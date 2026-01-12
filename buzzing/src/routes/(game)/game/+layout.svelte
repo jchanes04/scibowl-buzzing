@@ -3,6 +3,11 @@
     import HeaderCompact from '$lib/components/HeaderCompact.svelte'
     import { setContext } from 'svelte';
     import { writable } from 'svelte/store';
+    import { setupConvex } from "convex-svelte";
+    import { PUBLIC_CONVEX_URL } from "$env/static/public";
+
+    setupConvex(PUBLIC_CONVEX_URL);
+
     interface Props {
         children?: import('svelte').Snippet;
     }

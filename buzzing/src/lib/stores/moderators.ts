@@ -32,11 +32,18 @@ export function createModeratorStore(moderatorData: ModeratorData) {
 
     return {
         id: moderatorData.id,
-        subscribe: store.subscribe
+        subscribe: store.subscribe,
+        setConnected: (connected: boolean) => {
+            store.update(oldValue => ({
+                ...oldValue,
+                connected: connected
+            }))
+        }
     }
 }
 
 export type ModeratorStore = {
     subscribe: Writable<ClientModerator>['subscribe'],
+    setConnected: (connected: boolean) => void,
     id: string
 }

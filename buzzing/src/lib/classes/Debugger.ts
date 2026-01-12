@@ -1,4 +1,3 @@
-import type { MyMember } from "$lib/stores/myMember"
 import type { Socket } from "socket.io-client"
 import { env } from "$env/dynamic/public"
 
@@ -19,9 +18,9 @@ export default interface Debugger {
 }
 
 export default class Debugger {
-    constructor(gameId: string, gameName: string, member: MyMember, socket: Socket) {
-        this.memberId = member.id,
-        this.memberName = member.name
+    constructor(gameId: string, gameName: string, memberId: string, memberName: string, socket: Socket) {
+        this.memberId = memberId,
+        this.memberName = memberName
         this.gameId = gameId
         this.gameName = gameName
         this.events = []

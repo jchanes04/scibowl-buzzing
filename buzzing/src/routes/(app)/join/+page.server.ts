@@ -7,7 +7,7 @@ export const actions = {
         const body = await request.formData()
         const joinCode = body.get('join-code') as string
 
-        const game = getGameFromCode(joinCode)
+        const game = await getGameFromCode(joinCode)
 
         if (joinCode && game) {
             redirect(302, "/join/" + game.id + "?code=" + game.joinCode)

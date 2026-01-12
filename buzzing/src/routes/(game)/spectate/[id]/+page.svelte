@@ -10,16 +10,8 @@
     import type { PageServerData } from "./$types";
 
     import gameStore from "$lib/stores/game";
-    import teamsStore, {
-        createTeamStore,
-        type TeamStore,
-    } from "$lib/stores/teams";
-    import playersStore, { createPlayerStore } from "$lib/stores/players";
-    import moderatorsStore, {
-        createModeratorStore,
-    } from "$lib/stores/moderators";
     import { page } from "$app/stores";
-    import { createSocket } from "$lib/socket";
+    import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
 
@@ -29,18 +21,11 @@
 
     let { data }: Props = $props();
     let gameInfo = $derived(data.gameInfo);
-    let teamList = $derived(data.teamList);
-    let moderatorList = $derived(data.moderatorList);
-    let playerList = $derived(data.playerList);
     let scores = $derived(data.scores);
 
     const socket = createSocket(true);
 
     $effect.pre(() => {
-        playersStore.clear();
-        moderatorsStore.clear();
-        teamsStore.clear();
-
         $gameStore = {
             ...gameInfo,
             state: {
@@ -52,27 +37,6 @@
             },
             scores,
         };
-
-        const teamStores: Record<string, { store: TeamStore }> = {};
-        for (const t of Object.values(teamList)) {
-            const newStore = createTeamStore(t);
-            teamsStore.addTeam(newStore);
-            teamStores[t.id] = { store: newStore };
-        }
-
-        for (const p of Object.values(playerList)) {
-            const team = teamStores[p.teamID];
-            if (team) {
-                const player = createPlayerStore(p, team.store);
-                team.store.addPlayer(player);
-                playersStore.addPlayer(player);
-            }
-        }
-
-        for (const m of Object.values(moderatorList)) {
-            const moderator = createModeratorStore(m);
-            moderatorsStore.addModerator(moderator);
-        }
     });
 
     beforeNavigate(() => {

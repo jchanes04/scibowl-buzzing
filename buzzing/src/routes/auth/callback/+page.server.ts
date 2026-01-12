@@ -1,12 +1,11 @@
 import { WorkOS } from '@workos-inc/node';
 import { redirect } from '@sveltejs/kit';
-import { config } from 'dotenv';
+import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
 // Load environment variables from .env file
-config();
 
-const workos = new WorkOS(process.env.WORKOS_API_KEY!);
+const workos = new WorkOS(env.WORKOS_API_KEY);
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
     const code = url.searchParams.get('code');
@@ -34,7 +33,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
         console.log('Attempting to authenticate with code...');
         const authResponse = await workos.userManagement.authenticateWithCode({
             code,
-            clientId: process.env.WORKOS_CLIENT_ID!,
+            clientId: env.WORKOS_CLIENT_ID!,
         });
         const { user } = authResponse;
         const access_token = (authResponse as any).accessToken || (authResponse as any).access_token;
@@ -46,7 +45,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
         cookies.set('workos_access_token', (user as any).accessToken || access_token, {
             path: '/',
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7 // 7 days
         });
@@ -62,7 +61,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
         }), {
             path: '/',
             httpOnly: false, // Allow client-side access for auth store
-            secure: process.env.NODE_ENV === 'production',
+            secure: env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7 // 7 days
         });

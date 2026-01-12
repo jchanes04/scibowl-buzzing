@@ -1,7 +1,7 @@
-import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
+import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer"
 import type { Category, Game, ScoreType } from "$lib/classes/Game"
 import type { QuestionPairScore, Scores } from "$lib/classes/GameScoreboard"
-import type { ClientTeamData } from "$lib/stores/teams"
+import type { ClientTeamData } from "$lib/classes/client/ClientTeam"
 import pkg from "json-2-csv"
 const { json2csv } = pkg
 
@@ -39,7 +39,7 @@ type CSVColumn = {
 
 export async function convertToCSV(
     teamList: Record<string, ClientTeamData>,
-    playerList: Record<string, ClientPlayer>,
+    playerList: Record<string, ClientPlayerData>,
     players: Record<string, string[]>,
     scores: Record<number, QuestionPairScore>
 ) {

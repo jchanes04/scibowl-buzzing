@@ -19,7 +19,10 @@ const config = {
             key: fs.readFileSync(keyPath),
             cert: fs.readFileSync(certPath),
         },
-        proxy: {}  // Empty proxy disables HTTP/2, fixing the undici headers issue
+        proxy: {},  // Empty proxy disables HTTP/2, fixing the undici headers issue
+        fs: {
+            allow: ['./convex']
+        }
     },
     resolve: {
         alias: {

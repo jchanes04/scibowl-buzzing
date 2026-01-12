@@ -2,10 +2,12 @@ import type { Category, GameSettings, GameTimes, NewQuestionData, Question, Scor
 import { GameScoreboard, type QuestionPairScore } from "$lib/classes/GameScoreboard";
 import { writable, type Writable } from "svelte/store";
 import type { PlayerStore } from "./players";
+import { convex } from "$lib/convexClient";
+import { api } from "../../../convex/_generated/api";
 
 type BuzzedState = {
     questionState: "buzzed",
-    currentBuzzer: PlayerStore,
+    currentBuzzer: string,
     currentQuestion: NewQuestionData,
     buzzingEnabled: false,
     buzzedTeamIds: string[]
@@ -78,7 +80,7 @@ export default {
             return value
         })
     },
-    buzz: (teamId: string, playerStore: PlayerStore) => {
+    buzz: (teamId: string, playerId: string) => {
         store.update(value => {
             value.state.buzzingEnabled = false
             value.state.buzzedTeamIds.push(teamId)
@@ -86,7 +88,7 @@ export default {
             value.state = {
                 ...value.state,
                 questionState: "buzzed",
-                currentBuzzer: playerStore,
+                currentBuzzer: playerId,
                 buzzingEnabled: false,
                 buzzedTeamIds: value.state.buzzedTeamIds
             } as BuzzedState
@@ -231,6 +233,11 @@ export default {
             })
         },
         clear: () => {
+            convex.mutation(api.chatMessages.send, {
+                gameId: value.id,
+                type: "notification",
+                text: "Scores cleared"
+            }).catch(console.error)
             scoreboard = new GameScoreboard()
             store.update(value => {
                 value.scores = scoreboard.scores

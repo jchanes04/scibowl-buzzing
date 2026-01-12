@@ -6,14 +6,27 @@ export interface ClientPlayer {
     id: string,
     type: "player",
     team: TeamStore,
+    connected: boolean,
+}
+
+export interface ClientPlayerData {
+    name: string,
+    id: string,
+    type: "player",
+    team: string | null,
+    connected: boolean,
+    isCaptain: boolean
 }
 
 export class ClientPlayer {
-    constructor({ name, id }: PlayerData, teamStore: TeamStore) {
+    connected: boolean;
+
+    constructor({ name, id, connected }: PlayerData, teamStore: TeamStore) {
         this.name = name,
         this.id = id,
         this.type = "player"
         this.team = teamStore
+        this.connected = connected
     }
 
     rename(name: string) {

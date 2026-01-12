@@ -28,6 +28,8 @@
     "@workos-inc/authkit-js": "^0.18.0",
     "@workos-inc/node": "^7.82.0",
     "argon2": "^0.31.0",
+    "convex": "^1.31.3",
+    "convex-svelte": "^0.0.12",
     "env-cmd": "^10.1.0",
     "js-cookie": "^2.2.1",
     "json-2-csv": "^3.20.0",

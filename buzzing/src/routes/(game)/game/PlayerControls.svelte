@@ -1,29 +1,56 @@
 <script lang="ts">
+    import { useQuery } from "convex-svelte";
+    import { api } from "../../../../convex/_generated/api";
+    import { convex } from "$lib/convexClient";
+    import { page } from "$app/state";
     import type Debugger from "$lib/classes/Debugger";
     import gameStore from "$lib/stores/game";
-    import getSocket from "$lib/socket";
+    import getSocket from "$lib/socket.svelte";
     import { timerStore, gameClockStore } from "$lib/stores/timer";
     import { getContext } from "svelte";
-    import myMember from "$lib/stores/myMember";
     import visualBonus from "$lib/stores/visualBonus";
-    import teamsStore from "$lib/stores/teams"
-    import playersStore from "$lib/stores/players"
     import { browser } from "$app/environment";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
-    
+    import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer";
+    import type { ClientTeamData } from "$lib/classes/client/ClientTeam";
+
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
     const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
     let scoreboardExpanded = $state(false)
 
+    let memberId = $state(browser ? sessionStorage.getItem("memberId") : null);
+
+    const rawTeams = useQuery(api.teams.getByGameId, { gameId : page.params.id ?? "" });
+    const teams : ClientTeamData[] = $derived(
+        (rawTeams.data ?? []).map(team => ({
+            id: team.externalId,
+            name: team.name,
+            type: team.type
+        }))
+    );
+
+    const rawPlayers = useQuery(api.players.getByGameId, { gameId : page.params.id ?? "" });
+    const players : ClientPlayerData[] = $derived(
+        (rawPlayers.data ?? []).map(player => ({
+            name: player.name,
+            id: player.externalId,
+            connected: player.connected,
+            type: "player",
+            team: teams.find(team => team.id === player.teamId)?.id ?? null,
+            isCaptain: player.isCaptain ?? false
+        }))
+    );
+    let myPlayer = $derived(players.find(player => player.id === memberId));
+
+
     function buzz() {
         socket.emit('buzz');
         buzzAudio?.play()
 
-        const player = $playersStore[$myMember.id]
-        if (player) {
-            gameStore.buzz($myMember.team?.id || "", player.store)
+        if (myPlayer) {
+            gameStore.buzz(myPlayer.team ?? "", myPlayer.id)
         }
         timerStore.pause()
         
@@ -31,7 +58,14 @@
     }
 
     function claimCaptain() {
-        socket.emit('claimCaptain')
+        // Call Convex directly instead of socket
+        const gameId = page.params.id
+        if (gameId && memberId) {
+            convex.mutation(api.players.claimCaptain, {
+                gameId: gameId as any,
+                playerId: memberId
+            }).catch(console.error)
+        }
         debug.addEvent('claimCaptain', {})
     }
 
@@ -48,7 +82,7 @@
             `<style>img { width: 100%; }</style><div>${img.outerHTML}</div>`
     }
 
-    let claimCaptainDisabled = $derived($teamsStore[$myMember.team?.id || ""]?.captainId === $myMember.id)
+    let claimCaptainDisabled = $derived(myPlayer?.isCaptain)
     let visualBonusEnabled = $derived($gameStore.state.questionState === "open"
             && $gameStore.state.currentQuestion.bonus
             && $gameStore.state.currentQuestion.visual

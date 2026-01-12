@@ -1,12 +1,9 @@
 import { WorkOS } from '@workos-inc/node';
 import { json, error } from '@sveltejs/kit';
-import { config } from 'dotenv';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
-// Load environment variables from .env file
-config();
-
-const workos = new WorkOS(process.env.WORKOS_API_KEY!);
+const workos = new WorkOS(env.WORKOS_API_KEY!);
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
     try {
@@ -73,7 +70,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
         cookies.set('workos_user', JSON.stringify(updatedUserData), {
             path: '/',
             httpOnly: false, // Allow client-side access for auth store
-            secure: process.env.NODE_ENV === 'production',
+            secure: env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7 // 7 days
         });

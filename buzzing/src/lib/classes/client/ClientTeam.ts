@@ -9,6 +9,12 @@ export interface ClientTeam {
     type: "default" | "individual" | "created"
 }
 
+export interface ClientTeamData {
+    id: string,
+    name: string,
+    type: "default" | "individual" | "created"
+}
+
 export class ClientTeam {
     constructor(teamData: TeamData, members: ClientPlayer[]) {
         this.id = teamData.id

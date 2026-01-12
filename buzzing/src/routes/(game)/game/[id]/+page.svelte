@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { useQuery } from "convex-svelte";
+    import { api } from "../../../../../convex/_generated/api";
     import MemberList from "../../MemberList.svelte";
     import Chatbox from "../../Chatbox.svelte";
     import TopBar from "$lib/components/TopBar.svelte";
@@ -13,18 +15,12 @@
     import Debugger from "$lib/classes/Debugger";
     import { setContext } from "svelte";
     import gameStore from "$lib/stores/game";
-    import teamsStore, {
-        createTeamStore,
-        type TeamStore,
-    } from "$lib/stores/teams";
-    import playersStore, { createPlayerStore } from "$lib/stores/players";
-    import moderatorsStore, {
-        createModeratorStore,
-    } from "$lib/stores/moderators";
-    import myMemberStore from "$lib/stores/myMember";
-    import { page } from "$app/stores";
-    import { createSocket } from "$lib/socket";
+    import type { ClientTeamData } from "$lib/classes/client/ClientTeam";
+    import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer";
+    import { page } from "$app/state";
+    import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
+    import type { ClientModeratorData } from "$lib/classes/client/ClientModerator";
 
     interface Props {
         data: PageServerData;
@@ -32,65 +28,69 @@
 
     let { data }: Props = $props();
     let gameInfo = $derived(data.gameInfo);
-    let teamList = $derived(data.teamList);
-    let moderatorList = $derived(data.moderatorList);
-    let playerList = $derived(data.playerList);
-    let myMemberId = $derived(data.myMemberId);
-    let scores = $derived(data.scores);
-    let currentGameState = $derived(data.currentGameState);
+    let memberId = $derived(data.myMemberId);
+
+    $effect(() => {
+        sessionStorage.setItem("memberId", memberId ?? "");
+    });
 
     const socket = createSocket();
 
+    const rawTeams = useQuery(api.teams.getByGameId, { gameId : page.params.id ?? "" });
+    const teams : ClientTeamData[] = $derived(
+        (rawTeams.data ?? []).map(team => ({
+            id: team.externalId,
+            name: team.name,
+            type: team.type
+        }))
+    );
+
+    const rawPlayers = useQuery(api.players.getByGameId, { gameId : page.params.id ?? "" });
+    const players : ClientPlayerData[] = $derived(
+        (rawPlayers.data ?? []).map(player => ({
+            name: player.name,
+            id: player.externalId,
+            connected: player.connected,
+            type: "player",
+            team: teams.find(team => team.id === player.teamId)?.id ?? null,
+            isCaptain: player.isCaptain ?? false
+        }))
+    );
+    let myPlayer = $derived(players.find(player => player.id === memberId));
+
+    const rawModerators = useQuery(api.moderators.getByGameId, { gameId : page.params.id ?? "" });
+    const moderators : ClientModeratorData[] = $derived(
+        (rawModerators.data ?? []).map(mod => ({
+            name: mod.name,
+            id: mod.externalId,
+            connected: mod.connected,
+            type: "moderator"
+        }))
+    );
+    let myModerator = $derived(moderators.find(mod => mod.id === memberId));
+
     function syncStores() {
-        playersStore.clear();
-        moderatorsStore.clear();
-        teamsStore.clear();
+        // currentBuzzer is now { id: string, teamId: string } | null
+        // Extract just the id for the store
+        let currentBuzzerStore: string | null = null;
+        if (data.currentGameState.currentBuzzer) {
+            currentBuzzerStore = data.currentGameState.currentBuzzer.id ?? null;
+        }
+
+        // currentQuestion already has teamId (not team object)
+        let currentQuestion = data.currentGameState.currentQuestion;
 
         $gameStore = {
             ...data.gameInfo,
             state: {
                 questionState: data.currentGameState.questionState,
-                currentBuzzer: data.currentGameState.currentBuzzer,
-                currentQuestion: data.currentGameState.currentQuestion,
+                currentBuzzer: currentBuzzerStore,
+                currentQuestion: currentQuestion,
                 buzzingEnabled: data.currentGameState.questionState === "open",
                 buzzedTeamIds: data.currentGameState.buzzedTeamIds,
-            },
+            } as any,
             scores: data.scores,
         };
-        gameStore.scoreboard.setScores(data.scores);
-
-        const teamStores: Record<string, { store: TeamStore }> = {};
-        for (const t of Object.values(data.teamList)) {
-            const newStore = createTeamStore(t);
-            teamsStore.addTeam(newStore);
-            teamStores[t.id] = { store: newStore };
-        }
-
-        for (const p of Object.values(data.playerList)) {
-            const team = teamStores[p.teamID];
-            if (team) {
-                const player = createPlayerStore(p, team.store);
-                if (p.id === data.myMemberId) {
-                    myMemberStore.setMember({
-                        memberStore: player,
-                        moderator: false,
-                    });
-                }
-                team.store.addPlayer(player);
-                playersStore.addPlayer(player);
-            }
-        }
-
-        for (const m of Object.values(data.moderatorList)) {
-            const moderator = createModeratorStore(m);
-            moderatorsStore.addModerator(moderator);
-            if (m.id === data.myMemberId) {
-                myMemberStore.setMember({
-                    memberStore: moderator,
-                    moderator: true,
-                });
-            }
-        }
     }
 
     // Initialize stores synchronously for SSR and first client render
@@ -106,7 +106,8 @@
         ? new Debugger(
               data.gameInfo.id,
               data.gameInfo.name,
-              $myMemberStore,
+              memberId ?? "",
+              myPlayer?.name ?? "",
               socket,
           )
         : null;
@@ -114,7 +115,7 @@
 
     let buzzed = $derived(
         $gameStore?.state.questionState === "buzzed" &&
-            $gameStore?.state.currentBuzzer?.id === $myMemberStore?.id,
+        $gameStore?.state.currentBuzzer === memberId,
     );
 
     beforeNavigate(() => {
@@ -134,7 +135,7 @@
     <Scoreboard />
     <Chatbox />
 
-    {#if $myMemberStore.moderator}
+    {#if myModerator}
         <ReaderControls />
     {:else}
         <PlayerControls />

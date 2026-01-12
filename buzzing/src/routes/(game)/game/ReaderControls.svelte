@@ -33,10 +33,11 @@
         };
     }
     import chatMessagesStore from "$lib/stores/chatMessages";
-    import teamsStore, { type ClientTeamData } from "$lib/stores/teams";
+    import type { ClientTeamData } from "$lib/classes/client/ClientTeam";
+    import type { ClientPlayerData } from "$lib/classes/client/ClientPlayer";
     import gameStore from "$lib/stores/game";
     import { gameClockStore, timerStore } from "$lib/stores/timer";
-    import getSocket from "$lib/socket";
+    import getSocket from "$lib/socket.svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
     import TimeEntry from "./TimeEntry.svelte";
@@ -59,6 +60,37 @@
         { id: "math", value: "Math" },
         { id: "energy", value: "Energy" },
     ];
+
+    import { useQuery } from "convex-svelte";
+    import { api } from "../../../../convex/_generated/api";
+    import { convex } from "$lib/convexClient";
+    import { page } from "$app/state";
+    import type { Scores } from "$lib/classes/GameScoreboard";
+
+    const rawTeams = useQuery(api.teams.getByGameId, { gameId : page.params.id ?? "" });
+    const teams : ClientTeamData[] = $derived(
+        (rawTeams.data ?? []).map(team => ({
+            id: team.externalId,
+            name: team.name,
+            type: team.type
+        }))
+    );
+
+    const rawPlayers = useQuery(api.players.getByGameId, { gameId : page.params.id ?? "" });
+    const players : ClientPlayerData[] = $derived(
+        (rawPlayers.data ?? []).map(player => ({
+            name: player.name,
+            id: player.externalId,
+            connected: player.connected,
+            type: "player",
+            team: player.teamId || null,
+            isCaptain: player.isCaptain ?? false
+        }))
+    );
+
+    const rawGame = useQuery(api.games.getGameById, { gameId : page.params.id ?? "" as any});
+    const gameScoreboard : Scores = $derived(JSON.parse(rawGame.data?.scoreboard ?? "{}"));
+
 
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
@@ -93,13 +125,6 @@
             number: questionNumber,
         });
 
-        if (
-            questionType === "tossup" &&
-            questionNumber &&
-            $gameStore.scores[questionNumber]
-        ) {
-            gameStore.scoreboard.clearQuestion(questionNumber);
-        }
 
         debug.addEvent("newQuestion", {
             category: selectedCategory,
@@ -111,13 +136,24 @@
             number: questionNumber,
         });
 
-        $chatMessagesStore = [
-            ...$chatMessagesStore,
-            {
-                type: "notification",
-                text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
-            },
-        ];
+        // Send new question notification to all users
+        const gameId = page.params.id as string;
+        let questionText = "";
+        if (questionType === "bonus") {
+            const teamName = teamSelectValue?.name || "Unknown Team";
+            questionText = `Bonus #${questionNumber} opened for ${teamName}`;
+        } else if (questionType === "visual") {
+            const teamName = teamSelectValue?.name || "Unknown Team";
+            questionText = `Bonus #${questionNumber} opened for ${teamName}`;
+        } else {
+            questionText = `Tossup #${questionNumber} opened`;
+        }
+
+        convex.mutation(api.chatMessages.send, {
+            gameId: gameId as any,
+            type: "notification",
+            text: questionText
+        }).catch(console.error);
 
         if (questionType === "bonus") {
             gameStore.newQuestion(
@@ -187,7 +223,7 @@
             $modalStore = timeEndedModal(() => {
                 if (
                     questionType === "tossup" &&
-                    $gameStore.scores[questionNumber] &&
+                    gameScoreboard[questionNumber] &&
                     questionNumber !== 0
                 ) {
                     $modalStore = overwriteQuestionModal(questionNumber, () => {
@@ -201,7 +237,7 @@
             });
         } else if (
             questionType === "tossup" &&
-            $gameStore.scores[questionNumber] &&
+            gameScoreboard[questionNumber] &&
             questionNumber !== 0
         ) {
             $modalStore = overwriteQuestionModal(questionNumber, () => {
@@ -252,12 +288,66 @@
             $gameStore.state.currentQuestion?.bonus,
     );
     function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
+        const currentQuestion = $gameStore.state.currentQuestion;
+        if (!currentQuestion) return;
+
+        const gameId = page.params.id as string;
+        const isBonus = currentQuestion.bonus;
+
+        // Emit socket event to update server state and broadcast to all clients
         socket.emit("scoreQuestion", selectedScore);
+
+        // Persist to Convex
+        if (isBonus) {
+            // Bonus question
+            const teamId = currentQuestion.teamId || "";
+            convex.mutation(api.games.scoreBonus, {
+                gameId: gameId as any,
+                number: questionNumber,
+                teamId,
+                category: currentQuestion.category,
+                scoreType: selectedScore
+            }).catch(console.error);
+        } else {
+            // Tossup question
+            const buzzerId = $gameStore.state.currentBuzzer;
+            if (!buzzerId) return;
+
+            // Find the team of the buzzer
+            const buzzerPlayer = players.find(p => p.id === buzzerId);
+            const teamId = buzzerPlayer?.team || "";
+
+            convex.mutation(api.games.scoreTossup, {
+                gameId: gameId as any,
+                number: questionNumber,
+                playerId: buzzerId,
+                teamId,
+                category: currentQuestion.category,
+                scoreType: selectedScore
+            }).catch(console.error);
+
+            // Send chat message for scoring
+            let text = ""
+            if (selectedScore === "correct") {
+                text = `Correct answer (${(currentQuestion.category[0] || "").toUpperCase() + currentQuestion.category.slice(1)})`
+            } else if (selectedScore === "incorrect") {
+                text = `Incorrect answer (${(currentQuestion.category[0] || "").toUpperCase() + currentQuestion.category.slice(1)})`
+            } else if (selectedScore === "penalty") {
+                text = `Penalty applied (${(currentQuestion.category[0] || "").toUpperCase() + currentQuestion.category.slice(1)})`
+            }
+
+            if (text) {
+                convex.mutation(api.chatMessages.send, {
+                    gameId: gameId as any,
+                    type: selectedScore === "correct" ? "success" : "warning",
+                    text
+                }).catch(console.error);
+            }
+        }
 
         if (
             selectedScore === "incorrect" &&
-            $gameStore.state.buzzedTeamIds.length ===
-                Object.keys($teamsStore).length &&
+            $gameStore.state.buzzedTeamIds.length === Object.keys(teams).length &&
             questionNumber !== 0
         ) {
             questionNumber++;
@@ -265,11 +355,10 @@
 
         if (selectedScore === "correct") {
             teamSelectValue =
-                $teamsStore[
+                teams.find(team => team.id ===
                     $gameStore.state.buzzedTeamIds[
                         $gameStore.state.buzzedTeamIds.length - 1
-                    ]!
-                ];
+                    ])!;
         }
 
         if ($gameStore.state.currentQuestion?.bonus && questionNumber !== 0) {
@@ -280,7 +369,21 @@
     }
 
     function markDead() {
+        const currentQuestion = $gameStore.state.currentQuestion;
+        if (!currentQuestion) return;
+
+        const gameId = page.params.id as string;
+
+        // Emit socket event to update server state and broadcast to all clients
         socket.emit("markDead");
+
+        // Persist to Convex
+        convex.mutation(api.games.deadQuestion, {
+            gameId: gameId as any,
+            number: questionNumber,
+            category: currentQuestion.category
+        }).catch(console.error);
+
         questionNumber++;
 
         debug.addEvent("markDead", {});
@@ -294,6 +397,15 @@
 
         socket.emit("startGameClock", gameClockTime);
         debug.addEvent("startGameClock", { gameClockTime });
+
+        // Send game clock started message
+        const gameId = page.params.id as string;
+        convex.mutation(api.chatMessages.send, {
+            gameId: gameId as any,
+            type: "notification",
+            text: `${Math.floor(gameClockTime / 60).toString().padStart(2, "0")}:${(gameClockTime % 60).toString().padStart(2, "0")} game clock started`
+        }).catch(console.error);
+
         gameClockTime = 0;
     }
 
@@ -368,7 +480,7 @@
                 >
                     <div class="select-wrapper">
                         <Select
-                            items={Object.values($teamsStore)}
+                            items={teams}
                             itemId="id"
                             label="name"
                             placeholder="Bonus for"
