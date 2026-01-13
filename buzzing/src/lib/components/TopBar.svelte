@@ -1,5 +1,5 @@
 <script lang="ts">
-    import gameStore from "$lib/stores/game";
+    import gameStore from "$lib/stores/game.svelte";
     import { env } from "$env/dynamic/public";
     import { fade } from "svelte/transition";
 
@@ -20,8 +20,8 @@
     let copied = $state(false);
     let joinLink = $derived(
         spectator
-            ? `${env.PUBLIC_HOST_URL}/spectate/${$gameStore.id}`
-            : `${env.PUBLIC_HOST_URL}/join/${$gameStore.id}?code=${$gameStore.joinCode}`,
+            ? `${env.PUBLIC_HOST_URL}/spectate/${gameStore.value.id}`
+            : `${env.PUBLIC_HOST_URL}/join/${gameStore.value.id}?code=${gameStore.value.joinCode}`,
     );
 
     function copyLink() {

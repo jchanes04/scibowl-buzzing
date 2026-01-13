@@ -1,7 +1,7 @@
-import type { ClientPlayer } from "$lib/classes/client/ClientPlayer"
+import type { ClientPlayer } from "$lib/stores/players.svelte"
 import type { Category, Game, ScoreType } from "$lib/classes/Game"
 import type { QuestionPairScore, Scores } from "$lib/classes/GameScoreboard"
-import type { ClientTeamData } from "$lib/stores/teams"
+import type { ClientTeamData } from "$lib/stores/teams.svelte"
 import pkg from "json-2-csv"
 const { json2csv } = pkg
 

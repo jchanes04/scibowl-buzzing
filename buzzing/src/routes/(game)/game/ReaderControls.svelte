@@ -32,11 +32,12 @@
             `,
         };
     }
-    import chatMessagesStore from "$lib/stores/chatMessages";
-    import teamsStore, { type ClientTeamData } from "$lib/stores/teams";
-    import gameStore from "$lib/stores/game";
-    import { gameClockStore, timerStore } from "$lib/stores/timer";
-    import getSocket from "$lib/socket";
+    import chatMessagesStore from "$lib/stores/chatMessages.svelte";
+    import teamsStore, { type ClientTeamData } from "$lib/stores/teams.svelte";
+    import gameStore from "$lib/stores/game.svelte";
+    import scoreboard from "$lib/stores/scoreboard.svelte";
+    import { gameClockStore, timerStore } from "$lib/stores/timer.svelte";
+    import getSocket from "$lib/socket.svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
     import TimeEntry from "./TimeEntry.svelte";
@@ -96,9 +97,9 @@
         if (
             questionType === "tossup" &&
             questionNumber &&
-            $gameStore.scores[questionNumber]
+            scoreboard.value[questionNumber]
         ) {
-            gameStore.scoreboard.clearQuestion(questionNumber);
+            scoreboard.clearQuestion(questionNumber);
         }
 
         debug.addEvent("newQuestion", {
@@ -111,13 +112,10 @@
             number: questionNumber,
         });
 
-        $chatMessagesStore = [
-            ...$chatMessagesStore,
-            {
-                type: "notification",
-                text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
-            },
-        ];
+        chatMessagesStore.add({
+            type: "notification",
+            text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
+        });
 
         if (questionType === "bonus") {
             gameStore.newQuestion(
@@ -187,7 +185,7 @@
             $modalStore = timeEndedModal(() => {
                 if (
                     questionType === "tossup" &&
-                    $gameStore.scores[questionNumber] &&
+                    scoreboard.value[questionNumber] &&
                     questionNumber !== 0
                 ) {
                     $modalStore = overwriteQuestionModal(questionNumber, () => {
@@ -201,7 +199,7 @@
             });
         } else if (
             questionType === "tossup" &&
-            $gameStore.scores[questionNumber] &&
+            scoreboard.value[questionNumber] &&
             questionNumber !== 0
         ) {
             $modalStore = overwriteQuestionModal(questionNumber, () => {
@@ -248,16 +246,16 @@
     let scoreboardExpanded = $state(false);
 
     let scoringEnabled = $derived(
-        $gameStore.state.questionState === "buzzed" ||
-            $gameStore.state.currentQuestion?.bonus,
+        gameStore.value.state.questionState === "buzzed" ||
+            gameStore.value.state.currentQuestion?.bonus,
     );
     function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
         socket.emit("scoreQuestion", selectedScore);
 
         if (
             selectedScore === "incorrect" &&
-            $gameStore.state.buzzedTeamIds.length ===
-                Object.keys($teamsStore).length &&
+            gameStore.value.state.buzzedTeamIds.length ===
+                Object.keys(teamsStore.value).length &&
             questionNumber !== 0
         ) {
             questionNumber++;
@@ -265,14 +263,14 @@
 
         if (selectedScore === "correct") {
             teamSelectValue =
-                $teamsStore[
-                    $gameStore.state.buzzedTeamIds[
-                        $gameStore.state.buzzedTeamIds.length - 1
+                teamsStore.value[
+                    gameStore.value.state.buzzedTeamIds[
+                        gameStore.value.state.buzzedTeamIds.length - 1
                     ]!
                 ];
         }
 
-        if ($gameStore.state.currentQuestion?.bonus && questionNumber !== 0) {
+        if (gameStore.value.state.currentQuestion?.bonus && questionNumber !== 0) {
             questionNumber++;
         }
 
@@ -368,7 +366,7 @@
                 >
                     <div class="select-wrapper">
                         <Select
-                            items={Object.values($teamsStore)}
+                            items={Object.values(teamsStore.value)}
                             itemId="id"
                             label="name"
                             placeholder="Bonus for"
@@ -436,12 +434,12 @@
                     onclick={startTimer}
                     class="start-timer"
                     disabled={startTimerDisabled ||
-                        $gameStore.state.questionState !== "open"}
+                        gameStore.value.state.questionState !== "open"}
                     >Start Timer</button
                 >
                 <button
                     onclick={stopTimer}
-                    disabled={$timerStore === 0}
+                    disabled={timerStore.value === 0}
                     class="icon-btn stop-btn"
                 >
                     <Icon svg={stopSvg} />
@@ -464,13 +462,13 @@
                     onclick={() => scoreQuestion("penalty")}
                     class="scoring score-penalty"
                     disabled={!scoringEnabled ||
-                        $gameStore.state.currentQuestion?.bonus}>Penalty</button
+                        gameStore.value.state.currentQuestion?.bonus}>Penalty</button
                 >
                 <button
                     onclick={markDead}
                     class="scoring mark-dead-btn"
-                    disabled={$gameStore.state.questionState !== "open" ||
-                        $gameStore.state.currentQuestion.bonus}
+                    disabled={gameStore.value.state.questionState !== "open" ||
+                        gameStore.value.state.currentQuestion.bonus}
                     >Mark Dead</button
                 >
             </div>
@@ -502,7 +500,7 @@
                     <Icon svg={playSvg} />
                 </button>
                 <button
-                    disabled={pauseGameClockDisabled || $gameClockStore === 0}
+                    disabled={pauseGameClockDisabled || gameClockStore.value === 0}
                     onclick={pauseGameClock}
                     class="icon-btn control-btn"
                 >
@@ -510,7 +508,7 @@
                 </button>
                 <button
                     disabled={stopGameClockDisabled ||
-                        ($gameClockStore === 0 && !gameClockStore.ended)}
+                        (gameClockStore.value === 0 && !gameClockStore.ended)}
                     onclick={stopGameClock}
                     class="icon-btn control-btn"
                 >

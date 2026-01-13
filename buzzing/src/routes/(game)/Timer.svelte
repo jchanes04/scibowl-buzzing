@@ -1,7 +1,7 @@
 <script lang="ts">
     import { browser } from "$app/environment";
-    import { timerStore, gameClockStore } from "$lib/stores/timer";
-    import gameStore from "$lib/stores/game";
+    import { timerStore, gameClockStore } from "$lib/stores/timer.svelte";
+    import gameStore from "$lib/stores/game.svelte";
     import { onDestroy } from "svelte";
 
     interface Props {
@@ -16,15 +16,10 @@
     };
     if (browser) timerStore.addEventListener?.("end", onTimerEnd);
 
-    function handleTimerUpdate() {
-        if ($timerStore === 5 && $gameStore.state.currentQuestion?.bonus) {
+    $effect(() => {
+        if (timerStore.value === 5 && gameStore.value.state.currentQuestion?.bonus) {
             fiveSecondAudio?.play();
         }
-    }
-
-    $effect(() => {
-        $timerStore;
-        handleTimerUpdate();
     });
 
     onDestroy(() => {
@@ -34,18 +29,18 @@
 
 <div>
     <h2>
-        {Math.floor($timerStore / 60)
+        {Math.floor(timerStore.value / 60)
             .toString()
             .padStart(2, "0") +
             ":" +
-            ($timerStore % 60).toString().padStart(2, "0")}
+            (timerStore.value % 60).toString().padStart(2, "0")}
     </h2>
     <h3>
-        {Math.floor($gameClockStore / 60)
+        {Math.floor(gameClockStore.value / 60)
             .toString()
             .padStart(2, "0") +
             ":" +
-            ($gameClockStore % 60).toString().padStart(2, "0")}
+            (gameClockStore.value % 60).toString().padStart(2, "0")}
     </h3>
 </div>
 

@@ -9,17 +9,18 @@
 
     import type { PageServerData } from "./$types";
 
-    import gameStore from "$lib/stores/game";
+    import gameStore, { type ClientGameData } from "$lib/stores/game.svelte";
+    import scoreboard from "$lib/stores/scoreboard.svelte";
     import teamsStore, {
-        createTeamStore,
-        type TeamStore,
-    } from "$lib/stores/teams";
-    import playersStore, { createPlayerStore } from "$lib/stores/players";
+        createTeam,
+        type ClientTeamData,
+    } from "$lib/stores/teams.svelte";
+    import playersStore, { createPlayer } from "$lib/stores/players.svelte";
     import moderatorsStore, {
-        createModeratorStore,
-    } from "$lib/stores/moderators";
+        createModerator,
+    } from "$lib/stores/moderators.svelte";
     import { page } from "$app/stores";
-    import { createSocket } from "$lib/socket";
+    import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
 
@@ -41,7 +42,7 @@
         moderatorsStore.clear();
         teamsStore.clear();
 
-        $gameStore = {
+        const gameData: ClientGameData = {
             ...gameInfo,
             state: {
                 questionState: "idle",
@@ -50,27 +51,28 @@
                 buzzingEnabled: false,
                 buzzedTeamIds: [],
             },
-            scores,
         };
+        gameStore.set(gameData);
+        scoreboard.setScores(scores);
 
-        const teamStores: Record<string, { store: TeamStore }> = {};
+        const teamMap: Record<string, ClientTeamData> = {};
         for (const t of Object.values(teamList)) {
-            const newStore = createTeamStore(t);
-            teamsStore.addTeam(newStore);
-            teamStores[t.id] = { store: newStore };
+            const newTeam = createTeam(t);
+            teamsStore.addTeam(newTeam);
+            teamMap[t.id] = newTeam;
         }
 
         for (const p of Object.values(playerList)) {
-            const team = teamStores[p.teamID];
+            const team = teamMap[p.teamID];
             if (team) {
-                const player = createPlayerStore(p, team.store);
-                team.store.addPlayer(player);
+                const player = createPlayer(p, team);
+                teamsStore.addPlayerToTeam(team.id, player);
                 playersStore.addPlayer(player);
             }
         }
 
         for (const m of Object.values(moderatorList)) {
-            const moderator = createModeratorStore(m);
+            const moderator = createModerator(m);
             moderatorsStore.addModerator(moderator);
         }
     });

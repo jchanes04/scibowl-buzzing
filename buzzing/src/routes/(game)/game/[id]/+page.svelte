@@ -12,19 +12,22 @@
 
     import Debugger from "$lib/classes/Debugger";
     import { setContext } from "svelte";
-    import gameStore from "$lib/stores/game";
+    import gameStore, { type ClientGameData } from "$lib/stores/game.svelte";
+    import scoreboard from "$lib/stores/scoreboard.svelte";
     import teamsStore, {
-        createTeamStore,
-        type TeamStore,
-    } from "$lib/stores/teams";
-    import playersStore, { createPlayerStore } from "$lib/stores/players";
+        createTeam,
+        type ClientTeamData,
+    } from "$lib/stores/teams.svelte";
+    import playersStore, { createPlayer } from "$lib/stores/players.svelte";
     import moderatorsStore, {
-        createModeratorStore,
-    } from "$lib/stores/moderators";
-    import myMemberStore from "$lib/stores/myMember";
+        createModerator,
+    } from "$lib/stores/moderators.svelte";
+    import myMemberStore from "$lib/stores/myMember.svelte";
     import { page } from "$app/stores";
-    import { createSocket } from "$lib/socket";
+    import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
+    import { untrack } from "svelte";
+    import type { NewQuestionData } from "$lib/classes/Game";
 
     interface Props {
         data: PageServerData;
@@ -32,12 +35,6 @@
 
     let { data }: Props = $props();
     let gameInfo = $derived(data.gameInfo);
-    let teamList = $derived(data.teamList);
-    let moderatorList = $derived(data.moderatorList);
-    let playerList = $derived(data.playerList);
-    let myMemberId = $derived(data.myMemberId);
-    let scores = $derived(data.scores);
-    let currentGameState = $derived(data.currentGameState);
 
     const socket = createSocket();
 
@@ -46,49 +43,66 @@
         moderatorsStore.clear();
         teamsStore.clear();
 
-        $gameStore = {
-            ...data.gameInfo,
-            state: {
-                questionState: data.currentGameState.questionState,
-                currentBuzzer: data.currentGameState.currentBuzzer,
-                currentQuestion: data.currentGameState.currentQuestion,
-                buzzingEnabled: data.currentGameState.questionState === "open",
-                buzzedTeamIds: data.currentGameState.buzzedTeamIds,
-            },
-            scores: data.scores,
-        };
-        gameStore.scoreboard.setScores(data.scores);
+        const serverQuestion = data.currentGameState.currentQuestion;
+        const clientQuestion : NewQuestionData | null = serverQuestion ? 
+                (serverQuestion.bonus ? { 
+                    bonus: true, 
+                    category: serverQuestion.category, 
+                    teamId: serverQuestion.team?.id ?? "", 
+                    number: serverQuestion.number, 
+                    visual: serverQuestion.visual 
+                } : { 
+                    bonus: false, 
+                    category: serverQuestion.category, 
+                    number: serverQuestion.number 
+                }) as NewQuestionData 
+            : null;
 
-        const teamStores: Record<string, { store: TeamStore }> = {};
+        const gameData: ClientGameData = {
+            ...data.gameInfo,
+            state: (data.currentGameState.questionState === "open" || data.currentGameState.questionState === "buzzed") && clientQuestion
+                ? {
+                    questionState: "open",
+                    currentBuzzer: null,
+                    currentQuestion: clientQuestion,
+                    buzzingEnabled: true,
+                    buzzedTeamIds: data.currentGameState.buzzedTeamIds,
+                }
+                : {
+                    questionState: "idle",
+                    currentBuzzer: null,
+                    currentQuestion: null,
+                    buzzingEnabled: false,
+                    buzzedTeamIds: [],
+                }
+        };
+        gameStore.set(gameData);
+        scoreboard.setScores(data.scores);
+
+        const teamMap: Record<string, ClientTeamData> = {};
         for (const t of Object.values(data.teamList)) {
-            const newStore = createTeamStore(t);
-            teamsStore.addTeam(newStore);
-            teamStores[t.id] = { store: newStore };
+            const newTeam = createTeam(t);
+            teamsStore.addTeam(newTeam);
+            teamMap[t.id] = newTeam;
         }
 
         for (const p of Object.values(data.playerList)) {
-            const team = teamStores[p.teamID];
+            const team = teamMap[p.teamID];
             if (team) {
-                const player = createPlayerStore(p, team.store);
+                const player = createPlayer(p, team);
                 if (p.id === data.myMemberId) {
-                    myMemberStore.setMember({
-                        memberStore: player,
-                        moderator: false,
-                    });
+                    myMemberStore.setPlayer(player);
                 }
-                team.store.addPlayer(player);
+                teamsStore.addPlayerToTeam(team.id, player);
                 playersStore.addPlayer(player);
             }
         }
 
         for (const m of Object.values(data.moderatorList)) {
-            const moderator = createModeratorStore(m);
+            const moderator = createModerator(m);
             moderatorsStore.addModerator(moderator);
             if (m.id === data.myMemberId) {
-                myMemberStore.setMember({
-                    memberStore: moderator,
-                    moderator: true,
-                });
+                myMemberStore.setModerator(moderator);
             }
         }
     }
@@ -98,7 +112,23 @@
 
     // Keep stores in sync on the client when data props change
     $effect.pre(() => {
-        syncStores();
+        // Read the dependencies clearly so the effect knows when to fire
+        // (This tells Svelte: "Only run this when these specific values change")
+        const _deps = [
+            data.gameInfo, 
+            data.teamList, 
+            data.moderatorList, 
+            data.playerList, 
+            data.myMemberId, 
+            data.scores, 
+            data.currentGameState
+        ];
+
+        // Use untrack so that calling store methods (which read/write state)
+        // doesn't register as a dependency for THIS effect
+        untrack(() => {
+            syncStores();
+        });
     });
 
     // svelte-ignore state_referenced_locally
@@ -106,15 +136,15 @@
         ? new Debugger(
               data.gameInfo.id,
               data.gameInfo.name,
-              $myMemberStore,
+              myMemberStore.value,
               socket,
           )
         : null;
     setContext("debug", debug);
 
     let buzzed = $derived(
-        $gameStore?.state.questionState === "buzzed" &&
-            $gameStore?.state.currentBuzzer?.id === $myMemberStore?.id,
+        gameStore.value?.state.questionState === "buzzed" &&
+            gameStore.value?.state.currentBuzzer?.id === myMemberStore.value?.id,
     );
 
     beforeNavigate(() => {
@@ -134,7 +164,7 @@
     <Scoreboard />
     <Chatbox />
 
-    {#if $myMemberStore.moderator}
+    {#if myMemberStore.value.moderator}
         <ReaderControls />
     {:else}
         <PlayerControls />

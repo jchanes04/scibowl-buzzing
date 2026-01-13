@@ -1,16 +1,16 @@
 <script lang="ts">
     import type Debugger from "$lib/classes/Debugger";
-    import gameStore from "$lib/stores/game";
-    import getSocket from "$lib/socket";
-    import { timerStore, gameClockStore } from "$lib/stores/timer";
+    import gameStore from "$lib/stores/game.svelte";
+    import getSocket from "$lib/socket.svelte";
+    import { timerStore, gameClockStore } from "$lib/stores/timer.svelte";
     import { getContext } from "svelte";
-    import myMember from "$lib/stores/myMember";
-    import visualBonus from "$lib/stores/visualBonus";
-    import teamsStore from "$lib/stores/teams"
-    import playersStore from "$lib/stores/players"
+    import myMemberStore from "$lib/stores/myMember.svelte";
+    import visualBonusStore from "$lib/stores/visualBonus.svelte";
+    import teamsStore from "$lib/stores/teams.svelte"
+    import playersStore from "$lib/stores/players.svelte"
     import { browser } from "$app/environment";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
-    
+
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
     const buzzAudio = browser ? new Audio('/buzz.mp3') : null
@@ -21,12 +21,13 @@
         socket.emit('buzz');
         buzzAudio?.play()
 
-        const player = $playersStore[$myMember.id]
+        const myMember = myMemberStore.value
+        const player = playersStore.value[myMember.id]
         if (player) {
-            gameStore.buzz($myMember.team?.id || "", player.store)
+            gameStore.buzz(myMember.team?.id || "", player)
         }
         timerStore.pause()
-        
+
         debug.addEvent('buzz', {})
     }
 
@@ -36,32 +37,36 @@
     }
 
     function openVisual() {
-        if (!$visualBonus.url) return
+        if (!visualBonus.url) return
 
         const newWindow = window.open("", "VisualBonus", "width=800,height=600")
         if (!newWindow) return
-        
-        $visualBonus.window = newWindow
+
+        visualBonusStore.value = {
+            url: visualBonus.url,
+            window: newWindow
+        }
         const img = new Image()
-        img.src = $visualBonus.url
-        newWindow.document.body.innerHTML = 
+        img.src = visualBonus.url
+        newWindow.document.body.innerHTML =
             `<style>img { width: 100%; }</style><div>${img.outerHTML}</div>`
     }
 
-    let claimCaptainDisabled = $derived($teamsStore[$myMember.team?.id || ""]?.captainId === $myMember.id)
-    let visualBonusEnabled = $derived($gameStore.state.questionState === "open"
-            && $gameStore.state.currentQuestion.bonus
-            && $gameStore.state.currentQuestion.visual
-            && !!$visualBonus.url)
+    let visualBonus = $derived(visualBonusStore.value)
+    let claimCaptainDisabled = $derived(teamsStore.value[myMemberStore.value.team?.id || ""]?.captainId === myMemberStore.value.id)
+    let visualBonusEnabled = $derived(gameStore.value.state.questionState === "open"
+            && gameStore.value.state.currentQuestion.bonus
+            && gameStore.value.state.currentQuestion.visual
+            && !!visualBonus.url)
 </script>
 
 <svelte:body onkeydown={(e) => {
     const { code, keyCode } = e
-    if ((code === "Space" || code === "Enter") && $gameStore.state.buzzingEnabled) {
+    if ((code === "Space" || code === "Enter") && gameStore.value.state.buzzingEnabled) {
         e.preventDefault()
         buzz()
     } else if (code === null || code === undefined) {
-        if ((keyCode === 32 || keyCode === 13) && $gameStore.state.buzzingEnabled) {
+        if ((keyCode === 32 || keyCode === 13) && gameStore.value.state.buzzingEnabled) {
             e.preventDefault()
             buzz()
         }
@@ -70,10 +75,10 @@
 
 <div class="player-controls" class:scoreboard-expanded={scoreboardExpanded}>
     <div class="controls-element">
-        <button id="buzz" onclick={buzz} disabled={!$gameStore.state.buzzingEnabled}>Buzz</button>
+        <button id="buzz" onclick={buzz} disabled={!gameStore.value.state.buzzingEnabled}>Buzz</button>
         <div class="timer-wrapper">
-            <h2>{Math.floor($timerStore / 60).toString().padStart(2, "0") + ":" + ($timerStore % 60).toString().padStart(2, "0")}</h2>
-            <h3>{Math.floor($gameClockStore / 60).toString().padStart(2, "0") + ":" + ($gameClockStore % 60).toString().padStart(2, "0")}</h3>
+            <h2>{Math.floor(timerStore.value / 60).toString().padStart(2, "0") + ":" + (timerStore.value % 60).toString().padStart(2, "0")}</h2>
+            <h3>{Math.floor(gameClockStore.value / 60).toString().padStart(2, "0") + ":" + (gameClockStore.value % 60).toString().padStart(2, "0")}</h3>
             <br />
             <button onclick={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
             <br />

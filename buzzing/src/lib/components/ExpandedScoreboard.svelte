@@ -1,12 +1,13 @@
 <script lang="ts">
-    import gameStore from "$lib/stores/game";
-    import teamsStore from "$lib/stores/teams";
-    import playersStore from "$lib/stores/players";
+    import gameStore from "$lib/stores/game.svelte";
+    import teamsStore from "$lib/stores/teams.svelte";
+    import playersStore from "$lib/stores/players.svelte";
+    import scoreboard from "$lib/stores/scoreboard.svelte";
     import { createEventDispatcher, getContext } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
     import { convertToCSV } from "$lib/functions/scoreboard";
     import ScoreboardTableCell from "./ScoreboardTableCell.svelte";
-    import getSocket from "$lib/socket";
+    import getSocket from "$lib/socket.svelte";
     import Confirm from "$lib/components/Confirm.svelte";
     import type { Writable } from "svelte/store";
 
@@ -27,12 +28,12 @@
     const modalStore: ModalStore = getContext("modalStore");
 
     let rowNumber = $derived(
-        Math.max(0, ...Object.keys($gameStore.scores).map(Number)),
+        Math.max(0, ...Object.keys(scoreboard.value).map(Number)),
     );
     let rowArray = $derived(Array.from({ length: rowNumber }, (_, i) => i + 1));
     let playersFromScores = $derived(
-        Object.values($gameStore.scores).reduce(
-            (acc, s) => {
+        Object.values(scoreboard.value).reduce(
+            (acc: Record<string, string[]>, s) => {
                 for (const t of Object.keys(s.tossup)) {
                     if (!acc[t]) {
                         acc[t] = [s.tossup[t]!.playerId];
@@ -46,8 +47,8 @@
         ),
     );
     let playersFromTeams = $derived(
-        Object.entries($teamsStore).reduce(
-            (acc, [teamId, team]) => {
+        Object.entries(teamsStore.value).reduce(
+            (acc: Record<string, string[]>, [teamId, team]) => {
                 acc[teamId] = Object.keys(team.players);
                 return acc;
             },
@@ -62,7 +63,7 @@
             // Compute running total for each team row by row.
             let totals: Record<string, number> = {};
             let scoreHistory: Record<number, Record<string, number>> = {};
-            Object.entries($gameStore.scores).forEach(([rowNumStr, row]) => {
+            Object.entries(scoreboard.value).forEach(([rowNumStr, row]) => {
                 const i = Number(rowNumStr);
                 // Copy previous
                 totals = { ...totals };
@@ -124,10 +125,10 @@
 
     async function exportScores() {
         const csv = await convertToCSV(
-            $teamsStore,
-            $playersStore,
+            teamsStore.value,
+            playersStore.value,
             players,
-            $gameStore.scores,
+            scoreboard.value,
         );
         const url = window.URL.createObjectURL(
             new Blob([csv], { type: "plain/text" }),
@@ -149,7 +150,7 @@
         scoreType: ScoreType | "none",
     ) {
         if (!isModerator) return;
-        gameStore.scoreboard.editTossup(
+        scoreboard.editTossup(
             number,
             playerId,
             teamId,
@@ -172,7 +173,7 @@
         scoreType: "correct" | "incorrect" | "none",
     ) {
         if (!isModerator) return;
-        gameStore.scoreboard.editBonus(number, teamId, scoreType);
+        scoreboard.editBonus(number, teamId, scoreType);
         socket.emit("editBonus", number, teamId, scoreType);
     }
 
@@ -184,7 +185,7 @@
                 title: "Delete Question #" + number,
                 message: `Are you sure you want to delete question #${number}?`,
                 confirmCallback: () => {
-                    gameStore.scoreboard.deleteQuestion(number);
+                    scoreboard.deleteQuestion(number);
                     socket.emit("deleteQuestion", number);
                     $modalStore = null;
                 },
@@ -220,7 +221,7 @@
     };
 
     function sumQuestionScores(teamId: string) {
-        return Object.values($gameStore.scores).reduce((acc, q) => {
+        return Object.values(scoreboard.value).reduce((acc: number, q) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
                 acc += pointValues.tossup;
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
@@ -252,10 +253,10 @@
                             style:font-weight="bold"
                         >
                             {#if showTotalInHeader}
-                                <span>{$teamsStore[teamId]?.name || teamId}</span
+                                <span>{teamsStore.value[teamId]?.name || teamId}</span
                                 >: {sumQuestionScores(teamId)}
                             {:else}
-                                {$teamsStore[teamId]?.name || teamId}
+                                {teamsStore.value[teamId]?.name || teamId}
                             {/if}
                         </th>
                     {/if}
@@ -270,7 +271,7 @@
                     {#each Object.values(players) as p}
                         {#each p as playerId}
                             <th class="player-name" style:font-weight="normal"
-                                >{$playersStore[playerId]?.name || "Unknown"}</th
+                                >{playersStore.value[playerId]?.name || "Unknown"}</th
                             >
                         {/each}
                         <th class="player-name" style:font-weight="bold">Bonus</th>
@@ -284,12 +285,12 @@
         </thead>
         <tbody>
             {#each rowArray as i}
-                {@const scoreRow = $gameStore.scores[i]}
+                {@const scoreRow = scoreboard.value[i]}
                 <tr>
                     <td class="question-number">#{i}</td>
                     {#if scoreRow}
                         <td class="question-category"
-                            >{categories[scoreRow.category]}</td
+                            >{categories[scoreRow.category as Category]}</td
                         >
                         {#each Object.entries(players) as [teamId, p]}
                             {@const tossupEntry = scoreRow.tossup[teamId]}
@@ -319,7 +320,7 @@
                                     </td>
                                 {:else if tossupEntry?.playerId === playerId}
                                     <td class="tossup {tossupEntry.scoreType}">
-                                        {scoreTypes[tossupEntry.scoreType]}
+                                        {scoreTypes[tossupEntry.scoreType as ScoreType]}
                                     </td>
                                 {:else}
                                     <td></td>
@@ -428,7 +429,6 @@
     table {
         border-collapse: collapse;
         border: 2px solid $border-color;
-        border-radius: 0.5em;
         overflow: hidden;
         margin-top: 1em;
         min-width: min-content;
@@ -445,8 +445,6 @@
         min-width: 2em;
 
         &.player-name {
-            border-right: 1px solid $border-color;
-            border-left: 1px solid $border-color;
             writing-mode: vertical-lr;
             transform: rotate(180deg);
             padding: 0.8em 0.4em;

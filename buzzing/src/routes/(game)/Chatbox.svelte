@@ -1,18 +1,24 @@
-<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
- <script lang="ts">
-    import chatMessagesStore from '$lib/stores/chatMessages';
-    import { afterUpdate } from 'svelte'
+<script lang="ts">
+    import chatMessagesStore from '$lib/stores/chatMessages.svelte';
+    import { tick } from 'svelte'
 
     let chatMessagesElement: HTMLElement
-    afterUpdate(() => {
-        chatMessagesElement.scrollTo(0, chatMessagesElement.scrollHeight)
+
+    $effect(() => {
+        // React to changes in chat messages
+        chatMessagesStore.value;
+        tick().then(() => {
+            if (chatMessagesElement) {
+                chatMessagesElement.scrollTo(0, chatMessagesElement.scrollHeight)
+            }
+        })
     })
 </script>
 
 <div class="chatbox">
     <h2>Chat</h2>
     <div class="chat-messages" bind:this={chatMessagesElement}>
-        {#each $chatMessagesStore as message}
+        {#each chatMessagesStore.value as message}
             <p class={message.text.startsWith("Penalty") ? "penalty" : message.type}>{message.text}</p>
         {/each}
     </div>

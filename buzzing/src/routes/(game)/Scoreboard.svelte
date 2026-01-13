@@ -1,25 +1,19 @@
 <script lang="ts">
-    import teamsStore from "$lib/stores/teams"
-    import playersStore from "$lib/stores/players"
-    import gameStore from "$lib/stores/game"
-    import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
+    import teamsStore from "$lib/stores/teams.svelte"
+    import playersStore from "$lib/stores/players.svelte"
+    import gameStore from "$lib/stores/game.svelte"
+    import scoreboard from "$lib/stores/scoreboard.svelte"
 
-    const pointValues = {
-        tossup: 4,
-        bonus: 10,
-        penalty: -4
-    }
-
-    function sumQuestionScores(scores: Record<number, QuestionPairScore>, teamId: string) {
-        return Object.values(scores).reduce((acc, q) => {
+    function sumQuestionScores(teamId: string) {
+        return Object.values(scoreboard.value).reduce((acc, q) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
-                acc += pointValues.tossup 
+                acc += scoreboard.pointValues.tossup
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
-                acc += pointValues.penalty
+                acc += scoreboard.pointValues.penalty
             }
 
             if (q.bonus?.teamId === teamId && q.bonus?.correct) {
-                acc += pointValues.bonus
+                acc += scoreboard.pointValues.bonus
             }
             return acc
         }, 0)
@@ -29,12 +23,12 @@
 <div class="scoreboard">
     <h2>Scoreboard</h2>
     <ul>
-        {#key $playersStore}
-            {#each Object.values($teamsStore) as team}
-                <li class:buzzed={$gameStore.state.buzzedTeamIds.includes(team.id)}>
+        {#key playersStore.value}
+            {#each Object.values(teamsStore.value) as team}
+                <li class:buzzed={gameStore.value.state.currentBuzzer?.team.id == team.id}>
                     <h1>
                         <span class="team-name">{team.name}</span>
-                        <span class="team-score">{sumQuestionScores($gameStore.scores, team.id)}</span>
+                        <span class="team-score">{sumQuestionScores(team.id)}</span>
                     </h1>
                     {#if team.type !== "individual"}
                         <ul>

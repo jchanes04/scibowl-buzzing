@@ -1,8 +1,7 @@
 <script lang="ts">
-    import getSocket from "$lib/socket";
-    import type { ModeratorStore } from "$lib/stores/moderators";
-    import type { PlayerStore } from "$lib/stores/players";
-    import teamsStore from "$lib/stores/teams";
+    import getSocket from "$lib/socket.svelte";
+    import type { ClientModerator } from "$lib/stores/moderators.svelte";
+    import type { ClientPlayer } from "$lib/stores/players.svelte";
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
@@ -13,7 +12,7 @@
     import TextField from "$lib/components/TextField.svelte";
 
     interface Props {
-        member: PlayerStore | ModeratorStore;
+        member: ClientPlayer | ClientModerator;
         showControls?: boolean;
     }
 
@@ -30,10 +29,10 @@
         $modalStore = {
             component: Confirm,
             props: {
-                title: "Promote " + $member.name,
+                title: "Promote " + member.name,
                 message:
                     "Are you sure you want to promote " +
-                    $member.name +
+                    member.name +
                     " to moderator?",
                 cancelCallback: () => ($modalStore = null),
                 confirmCallback: () => {
@@ -48,8 +47,8 @@
         $modalStore = {
             component: Confirm,
             props: {
-                title: "Kick " + $member.name,
-                message: "Are you sure you want to kick " + $member.name + "?",
+                title: "Kick " + member.name,
+                message: "Are you sure you want to kick " + member.name + "?",
                 cancelCallback: () => ($modalStore = null),
                 confirmCallback: () => {
                     socket.emit("kickPlayer", member.id);
@@ -64,9 +63,9 @@
             component: TextField,
             props: {
                 title: "Rename Player",
-                message: `Change player name "${$member.name}" to :`,
+                message: `Change player name "${member.name}" to :`,
                 options: {
-                    defaultValue: $member.name,
+                    defaultValue: member.name,
                     fieldName: "New name",
                 },
                 cancelCallback: () => ($modalStore = null),
@@ -79,14 +78,14 @@
     }
 </script>
 
-{#if $member.type === "moderator"}
+{#if member.type === "moderator"}
     <li class="moderator">
-        {$member.name}
+        {member.name}
     </li>
 {:else}
     <li>
-        {$member.name}
-        <span class="team">({$teamsStore[$member.team.id]?.name})</span>
+        {member.name}
+        <span class="team">({member.team.name})</span>
         {#if showControls}
             <div class="controls">
                 <button onclick={promote}>

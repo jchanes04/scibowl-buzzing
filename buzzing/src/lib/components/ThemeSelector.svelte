@@ -1,7 +1,7 @@
 <script lang="ts">
     import { stopPropagation } from "svelte/legacy";
 
-    import { themeStore, colorSchemes } from "$lib/stores/theme";
+    import themeStore, { colorSchemes } from "$lib/stores/theme.svelte";
 
     let menuOpen = $state(false);
     let clickLock = false;
@@ -69,9 +69,9 @@
         clickLock = false;
     }
 
-    let currentThemeName = $derived($themeStore.themeName);
-    let isDarkMode = $derived($themeStore.darkMode);
-    let customColor = $derived($themeStore.customColor);
+    let currentThemeName = $derived(themeStore.themeName);
+    let isDarkMode = $derived(themeStore.darkMode);
+    let customColor = $derived(themeStore.customColor);
 
     function handleCustomColorChange(e: Event) {
         const target = e.target as HTMLInputElement;

@@ -44,6 +44,21 @@ export class GameScoreboard {
         }
     }
 
+    getTeamPoints(teamId: string) {
+        return Object.values(this.scores).reduce((acc, q) => {
+            if (q.tossup[teamId]?.scoreType === "correct") {
+                acc += this.pointValues.tossup
+            } else if (q.tossup[teamId]?.scoreType === "penalty") {
+                acc += this.pointValues.penalty
+            }
+
+            if (q.bonus?.teamId === teamId && q.bonus?.correct) {
+                acc += this.pointValues.bonus
+            }
+            return acc
+        }, 0)
+    }
+
     correctTossup(number: number, playerId: string, teamId: string, category: Category) {
         const questionRow = this.scores[number]
         if (questionRow) {

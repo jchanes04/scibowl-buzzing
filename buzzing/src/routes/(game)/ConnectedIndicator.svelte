@@ -1,6 +1,6 @@
 <script lang="ts">
     import { browser } from "$app/environment";
-    import getSocket from "$lib/socket";
+    import getSocket from "$lib/socket.svelte";
     import { onDestroy } from "svelte";
 
     const socket = getSocket();
