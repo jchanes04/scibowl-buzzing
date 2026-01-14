@@ -1,7 +1,5 @@
 <script lang="ts">
-    import membersStore from "$lib/stores/players.svelte";
-    import moderatorsStore from "$lib/stores/moderators.svelte";
-    import myMemberStore from "$lib/stores/myMember.svelte"
+    import { playersStore, moderatorsStore, myMemberStore } from "$lib/stores/members.svelte";
     import MemberListElement from "./MemberListElement.svelte";
 </script>
 
@@ -13,7 +11,7 @@
             <MemberListElement member={member} />
         {/each}
         <h3>Members</h3>
-        {#each Object.values(membersStore.value) as member}
+        {#each Object.values(playersStore.value) as member}
             <MemberListElement member={member} showControls={myMemberStore.value.moderator} />
         {/each}
     </ul>

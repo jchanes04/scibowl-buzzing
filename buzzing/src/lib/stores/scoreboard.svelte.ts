@@ -41,43 +41,6 @@ const scoreboardStore = {
     console.warn('scoreboard.pointValues is deprecated. Use useScoreboard() instead.');
     return { tossup: 4, bonus: 10, penalty: -4 };
   },
-  // All mutating methods are deprecated - use Convex mutations instead
-  setScores: (_scores: Record<number, QuestionPairScore>) => {
-    console.warn('scoreboard.setScores() is deprecated. Scores come from Convex.');
-  },
-  correctTossup: () => {
-    console.warn('scoreboard.correctTossup() is deprecated. Use Convex mutation instead.');
-  },
-  incorrectTossup: () => {
-    console.warn('scoreboard.incorrectTossup() is deprecated. Use Convex mutation instead.');
-  },
-  penalty: () => {
-    console.warn('scoreboard.penalty() is deprecated. Use Convex mutation instead.');
-  },
-  dead: () => {
-    console.warn('scoreboard.dead() is deprecated. Use Convex mutation instead.');
-  },
-  editTossup: () => {
-    console.warn('scoreboard.editTossup() is deprecated. Use Convex mutation instead.');
-  },
-  correctBonus: () => {
-    console.warn('scoreboard.correctBonus() is deprecated. Use Convex mutation instead.');
-  },
-  incorrectBonus: () => {
-    console.warn('scoreboard.incorrectBonus() is deprecated. Use Convex mutation instead.');
-  },
-  editBonus: () => {
-    console.warn('scoreboard.editBonus() is deprecated. Use Convex mutation instead.');
-  },
-  clear: () => {
-    console.warn('scoreboard.clear() is deprecated. Use Convex mutation instead.');
-  },
-  clearQuestion: () => {
-    console.warn('scoreboard.clearQuestion() is deprecated. Use Convex mutation instead.');
-  },
-  deleteQuestion: () => {
-    console.warn('scoreboard.deleteQuestion() is deprecated. Use Convex mutation instead.');
-  },
 };
 
 export default scoreboardStore;

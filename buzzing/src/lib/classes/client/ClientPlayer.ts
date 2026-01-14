@@ -1,5 +1,5 @@
 import type { PlayerData } from "$lib/classes/Player";
-import type { ClientTeamData } from "$lib/stores/teams.svelte";
+import type { ClientTeamData } from "$lib/stores/members.svelte";
 
 export interface ClientPlayer {
     name: string,

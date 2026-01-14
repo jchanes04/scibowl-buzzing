@@ -1,7 +1,6 @@
 import { Game, type GameSettings, type GameTimes } from './Game'
-import { createJoinCode } from '$lib/functions/createId'
-import { Team } from './Team'
-import type { Moderator } from './Moderator'
+import { createJoinCode, createMemberID, createTeamID } from '$lib/functions/createId'
+import { unsubscribeFromGame } from '$lib/server/gameMemberCache'
 
 // basically just a fancy array with methods and shit
 
@@ -27,18 +26,27 @@ export class GameManager {
         return null
     }
 
-    createGame(options: { name: string, settings: GameSettings, teamNames: string[], owner: Moderator }) {
+    createGame(options: { name: string, settings: GameSettings, teamNames: string[], ownerName: string }): { game: Game, ownerId: string, teamIds: string[] } {
         const joinCode = createJoinCode()
         this.joinCodes.push(joinCode)
-        const teams = options.teamNames.map(n => new Team(n))
 
-        const game = new Game({ ...options, teams, joinCode })
+        const ownerId = createMemberID()
+        const teamIds = options.teamNames.map(() => createTeamID())
+
+        const game = new Game({
+            ...options,
+            ownerId,
+            ownerName: options.ownerName,
+            joinCode
+        })
         this.games[game.id] = game
-        
-        return game
+
+        return { game, ownerId, teamIds }
     }
 
     deleteGame(id: string) {
+        // Unsubscribe from Convex before deleting
+        unsubscribeFromGame(id)
         delete this.games[id]
     }
 

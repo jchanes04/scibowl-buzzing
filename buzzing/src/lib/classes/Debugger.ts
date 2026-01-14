@@ -1,4 +1,4 @@
-import type { MyMember } from "$lib/stores/myMember.svelte"
+import type { MyMember } from "$lib/stores/members.svelte"
 import type { Socket } from "socket.io-client"
 import { env } from "$env/dynamic/public"
 

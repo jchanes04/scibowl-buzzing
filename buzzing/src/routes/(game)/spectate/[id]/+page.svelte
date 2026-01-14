@@ -1,28 +1,27 @@
 <script lang="ts">
-    import { run } from "svelte/legacy";
-
     import MemberList from "../../MemberList.svelte";
     import Chatbox from "../../Chatbox.svelte";
     import TopBar from "$lib/components/TopBar.svelte";
     import Timer from "../../Timer.svelte";
-    import Scoreboard from "../../Scoreboard.svelte";
 
     import type { PageServerData } from "./$types";
+    import { onDestroy } from "svelte";
 
     import gameStore, { type ClientGameData } from "$lib/stores/game.svelte";
     import scoreboard from "$lib/stores/scoreboard.svelte";
-    import teamsStore, {
-        createTeam,
-        type ClientTeamData,
-    } from "$lib/stores/teams.svelte";
-    import playersStore, { createPlayer } from "$lib/stores/players.svelte";
-    import moderatorsStore, {
-        createModerator,
-    } from "$lib/stores/moderators.svelte";
-    import { page } from "$app/stores";
     import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
+    import gameIdStore from "$lib/stores/gameId.svelte";
+    import {
+        initMembersSubscription,
+        clearMembersSubscription,
+        useMembers,
+        useTeams,
+        setMembers,
+        setTeams
+    } from "$lib/stores/members.svelte";
+    import { initScoreboardSubscription, clearScoreboardSubscription } from "$lib/stores/scoreboard.svelte";
 
     interface Props {
         data: Required<PageServerData>;
@@ -30,18 +29,11 @@
 
     let { data }: Props = $props();
     let gameInfo = $derived(data.gameInfo);
-    let teamList = $derived(data.teamList);
-    let moderatorList = $derived(data.moderatorList);
-    let playerList = $derived(data.playerList);
-    let scores = $derived(data.scores);
 
     const socket = createSocket(true);
 
+    // Initialize game store
     $effect.pre(() => {
-        playersStore.clear();
-        moderatorsStore.clear();
-        teamsStore.clear();
-
         const gameData: ClientGameData = {
             ...gameInfo,
             state: {
@@ -53,28 +45,38 @@
             },
         };
         gameStore.set(gameData);
-        scoreboard.setScores(scores);
+    });
 
-        const teamMap: Record<string, ClientTeamData> = {};
-        for (const t of Object.values(teamList)) {
-            const newTeam = createTeam(t);
-            teamsStore.addTeam(newTeam);
-            teamMap[t.id] = newTeam;
+    // Initialize subscriptions (spectators use empty memberId)
+    $effect(() => {
+        if (data.gameInfo.id) {
+            gameIdStore.set(data.gameInfo.id);
+            initMembersSubscription(data.gameInfo.id, "");
+            initScoreboardSubscription(data.gameInfo.id);
         }
+    });
 
-        for (const p of Object.values(playerList)) {
-            const team = teamMap[p.teamID];
-            if (team) {
-                const player = createPlayer(p, team);
-                teamsStore.addPlayerToTeam(team.id, player);
-                playersStore.addPlayer(player);
-            }
-        }
+    // Get Convex queries for members and teams
+    const membersQuery = useMembers();
+    const teamsQuery = useTeams();
 
-        for (const m of Object.values(moderatorList)) {
-            const moderator = createModerator(m);
-            moderatorsStore.addModerator(moderator);
+    // Update stores from Convex queries
+    $effect(() => {
+        const members = membersQuery.data;
+        const teams = teamsQuery.data;
+        if (members) {
+            setMembers(members);
         }
+        if (teams) {
+            setTeams(teams);
+        }
+    });
+
+    // Cleanup
+    onDestroy(() => {
+        clearMembersSubscription();
+        clearScoreboardSubscription();
+        gameIdStore.clear();
     });
 
     beforeNavigate(() => {

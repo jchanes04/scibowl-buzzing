@@ -8,9 +8,9 @@ import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
 import type { Category, Game, GameSettings, NewQuestionData, ScoreType } from '$lib/classes/Game'
 import { getDataFromGameToken } from './authentication'
-import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
-import { addChatMessage } from './convex.server'
+import { addChatMessage, getConvexClient, api } from './convex.server'
+import { unsubscribeFromGame } from './server/gameMemberCache'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -93,23 +93,26 @@ if (!globalAny._io_listeners_attached) {
             }
         }
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             if (spectator) {
                 game.removeSpectator(memberId)
             } else {
-                const memberName = member?.name
-                const removed = game.removeMember(memberId)
-                if (removed !== null) {
+                const member = game.getMember(memberId)
+                if (member) {
+                    // Soft delete in Convex (mark as inactive)
+                    await getConvexClient().mutation(api.gameMembers.leave, {
+                        gameId,
+                        memberId
+                    })
+
                     socket.to(gameId).emit('memberLeave', memberId)
 
                     // Add chat message for member leaving
-                    if (memberName) {
-                        addChatMessage({
-                            gameId,
-                            text: `${memberName} has left the game`,
-                            type: "notification"
-                        })
-                    }
+                    addChatMessage({
+                        gameId,
+                        text: `${member.name} has left the game`,
+                        type: "notification"
+                    })
                 }
             }
         })
@@ -117,7 +120,15 @@ if (!globalAny._io_listeners_attached) {
         socket.on('buzz', () => {
             if (spectator) return
 
-            if (game.state.questionState === 'open' && (!game.state.currentQuestion.bonus || game.state.currentQuestion.team.players[memberId])) {
+            const player = game.players[memberId]
+            if (!player) return
+
+            // Check if buzzing is allowed
+            const isQuestionOpen = game.state.questionState === 'open'
+            const isBonus = game.state.currentQuestion?.bonus
+            const canBuzzBonus = isBonus && player.teamId === game.state.currentQuestion?.teamId
+
+            if (isQuestionOpen && (!isBonus || canBuzzBonus)) {
                 const buzzed = game.buzz(memberId)
                 if (buzzed) {
                     game.timer.pause()
@@ -133,14 +144,11 @@ if (!globalAny._io_listeners_attached) {
                     })
 
                     // Add chat message for others (broadcast)
-                    const player = game.players[memberId]
-                    if (player) {
-                        addChatMessage({
-                            gameId,
-                            text: `${player.name} has buzzed`,
-                            type: "buzz"
-                        })
-                    }
+                    addChatMessage({
+                        gameId,
+                        text: `${player.name} has buzzed`,
+                        type: "buzz"
+                    })
                 } else {
                     socket.emit('buzzFailed')
 
@@ -165,20 +173,23 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on('newQuestion', (question: NewQuestionData) => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             game.newQuestion(question)
             socket.to(gameId).emit('questionOpen', question)
         })
 
         socket.on("openVisualBonus", (data: Buffer) => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             socket.to(gameId).emit("visualBonusOpen", data)
         })
 
         socket.on('startTimer', () => {
-            if (member?.type !== "moderator" || game.state.questionState !== "open") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator" || game.state.questionState !== "open") return
 
             const serverLength = game.state.currentQuestion.bonus ?
                 game.state.currentQuestion.visual
@@ -209,7 +220,8 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on('stopTimer', () => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             game.timer.end()
             game.timer.removeAllListeners('end')
@@ -217,21 +229,22 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on('scoreQuestion', (scoreType: 'correct' | 'incorrect' | 'penalty') => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
             if (game.state.questionState !== "buzzed" && !game.state.currentQuestion?.bonus) return
 
             const result = game.scoreQuestion(scoreType)
 
             if (!result) return
 
-            const { buzzer, team, category, bonus, open, number } = result
+            const { buzzer, teamId, category, bonus, open, number } = result
 
             io.to(gameId).emit('scoreChange', {
                 open,
                 bonus,
                 scoreType,
                 playerId: buzzer?.id,
-                teamId: team?.id,
+                teamId,
                 category,
                 number
             })
@@ -247,7 +260,8 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on("markDead", () => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
             const result = game.markDead()
             game.timer.end()
 
@@ -293,12 +307,18 @@ if (!globalAny._io_listeners_attached) {
             socket.to(gameId).emit("questionDelete", number)
         })
 
-        socket.on('kickPlayer', (id: string) => {
-            if (member?.type !== "moderator") return
+        socket.on('kickPlayer', async (id: string) => {
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
-            const removed = game.kickPlayer(id)
+            const targetMember = game.getMember(id)
+            if (targetMember) {
+                // Hard delete in Convex (no rejoin allowed)
+                await getConvexClient().mutation(api.gameMembers.kick, {
+                    gameId,
+                    memberId: id
+                })
 
-            if (removed !== null) {
                 socket.to(id).emit('kicked')
                 io.in(id).disconnectSockets()
                 io.to(gameId).emit('memberLeave', id)
@@ -306,37 +326,41 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on('promotePlayer', (id: string) => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
-            const promoted = game.promotePlayer(id)
-
-            if (promoted !== null) {
-                io.to(gameId).emit('promotion', id)
-            }
+            // Convex mutation is done in MemberListElement.svelte
+            // Just emit the socket event for instant UI update
+            io.to(gameId).emit('promotion', id)
         })
 
         socket.on('renamePlayer', (id: string, name: string) => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
-            const player = game.players[id]
-
-            if (!player) return
-
-            player.rename(name)
-
+            // Convex mutation is done in MemberListElement.svelte
+            // Just emit the socket event for instant UI update
             io.to(gameId).emit("nameChange", id, name)
         })
 
         socket.on('clearScores', () => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             // Scoreboard clearing now handled by Convex - just broadcast the event
             socket.to(gameId).emit('scoresClear')
             socket.emit('scoresClear')
         })
 
-        socket.on('endGame', () => {
-            if (member?.type !== "moderator") return
+        socket.on('endGame', async () => {
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
+
+            // Clean up Convex data
+            await Promise.all([
+                getConvexClient().mutation(api.gameMembers.clearForGame, { gameId }),
+                getConvexClient().mutation(api.teams.clearForGame, { gameId })
+            ])
 
             socket.to(gameId).emit('gameEnd')
             socket.emit('gameEnd')
@@ -361,7 +385,8 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on("startGameClock", (length) => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             game.gameClock.start(length)
             game.gameClock.on("update", (time: number) => {
@@ -375,7 +400,8 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on('pauseGameClock', () => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             if (game.gameClock.live) {
                 game.gameClock.pause()
@@ -387,17 +413,20 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on('stopGameClock', () => {
-            if (member?.type !== "moderator") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
 
             game.gameClock.end()
             io.to(gameId).emit('gameClockStop')
         })
 
         socket.on('claimCaptain', () => {
-            if (member?.type !== "player") return
+            const currentMember = game.getMember(memberId)
+            if (currentMember?.type !== "player" || !currentMember.teamId) return
 
-            member.team.captainId = member.id
-            io.to(gameId).emit('changeCaptain', member.team.id, member.id)
+            // Convex mutation is done in PlayerControls.svelte
+            // Just emit the socket event for instant UI update
+            io.to(gameId).emit('changeCaptain', currentMember.teamId, memberId)
         })
 
         socket.onAny(() => {
@@ -417,10 +446,32 @@ if (!globalAny._io_interval_attached) {
     }, 300_000)
 }
 
-export function createNewGame(ownerName: string, gameData: { name: string, settings: GameSettings, teamNames: string[] }) {
-    const owner = new Moderator({ name: ownerName })
-    const game = games.createGame({ ...gameData, owner })
-    return game
+export async function createNewGame(ownerName: string, gameData: { name: string, settings: GameSettings, teamNames: string[] }) {
+    const { game, ownerId, teamIds } = games.createGame({ ...gameData, ownerName })
+
+    // Add owner as moderator to Convex
+    await getConvexClient().mutation(api.gameMembers.add, {
+        gameId: game.id,
+        memberId: ownerId,
+        name: ownerName,
+        type: "moderator"
+    })
+
+    // Add teams to Convex
+    await Promise.all(
+        gameData.teamNames.map((teamName, index) => {
+            const teamId = teamIds[index];
+            if (!teamId) return Promise.resolve();
+            return getConvexClient().mutation(api.teams.add, {
+                gameId: game.id,
+                teamId,
+                name: teamName,
+                type: "default"
+            });
+        })
+    )
+
+    return { game, ownerId }
 }
 
 export function getGame(id: string) {

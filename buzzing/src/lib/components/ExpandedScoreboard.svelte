@@ -1,7 +1,6 @@
 <script lang="ts">
     import gameStore from "$lib/stores/game.svelte";
-    import teamsStore from "$lib/stores/teams.svelte";
-    import playersStore from "$lib/stores/players.svelte";
+    import { teamsStore, playersStore, type ClientTeamData, type ClientPlayer } from "$lib/stores/members.svelte";
     import { useScoreboard } from "$lib/stores/scoreboard.svelte";
     import { createEventDispatcher, getContext } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";

@@ -30,4 +30,29 @@ export default defineSchema({
     lastUpdated: v.number(),
   })
     .index("by_gameId", ["gameId"]),
+
+  gameMembers: defineTable({
+    gameId: v.string(),
+    memberId: v.string(),
+    name: v.string(),
+    type: v.union(v.literal("player"), v.literal("moderator")),
+    teamId: v.optional(v.string()),
+    isActive: v.boolean(),
+    leftAt: v.optional(v.number()),
+  })
+    .index("by_gameId", ["gameId"])
+    .index("by_gameId_memberId", ["gameId", "memberId"])
+    .index("by_gameId_active", ["gameId", "isActive"]),
+
+  teams: defineTable({
+    gameId: v.string(),
+    teamId: v.string(),
+    name: v.string(),
+    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+    captainId: v.optional(v.string()),
+    isActive: v.boolean(),
+  })
+    .index("by_gameId", ["gameId"])
+    .index("by_gameId_teamId", ["gameId", "teamId"])
+    .index("by_gameId_active", ["gameId", "isActive"]),
 });

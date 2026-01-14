@@ -32,7 +32,7 @@
             `,
         };
     }
-    import teamsStore, { type ClientTeamData } from "$lib/stores/teams.svelte";
+    import { teamsStore, type ClientTeamData } from "$lib/stores/members.svelte";
     import gameStore from "$lib/stores/game.svelte";
     import scoreboard from "$lib/stores/scoreboard.svelte";
     import { gameClockStore, timerStore } from "$lib/stores/timer.svelte";

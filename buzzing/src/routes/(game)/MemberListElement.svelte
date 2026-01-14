@@ -1,7 +1,6 @@
 <script lang="ts">
     import getSocket from "$lib/socket.svelte";
-    import type { ClientModerator } from "$lib/stores/moderators.svelte";
-    import type { ClientPlayer } from "$lib/stores/players.svelte";
+    import type { ClientModerator, ClientPlayer } from "$lib/stores/members.svelte";
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
@@ -39,12 +38,19 @@
                     member.name +
                     " to moderator?",
                 cancelCallback: () => ($modalStore = null),
-                confirmCallback: () => {
-                    socket.emit("promotePlayer", member.id);
-
-                    // Add chat message via Convex
+                confirmCallback: async () => {
                     const gId = gameIdStore.value;
                     if (gId) {
+                        // Update Convex first
+                        await convex.mutation(api.gameMembers.promote, {
+                            gameId: gId,
+                            memberId: member.id,
+                        });
+
+                        // Then emit socket for instant UI feedback
+                        socket.emit("promotePlayer", member.id);
+
+                        // Add chat message
                         convex.mutation(api.chatMessages.add, {
                             gameId: gId,
                             type: "notification",
@@ -65,12 +71,14 @@
                 title: "Kick " + member.name,
                 message: "Are you sure you want to kick " + member.name + "?",
                 cancelCallback: () => ($modalStore = null),
-                confirmCallback: () => {
-                    socket.emit("kickPlayer", member.id);
-
-                    // Add chat message via Convex
+                confirmCallback: async () => {
                     const gId = gameIdStore.value;
                     if (gId) {
+                        // Server handles the Convex kick mutation
+                        // Just emit socket event
+                        socket.emit("kickPlayer", member.id);
+
+                        // Add chat message
                         convex.mutation(api.chatMessages.add, {
                             gameId: gId,
                             type: "notification",
@@ -96,12 +104,20 @@
                     fieldName: "New name",
                 },
                 cancelCallback: () => ($modalStore = null),
-                confirmCallback: (value: string) => {
-                    socket.emit("renamePlayer", member.id, value);
-
-                    // Add chat message via Convex
+                confirmCallback: async (value: string) => {
                     const gId = gameIdStore.value;
                     if (gId) {
+                        // Update Convex first
+                        await convex.mutation(api.gameMembers.rename, {
+                            gameId: gId,
+                            memberId: member.id,
+                            name: value,
+                        });
+
+                        // Then emit socket for instant UI feedback
+                        socket.emit("renamePlayer", member.id, value);
+
+                        // Add chat message
                         convex.mutation(api.chatMessages.add, {
                             gameId: gId,
                             type: "notification",

@@ -1,12 +1,10 @@
 import { generateGameToken } from "$lib/authentication"
-import type { Game } from "$lib/classes/Game"
-import { Player } from "$lib/classes/Player"
-import { Team } from "$lib/classes/Team"
+import { createMemberID, createTeamID } from "$lib/functions/createId"
 import { getGame, io } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
-import { addChatMessage } from "$lib/convex.server"
+import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
 
 export const load = async function ({ params, url }) {
     const { id } = params
@@ -25,7 +23,8 @@ export const load = async function ({ params, url }) {
 
     const memberNames = Object.values(game.players).map(x => x.name)
     const settings = game.settings
-    const teams = Object.values(game.teams).map(t => t.data).filter(t => t.type !== "individual")
+    // game.teams returns CachedTeam which already has the right shape
+    const teams = Object.values(game.teams).filter(t => t.type !== "individual")
 
     return {
         memberNames,
@@ -41,47 +40,80 @@ export const actions = {
         const name = body.get("name") as string
         const teamOrIndiv = body.get("team-or-indiv") as string
 
-        const { id } = params
-        const game = getGame(id)
+        const { id: gameId } = params
+        const game = getGame(gameId)
 
         if (!game) return fail(400, { error: "Invalid game" })
 
-        const player = createPlayer(name, teamOrIndiv, game, body)
-        if (!player) {
-            return fail(400, { error: "Invalid team" })
-        }
-        game.addPlayer(player)
+        const convex = getConvexClient()
+        const playerId = createMemberID()
+        let teamId: string
+        let teamName: string
+        let teamType: "default" | "created" | "individual"
 
-        io.to(game.id).emit('playerJoin', { player: player.data, team: player.team.data })
+        if (teamOrIndiv === 'team') {
+            // Join existing team
+            teamId = body.get('team-id') as string
+            const existingTeam = game.teams[teamId]
+            if (!existingTeam) {
+                return fail(400, { error: "Invalid team" })
+            }
+            teamName = existingTeam.name
+            teamType = existingTeam.type
+        } else if (teamOrIndiv === 'new-team') {
+            // Create new team
+            teamId = createTeamID()
+            teamName = body.get('new-team-name') as string
+            teamType = "created"
+
+            // Add new team to Convex
+            await convex.mutation(api.teams.add, {
+                gameId,
+                teamId,
+                name: teamName,
+                type: "created"
+            })
+        } else {
+            // Individual player - create individual team
+            teamId = createTeamID()
+            teamName = name
+            teamType = "individual"
+
+            // Add individual team to Convex
+            await convex.mutation(api.teams.add, {
+                gameId,
+                teamId,
+                name: teamName,
+                type: "individual"
+            })
+        }
+
+        // Add player to Convex
+        await convex.mutation(api.gameMembers.add, {
+            gameId,
+            memberId: playerId,
+            name,
+            type: "player",
+            teamId
+        })
+
+        // Emit socket event for instant UI update
+        const playerData = { id: playerId, name, type: "player" as const, teamID: teamId }
+        const teamData = { id: teamId, name: teamName, type: teamType, captainId: null }
+        io.to(gameId).emit('playerJoin', { player: playerData, team: teamData })
 
         // Add chat message for player joining
         await addChatMessage({
-            gameId: game.id,
-            text: `${player.name} has joined the game`,
+            gameId,
+            text: `${name} has joined the game`,
             type: "notification"
         })
 
-        const gameToken = generateGameToken({ memberId: player.id, gameId: game.id }, '6h')
+        const gameToken = generateGameToken({ memberId: playerId, gameId }, '6h')
         cookies.set("gameToken", gameToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname
         })
-        redirect(302, "/game/" + game.id)
+        redirect(302, "/game/" + gameId)
     }
 } satisfies Actions
-
-function createPlayer(name: string, teamOrIndiv: string, game: Game, body: FormData) {
-    if (teamOrIndiv === 'team') {
-        const teamId = body.get('team-id') as string
-        const team = game.teams[teamId]
-
-        return team ? new Player({ name, team }) : null
-    } else if (teamOrIndiv === 'new-team') {
-        const teamName = body.get('new-team-name') as string
-        const team = new Team(teamName)
-
-        return new Player({ name, team })
-    } else {
-        return new Player({ name })
-    }
-}

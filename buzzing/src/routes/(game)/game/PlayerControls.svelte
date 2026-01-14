@@ -4,10 +4,8 @@
     import getSocket from "$lib/socket.svelte";
     import { timerStore, gameClockStore } from "$lib/stores/timer.svelte";
     import { getContext } from "svelte";
-    import myMemberStore from "$lib/stores/myMember.svelte";
+    import { myMemberStore, teamsStore, playersStore } from "$lib/stores/members.svelte";
     import visualBonusStore from "$lib/stores/visualBonus.svelte";
-    import teamsStore from "$lib/stores/teams.svelte"
-    import playersStore from "$lib/stores/players.svelte"
     import { browser } from "$app/environment";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
     import { useConvexClient } from "convex-svelte";
@@ -35,14 +33,23 @@
         debug.addEvent('buzz', {})
     }
 
-    function claimCaptain() {
-        socket.emit('claimCaptain')
-
-        // Add chat message via Convex
+    async function claimCaptain() {
         const gId = gameIdStore.value;
         const myMember = myMemberStore.value;
         const team = myMember.team;
+
         if (gId && myMember && team) {
+            // Update Convex first
+            await convex.mutation(api.teams.changeCaptain, {
+                gameId: gId,
+                teamId: team.id,
+                captainId: myMember.id,
+            });
+
+            // Then emit socket for instant UI feedback
+            socket.emit('claimCaptain')
+
+            // Add chat message
             convex.mutation(api.chatMessages.add, {
                 gameId: gId,
                 type: "notification",
