@@ -1,10 +1,7 @@
 import { createGameID, createMemberID } from "$lib/functions/createId"
-import { GameScoreboard } from "./GameScoreboard"
-import { Player, type PlayerData } from "./Player"
-import { Moderator, type ModeratorData } from "./Moderator"
-import type { ScoreboardData } from "./Scoreboard"
-import { Team, type TeamData } from "./Team"
-import { Timer } from "./Timer"
+import { subscribeToGame, unsubscribeFromGame, getMemberFromCache, type CachedMember, getTeamFromCache, getAllTeamsFromCache, type CachedTeam } from "$lib/server/gameMemberCache"
+import type { ConvexClient } from "$lib/convex.server"
+import { api } from "../../convex/_generated/api"
 
 export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
 
@@ -15,7 +12,7 @@ export type Question = {
 } | {
     bonus: true,
     category: Category,
-    team: Team,
+    teamId: string,
     number: number,
     visual?: boolean
 }
@@ -43,119 +40,62 @@ export type GameSettings = {
     spectatorsAllowed: boolean
 }
 
-export type GameScores = {
-    id: string,
-    name: string,
-    teams: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>,
-    players: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>
-}
+export type ScoreType = "correct" | "incorrect" | "penalty"
 
-type BuzzedState = { // idle means no question open
+type BuzzedState = {
     questionState: 'buzzed'
-    currentBuzzer: Player,
+    currentBuzzerId: string,
     currentQuestion: Question
-    buzzedTeams: Record<string, Team>
+    buzzedTeamIds: Record<string, boolean>
 }
 
-type IdleState = { // idle means no question open
+type IdleState = {
     questionState: 'idle'
-    currentBuzzer: null,
+    currentBuzzerId: null,
     currentQuestion: null
-    buzzedTeams: Record<string, Team>
+    buzzedTeamIds: Record<string, boolean>
 }
 
 type OpenState = {
     questionState: 'open'
-    currentBuzzer: null,
+    currentBuzzerId: null,
     currentQuestion: Question
-    buzzedTeams: Record<string, Team>,
+    buzzedTeamIds: Record<string, boolean>,
 }
-
-export type ScoreType = "correct" | "incorrect" | "penalty"
-
-export type LeftPlayerData = PlayerData & { team?: TeamData & { type: "created" } }
 
 export interface Game {
     id: string,
     joinCode: string,
     name: string,
 
-    scoreboard: GameScoreboard
-
-    moderators: Record<string, Moderator>,
-    players: Record<string, Player>,
-    teams: Record<string, Team>,
     spectators: Set<string>
-
-    settings: GameSettings
-
-    timer: Timer,
-    gameClock: Timer,
-    times: { //times [client, server extratime]
-        tossup: [number, number],
-        bonus: [number, number],
-        visual: [number, number]
-    }
 
     lastActive: number,
 
     state: IdleState | OpenState | BuzzedState
 
-    //stores ids of all players that have left 
-    leftPlayers: Record<string, LeftPlayerData>
-    leftModerators: Record<string, ModeratorData>
-}
-
-export type GameTimes = {
-    tossup?: [number, number],
-    bonus?: [number, number],
-    visual?: [number, number]
+    // Convex client for querying game data
+    convexClient: ConvexClient
 }
 
 type GameParameters = {
     name: string,
-    settings?: Partial<GameSettings>,
-    teams: Team[],
-    owner: Moderator,
     joinCode: string,
-    times?: GameTimes
+    convexClient: ConvexClient
 }
 
 export class Game {
-    constructor({ name, settings, teams, owner, joinCode, times }: GameParameters) {
+    constructor({ name, joinCode, convexClient }: GameParameters) {
         this.id = createGameID()
         this.joinCode = joinCode.toUpperCase()  // Easier way to join games than a url with a 7 or 8 character ID
 
         this.name = name
-        this.scoreboard = new GameScoreboard({})
 
-        this.moderators = {
-            [owner.id]: owner
-        }
-        this.players = {}
-        /*
-            any: allows players to play by themselves or create new teams
-            teams: only allows players to join a certain set of teams specified by the reader when creating the game
-            individuals: players can only play on their own
-        */
-        this.teams = Object.fromEntries(teams.map(t => [t.id, t]))
         this.spectators = new Set()
-        this.settings = {
-            individualsAllowed: settings?.individualsAllowed ?? false,
-            newTeamsAllowed: settings?.newTeamsAllowed ?? true,
-            spectatorsAllowed: settings?.spectatorsAllowed ?? false
-        }
-
-        this.timer = new Timer()
-        this.gameClock = new Timer()
-        this.times = {
-            tossup: times?.tossup || [5, 2],
-            bonus: times?.bonus || [20, 2],
-            visual: times?.visual || [30, 2]
-        }
-        // time format: [client side time, extra time allowed for latency]
 
         this.lastActive = Date.now()
+
+        this.convexClient = convexClient
 
         /*
             idle: no question opened, nobody can buzz
@@ -164,196 +104,118 @@ export class Game {
         */
         this.state = {
             questionState: 'idle',
-            currentBuzzer: null,        // the player that has buzzed in
+            currentBuzzerId: null,        // the player id that has buzzed in
             currentQuestion: null,      // the current question information (category, is bonus)
-            buzzedTeams: {}    // the teams who have buzzed, prevents different players on the same team from buzzing again
+            buzzedTeamIds: {}    // the team ids who have buzzed, prevents different players on the same team from buzzing again
         }
 
-        this.leftPlayers = {}   // players who have left the game, used for players to rejoin
-        this.leftModerators = {}
+        // Subscribe to Convex for real-time member updates
+        subscribeToGame(this.id)
     }
 
-    get people() {
-        return {
-            ...this.players,
-            ...this.moderators
-        }
+    /**
+     * Get game data from Convex (settings, times, scoreboard, timers)
+     */
+    async getGameData() {
+        return await this.convexClient.query(api.games.get, { gameId: this.id })
     }
 
-    addPlayer(player: Player) {
-        //error if they are already in the game
-        if (this.players[player.id]) {
-            return this.players
-        } else {
-            this.players[player.id] = player
-
-            // if player's team is not already in the list of teams add their team to the list
-            if (player.team && !this.teams[player.team.id]) {
-                this.teams[player.team.id] = player.team
-            }
-
-            return this.players
-        }
+    /**
+     * Get member from Convex cache (for fast validation like buzz checks)
+     * Returns null if member not found in cache
+     */
+    getCachedMember(memberId: string): CachedMember | null {
+        return getMemberFromCache(this.id, memberId)
     }
 
-    rejoinMember(memberId: string) {
-        if (this.leftPlayers[memberId]) {
-            const rejoiningPlayerData = this.leftPlayers[memberId]
-            if (!rejoiningPlayerData) {
-                return null
-            }
-
-            const team = this.teams[rejoiningPlayerData.teamID]
-
-            if (team) { // team exists
-                delete this.leftPlayers[memberId]
-
-                const newMember = new Player({
-                    name: rejoiningPlayerData.name,
-                    id: memberId,
-                    team,
-                })
-                this.players[memberId] = newMember
-
-                return newMember
-            } else if (rejoiningPlayerData.team) {
-                // team existed but was removed
-                const newTeam = new Team(
-                    rejoiningPlayerData.team.name,
-                    "created",
-                    []
-                )
-
-                delete this.leftPlayers[memberId]
-
-                const newMember = new Player({
-                    name: rejoiningPlayerData.name,
-                    id: memberId,
-                    team: newTeam
-                })
-                this.players[memberId] = newMember
-
-                return newMember
-            } else {
-                // individual team
-                delete this.leftPlayers[memberId]
-
-                const newMember = new Player({
-                    name: rejoiningPlayerData.name,
-                    id: memberId,
-                })
-                this.players[memberId] = newMember
-
-                return newMember
-            }
-        } else if (this.leftModerators[memberId]) {
-            const rejoiningPlayerData = this.leftModerators[memberId]
-            if (!rejoiningPlayerData) return
-
-            delete this.leftModerators[memberId]
-
-            const newModerator = new Moderator({
-                name: rejoiningPlayerData.name,
-                id: rejoiningPlayerData.id
-            })
-            this.moderators[memberId] = newModerator
-
-            return newModerator
-        }
+    /**
+     * Get team from Convex cache
+     * Returns null if team not found in cache
+     */
+    getCachedTeam(teamId: string): CachedTeam | null {
+        return getTeamFromCache(this.id, teamId)
     }
 
-    removeMember(id: string) {
-        const member = this.players[id]
-        const moderator = this.moderators[id]
-        if (member) {
-            delete this.players[id]
-
-            if (member.team) {
-                member.team.removePlayer(id)
-
-                if (Object.values(member.team.players).length === 0 && member.team.type === "created") {
-                    this.leftPlayers[id] = {
-                        ...member.data,
-                        team: member.team.data as TeamData & { type: "created" }
-                    }
-                    delete this.teams[member.team.id]
-                } else {
-                    this.leftPlayers[id] = member.data
-                }
-            } else {
-                this.leftPlayers[id] = member.data
-            }
-
-            return member
-        } else if (moderator) {
-            delete this.moderators[id]
-
-            this.leftModerators[id] = moderator.data
-
-            return moderator
-        }
-        return null
+    /**
+     * Get all teams from Convex cache
+     */
+    getAllCachedTeams(): CachedTeam[] {
+        return getAllTeamsFromCache(this.id)
     }
 
-    kickPlayer(id: string) {
-        const member = this.players[id]
-        if (member) {
-            delete this.players[id]
-
-            if (member.team) {
-                member.team.removePlayer(id)
-            }
-
-            return member
+    /**
+     * Calculate remaining time for question timer (in seconds)
+     */
+    async getQuestionTimerRemaining(): Promise<number> {
+        const gameData = await this.getGameData()
+        if (!gameData?.questionTimerStartTime || !gameData?.questionTimerDuration) {
+            return 0
         }
-        return null
+        const elapsed = (Date.now() - gameData.questionTimerStartTime) / 1000
+        return Math.max(0, Math.floor(gameData.questionTimerDuration - elapsed))
     }
 
-    promotePlayer(id: string) {
-        const player = this.players[id]
-        if (player) {
-            delete this.players[id]
-
-            const newModerator = new Moderator({
-                name: player.name,
-                // might not need id
-                id
-            })
-            this.moderators[id] = newModerator
-
-            return newModerator
+    /**
+     * Calculate remaining time for game clock (in seconds)
+     */
+    async getGameClockRemaining(): Promise<number> {
+        const gameData = await this.getGameData()
+        if (!gameData?.gameClockStartTime || !gameData?.gameClockDuration) {
+            return 0
         }
-        return null
+        const elapsed = (Date.now() - gameData.gameClockStartTime) / 1000
+        return Math.max(0, Math.floor(gameData.gameClockDuration - elapsed))
+    }
+
+    /**
+     * Unsubscribe from Convex updates (call when game ends)
+     */
+    cleanup(): void {
+        unsubscribeFromGame(this.id)
     }
 
     buzz(id: string) {
-        const player = this.players[id]
-        if (player && !this.state.buzzedTeams[player.team.id]) {
-            // if the player's team is not already in the list of teams who have buzzed
-            this.state.buzzedTeams[player.team.id] = player.team
-            this.state.currentBuzzer = player
-            this.state.questionState = 'buzzed'
-
-            return player
-        } else {
+        const member = this.getCachedMember(id)
+        if (!member || member.type !== 'player' || !member.teamId) {
             return null
+        }
+
+        // Check if player's team has already buzzed
+        if (this.state.buzzedTeamIds[member.teamId]) {
+            return null
+        }
+
+        // Add team to buzzed teams and set current buzzer
+        this.state.buzzedTeamIds[member.teamId] = true
+        this.state.currentBuzzerId = id
+        this.state.questionState = 'buzzed'
+
+        return {
+            playerId: id,
+            playerName: member.name,
+            teamId: member.teamId
         }
     }
 
     newQuestion(question: NewQuestionData) {
-        if (!question || (question.bonus && !this.teams[question.teamId])) return
+        if (!question) return false
+
+        // For bonus questions, validate team exists
+        if (question.bonus) {
+            const team = this.getCachedTeam(question.teamId)
+            if (!team) return false
+        }
 
         this.state.questionState = 'open'
-        this.state.currentBuzzer = null
-        this.state.buzzedTeams = {}
+        this.state.currentBuzzerId = null
+        this.state.buzzedTeamIds = {}
 
         if (question.bonus) {
-            const team = this.teams[question.teamId]
             this.state.currentQuestion = {
                 category: question.category,
                 bonus: true,
                 visual: question.visual,
-                team: team!,
+                teamId: question.teamId,
                 number: question.number
             }
         } else {
@@ -369,41 +231,48 @@ export class Game {
     scoreQuestion(score: 'correct' | 'incorrect' | 'penalty') {
         if (!this.state.currentQuestion?.number) return null
         const currentQuestion = this.state.currentQuestion
+
+        // For tossup: must be buzzed state with a buzzer
+        // For bonus: no buzzer needed
         if (
-            (this.state.questionState !== "buzzed" || !this.state.currentBuzzer)
+            (this.state.questionState !== "buzzed" || !this.state.currentBuzzerId)
             && !currentQuestion.bonus
         ) return null
 
-        const buzzer = this.state.currentBuzzer
+        const buzzerId = this.state.currentBuzzerId
+        const buzzer = buzzerId ? this.getCachedMember(buzzerId) : null
         const bonus = this.state.currentQuestion.bonus
-        const team = currentQuestion.bonus ? currentQuestion.team : buzzer!.team
+        const teamId = currentQuestion.bonus ? currentQuestion.teamId : buzzer?.teamId
 
-        // Scoreboard mutations removed - now handled by Convex
+        if (!teamId) return null
 
+        // Determine if question should stay open
+        // Open if: tossup, less than 3 teams have buzzed (or all teams), and answer was not correct
+        const allTeams = this.getAllCachedTeams()
         const open = !bonus
-            && Object.values(this.state.buzzedTeams).length < Math.min(3, Object.values(this.teams).length)
+            && Object.keys(this.state.buzzedTeamIds).length < Math.min(3, allTeams.length)
             && score !== 'correct'
 
-        const buzzedTeams = this.state.buzzedTeams
+        const buzzedTeamIds = this.state.buzzedTeamIds
         if (!open) {
             this.state = {
                 questionState: "idle",
-                currentBuzzer: null,
+                currentBuzzerId: null,
                 currentQuestion: null,
-                buzzedTeams: {}
+                buzzedTeamIds: {}
             }
         } else {
             this.state = {
                 questionState: "open",
-                currentBuzzer: null,
+                currentBuzzerId: null,
                 currentQuestion,
-                buzzedTeams
+                buzzedTeamIds
             }
         }
 
         return {
-            buzzer,
-            team,
+            buzzer: buzzer ? { id: buzzerId!, name: buzzer.name } : null,
+            teamId,
             open,
             category: currentQuestion.category,
             number: currentQuestion.number,
@@ -415,23 +284,18 @@ export class Game {
         if (!this.state.currentQuestion) return null
         const number = this.state.currentQuestion.number
         const category = this.state.currentQuestion.category
-        // Scoreboard mutation removed - now handled by Convex
 
         this.state = {
             questionState: "idle",
-            currentBuzzer: null,
+            currentBuzzerId: null,
             currentQuestion: null,
-            buzzedTeams: {}
+            buzzedTeamIds: {}
         }
 
         return {
             number,
             category
         }
-    }
-
-    clearScores() {
-        this.scoreboard = new GameScoreboard({})
     }
 
     addSpectator() {

@@ -3,6 +3,7 @@ import { createNewGame } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { Actions } from "./$types"
 import { env } from "$env/dynamic/public"
+import { getConvexClient, api } from "$lib/convex.server"
 
 // TODO: zod validation
 
@@ -26,9 +27,21 @@ export const actions = {
             teamNames
         }
 
-        const game = createNewGame(ownerName, gameData)
+        const game = await createNewGame(ownerName, gameData)
 
-        const gameToken = generateGameToken({ memberId: Object.values(game.moderators)[0]!.id, gameId: game.id })
+        // Get owner from cache (GameManager already created everything in Convex)
+        const ownerFromCache = game.getCachedMember(game.getCachedMember ?
+            Object.keys(game.getCachedMember).find(id => {
+                const m = game.getCachedMember(id);
+                return m?.type === "moderator";
+            }) || "" : "")
+
+        // Get owner ID - need to query Convex since we don't have direct access to moderators anymore
+        const convex = getConvexClient()
+        const members = await convex.query(api.gameMembers.getAllForGame, { gameId: game.id })
+        const owner = members.find(m => m.type === "moderator")!
+
+        const gameToken = generateGameToken({ memberId: owner.memberId, gameId: game.id })
         cookies.set("gameToken", gameToken, {
             path: "/",
             domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname

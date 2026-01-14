@@ -1,7 +1,6 @@
 <script lang="ts">
     import getSocket from "$lib/socket.svelte";
-    import type { ClientModerator } from "$lib/stores/moderators.svelte";
-    import type { ClientPlayer } from "$lib/stores/players.svelte";
+    import type { ClientModerator, ClientPlayer} from "$lib/stores/members.svelte";
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
@@ -39,18 +38,25 @@
                     member.name +
                     " to moderator?",
                 cancelCallback: () => ($modalStore = null),
-                confirmCallback: () => {
-                    socket.emit("promotePlayer", member.id);
-
-                    // Add chat message via Convex
+                confirmCallback: async () => {
                     const gId = gameIdStore.value;
                     if (gId) {
+                        // Update Convex (source of truth)
+                        await convex.mutation(api.gameMembers.promote, {
+                            gameId: gId,
+                            memberId: member.id,
+                        });
+
+                        // Add chat message via Convex
                         convex.mutation(api.chatMessages.add, {
                             gameId: gId,
                             type: "notification",
                             text: `${member.name} has been promoted to a moderator`,
                         });
                     }
+
+                    // Emit socket for server-side handling
+                    socket.emit("promotePlayer", member.id);
 
                     $modalStore = null;
                 },
@@ -65,18 +71,25 @@
                 title: "Kick " + member.name,
                 message: "Are you sure you want to kick " + member.name + "?",
                 cancelCallback: () => ($modalStore = null),
-                confirmCallback: () => {
-                    socket.emit("kickPlayer", member.id);
-
-                    // Add chat message via Convex
+                confirmCallback: async () => {
                     const gId = gameIdStore.value;
                     if (gId) {
+                        // Update Convex (source of truth) - hard delete
+                        await convex.mutation(api.gameMembers.kick, {
+                            gameId: gId,
+                            memberId: member.id,
+                        });
+
+                        // Add chat message via Convex
                         convex.mutation(api.chatMessages.add, {
                             gameId: gId,
                             type: "notification",
                             text: `${member.name} has been kicked`,
                         });
                     }
+
+                    // Emit socket for server-side handling
+                    socket.emit("kickPlayer", member.id);
 
                     $modalStore = null;
                 },
@@ -96,18 +109,26 @@
                     fieldName: "New name",
                 },
                 cancelCallback: () => ($modalStore = null),
-                confirmCallback: (value: string) => {
-                    socket.emit("renamePlayer", member.id, value);
-
-                    // Add chat message via Convex
+                confirmCallback: async (value: string) => {
                     const gId = gameIdStore.value;
                     if (gId) {
+                        // Update Convex (source of truth)
+                        await convex.mutation(api.gameMembers.rename, {
+                            gameId: gId,
+                            memberId: member.id,
+                            name: value,
+                        });
+
+                        // Add chat message via Convex
                         convex.mutation(api.chatMessages.add, {
                             gameId: gId,
                             type: "notification",
                             text: `${oldName} has been renamed to ${value}`,
                         });
                     }
+
+                    // Emit socket for server-side handling
+                    socket.emit("renamePlayer", member.id, value);
 
                     $modalStore = null;
                 },

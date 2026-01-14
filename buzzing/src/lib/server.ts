@@ -10,7 +10,7 @@ import type { Category, Game, GameSettings, NewQuestionData, ScoreType } from '$
 import { getDataFromGameToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
-import { addChatMessage } from './convex.server'
+import { addChatMessage, getConvexClient, api } from './convex.server'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -42,13 +42,21 @@ export const io: Server = globalAny._io || new Server(httpsServer, {
         const game = games.get(gameId)
         if (!game) {
             return callback(null, false)
-        } else if (game.people[memberId] && !spectator) {
-            return callback(null, true)
-        } else if (game.settings.spectatorsAllowed) {
-            return callback(null, true)
-        } else {
-            return callback(null, false)
         }
+
+        // Check if member exists in cache (for non-spectators)
+        const member = game.getCachedMember(memberId)
+        if (member && !spectator) {
+            return callback(null, true)
+        }
+
+        // Check spectator permissions from Convex
+        const gameData = await game.getGameData()
+        if (gameData?.settings.spectatorsAllowed) {
+            return callback(null, true)
+        }
+
+        return callback(null, false)
     }
 })
 
@@ -93,13 +101,19 @@ if (!globalAny._io_listeners_attached) {
             }
         }
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             if (spectator) {
                 game.removeSpectator(memberId)
             } else {
                 const memberName = member?.name
                 const removed = game.removeMember(memberId)
                 if (removed !== null) {
+                    // Update Convex (soft delete for rejoin capability)
+                    await getConvexClient().mutation(api.gameMembers.leave, {
+                        gameId,
+                        memberId
+                    })
+
                     socket.to(gameId).emit('memberLeave', memberId)
 
                     // Add chat message for member leaving
@@ -335,8 +349,15 @@ if (!globalAny._io_listeners_attached) {
             socket.emit('scoresClear')
         })
 
-        socket.on('endGame', () => {
+        socket.on('endGame', async () => {
             if (member?.type !== "moderator") return
+
+            // Clean up Convex data
+            const convex = getConvexClient()
+            await Promise.all([
+                convex.mutation(api.gameMembers.clearForGame, { gameId }),
+                convex.mutation(api.teams.clearForGame, { gameId })
+            ])
 
             socket.to(gameId).emit('gameEnd')
             socket.emit('gameEnd')

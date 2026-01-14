@@ -1,15 +1,28 @@
-import { ConvexHttpClient } from 'convex/browser';
+import { ConvexHttpClient, ConvexClient } from 'convex/browser';
 import { env } from '$env/dynamic/public';
 import { api } from '../../convex/_generated/api';
 
+// Re-export types for convenience
+export type { ConvexClient, ConvexHttpClient };
+
 // Singleton HTTP client for server-side mutations
-let client: ConvexHttpClient | null = null;
+let httpClient: ConvexHttpClient | null = null;
 
 export function getConvexClient(): ConvexHttpClient {
-  if (!client) {
-    client = new ConvexHttpClient(env.PUBLIC_CONVEX_URL);
+  if (!httpClient) {
+    httpClient = new ConvexHttpClient(env.PUBLIC_CONVEX_URL);
   }
-  return client;
+  return httpClient;
+}
+
+// Real-time client for server-side subscriptions
+let realtimeClient: ConvexClient | null = null;
+
+export function getConvexRealtimeClient(): ConvexClient {
+  if (!realtimeClient) {
+    realtimeClient = new ConvexClient(env.PUBLIC_CONVEX_URL);
+  }
+  return realtimeClient;
 }
 
 // Re-export api for convenience

@@ -3,12 +3,20 @@ import { getGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { env } from "$env/dynamic/public"
+import { getConvexClient, api } from "$lib/convex.server"
 
 export const load = async function ({ params, cookies }) {
     const { id } = params
     const game = getGame(id)
 
     if (!game)
+        redirect(302, "/join")
+
+    // Get game data from Convex
+    const convex = getConvexClient()
+    const gameData = await convex.query(api.games.get, { gameId: id })
+
+    if (!gameData)
         redirect(302, "/join")
 
     const gameToken = cookies.get('gameToken')
@@ -34,10 +42,10 @@ export const load = async function ({ params, cookies }) {
         gameInfo: {
             id,
             name: game.name,
-            settings: game.settings,
-            times: game.times
+            settings: gameData.settings,
+            times: gameData.times
         },
-        scores: game.scoreboard.scores,
+        scores: gameData.scoreboard.scores,
         playerList,
         teamList,
         moderatorList

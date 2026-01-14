@@ -6,7 +6,7 @@ import { getGame, io } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
-import { addChatMessage } from "$lib/convex.server"
+import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
 
 export const load = async function ({ params, url }) {
     const { id } = params
@@ -15,8 +15,14 @@ export const load = async function ({ params, url }) {
 
     if (!game) redirect(302, "/join")
 
+    // Get game data from Convex
+    const convex = getConvexClient()
+    const gameData = await convex.query(api.games.get, { gameId: id })
+
+    if (!gameData) redirect(302, "/join")
+
     if (code !== game.joinCode) {
-        if (game.settings.spectatorsAllowed) {
+        if (gameData.settings.spectatorsAllowed) {
             redirect(302, "/spectate/" + id)
         } else {
             redirect(302, "/join")
@@ -24,7 +30,7 @@ export const load = async function ({ params, url }) {
     }
 
     const memberNames = Object.values(game.players).map(x => x.name)
-    const settings = game.settings
+    const settings = gameData.settings
     const teams = Object.values(game.teams).map(t => t.data).filter(t => t.type !== "individual")
 
     return {
@@ -50,6 +56,30 @@ export const actions = {
         if (!player) {
             return fail(400, { error: "Invalid team" })
         }
+
+        // Add to Convex (source of truth)
+        const convex = getConvexClient()
+
+        // Add team if it's new (created or individual)
+        if (player.team && player.team.type !== "default") {
+            await convex.mutation(api.teams.add, {
+                gameId: game.id,
+                teamId: player.team.id,
+                name: player.team.name,
+                type: player.team.type
+            })
+        }
+
+        // Add player member
+        await convex.mutation(api.gameMembers.add, {
+            gameId: game.id,
+            memberId: player.id,
+            name: player.name,
+            type: "player",
+            teamId: player.team?.id
+        })
+
+        // Keep local state for backward compatibility
         game.addPlayer(player)
 
         io.to(game.id).emit('playerJoin', { player: player.data, team: player.team.data })

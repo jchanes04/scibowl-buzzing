@@ -1,24 +1,16 @@
 import { browser } from "$app/environment"
 import { io, Socket } from "socket.io-client"
-import teamsStore, { createTeam, type ClientTeamData } from "./stores/teams.svelte"
-import playersStore, { createPlayer, type ClientPlayer } from "./stores/players.svelte"
-import myMemberStore from "./stores/myMember.svelte"
+import { teamsStore, playersStore, myMemberStore } from "./stores/members.svelte"
 import gameStore from "./stores/game.svelte"
-import scoreboard from "./stores/scoreboard.svelte"
 import { timerStore, gameClockStore } from "./stores/timer.svelte"
-import moderatorsStore, { createModerator } from "./stores/moderators.svelte"
 import visualBonusStore from "./stores/visualBonus.svelte"
 import { goto, invalidateAll } from "$app/navigation"
 import type { Category, NewQuestionData, ScoreType } from "$lib/classes/Game"
-import type { ModeratorData } from "$lib/classes/Moderator"
-import type { PlayerData } from "$lib/classes/Player"
-import type { TeamData } from "$lib/classes/Team"
 import { env } from "$env/dynamic/public"
 
 // Direct access to store values via getters
 const getTeams = () => teamsStore.value
 const getPlayers = () => playersStore.value
-const getModerators = () => moderatorsStore.value
 const getMyMember = () => myMemberStore.value
 
 let game = $derived(gameStore.value)
@@ -54,82 +46,34 @@ export function createSocket(spectator: boolean = false) {
         // Chat message handled by Convex (join message from page.server.ts)
     })
 
-    socket.on('playerJoin', ({ player, team }: { player: PlayerData, team: TeamData }) => {
-        let playerTeam = getTeams()[team.id]
-        if (!playerTeam) {
-            playerTeam = createTeam(team)
-            teamsStore.addTeam(playerTeam)
-        }
-        const newPlayer = createPlayer(player, playerTeam)
-        teamsStore.addPlayerToTeam(team.id, newPlayer)
-        playersStore.addPlayer(newPlayer)
-        // Chat message handled by Convex (from join/+page.server.ts)
+    // Member store updates now handled by Convex subscription
+    socket.on('playerJoin', () => {
+        // Member updates handled by Convex subscription
     })
 
-    socket.on('memberRejoin', ({ member, team }: { member: PlayerData | ModeratorData, team: TeamData }) => {
-        if (member.type === "moderator") {
-            const newModerator = createModerator(member)
-            moderatorsStore.addModerator(newModerator)
-        } else {
-            let playerTeam = getTeams()[team.id]
-            if (!playerTeam) {
-                playerTeam = createTeam(team)
-                teamsStore.addTeam(playerTeam)
-            }
-            const newPlayer = createPlayer(member, playerTeam)
-            teamsStore.addPlayerToTeam(team.id, newPlayer)
-            playersStore.addPlayer(newPlayer)
-        }
-        // Chat message handled by Convex (from game/+page.server.ts)
+    socket.on('memberRejoin', () => {
+        // Member updates handled by Convex subscription
     })
 
-    socket.on('memberLeave', id => {
-        const player = getPlayers()[id]
-        const moderator = getModerators()[id]
-
-        if (moderator) {
-            moderatorsStore.removeModerator(id)
-            // Chat message handled by Convex (from server.ts disconnect handler)
-        } else if (player) {
-            const teams = getTeams()
-            playersStore.removePlayer(id)
-            if (teams[player.team.id]?.type !== "default" && Object.values(teams[player.team.id]!.players).length === 1) {
-                teamsStore.removeTeam(player.team.id)
-            } else {
-                teamsStore.removePlayerFromTeam(player.team.id, id)
-            }
-            // Chat message handled by Convex (from server.ts disconnect handler)
-        }
+    socket.on('memberLeave', () => {
+        // Member updates handled by Convex subscription
     })
 
     socket.on('promotion', async (memberId: string) => {
-        const player = getPlayers()[memberId]
-        const team = player?.team
-        if (team && player) {
-            teamsStore.removePlayerFromTeam(team.id, player.id)
-            playersStore.removePlayer(player.id)
-            const newModerator = createModerator({
-                id: memberId,
-                name: player.name,
-                type: "moderator"
+        // Member updates handled by Convex subscription
+        // But we still need to handle the socket reconnection for self-promotion
+        const myMember = getMyMember()
+        if (memberId === myMember.id) {
+            socket.once("disconnect", async () => {
+                await invalidateAll()
+                socket.connect()
             })
-            moderatorsStore.addModerator(newModerator)
-            // Chat message handled by Convex (from MemberListElement.svelte)
-
-            const myMember = getMyMember()
-            if (player.id === myMember.id) {
-                myMemberStore.setModerator(newModerator)
-                socket.once("disconnect", async () => {
-                    await invalidateAll()
-                    socket.connect()
-                })
-                socket.disconnect()
-            }
+            socket.disconnect()
         }
     })
 
-    socket.on('nameChange', (id: string, name: string) => {
-        playersStore.renamePlayer(id, name)
+    socket.on('nameChange', () => {
+        // Member updates handled by Convex subscription
     })
 
     socket.on('buzz', (id: string) => {
@@ -268,8 +212,8 @@ export function createSocket(spectator: boolean = false) {
         }
     })
 
-    socket.on('timerStart', (length: number) => {
-        timerStore.start(length)
+    socket.on('timerStart', (timerData: { startTime: number, duration: number }) => {
+        timerStore.start(timerData.startTime, timerData.duration)
         const myMember = getMyMember()
         const teams = getTeams()
         const tossupOpen = !game.state.currentQuestion?.bonus && !game.state.buzzedTeamIds.includes(myMember.team!.id)
@@ -318,11 +262,11 @@ export function createSocket(spectator: boolean = false) {
     })
 
     socket.on('changeCaptain', (teamId: string, memberId: string) => {
+        // Captain change handled by Convex subscription
+        // But we still need to handle the buzzing state for bonus questions
         const teams = getTeams()
         const team = teams[teamId]
         if (!team) return
-
-        teamsStore.changeCaptain(teamId, memberId)
 
         const member = team.players[memberId]
         if (!member) return

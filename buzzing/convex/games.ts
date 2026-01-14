@@ -17,19 +17,53 @@ const scoreTypeValidator = v.union(
 );
 
 /**
- * Query: Get scoreboard for a game
+ * Query: Get game by gameId
+ */
+export const get = query({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    return game;
+  },
+});
+
+/**
+ * Query: Get game by joinCode
+ */
+export const getByJoinCode = query({
+  args: {
+    joinCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_joinCode", (q) => q.eq("joinCode", args.joinCode))
+      .first();
+
+    return game;
+  },
+});
+
+/**
+ * Query: Get scoreboard for a game (backward compatibility)
  */
 export const getForGame = query({
   args: {
     gameId: v.string(),
   },
   handler: async (ctx, args) => {
-    const scoreboard = await ctx.db
-      .query("scoreboard")
+    const game = await ctx.db
+      .query("games")
       .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
       .first();
 
-    if (!scoreboard) {
+    if (!game) {
       // Return default empty scoreboard
       return {
         scores: {},
@@ -42,36 +76,192 @@ export const getForGame = query({
     }
 
     return {
-      scores: scoreboard.scores,
-      pointValues: scoreboard.pointValues,
+      scores: game.scoreboard.scores,
+      pointValues: game.scoreboard.pointValues,
     };
   },
 });
 
 /**
- * Helper: Get or create scoreboard document for a game
+ * Mutation: Create a new game
  */
-async function getOrCreateScoreboard(ctx: any, gameId: string) {
-  let scoreboard = await ctx.db
-    .query("scoreboard")
+export const createGame = mutation({
+  args: {
+    gameId: v.string(),
+    joinCode: v.string(),
+    name: v.string(),
+    settings: v.object({
+      individualsAllowed: v.boolean(),
+      newTeamsAllowed: v.boolean(),
+      spectatorsAllowed: v.boolean(),
+    }),
+    times: v.object({
+      tossup: v.array(v.number()),
+      bonus: v.array(v.number()),
+      visual: v.array(v.number()),
+    }),
+    pointValues: v.optional(
+      v.object({
+        tossup: v.number(),
+        bonus: v.number(),
+        penalty: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const gameId = await ctx.db.insert("games", {
+      gameId: args.gameId,
+      joinCode: args.joinCode,
+      name: args.name,
+      settings: args.settings,
+      times: args.times,
+      scoreboard: {
+        pointValues: args.pointValues ?? {
+          tossup: 4,
+          bonus: 10,
+          penalty: -4,
+        },
+        scores: {},
+      },
+      createdAt: now,
+      lastActive: now,
+    });
+
+    return gameId;
+  },
+});
+
+/**
+ * Mutation: Update lastActive timestamp
+ */
+export const updateLastActive = mutation({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        lastActive: Date.now(),
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: Start question timer
+ */
+export const startTimer = mutation({
+  args: {
+    gameId: v.string(),
+    startTime: v.number(),
+    duration: v.number(),
+    timerType: v.union(v.literal("tossup"), v.literal("bonus"), v.literal("visual")),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        questionTimerStartTime: args.startTime,
+        questionTimerDuration: args.duration,
+        questionTimerType: args.timerType,
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: End question timer
+ */
+export const endTimer = mutation({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        questionTimerStartTime: undefined,
+        questionTimerDuration: undefined,
+        questionTimerType: undefined,
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: Start game clock
+ */
+export const startGameClock = mutation({
+  args: {
+    gameId: v.string(),
+    startTime: v.number(),
+    duration: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        gameClockStartTime: args.startTime,
+        gameClockDuration: args.duration,
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: End game clock
+ */
+export const endGameClock = mutation({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        gameClockStartTime: undefined,
+        gameClockDuration: undefined,
+      });
+    }
+  },
+});
+
+/**
+ * Helper: Get or create game document (for scoreboard operations)
+ */
+async function getGame(ctx: any, gameId: string) {
+  const game = await ctx.db
+    .query("games")
     .withIndex("by_gameId", (q: any) => q.eq("gameId", gameId))
     .first();
 
-  if (!scoreboard) {
-    const scoreboardId = await ctx.db.insert("scoreboard", {
-      gameId,
-      scores: {},
-      pointValues: {
-        tossup: 4,
-        bonus: 10,
-        penalty: -4,
-      },
-      lastUpdated: Date.now(),
-    });
-    scoreboard = await ctx.db.get(scoreboardId);
+  if (!game) {
+    throw new Error(`Game ${gameId} not found`);
   }
 
-  return scoreboard!;
+  return game;
 }
 
 /**
@@ -82,18 +272,24 @@ async function updateScoreboard(
   gameId: string,
   updater: (scores: any, pointValues: any) => void
 ) {
-  const scoreboard = await getOrCreateScoreboard(ctx, gameId);
+  const game = await getGame(ctx, gameId);
+  const scoreboard = { ...game.scoreboard };
   const scores = { ...scoreboard.scores };
   const pointValues = { ...scoreboard.pointValues };
 
   updater(scores, pointValues);
 
-  await ctx.db.patch(scoreboard._id, {
-    scores,
-    pointValues,
-    lastUpdated: Date.now(),
+  await ctx.db.patch(game._id, {
+    scoreboard: {
+      scores,
+      pointValues,
+    },
   });
 }
+
+// ============================================================================
+// SCOREBOARD MUTATIONS (migrated from scoreboard.ts)
+// ============================================================================
 
 /**
  * Mutation: Correct tossup

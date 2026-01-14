@@ -2,7 +2,7 @@ import { getDataFromGameToken } from "$lib/authentication"
 import { getGame, io } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
-import { addChatMessage } from "$lib/convex.server"
+import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
 
 export const load = async function ({ params, locals, cookies }) {
     const { id } = params
@@ -11,12 +11,19 @@ export const load = async function ({ params, locals, cookies }) {
     if (!game)
         redirect(302, "/join")
 
+    // Get game data from Convex
+    const convex = getConvexClient()
+    const gameData = await convex.query(api.games.get, { gameId: id })
+
+    if (!gameData)
+        redirect(302, "/join")
+
     const gameToken = cookies.get("gameToken")
     const tokenData = gameToken ? await getDataFromGameToken(gameToken) : null
 
     const memberId = tokenData?.memberId
     if (!memberId) {
-        if (game.settings.spectatorsAllowed) {
+        if (gameData.settings.spectatorsAllowed) {
             redirect(302, "/spectate/" + id)
         } else {
             redirect(302, "/join")
@@ -60,6 +67,28 @@ export const load = async function ({ params, locals, cookies }) {
         const rejoinedMember = game.rejoinMember(memberId)
 
         if (rejoinedMember?.type === "player") {
+            // Reactivate in Convex
+            const convex = getConvexClient()
+
+            // Reactivate team if it was a created team
+            if (rejoinedMember.team?.type === "created") {
+                await convex.mutation(api.teams.add, {
+                    gameId: id,
+                    teamId: rejoinedMember.team.id,
+                    name: rejoinedMember.team.name,
+                    type: rejoinedMember.team.type
+                })
+            }
+
+            // Reactivate member
+            await convex.mutation(api.gameMembers.add, {
+                gameId: id,
+                memberId,
+                name: rejoinedMember.name,
+                type: "player",
+                teamId: rejoinedMember.team?.id
+            })
+
             io.to(id).emit('memberRejoin', {
                 member: rejoinedMember.data,
                 team: rejoinedMember.team.data
@@ -104,6 +133,15 @@ export const load = async function ({ params, locals, cookies }) {
                 }
             }
         } else if (rejoinedMember?.type === "moderator") {
+            // Reactivate moderator in Convex
+            const convex = getConvexClient()
+            await convex.mutation(api.gameMembers.add, {
+                gameId: id,
+                memberId,
+                name: rejoinedMember.name,
+                type: "moderator"
+            })
+
             io.to(id).emit("memberRejoin", {
                 member: rejoinedMember.data
             })

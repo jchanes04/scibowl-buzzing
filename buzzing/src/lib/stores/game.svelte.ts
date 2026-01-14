@@ -1,5 +1,5 @@
 import type { GameSettings, GameTimes, NewQuestionData, Question } from "$lib/classes/Game";
-import type { ClientPlayer } from "./players.svelte";
+import type { ClientPlayer } from "./members.svelte";
 
 type BuzzedState = {
     questionState: "buzzed",

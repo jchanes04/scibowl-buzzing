@@ -11,14 +11,7 @@
 
     import gameStore, { type ClientGameData } from "$lib/stores/game.svelte";
     import scoreboard from "$lib/stores/scoreboard.svelte";
-    import teamsStore, {
-        createTeam,
-        type ClientTeamData,
-    } from "$lib/stores/teams.svelte";
-    import playersStore, { createPlayer } from "$lib/stores/players.svelte";
-    import moderatorsStore, {
-        createModerator,
-    } from "$lib/stores/moderators.svelte";
+    // Removed store imports - spectators get data from Convex but don't participate
     import { page } from "$app/stores";
     import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
@@ -38,12 +31,13 @@
     const socket = createSocket(true);
 
     $effect.pre(() => {
-        playersStore.clear();
-        moderatorsStore.clear();
-        teamsStore.clear();
-
         const gameData: ClientGameData = {
             ...gameInfo,
+            times: {
+                tossup: gameInfo.times.tossup as [number, number],
+                bonus: gameInfo.times.bonus as [number, number],
+                visual: gameInfo.times.visual as [number, number]
+            },
             state: {
                 questionState: "idle",
                 currentBuzzer: null,
@@ -55,26 +49,8 @@
         gameStore.set(gameData);
         scoreboard.setScores(scores);
 
-        const teamMap: Record<string, ClientTeamData> = {};
-        for (const t of Object.values(teamList)) {
-            const newTeam = createTeam(t);
-            teamsStore.addTeam(newTeam);
-            teamMap[t.id] = newTeam;
-        }
-
-        for (const p of Object.values(playerList)) {
-            const team = teamMap[p.teamID];
-            if (team) {
-                const player = createPlayer(p, team);
-                teamsStore.addPlayerToTeam(team.id, player);
-                playersStore.addPlayer(player);
-            }
-        }
-
-        for (const m of Object.values(moderatorList)) {
-            const moderator = createModerator(m);
-            moderatorsStore.addModerator(moderator);
-        }
+        // Spectators don't participate in the game, so stores remain empty
+        // They can still see the scoreboard and chat
     });
 
     beforeNavigate(() => {

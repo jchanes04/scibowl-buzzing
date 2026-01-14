@@ -1,6 +1,6 @@
 <script lang="ts">
     import teamsStore from "$lib/stores/teams.svelte"
-    import playersStore from "$lib/stores/players.svelte"
+    import { playersStore } from "$lib/stores/members.svelte"
     import gameStore from "$lib/stores/game.svelte"
     import { useScoreboard } from "$lib/stores/scoreboard.svelte"
 

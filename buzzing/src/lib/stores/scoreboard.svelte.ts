@@ -26,7 +26,7 @@ export function clearScoreboardSubscription() {
  */
 export function useScoreboard() {
   return useQuery(
-    api.scoreboard.getForGame,
+    api.games.getForGame,
     () => subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
   );
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
     import gameStore from "$lib/stores/game.svelte";
     import teamsStore from "$lib/stores/teams.svelte";
-    import playersStore from "$lib/stores/players.svelte";
+    import { playersStore } from "$lib/stores/members.svelte";
     import { useScoreboard } from "$lib/stores/scoreboard.svelte";
     import { createEventDispatcher, getContext } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
@@ -163,7 +163,7 @@
         const gId = gameIdStore.value;
         if (!gId) return;
 
-        convex.mutation(api.scoreboard.editTossup, {
+        convex.mutation(api.games.editTossup, {
             gameId: gId,
             number,
             playerId,
@@ -183,7 +183,7 @@
         const gId = gameIdStore.value;
         if (!gId) return;
 
-        convex.mutation(api.scoreboard.editBonus, {
+        convex.mutation(api.games.editBonus, {
             gameId: gId,
             number,
             teamId,
@@ -202,7 +202,7 @@
                 confirmCallback: () => {
                     const gId = gameIdStore.value;
                     if (gId) {
-                        convex.mutation(api.scoreboard.deleteQuestion, {
+                        convex.mutation(api.games.deleteQuestion, {
                             gameId: gId,
                             number,
                         });
@@ -230,7 +230,7 @@
                     const gId = gameIdStore.value;
                     if (gId) {
                         // Clear scores via Convex
-                        convex.mutation(api.scoreboard.clear, { gameId: gId });
+                        convex.mutation(api.games.clear, { gameId: gId });
 
                         // Add chat message via Convex
                         convex.mutation(api.chatMessages.add, {

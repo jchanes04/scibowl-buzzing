@@ -220,11 +220,45 @@
     }
 
     let startTimerDisabled = $state(false);
-    function startTimer() {
+    async function startTimer() {
         startTimerDisabled = true;
         setTimeout(() => (startTimerDisabled = false), 500);
 
-        socket.emit("startTimer");
+        const gId = gameIdStore.value;
+        const currentQuestion = gameStore.value.state.currentQuestion;
+        if (!gId || !currentQuestion) return;
+
+        // Get game data from Convex to get timer settings
+        const gameData = await convex.query(api.games.get, { gameId: gId });
+        if (!gameData) return;
+
+        const isBonus = currentQuestion.bonus;
+        const isVisual = isBonus && currentQuestion.visual;
+
+        // Get appropriate time settings [clientTime, serverLatencyBuffer]
+        const times = isVisual ? gameData.times.visual :
+                     isBonus ? gameData.times.bonus :
+                     gameData.times.tossup;
+
+        const serverDuration = times[0] + times[1]; // client time + latency buffer
+        const clientDuration = times[0]; // client time only
+
+        // Store timer in Convex with timestamp-based approach
+        const startTime = Date.now();
+        await convex.mutation(api.games.startTimer, {
+            gameId: gId,
+            startTime,
+            duration: serverDuration,
+            timerType: isVisual ? "visual" : isBonus ? "bonus" : "tossup"
+        });
+
+        // Emit socket event with timer data
+        socket.emit("startTimer", {
+            startTime,
+            duration: clientDuration,
+            serverDuration
+        });
+
         debug.addEvent("startTimer", {});
     }
     function endGame() {

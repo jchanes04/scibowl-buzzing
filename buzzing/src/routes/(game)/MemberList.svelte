@@ -1,7 +1,5 @@
 <script lang="ts">
-    import membersStore from "$lib/stores/players.svelte";
-    import moderatorsStore from "$lib/stores/moderators.svelte";
-    import myMemberStore from "$lib/stores/myMember.svelte"
+    import { playersStore, moderatorsStore, myMemberStore } from "$lib/stores/members.svelte";
     import MemberListElement from "./MemberListElement.svelte";
 </script>
 
