@@ -6,6 +6,7 @@ import { getGame, io } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
+import { addChatMessage } from "$lib/convex.server"
 
 export const load = async function ({ params, url }) {
     const { id } = params
@@ -52,6 +53,13 @@ export const actions = {
         game.addPlayer(player)
 
         io.to(game.id).emit('playerJoin', { player: player.data, team: player.team.data })
+
+        // Add chat message for player joining
+        await addChatMessage({
+            gameId: game.id,
+            text: `${player.name} has joined the game`,
+            type: "notification"
+        })
 
         const gameToken = generateGameToken({ memberId: player.id, gameId: game.id }, '6h')
         cookies.set("gameToken", gameToken, {

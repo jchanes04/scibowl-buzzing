@@ -26,8 +26,11 @@
     import { page } from "$app/stores";
     import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
-    import { untrack } from "svelte";
+    import { untrack, onDestroy } from "svelte";
     import type { NewQuestionData } from "$lib/classes/Game";
+    import { initChatSubscription, clearChatSubscription } from "$lib/stores/chatMessages.svelte";
+    import { initScoreboardSubscription, clearScoreboardSubscription } from "$lib/stores/scoreboard.svelte";
+    import gameIdStore from "$lib/stores/gameId.svelte";
 
     interface Props {
         data: PageServerData;
@@ -77,7 +80,6 @@
                 }
         };
         gameStore.set(gameData);
-        scoreboard.setScores(data.scores);
 
         const teamMap: Record<string, ClientTeamData> = {};
         for (const t of Object.values(data.teamList)) {
@@ -110,17 +112,32 @@
     // Initialize stores synchronously for SSR and first client render
     syncStores();
 
+    // Initialize chat subscription, scoreboard subscription and gameId store
+    $effect(() => {
+        if (data.gameInfo.id && data.myMemberId) {
+            gameIdStore.set(data.gameInfo.id);
+            initChatSubscription(data.gameInfo.id, data.myMemberId);
+            initScoreboardSubscription(data.gameInfo.id);
+        }
+    });
+
+    // Cleanup on unmount
+    onDestroy(() => {
+        clearChatSubscription();
+        clearScoreboardSubscription();
+        gameIdStore.clear();
+    });
+
     // Keep stores in sync on the client when data props change
     $effect.pre(() => {
         // Read the dependencies clearly so the effect knows when to fire
         // (This tells Svelte: "Only run this when these specific values change")
         const _deps = [
-            data.gameInfo, 
-            data.teamList, 
-            data.moderatorList, 
-            data.playerList, 
-            data.myMemberId, 
-            data.scores, 
+            data.gameInfo,
+            data.teamList,
+            data.moderatorList,
+            data.playerList,
+            data.myMemberId,
             data.currentGameState
         ];
 

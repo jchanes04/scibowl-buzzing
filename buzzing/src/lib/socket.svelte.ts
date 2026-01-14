@@ -3,7 +3,6 @@ import { io, Socket } from "socket.io-client"
 import teamsStore, { createTeam, type ClientTeamData } from "./stores/teams.svelte"
 import playersStore, { createPlayer, type ClientPlayer } from "./stores/players.svelte"
 import myMemberStore from "./stores/myMember.svelte"
-import chatMessagesStore, { type ChatMessage } from "./stores/chatMessages.svelte"
 import gameStore from "./stores/game.svelte"
 import scoreboard from "./stores/scoreboard.svelte"
 import { timerStore, gameClockStore } from "./stores/timer.svelte"
@@ -52,10 +51,7 @@ export function createSocket(spectator: boolean = false) {
     })
 
     socket.on('authenticated', ({ name }: { name: string }) => {
-        chatMessagesStore.add({
-            type: 'notification',
-            text: name + ' has joined the game'
-        })
+        // Chat message handled by Convex (join message from page.server.ts)
     })
 
     socket.on('playerJoin', ({ player, team }: { player: PlayerData, team: TeamData }) => {
@@ -67,11 +63,7 @@ export function createSocket(spectator: boolean = false) {
         const newPlayer = createPlayer(player, playerTeam)
         teamsStore.addPlayerToTeam(team.id, newPlayer)
         playersStore.addPlayer(newPlayer)
-
-        chatMessagesStore.add({
-            type: 'notification',
-            text: player.name + ' has joined the game'
-        })
+        // Chat message handled by Convex (from join/+page.server.ts)
     })
 
     socket.on('memberRejoin', ({ member, team }: { member: PlayerData | ModeratorData, team: TeamData }) => {
@@ -88,10 +80,7 @@ export function createSocket(spectator: boolean = false) {
             teamsStore.addPlayerToTeam(team.id, newPlayer)
             playersStore.addPlayer(newPlayer)
         }
-        chatMessagesStore.add({
-            type: 'notification',
-            text: member.name + ' has rejoined the game'
-        })
+        // Chat message handled by Convex (from game/+page.server.ts)
     })
 
     socket.on('memberLeave', id => {
@@ -100,10 +89,7 @@ export function createSocket(spectator: boolean = false) {
 
         if (moderator) {
             moderatorsStore.removeModerator(id)
-            chatMessagesStore.add({
-                type: 'notification',
-                text: moderator.name + ' has left the game'
-            })
+            // Chat message handled by Convex (from server.ts disconnect handler)
         } else if (player) {
             const teams = getTeams()
             playersStore.removePlayer(id)
@@ -112,10 +98,7 @@ export function createSocket(spectator: boolean = false) {
             } else {
                 teamsStore.removePlayerFromTeam(player.team.id, id)
             }
-            chatMessagesStore.add({
-                type: 'notification',
-                text: player.name + ' has left the game'
-            })
+            // Chat message handled by Convex (from server.ts disconnect handler)
         }
     })
 
@@ -131,10 +114,7 @@ export function createSocket(spectator: boolean = false) {
                 type: "moderator"
             })
             moderatorsStore.addModerator(newModerator)
-            chatMessagesStore.add({
-                type: 'notification',
-                text: player.name + ' has been promoted to a moderator'
-            })
+            // Chat message handled by Convex (from MemberListElement.svelte)
 
             const myMember = getMyMember()
             if (player.id === myMember.id) {
@@ -158,36 +138,23 @@ export function createSocket(spectator: boolean = false) {
             gameStore.buzz(player.team.id, player)
             buzzAudio?.play()
             timerStore.pause()
-
-            chatMessagesStore.add({
-                type: 'buzz',
-                text: player.name + ' has buzzed'
-            })
+            // Chat message handled by Convex (from server.ts)
         }
     })
 
     socket.on('buzzAccept', () => {
-        chatMessagesStore.add({
-            type: "buzz",
-            text: "You have buzzed"
-        })
+        // Chat message handled by Convex (from server.ts)
     })
 
     socket.on('buzzFailed', () => {
         const myMember = getMyMember()
         if (myMember.team) gameStore.removeTeamBuzz(myMember.team.id)
-        chatMessagesStore.add({
-            type: "warning",
-            text: "You have been outbuzzed"
-        })
+        // Chat message handled by Convex (from server.ts)
     })
 
     socket.on('scoresClear', () => {
-        scoreboard.clear()
-        chatMessagesStore.add({
-            type: "notification",
-            text: "Scores cleared"
-        })
+        // Scoreboard clearing handled by Convex subscription
+        // Chat message handled by Convex (from ExpandedScoreboard.svelte)
     })
 
     type ScoreData = {
@@ -219,38 +186,8 @@ export function createSocket(spectator: boolean = false) {
             gameStore.clearQuestion()
         }
 
-        if (scoreType === "correct") {
-            if (bonus) {
-                scoreboard.correctBonus(number, teamId, category)
-            } else {
-                scoreboard.correctTossup(number, playerId, teamId, category)
-            }
-
-            chatMessagesStore.add({
-                type: 'success',
-                text: `Correct answer (${(category[0] || "").toUpperCase() + category.slice(1)})`
-            })
-        } else if (scoreType === "incorrect") {
-            if (bonus) {
-                scoreboard.incorrectBonus(number, teamId, category)
-            } else {
-                scoreboard.incorrectTossup(number, playerId, teamId, category)
-            }
-
-            chatMessagesStore.add({
-                type: 'warning',
-                text: 'Incorrect answer'
-            })
-        } else if (scoreType === "penalty") {
-            if (!bonus) {
-                scoreboard.penalty(number, playerId, teamId, category)
-            }
-
-            chatMessagesStore.add({
-                type: 'warning',
-                text: 'Penalty applied'
-            })
-        }
+        // Scoreboard mutations handled by Convex subscription
+        // Chat messages handled by Convex (from ReaderControls.svelte)
 
         const myMember = getMyMember()
         if (open && game.state.currentQuestion) {
@@ -260,23 +197,16 @@ export function createSocket(spectator: boolean = false) {
                 gameStore.openQuestion(true)
             }
         } else {
-            chatMessagesStore.add({
-                type: 'notification',
-                text: `${myMember.team?.id}, ${game.state.buzzedTeamIds}, ${game.state.currentQuestion?.bonus}`
-            })
             timerStore.end()
             gameStore.clearQuestion()
         }
     })
 
     socket.on("deadQuestion", (number: number, category: Category) => {
-        scoreboard.dead(number, category)
+        // Scoreboard dead marking handled by Convex subscription
         timerStore.end()
         gameStore.clearQuestion()
-        chatMessagesStore.add({
-            type: "warning",
-            text: "Question marked dead"
-        })
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on('tossupEdit', (
@@ -286,13 +216,7 @@ export function createSocket(spectator: boolean = false) {
         category: Category,
         scoreType: ScoreType | "none"
     ) => {
-        scoreboard.editTossup(
-            number,
-            playerId,
-            teamId,
-            category,
-            scoreType
-        )
+        // Scoreboard editing handled by Convex subscription
     })
 
     socket.on("bonusEdit", (
@@ -300,15 +224,11 @@ export function createSocket(spectator: boolean = false) {
         teamId: string,
         scoreType: "correct" | "incorrect" | "none"
     ) => {
-        scoreboard.editBonus(
-            number,
-            teamId,
-            scoreType
-        )
+        // Scoreboard editing handled by Convex subscription
     })
 
     socket.on("questionDelete", (number: number) => {
-        scoreboard.deleteQuestion(number)
+        // Scoreboard deletion handled by Convex subscription
     })
 
     socket.on('questionOpen', (question: NewQuestionData) => {
@@ -317,9 +237,7 @@ export function createSocket(spectator: boolean = false) {
         const buzzingEnabled = !question.bonus || !!(question.teamId && question.teamId === myMember.team?.id && teams[question.teamId]?.captainId === myMember.id)
         gameStore.newQuestion(question, buzzingEnabled)
 
-        if (!question.bonus && question.number && scoreboard.value[question.number]) {
-            scoreboard.clearQuestion(question.number)
-        }
+        // Scoreboard clearing handled by Convex subscription
 
         if (!question.bonus || !question.visual) {
             console.log("clearing")
@@ -336,18 +254,7 @@ export function createSocket(spectator: boolean = false) {
                 <div></div>`
         }
 
-        const teamName = teams[question.bonus ? question.teamId : ""]?.name
-        if (question.number) {
-            chatMessagesStore.add({
-                type: "notification",
-                text: `${question.bonus ? "Bonus" : "Tossup"} #${question.number} opened` + (teamName ? " for " + teamName : "")
-            })
-        } else {
-            chatMessagesStore.add({
-                type: 'notification',
-                text: `New ${question.bonus ? "bonus" : "tossup"} opened` + (teamName ? " for " + teamName : "")
-            })
-        }
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on("visualBonusOpen", (data: Buffer) => {
@@ -376,20 +283,14 @@ export function createSocket(spectator: boolean = false) {
     socket.on('timerEnd', () => {
         if (timerStore.live) {
             timerStore.end()
-            chatMessagesStore.add({
-                type: 'warning',
-                text: "Time is up"
-            })
+            // Chat message handled by Convex (from server.ts)
         }
         gameStore.stopQuestion()
     })
 
     socket.on("gameClockStart", (length: number) => {
         gameClockStore.start(length)
-        chatMessagesStore.add({
-            type: "notification",
-            text: `${Math.floor(length / 60).toString().padStart(2, "0")}:${(length % 60).toString().padStart(2, "0")} game clock started`
-        })
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on("gameClockUpdate", (length: number) => {
@@ -398,34 +299,22 @@ export function createSocket(spectator: boolean = false) {
 
     socket.on("gameClockPause", () => {
         gameClockStore.pause()
-        chatMessagesStore.add({
-            type: "notification",
-            text: "Game clock paused"
-        })
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on("gameClockResume", () => {
         gameClockStore.resume()
-        chatMessagesStore.add({
-            type: "notification",
-            text: "Game clock resumed"
-        })
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on("gameClockEnd", () => {
         gameClockStore.end()
-        chatMessagesStore.add({
-            type: "notification",
-            text: "Game clock ended"
-        })
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on("gameClockStop", () => {
         gameClockStore.stop()
-        chatMessagesStore.add({
-            type: "notification",
-            text: "Game clock stopped"
-        })
+        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on('changeCaptain', (teamId: string, memberId: string) => {
@@ -453,11 +342,7 @@ export function createSocket(spectator: boolean = false) {
         ) {
             gameStore.disableBuzzing()
         }
-
-        chatMessagesStore.add({
-            type: "notification",
-            text: member.name + " is now captain of " + team.name
-        })
+        // Chat message handled by Convex (from PlayerControls.svelte)
     })
 
     socket.on('kicked', () => {

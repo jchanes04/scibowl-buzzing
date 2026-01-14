@@ -375,50 +375,10 @@ export class Game {
         ) return null
 
         const buzzer = this.state.currentBuzzer
-        const number = this.state.currentQuestion.number
         const bonus = this.state.currentQuestion.bonus
         const team = currentQuestion.bonus ? currentQuestion.team : buzzer!.team
 
-        if (bonus) {
-            if (score === "correct") {
-                this.scoreboard.correctBonus(
-                    number,
-                    team?.id,
-                    currentQuestion.category
-                )
-            } else if (score === 'incorrect') {
-                this.scoreboard.incorrectBonus(
-                    number,
-                    team?.id,
-                    currentQuestion.category
-                )
-            }
-        } else {
-            if (!buzzer) {
-                return
-            } else if (score === "correct") {
-                this.scoreboard.correctTossup(
-                    number,
-                    buzzer.id,
-                    team?.id,
-                    currentQuestion.category
-                )
-            } else if (score === 'incorrect') {
-                this.scoreboard.incorrectTossup(
-                    number,
-                    buzzer.id,
-                    team?.id,
-                    currentQuestion.category
-                )
-            } else if (score === 'penalty') {
-                this.scoreboard.penalty(
-                    number,
-                    buzzer.id,
-                    team?.id,
-                    currentQuestion.category
-                )
-            }
-        }
+        // Scoreboard mutations removed - now handled by Convex
 
         const open = !bonus
             && Object.values(this.state.buzzedTeams).length < Math.min(3, Object.values(this.teams).length)
@@ -446,7 +406,7 @@ export class Game {
             team,
             open,
             category: currentQuestion.category,
-            number,
+            number: currentQuestion.number,
             bonus
         }
     }
@@ -455,7 +415,7 @@ export class Game {
         if (!this.state.currentQuestion) return null
         const number = this.state.currentQuestion.number
         const category = this.state.currentQuestion.category
-        this.scoreboard.dead(number, category)
+        // Scoreboard mutation removed - now handled by Convex
 
         this.state = {
             questionState: "idle",

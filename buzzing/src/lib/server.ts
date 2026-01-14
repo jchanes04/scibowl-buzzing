@@ -10,6 +10,7 @@ import type { Category, Game, GameSettings, NewQuestionData, ScoreType } from '$
 import { getDataFromGameToken } from './authentication'
 import { Moderator } from './classes/Moderator'
 import { env } from "$env/dynamic/public"
+import { addChatMessage } from './convex.server'
 
 const httpsServer = https.createServer({
     key: fs.readFileSync('localhost-key.pem').toString(),
@@ -96,9 +97,19 @@ if (!globalAny._io_listeners_attached) {
             if (spectator) {
                 game.removeSpectator(memberId)
             } else {
+                const memberName = member?.name
                 const removed = game.removeMember(memberId)
                 if (removed !== null) {
                     socket.to(gameId).emit('memberLeave', memberId)
+
+                    // Add chat message for member leaving
+                    if (memberName) {
+                        addChatMessage({
+                            gameId,
+                            text: `${memberName} has left the game`,
+                            type: "notification"
+                        })
+                    }
                 }
             }
         })
@@ -112,11 +123,44 @@ if (!globalAny._io_listeners_attached) {
                     game.timer.pause()
                     socket.emit('buzzAccept')
                     socket.to(gameId).emit('buzz', memberId)
+
+                    // Add chat message for the buzzer (targeted)
+                    addChatMessage({
+                        gameId,
+                        text: "You have buzzed",
+                        type: "buzz",
+                        target: [memberId]
+                    })
+
+                    // Add chat message for others (broadcast)
+                    const player = game.players[memberId]
+                    if (player) {
+                        addChatMessage({
+                            gameId,
+                            text: `${player.name} has buzzed`,
+                            type: "buzz"
+                        })
+                    }
                 } else {
                     socket.emit('buzzFailed')
+
+                    // Add targeted warning for the player who was outbuzzed
+                    addChatMessage({
+                        gameId,
+                        text: "You have been outbuzzed",
+                        type: "warning",
+                        target: [memberId]
+                    })
                 }
             } else {
                 socket.emit('buzzFailed')
+
+                addChatMessage({
+                    gameId,
+                    text: "You have been outbuzzed",
+                    type: "warning",
+                    target: [memberId]
+                })
             }
         })
 
@@ -154,6 +198,13 @@ if (!globalAny._io_listeners_attached) {
             game.timer.removeAllListeners('end')
             game.timer.once('end', () => {
                 socket.to(gameId).emit('timerEnd')
+
+                // Add chat message for timer end
+                addChatMessage({
+                    gameId,
+                    text: "Time is up",
+                    type: "warning"
+                })
             })
         })
 
@@ -214,13 +265,7 @@ if (!globalAny._io_listeners_attached) {
             category: Category,
             scoreType: ScoreType | "none"
         ) => {
-            game.scoreboard.editTossup(
-                number,
-                playerId,
-                teamId,
-                category,
-                scoreType
-            )
+            // Scoreboard editing now handled by Convex - just broadcast the event
             socket.to(gameId).emit("tossupEdit",
                 number,
                 playerId,
@@ -235,11 +280,7 @@ if (!globalAny._io_listeners_attached) {
             teamId: string,
             scoreType: "correct" | "incorrect" | "none"
         ) => {
-            game.scoreboard.editBonus(
-                number,
-                teamId,
-                scoreType
-            )
+            // Scoreboard editing now handled by Convex - just broadcast the event
             socket.to(gameId).emit("bonusEdit",
                 number,
                 teamId,
@@ -248,7 +289,7 @@ if (!globalAny._io_listeners_attached) {
         })
 
         socket.on("deleteQuestion", (number: number) => {
-            game.scoreboard.deleteQuestion(number)
+            // Scoreboard deletion now handled by Convex - just broadcast the event
             socket.to(gameId).emit("questionDelete", number)
         })
 
@@ -289,7 +330,7 @@ if (!globalAny._io_listeners_attached) {
         socket.on('clearScores', () => {
             if (member?.type !== "moderator") return
 
-            game.clearScores()
+            // Scoreboard clearing now handled by Convex - just broadcast the event
             socket.to(gameId).emit('scoresClear')
             socket.emit('scoresClear')
         })

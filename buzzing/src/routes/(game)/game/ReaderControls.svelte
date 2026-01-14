@@ -32,7 +32,6 @@
             `,
         };
     }
-    import chatMessagesStore from "$lib/stores/chatMessages.svelte";
     import teamsStore, { type ClientTeamData } from "$lib/stores/teams.svelte";
     import gameStore from "$lib/stores/game.svelte";
     import scoreboard from "$lib/stores/scoreboard.svelte";
@@ -46,6 +45,9 @@
     import playSvg from "$lib/icons/play.svg?raw";
     import pausePlaySvg from "$lib/icons/pause-play.svg?raw";
     import stopSvg from "$lib/icons/stop.svg?raw";
+    import { useConvexClient } from "convex-svelte";
+    import { api } from "../../../../convex/_generated/api";
+    import gameIdStore from "$lib/stores/gameId.svelte";
 
     let teamSelectValue = $state<ClientTeamData | undefined>();
     let selectedCategory: Category | "" = $state("");
@@ -63,6 +65,7 @@
 
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
+    const convex = useConvexClient();
     type ModalStore = Writable<{
         component: any;
         props: Record<string, unknown>;
@@ -94,13 +97,7 @@
             number: questionNumber,
         });
 
-        if (
-            questionType === "tossup" &&
-            questionNumber &&
-            scoreboard.value[questionNumber]
-        ) {
-            scoreboard.clearQuestion(questionNumber);
-        }
+        // Scoreboard clearing handled by Convex mutations
 
         debug.addEvent("newQuestion", {
             category: selectedCategory,
@@ -112,10 +109,15 @@
             number: questionNumber,
         });
 
-        chatMessagesStore.add({
-            type: "notification",
-            text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
-        });
+        // Add chat message via Convex
+        const gId = gameIdStore.value;
+        if (gId) {
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: "notification",
+                text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
+            });
+        }
 
         if (questionType === "bonus") {
             gameStore.newQuestion(
@@ -250,7 +252,96 @@
             gameStore.value.state.currentQuestion?.bonus,
     );
     function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
+        // Call Convex mutation first
+        const gId = gameIdStore.value;
+        const currentQuestion = gameStore.value.state.currentQuestion;
+        const currentBuzzer = gameStore.value.state.currentBuzzer;
+
+        // Convex mutations
+        if (gId && currentQuestion) {
+            const number = currentQuestion.number;
+            const category = currentQuestion.category;
+
+            if (currentQuestion.bonus) {
+                const teamId = (currentQuestion as any).teamId;
+                if (!teamId) return;
+
+                if (selectedScore === "correct") {
+                    convex.mutation(api.scoreboard.correctBonus, {
+                        gameId: gId,
+                        number,
+                        teamId,
+                        category,
+                    });
+                } else {
+                    convex.mutation(api.scoreboard.incorrectBonus, {
+                        gameId: gId,
+                        number,
+                        teamId,
+                        category,
+                    });
+                }
+            } else {
+                if (!currentBuzzer) return;
+                const playerId = currentBuzzer.id;
+                const teamId = currentBuzzer.team?.id;
+                if (!teamId) return;
+
+                if (selectedScore === "correct") {
+                    convex.mutation(api.scoreboard.correctTossup, {
+                        gameId: gId,
+                        number,
+                        playerId,
+                        teamId,
+                        category,
+                    });
+                } else if (selectedScore === "incorrect") {
+                    convex.mutation(api.scoreboard.incorrectTossup, {
+                        gameId: gId,
+                        number,
+                        playerId,
+                        teamId,
+                        category,
+                    });
+                } else if (selectedScore === "penalty") {
+                    convex.mutation(api.scoreboard.penalty, {
+                        gameId: gId,
+                        number,
+                        playerId,
+                        teamId,
+                        category,
+                    });
+                }
+            }
+        }
+
         socket.emit("scoreQuestion", selectedScore);
+
+        // Add chat message via Convex
+        if (gId) {
+            const category = gameStore.value.state.currentQuestion?.category || "";
+            const categoryDisplay = category ? (category[0] || "").toUpperCase() + category.slice(1) : "";
+
+            let messageText = "";
+            let messageType: "success" | "warning" = "success";
+
+            if (selectedScore === "correct") {
+                messageText = `Correct answer${categoryDisplay ? ` (${categoryDisplay})` : ""}`;
+                messageType = "success";
+            } else if (selectedScore === "incorrect") {
+                messageText = "Incorrect answer";
+                messageType = "warning";
+            } else if (selectedScore === "penalty") {
+                messageText = "Penalty applied";
+                messageType = "warning";
+            }
+
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: messageType,
+                text: messageText,
+            });
+        }
 
         if (
             selectedScore === "incorrect" &&
@@ -278,8 +369,29 @@
     }
 
     function markDead() {
+        // Call Convex mutation first
+        const gId = gameIdStore.value;
+        const currentQuestion = gameStore.value.state.currentQuestion;
+
+        if (gId && currentQuestion) {
+            convex.mutation(api.scoreboard.dead, {
+                gameId: gId,
+                number: currentQuestion.number,
+                category: currentQuestion.category,
+            });
+        }
+
         socket.emit("markDead");
         questionNumber++;
+
+        // Add chat message via Convex
+        if (gId) {
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: "warning",
+                text: "Question marked dead",
+            });
+        }
 
         debug.addEvent("markDead", {});
     }
@@ -290,7 +402,22 @@
         startGameClockDisabled = true;
         setTimeout(() => (startGameClockDisabled = false), 1000);
 
+        const minutes = Math.floor(gameClockTime / 60);
+        const seconds = gameClockTime % 60;
+        const timeDisplay = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
         socket.emit("startGameClock", gameClockTime);
+
+        // Add chat message via Convex
+        const gId = gameIdStore.value;
+        if (gId) {
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: "notification",
+                text: `${timeDisplay} game clock started`,
+            });
+        }
+
         debug.addEvent("startGameClock", { gameClockTime });
         gameClockTime = 0;
     }
@@ -301,6 +428,18 @@
         setTimeout(() => (pauseGameClockDisabled = false), 1000);
 
         socket.emit("pauseGameClock");
+
+        // Add chat message via Convex
+        const gId = gameIdStore.value;
+        if (gId) {
+            const messageText = gameClockStore.live ? "Game clock paused" : "Game clock resumed";
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: "notification",
+                text: messageText,
+            });
+        }
+
         debug.addEvent("pauseGameClock", {});
     }
 
@@ -310,6 +449,17 @@
         setTimeout(() => (stopGameClockDisabled = false), 1000);
 
         socket.emit("stopGameClock");
+
+        // Add chat message via Convex
+        const gId = gameIdStore.value;
+        if (gId) {
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: "notification",
+                text: "Game clock stopped",
+            });
+        }
+
         debug.addEvent("stopGameClock", {});
     }
 

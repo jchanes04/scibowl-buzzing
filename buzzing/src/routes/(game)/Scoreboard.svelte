@@ -2,18 +2,22 @@
     import teamsStore from "$lib/stores/teams.svelte"
     import playersStore from "$lib/stores/players.svelte"
     import gameStore from "$lib/stores/game.svelte"
-    import scoreboard from "$lib/stores/scoreboard.svelte"
+    import { useScoreboard } from "$lib/stores/scoreboard.svelte"
+
+    const scoreboardQuery = useScoreboard();
 
     function sumQuestionScores(teamId: string) {
-        return Object.values(scoreboard.value).reduce((acc, q) => {
+        if (!scoreboardQuery.data) return 0;
+        const pointValues = scoreboardQuery.data.pointValues || { tossup: 4, bonus: 10, penalty: -4 };
+        return Object.values(scoreboardQuery.data.scores || {}).reduce((acc: number, q: any) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
-                acc += scoreboard.pointValues.tossup
+                acc += pointValues.tossup
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
-                acc += scoreboard.pointValues.penalty
+                acc += pointValues.penalty
             }
 
             if (q.bonus?.teamId === teamId && q.bonus?.correct) {
-                acc += scoreboard.pointValues.bonus
+                acc += pointValues.bonus
             }
             return acc
         }, 0)

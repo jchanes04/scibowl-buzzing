@@ -10,9 +10,13 @@
     import playersStore from "$lib/stores/players.svelte"
     import { browser } from "$app/environment";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
+    import { useConvexClient } from "convex-svelte";
+    import { api } from "../../../../convex/_generated/api";
+    import gameIdStore from "$lib/stores/gameId.svelte";
 
     const socket = getSocket()
     const debug: Debugger = getContext('debug')
+    const convex = useConvexClient()
     const buzzAudio = browser ? new Audio('/buzz.mp3') : null
 
     let scoreboardExpanded = $state(false)
@@ -33,6 +37,19 @@
 
     function claimCaptain() {
         socket.emit('claimCaptain')
+
+        // Add chat message via Convex
+        const gId = gameIdStore.value;
+        const myMember = myMemberStore.value;
+        const team = myMember.team;
+        if (gId && myMember && team) {
+            convex.mutation(api.chatMessages.add, {
+                gameId: gId,
+                type: "notification",
+                text: `${myMember.name} is now captain of ${team.name}`,
+            });
+        }
+
         debug.addEvent('claimCaptain', {})
     }
 

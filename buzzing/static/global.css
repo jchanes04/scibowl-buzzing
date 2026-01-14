@@ -6,18 +6,18 @@
     --background-1: light-dark(hsl(0,0%,93%), #000000);
     --background-2: light-dark(#d4d9d9, #000000);
     
-    --text: #1e293b;
-    --text-light: #ffffff;
-    --text-muted: #64748b;    
-    --border-color: #666;
-    --gray-1: #e2e8f0;
-    --gray-2: #64748b;
+    --text: light-dark(#1e293b, #f1f5f9);
+    --text-light: light-dark(#ffffff, #ffffff);
+    --text-muted: light-dark(#64748b, #94a3b8);    
+    --border-color: light-dark(#666, #333333);
+    --gray-1: light-dark(#e2e8f0, #1e293b);
+    --gray-2: light-dark(#64748b, #94a3b8);
 }
 
 html, body {
     margin: 0;
     font-family: 'Ubuntu', sans-serif;
-    background-color: light-dark(#d4d9d9, #000000);
+    background-color: var(--background-2);
     color: var(--text);
 }
 
@@ -58,7 +58,7 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-    background: var(--primary, var(--green));
+    background: var(--primary);
     width: 7px;
     border-radius: 7px;
 }

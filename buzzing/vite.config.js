@@ -19,6 +19,9 @@ const config = {
             key: fs.readFileSync(keyPath),
             cert: fs.readFileSync(certPath),
         },
+        fs: {
+            allow: ["./convex"]
+        },
         proxy: {}  // Empty proxy disables HTTP/2, fixing the undici headers issue
     },
     resolve: {

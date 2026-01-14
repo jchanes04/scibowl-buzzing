@@ -2,6 +2,7 @@ import { getDataFromGameToken } from "$lib/authentication"
 import { getGame, io } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
+import { addChatMessage } from "$lib/convex.server"
 
 export const load = async function ({ params, locals, cookies }) {
     const { id } = params
@@ -65,6 +66,13 @@ export const load = async function ({ params, locals, cookies }) {
             })
             locals.myData = rejoinedMember.data
 
+            // Add chat message for player rejoining
+            await addChatMessage({
+                gameId: id,
+                text: `${rejoinedMember.name} has rejoined the game`,
+                type: "notification"
+            })
+
             const playerList = Object.fromEntries(
                 Object.entries(game.players).map(([id, m]) => [id, m.data])
             )
@@ -98,6 +106,13 @@ export const load = async function ({ params, locals, cookies }) {
         } else if (rejoinedMember?.type === "moderator") {
             io.to(id).emit("memberRejoin", {
                 member: rejoinedMember.data
+            })
+
+            // Add chat message for moderator rejoining
+            await addChatMessage({
+                gameId: id,
+                text: `${rejoinedMember.name} has rejoined the game`,
+                type: "notification"
             })
 
             const playerList = Object.fromEntries(

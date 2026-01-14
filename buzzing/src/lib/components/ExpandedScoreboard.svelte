@@ -2,14 +2,16 @@
     import gameStore from "$lib/stores/game.svelte";
     import teamsStore from "$lib/stores/teams.svelte";
     import playersStore from "$lib/stores/players.svelte";
-    import scoreboard from "$lib/stores/scoreboard.svelte";
+    import { useScoreboard } from "$lib/stores/scoreboard.svelte";
     import { createEventDispatcher, getContext } from "svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
     import { convertToCSV } from "$lib/functions/scoreboard";
     import ScoreboardTableCell from "./ScoreboardTableCell.svelte";
-    import getSocket from "$lib/socket.svelte";
     import Confirm from "$lib/components/Confirm.svelte";
     import type { Writable } from "svelte/store";
+    import { useConvexClient } from "convex-svelte";
+    import { api } from "../../../convex/_generated/api";
+    import gameIdStore from "$lib/stores/gameId.svelte";
 
     interface Props {
         isModerator?: boolean;
@@ -18,8 +20,7 @@
 
     let { isModerator = false, showTotalInHeader = false }: Props = $props();
 
-    const socket = getSocket();
-    const dispatch = createEventDispatcher();
+    const convex = useConvexClient();
 
     type ModalStore = Writable<{
         component: any;
@@ -27,24 +28,31 @@
     } | null>;
     const modalStore: ModalStore = getContext("modalStore");
 
+    // Use Convex subscription for scoreboard data
+    const scoreboardQuery = useScoreboard();
+
     let rowNumber = $derived(
-        Math.max(0, ...Object.keys(scoreboard.value).map(Number)),
+        scoreboardQuery.data
+            ? Math.max(0, ...Object.keys(scoreboardQuery.data.scores || {}).map(Number))
+            : 0
     );
     let rowArray = $derived(Array.from({ length: rowNumber }, (_, i) => i + 1));
     let playersFromScores = $derived(
-        Object.values(scoreboard.value).reduce(
-            (acc: Record<string, string[]>, s) => {
-                for (const t of Object.keys(s.tossup)) {
-                    if (!acc[t]) {
-                        acc[t] = [s.tossup[t]!.playerId];
-                    } else if (!acc[t]!.includes(s.tossup[t]!.playerId)) {
-                        acc[t]!.push(s.tossup[t]!.playerId);
+        scoreboardQuery.data
+            ? Object.values(scoreboardQuery.data.scores || {}).reduce(
+                (acc: Record<string, string[]>, s: any) => {
+                    for (const t of Object.keys(s.tossup)) {
+                        if (!acc[t]) {
+                            acc[t] = [s.tossup[t]!.playerId];
+                        } else if (!acc[t]!.includes(s.tossup[t]!.playerId)) {
+                            acc[t]!.push(s.tossup[t]!.playerId);
+                        }
                     }
-                }
-                return acc;
-            },
-            {} as Record<string, string[]>,
-        ),
+                    return acc;
+                },
+                {} as Record<string, string[]>,
+            )
+            : {}
     );
     let playersFromTeams = $derived(
         Object.entries(teamsStore.value).reduce(
@@ -59,36 +67,38 @@
         combinePlayersLists(playersFromScores, playersFromTeams),
     );
     let runningScores = $derived(
-        (() => {
-            // Compute running total for each team row by row.
-            let totals: Record<string, number> = {};
-            let scoreHistory: Record<number, Record<string, number>> = {};
-            Object.entries(scoreboard.value).forEach(([rowNumStr, row]) => {
-                const i = Number(rowNumStr);
-                // Copy previous
-                totals = { ...totals };
-                if (row) {
-                    // Tossups
-                    for (const [teamId, entry] of Object.entries(row.tossup)) {
-                        if (!totals[teamId]) totals[teamId] = 0;
-                        if (entry.scoreType === "correct") totals[teamId] += 4;
-                        else if (entry.scoreType === "incorrect")
-                            totals[teamId] -= 1;
-                        else if (entry.scoreType === "penalty")
-                            totals[teamId] -= 4;
+        scoreboardQuery.data
+            ? (() => {
+                // Compute running total for each team row by row.
+                let totals: Record<string, number> = {};
+                let scoreHistory: Record<number, Record<string, number>> = {};
+                Object.entries(scoreboardQuery.data.scores || {}).forEach(([rowNumStr, row]: [string, any]) => {
+                    const i = Number(rowNumStr);
+                    // Copy previous
+                    totals = { ...totals };
+                    if (row) {
+                        // Tossups
+                        for (const [teamId, entry] of Object.entries(row.tossup) as [string, any][]) {
+                            if (!totals[teamId]) totals[teamId] = 0;
+                            if (entry.scoreType === "correct") totals[teamId] += 4;
+                            else if (entry.scoreType === "incorrect")
+                                totals[teamId] -= 1;
+                            else if (entry.scoreType === "penalty")
+                                totals[teamId] -= 4;
+                        }
+                        // Bonus
+                        const bonus = row.bonus;
+                        if (bonus && bonus.teamId) {
+                            const current = totals[bonus.teamId] ?? 0;
+                            totals[bonus.teamId] =
+                                current + (bonus.correct ? 10 : 0);
+                        }
                     }
-                    // Bonus
-                    const bonus = row.bonus;
-                    if (bonus && bonus.teamId) {
-                        const current = totals[bonus.teamId] ?? 0;
-                        totals[bonus.teamId] =
-                            current + (bonus.correct ? 10 : 0);
-                    }
-                }
-                scoreHistory[i] = { ...totals };
-            });
-            return scoreHistory;
-        })(),
+                    scoreHistory[i] = { ...totals };
+                });
+                return scoreHistory;
+            })()
+            : {}
     );
 
     function combinePlayersLists(
@@ -128,7 +138,7 @@
             teamsStore.value,
             playersStore.value,
             players,
-            scoreboard.value,
+            scoreboardQuery.data?.scores || {},
         );
         const url = window.URL.createObjectURL(
             new Blob([csv], { type: "plain/text" }),
@@ -150,21 +160,18 @@
         scoreType: ScoreType | "none",
     ) {
         if (!isModerator) return;
-        scoreboard.editTossup(
+        const gId = gameIdStore.value;
+        if (!gId) return;
+
+        convex.mutation(api.scoreboard.editTossup, {
+            gameId: gId,
             number,
             playerId,
             teamId,
             category,
             scoreType,
-        );
-        socket.emit(
-            "editTossup",
-            number,
-            playerId,
-            teamId,
-            category,
-            scoreType,
-        );
+        });
+        // Socket emit removed - Convex handles real-time updates
     }
 
     function handleBonusChange(
@@ -173,8 +180,16 @@
         scoreType: "correct" | "incorrect" | "none",
     ) {
         if (!isModerator) return;
-        scoreboard.editBonus(number, teamId, scoreType);
-        socket.emit("editBonus", number, teamId, scoreType);
+        const gId = gameIdStore.value;
+        if (!gId) return;
+
+        convex.mutation(api.scoreboard.editBonus, {
+            gameId: gId,
+            number,
+            teamId,
+            scoreType,
+        });
+        // Socket emit removed - Convex handles real-time updates
     }
 
     function deleteQuestion(number: number) {
@@ -185,8 +200,13 @@
                 title: "Delete Question #" + number,
                 message: `Are you sure you want to delete question #${number}?`,
                 confirmCallback: () => {
-                    scoreboard.deleteQuestion(number);
-                    socket.emit("deleteQuestion", number);
+                    const gId = gameIdStore.value;
+                    if (gId) {
+                        convex.mutation(api.scoreboard.deleteQuestion, {
+                            gameId: gId,
+                            number,
+                        });
+                    }
                     $modalStore = null;
                 },
                 cancelCallback: () => {
@@ -207,21 +227,32 @@
                     $modalStore = null;
                 },
                 confirmCallback: () => {
-                    socket.emit("clearScores");
+                    const gId = gameIdStore.value;
+                    if (gId) {
+                        // Clear scores via Convex
+                        convex.mutation(api.scoreboard.clear, { gameId: gId });
+
+                        // Add chat message via Convex
+                        convex.mutation(api.chatMessages.add, {
+                            gameId: gId,
+                            type: "notification",
+                            text: "Scores cleared",
+                        });
+                    }
+
                     $modalStore = null;
                 },
             },
         };
     }
 
-    const pointValues = {
-        tossup: 4,
-        bonus: 10,
-        penalty: -4,
-    };
+    const pointValues = $derived(
+        scoreboardQuery.data?.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
+    );
 
     function sumQuestionScores(teamId: string) {
-        return Object.values(scoreboard.value).reduce((acc: number, q) => {
+        if (!scoreboardQuery.data) return 0;
+        return Object.values(scoreboardQuery.data.scores || {}).reduce((acc: number, q: any) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
                 acc += pointValues.tossup;
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
@@ -285,7 +316,7 @@
         </thead>
         <tbody>
             {#each rowArray as i}
-                {@const scoreRow = scoreboard.value[i]}
+                {@const scoreRow = scoreboardQuery.data?.scores?.[i]}
                 <tr>
                     <td class="question-number">#{i}</td>
                     {#if scoreRow}

@@ -10,6 +10,9 @@
     import badgeSvg from "$lib/icons/badge.svg?raw";
     import editNameSvg from "$lib/icons/edit-name.svg?raw";
     import TextField from "$lib/components/TextField.svelte";
+    import { useConvexClient } from "convex-svelte";
+    import { api } from "../../../convex/_generated/api";
+    import gameIdStore from "$lib/stores/gameId.svelte";
 
     interface Props {
         member: ClientPlayer | ClientModerator;
@@ -19,6 +22,7 @@
     let { member, showControls = false }: Props = $props();
 
     const socket = getSocket();
+    const convex = useConvexClient();
     type ModalStore = Writable<{
         component: any;
         props: Record<string, unknown>;
@@ -37,6 +41,17 @@
                 cancelCallback: () => ($modalStore = null),
                 confirmCallback: () => {
                     socket.emit("promotePlayer", member.id);
+
+                    // Add chat message via Convex
+                    const gId = gameIdStore.value;
+                    if (gId) {
+                        convex.mutation(api.chatMessages.add, {
+                            gameId: gId,
+                            type: "notification",
+                            text: `${member.name} has been promoted to a moderator`,
+                        });
+                    }
+
                     $modalStore = null;
                 },
             },
@@ -52,6 +67,17 @@
                 cancelCallback: () => ($modalStore = null),
                 confirmCallback: () => {
                     socket.emit("kickPlayer", member.id);
+
+                    // Add chat message via Convex
+                    const gId = gameIdStore.value;
+                    if (gId) {
+                        convex.mutation(api.chatMessages.add, {
+                            gameId: gId,
+                            type: "notification",
+                            text: `${member.name} has been kicked`,
+                        });
+                    }
+
                     $modalStore = null;
                 },
             },
@@ -59,6 +85,7 @@
     }
 
     function rename() {
+        const oldName = member.name;
         $modalStore = {
             component: TextField,
             props: {
@@ -71,6 +98,17 @@
                 cancelCallback: () => ($modalStore = null),
                 confirmCallback: (value: string) => {
                     socket.emit("renamePlayer", member.id, value);
+
+                    // Add chat message via Convex
+                    const gId = gameIdStore.value;
+                    if (gId) {
+                        convex.mutation(api.chatMessages.add, {
+                            gameId: gId,
+                            type: "notification",
+                            text: `${oldName} has been renamed to ${value}`,
+                        });
+                    }
+
                     $modalStore = null;
                 },
             },
