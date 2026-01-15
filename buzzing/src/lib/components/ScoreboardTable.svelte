@@ -11,10 +11,9 @@
     interface Props {
         scoreboardData: any;
         isModerator?: boolean;
-        showTotalInHeader?: boolean;
     }
 
-    let { scoreboardData, isModerator = false, showTotalInHeader = false }: Props = $props();
+    let { scoreboardData, isModerator = false }: Props = $props();
 
     const convex = useConvexClient();
 
@@ -241,15 +240,10 @@
                 {#if teamPlayers}
                     <th
                         colspan={teamPlayers.length + 2}
-                        class:team-name={showTotalInHeader}
+                        class:team-name={true}
                         style:font-weight="bold"
                     >
-                        {#if showTotalInHeader}
-                            <span>{scoreboardData.teamNames[teamId] || teamId}</span
-                            >: {sumQuestionScores(teamId)}
-                        {:else}
-                            {scoreboardData.teamNames[teamId] || teamId}
-                        {/if}
+                        {scoreboardData.teamNames[teamId] || teamId}
                     </th>
                 {/if}
             {/each}
@@ -378,6 +372,7 @@
     table {
         border-collapse: collapse;
         border: 2px solid $border-color;
+        background-color: $background-1;
         table-layout: fixed;
         overflow: hidden;
         margin-top: 1em;
@@ -403,10 +398,6 @@
         }
 
         &.team-name {
-            span {
-                font-weight: bold;
-                color: $text;
-            }
             font-size: 1.1rem;
             color: $primary;
             text-transform: none;

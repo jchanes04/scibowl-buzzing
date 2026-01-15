@@ -5,8 +5,17 @@
     import { useQuery, useConvexClient } from 'convex-svelte';
     import { api } from '../../../../convex/_generated/api';
     import GameHistoryItem from '$lib/components/GameHistoryItem.svelte';
+    import { setContext } from 'svelte';
+    import { writable } from 'svelte/store';
 
     const convex = useConvexClient();
+
+    // Set up modal context
+    const modalStore = writable<{
+        component: any;
+        props: Record<string, unknown>;
+    } | null>(null);
+    setContext('modalStore', modalStore);
 
     let authenticated = $state(false);
     let currentUser = $state<User | null>(null);
@@ -330,6 +339,12 @@
     </div>
 {/if}
 
+{#if $modalStore}
+    <div class="modal-background"></div>
+    {@const SvelteComponent = $modalStore.component}
+    <SvelteComponent {...$modalStore.props} />
+{/if}
+
 <style lang="scss">
     @use '$styles/_global.scss' as *;
 
@@ -533,5 +548,14 @@
         gap: 0.5rem;
     }
 
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 100vw;
+        background-color: rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+    }
 
 </style>

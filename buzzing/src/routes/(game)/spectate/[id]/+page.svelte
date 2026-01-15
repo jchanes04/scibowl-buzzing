@@ -92,7 +92,7 @@
         <Timer />
     </TopBar>
     <MemberList />
-    <ExpandedScoreboard isModerator={false} showTotalInHeader={true} />
+    <ExpandedScoreboard isModerator={false} />
     <Chatbox />
 </main>
 

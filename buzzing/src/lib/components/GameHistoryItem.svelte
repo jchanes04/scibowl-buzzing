@@ -2,6 +2,9 @@
     import { type User } from '$lib/stores/auth';
     import { useConvexClient } from 'convex-svelte';
     import { api } from '../../../../convex/_generated/api';
+    import ScoreboardModal from './ScoreboardModal.svelte';
+    import { getContext } from 'svelte';
+    import { writable, type Writable } from 'svelte/store';
 
     interface Props {
         game: {
@@ -10,6 +13,14 @@
             tags: string[];
             memberType: string;
             createdAt: number;
+            scores?: any;
+            teamNames?: Record<string, string>;
+            playerNames?: Record<string, any>;
+            pointValues?: {
+                tossup: number;
+                bonus: number;
+                penalty: number;
+            };
         };
         expandedGames: Set<string>;
         tagInputs: Record<string, string>;
@@ -24,6 +35,46 @@
     }
 
     let { game, expandedGames, tagInputs, currentUser, privateTagsQuery, toggleGameExpanded, getPrivateTagsForGame, addPrivateTag, removePrivateTag, addPublicTag, removePublicTag }: Props = $props();
+
+    type ModalStore = Writable<{
+        component: any;
+        props: Record<string, unknown>;
+    } | null>;
+    const modalStore: ModalStore = getContext("modalStore");
+
+    const pointValues = $derived(game.pointValues || { tossup: 4, bonus: 10, penalty: -4 });
+
+    function sumQuestionScores(teamId: string): number {
+        if (!game.scores) return 0;
+        return Object.values(game.scores).reduce((acc: number, q: any) => {
+            if (q.tossup[teamId]?.scoreType === "correct") {
+                acc += pointValues.tossup;
+            } else if (q.tossup[teamId]?.scoreType === "penalty") {
+                acc += pointValues.penalty;
+            }
+
+            if (q.bonus?.teamId === teamId && q.bonus?.correct) {
+                acc += pointValues.bonus;
+            }
+            return acc;
+        }, 0);
+    }
+
+    function openScoreboardModal() {
+        if (!modalStore) return;
+
+        $modalStore = {
+            component: ScoreboardModal,
+            props: {
+                scoreboardData: {
+                    scores: game.scores || {},
+                    teamNames: game.teamNames || {},
+                    playerNames: game.playerNames || {},
+                    pointValues: pointValues,
+                },
+            },
+        };
+    }
 </script>
 
 <li class="game-item-wrapper">
@@ -76,7 +127,6 @@
             {#if game.memberType === 'moderator'}
                 <div class="tag-section">
                     <h4>Public Tags (visible to all)</h4>
-                    <p class="tag-note">Public tags can be managed here. Changes are visible to all participants.</p>
                     <div class="tags-list">
                         {#each game.tags as tag}
                             <span class="tag public">
@@ -94,6 +144,22 @@
                         />
                         <button onclick={() => addPublicTag(game.gameId)}>Add</button>
                     </div>
+                </div>
+            {/if}
+
+            <!-- Team Scores Section -->
+            {#if game.teamNames && Object.keys(game.teamNames).length > 0}
+                <div class="scores-section">
+                    <h4>Final Scores</h4>
+                    <div class="team-scores-list">
+                        {#each Object.entries(game.teamNames) as [teamId, teamName]}
+                            <div class="team-score-item">
+                                <span class="team-name">{teamName}</span>
+                                <span class="team-score-value">{sumQuestionScores(teamId)}</span>
+                            </div>
+                        {/each}
+                    </div>
+                    <button class="view-scoreboard-button" onclick={() => openScoreboardModal()}>View Full Scoreboard</button>
                 </div>
             {/if}
         </div>
@@ -131,6 +197,47 @@
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
+    }
+
+    .scores-section {
+        margin-bottom: 1rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        h4 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.9rem;
+            color: $text;
+        }
+    }
+
+    .team-scores-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .team-score-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: $background-2;
+        border-radius: 0.25rem;
+        border: 1px solid $border-color;
+    }
+
+    .team-name {
+        font-weight: 600;
+        color: $text;
+    }
+
+    .team-score-value {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: $primary;
     }
 
     .game-name {
@@ -189,6 +296,14 @@
         margin-left: 0.5rem;
     }
 
+    .view-scoreboard-button {
+        @extend %button;
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        margin-top: 0.75rem;
+        width: 100%;
+    }
+
     .game-details {
         padding: 1rem;
         border-top: 1px solid $border-color;
@@ -209,11 +324,6 @@
         }
     }
 
-    .tag-note {
-        font-size: 0.8rem;
-        color: $text-muted;
-        margin: 0 0 0.5rem 0;
-    }
 
     .tags-list {
         display: flex;
@@ -248,14 +358,13 @@
 
         input {
             flex: 1;
-            font-size: 0.9rem;
-            padding: 0.4rem 0.6rem;
             @extend %text-input;
         }
 
         button {
-            font-size: 0.85rem;
-            padding: 0.4rem 0.8rem;
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            margin: .5rem;
             @extend %button;
         }
     }

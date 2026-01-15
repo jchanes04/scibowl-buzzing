@@ -2,8 +2,6 @@ import { Game, type GameSettings, type GameTimes } from './Game'
 import { createJoinCode, createMemberID, createTeamID } from '$lib/functions/createId'
 import { unsubscribeFromGame } from '$lib/server/gameMemberCache'
 import { getConvexClient, api } from '$lib/convex.server'
-import { env } from '$env/dynamic/private'
-
 // basically just a fancy array with methods and shit
 
 export class GameManager {

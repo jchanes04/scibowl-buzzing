@@ -11,10 +11,9 @@
 
     interface Props {
         isModerator?: boolean;
-        showTotalInHeader?: boolean;
     }
 
-    let { isModerator = false, showTotalInHeader = false }: Props = $props();
+    let { isModerator = false }: Props = $props();
 
     const convex = useConvexClient();
 
@@ -130,7 +129,6 @@
     <ScoreboardTable
         scoreboardData={scoreboardStore.value}
         {isModerator}
-        {showTotalInHeader}
     />
     <div class="actions">
         <button onclick={exportScores}>Export Scores</button>

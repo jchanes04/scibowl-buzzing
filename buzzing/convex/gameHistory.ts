@@ -38,6 +38,14 @@ export const getByMemberId = query({
           isActive: game.isActive ?? false,
           memberType: membership?.type ?? "player",
           memberName: membership?.name ?? "",
+          playerNames: game.playerNames ?? [],
+          teamNames: game.teamNames ?? [],
+          scores: game.scores ?? {},
+          pointValues: game.pointValues ?? {
+            tossup: 4,
+            bonus: 10,
+            penalty: -4,
+          },
           tags: game.tags ?? [],
         };
       })
