@@ -15,13 +15,12 @@
     import gameIdStore from "$lib/stores/gameId.svelte";
     import {
         initMembersSubscription,
-        clearMembersSubscription,
-        useMembers,
-        useTeams,
-        setMembers,
-        setTeams
+        clearMembersSubscription
     } from "$lib/stores/members.svelte";
-    import { initScoreboardSubscription, clearScoreboardSubscription } from "$lib/stores/scoreboard.svelte";
+    import { initScoreboardSubscription, clearScoreboardSubscription, scoreboardStore } from "$lib/stores/scoreboard.svelte";
+    import { gameInactiveModal, showGameInactiveModal, hideGameInactiveModal } from "$lib/stores/gameInactiveModal.svelte"
+    import GameInactiveModal from "$lib/components/GameInactiveModal.svelte"
+    import { goto } from "$app/navigation";
 
     interface Props {
         data: Required<PageServerData>;
@@ -56,24 +55,24 @@
         }
     });
 
-    // Get Convex queries for members and teams
-    const membersQuery = useMembers();
-    const teamsQuery = useTeams();
-
-    // Update stores from Convex queries
+    // Watch isActive via Convex subscription
     $effect(() => {
-        const members = membersQuery.data;
-        const teams = teamsQuery.data;
-        if (members) {
-            setMembers(members);
+        if (scoreboardStore.isActive === false) {
+            showGameInactiveModal(
+                () => socket.emit('reopenGame'),
+                () => {
+                    goto('/')
+                    socket.disconnect()
+                }
+            )
+        } else if (scoreboardStore.isActive === true && gameInactiveModal.visible) {
+            hideGameInactiveModal()
         }
-        if (teams) {
-            setTeams(teams);
-        }
-    });
+    })
 
     // Cleanup
     onDestroy(() => {
+        hideGameInactiveModal()
         clearMembersSubscription();
         clearScoreboardSubscription();
         gameIdStore.clear();
@@ -97,6 +96,14 @@
     <Chatbox />
 </main>
 
+{#if gameInactiveModal.visible}
+  <div class="modal-background"></div>
+  <GameInactiveModal
+    reopenCallback={gameInactiveModal.reopenCallback || (() => {})}
+    leaveCallback={gameInactiveModal.leaveCallback || (() => {})}
+  />
+{/if}
+
 <style lang="scss">
     main {
         display: grid;
@@ -119,5 +126,15 @@
                 ". scoreboard ."
                 ". member-list .";
         }
+    }
+
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
     }
 </style>

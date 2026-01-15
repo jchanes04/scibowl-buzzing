@@ -18,18 +18,43 @@ export default defineSchema({
     .index("by_gameId", ["gameId"])
     .index("by_gameId_timestamp", ["gameId", "timestamp"]),
 
-  scoreboard: defineTable({
+  games: defineTable({
+    // Game identification
     gameId: v.string(),
-    // Store scores as an object with string keys (question numbers) and QuestionPairScore values
-    scores: v.any(), // Using v.any() for the complex nested structure
+    joinCode: v.string(),
+    name: v.string(),
+
+    // Settings (immutable after creation)
+    settings: v.object({
+      individualsAllowed: v.boolean(),
+      newTeamsAllowed: v.boolean(),
+      spectatorsAllowed: v.boolean(),
+    }),
+
+    // Timer configuration (immutable after creation)
+    times: v.object({
+      tossup: v.array(v.number()),
+      bonus: v.array(v.number()),
+      visual: v.array(v.number()),
+    }),
+
+    // Scoreboard data (mutable via mutations)
+    scores: v.any(), // Record<number, QuestionPairScore>
     pointValues: v.object({
       tossup: v.number(),
       bonus: v.number(),
       penalty: v.number(),
     }),
+
+    // Timestamps
+    createdAt: v.number(),
     lastUpdated: v.number(),
+
+    // Game state
+    isActive: v.optional(v.boolean()),
   })
-    .index("by_gameId", ["gameId"]),
+    .index("by_gameId", ["gameId"])
+    .index("by_joinCode", ["joinCode"]),
 
   gameMembers: defineTable({
     gameId: v.string(),

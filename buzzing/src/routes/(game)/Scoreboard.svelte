@@ -1,14 +1,13 @@
 <script lang="ts">
     import { teamsStore, playersStore } from "$lib/stores/members.svelte";
     import gameStore from "$lib/stores/game.svelte"
-    import { useScoreboard } from "$lib/stores/scoreboard.svelte"
-
-    const scoreboardQuery = useScoreboard();
+    import { scoreboardStore } from "$lib/stores/scoreboard.svelte"
 
     function sumQuestionScores(teamId: string) {
-        if (!scoreboardQuery.data) return 0;
-        const pointValues = scoreboardQuery.data.pointValues || { tossup: 4, bonus: 10, penalty: -4 };
-        return Object.values(scoreboardQuery.data.scores || {}).reduce((acc: number, q: any) => {
+        const scoreboardData = scoreboardStore.value;
+        if (!scoreboardData) return 0;
+        const pointValues = scoreboardData.pointValues;
+        return Object.values(scoreboardData.scores).reduce((acc: number, q: any) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
                 acc += pointValues.tossup
             } else if (q.tossup[teamId]?.scoreType === "penalty") {

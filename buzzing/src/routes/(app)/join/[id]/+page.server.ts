@@ -9,7 +9,7 @@ import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
 export const load = async function ({ params, url }) {
     const { id } = params
     const code = url.searchParams.get('code')
-    const game = getGame(id)
+    const game = await getGame(id)
 
     if (!game) redirect(302, "/join")
 
@@ -41,7 +41,7 @@ export const actions = {
         const teamOrIndiv = body.get("team-or-indiv") as string
 
         const { id: gameId } = params
-        const game = getGame(gameId)
+        const game = await getGame(gameId)
 
         if (!game) return fail(400, { error: "Invalid game" })
 

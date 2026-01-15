@@ -34,7 +34,7 @@
     }
     import { teamsStore, type ClientTeamData } from "$lib/stores/members.svelte";
     import gameStore from "$lib/stores/game.svelte";
-    import scoreboard from "$lib/stores/scoreboard.svelte";
+    import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { gameClockStore, timerStore } from "$lib/stores/timer.svelte";
     import getSocket from "$lib/socket.svelte";
     import type { Writable } from "svelte/store";
@@ -187,7 +187,7 @@
             $modalStore = timeEndedModal(() => {
                 if (
                     questionType === "tossup" &&
-                    scoreboard.value[questionNumber] &&
+                    scoreboardStore.value.scores[questionNumber] &&
                     questionNumber !== 0
                 ) {
                     $modalStore = overwriteQuestionModal(questionNumber, () => {
@@ -201,7 +201,7 @@
             });
         } else if (
             questionType === "tossup" &&
-            scoreboard.value[questionNumber] &&
+            scoreboardStore.value.scores[questionNumber] &&
             questionNumber !== 0
         ) {
             $modalStore = overwriteQuestionModal(questionNumber, () => {
@@ -267,14 +267,14 @@
                 if (!teamId) return;
 
                 if (selectedScore === "correct") {
-                    convex.mutation(api.scoreboard.correctBonus, {
+                    convex.mutation(api.games.correctBonus, {
                         gameId: gId,
                         number,
                         teamId,
                         category,
                     });
                 } else {
-                    convex.mutation(api.scoreboard.incorrectBonus, {
+                    convex.mutation(api.games.incorrectBonus, {
                         gameId: gId,
                         number,
                         teamId,
@@ -288,7 +288,7 @@
                 if (!teamId) return;
 
                 if (selectedScore === "correct") {
-                    convex.mutation(api.scoreboard.correctTossup, {
+                    convex.mutation(api.games.correctTossup, {
                         gameId: gId,
                         number,
                         playerId,
@@ -296,7 +296,7 @@
                         category,
                     });
                 } else if (selectedScore === "incorrect") {
-                    convex.mutation(api.scoreboard.incorrectTossup, {
+                    convex.mutation(api.games.incorrectTossup, {
                         gameId: gId,
                         number,
                         playerId,
@@ -304,7 +304,7 @@
                         category,
                     });
                 } else if (selectedScore === "penalty") {
-                    convex.mutation(api.scoreboard.penalty, {
+                    convex.mutation(api.games.penalty, {
                         gameId: gId,
                         number,
                         playerId,
@@ -374,7 +374,7 @@
         const currentQuestion = gameStore.value.state.currentQuestion;
 
         if (gId && currentQuestion) {
-            convex.mutation(api.scoreboard.dead, {
+            convex.mutation(api.games.dead, {
                 gameId: gId,
                 number: currentQuestion.number,
                 category: currentQuestion.category,

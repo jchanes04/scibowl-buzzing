@@ -73,11 +73,6 @@ export const add = mutation({
       timestamp,
     });
 
-    // Schedule deletion after TTL
-    await ctx.scheduler.runAfter(TTL_MS, internal.chatMessages.deleteMessage, {
-      messageId,
-    });
-
     return messageId;
   },
 });

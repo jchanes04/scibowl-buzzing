@@ -11,7 +11,7 @@
 import type * as chatMessages from "../chatMessages.js";
 import type * as crons from "../crons.js";
 import type * as gameMembers from "../gameMembers.js";
-import type * as scoreboard from "../scoreboard.js";
+import type * as games from "../games.js";
 import type * as teams from "../teams.js";
 
 import type {
@@ -24,7 +24,7 @@ declare const fullApi: ApiFromModules<{
   chatMessages: typeof chatMessages;
   crons: typeof crons;
   gameMembers: typeof gameMembers;
-  scoreboard: typeof scoreboard;
+  games: typeof games;
   teams: typeof teams;
 }>;
 

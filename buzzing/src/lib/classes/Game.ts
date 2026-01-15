@@ -108,7 +108,8 @@ type GameParameters = {
     ownerId: string,
     ownerName: string,
     joinCode: string,
-    times?: GameTimes
+    times?: GameTimes,
+    existingId?: string
 }
 
 export class Game {
@@ -116,7 +117,6 @@ export class Game {
     joinCode: string
     name: string
 
-    spectators: Set<string>
     settings: GameSettings
 
     timer: Timer
@@ -131,16 +131,15 @@ export class Game {
 
     state: IdleState | OpenState | BuzzedState
 
-    constructor({ name, settings, teamNames, ownerId, ownerName, joinCode, times }: GameParameters) {
-        this.id = createGameID()
+    constructor({ name, settings, teamNames, ownerId, ownerName, joinCode, times, existingId }: GameParameters) {
+        this.id = existingId || createGameID()
         this.joinCode = joinCode.toUpperCase()
 
         this.name = name
-        
-        this.spectators = new Set()
+
         this.settings = {
             individualsAllowed: settings?.individualsAllowed ?? false,
-            newTeamsAllowed: settings?.newTeamsAllowed ?? true,
+            newTeamsAllowed: settings?.newTeamsAllowed ?? false,
             spectatorsAllowed: settings?.spectatorsAllowed ?? false
         }
 
@@ -309,16 +308,5 @@ export class Game {
             number,
             category
         }
-    }
-
-
-    addSpectator() {
-        const newId = createMemberID()
-        this.spectators.add(newId)
-        return newId
-    }
-
-    removeSpectator(id: string) {
-        return this.spectators.delete(id)
     }
 }

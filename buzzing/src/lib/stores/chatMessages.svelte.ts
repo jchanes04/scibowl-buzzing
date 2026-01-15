@@ -8,15 +8,36 @@ export type ChatMessage = {
   timestamp: number;
 };
 
-// Store for the subscription parameters
+// Subscription parameters
 let subscriptionParams = $state<{ gameId: string; memberId: string } | null>(null);
+
+// Private state populated automatically
+let _chatMessages = $state<ChatMessage[]>([]);
+
+// Track if subscription is already initialized
+let isInitialized = $state(false);
 
 /**
  * Initialize the chat messages subscription
  * Must be called from a component after setupConvex()
  */
 export function initChatSubscription(gameId: string, memberId: string) {
+  // Only initialize once
+  if (isInitialized) return;
+
   subscriptionParams = { gameId, memberId };
+  isInitialized = true;
+
+  // Create single subscription shared via the internal state
+  const chatMessagesQuery = useQuery(
+    api.chatMessages.getForGame,
+    () => subscriptionParams ?? 'skip'
+  );
+
+  // Sync query results to state automatically
+  $effect(() => {
+    if (chatMessagesQuery.data) _chatMessages = chatMessagesQuery.data;
+  });
 }
 
 /**
@@ -24,17 +45,8 @@ export function initChatSubscription(gameId: string, memberId: string) {
  */
 export function clearChatSubscription() {
   subscriptionParams = null;
-}
-
-/**
- * Get the chat messages query result
- * Must be called from a component context
- */
-export function useChatMessages() {
-  return useQuery(
-    api.chatMessages.getForGame,
-    () => subscriptionParams ?? 'skip'
-  );
+  _chatMessages = [];
+  isInitialized = false;
 }
 
 /**
@@ -44,22 +56,19 @@ export function getChatSubscriptionParams() {
   return subscriptionParams;
 }
 
-// Legacy default export for backwards compatibility during migration
-// This will show deprecation warnings if used
-const chatMessagesStore = {
+/**
+ * Chat messages store - derived from Convex data
+ */
+export const chatMessagesStore = {
   get value(): ChatMessage[] {
-    console.warn('chatMessagesStore.value is deprecated. Use useChatMessages() instead.');
-    return [];
-  },
-  add(_message: Omit<ChatMessage, '_id' | 'timestamp'>) {
-    console.warn('chatMessagesStore.add() is deprecated. Use Convex mutation instead.');
-  },
-  set(_messages: ChatMessage[]) {
-    console.warn('chatMessagesStore.set() is deprecated.');
-  },
-  clear() {
-    console.warn('chatMessagesStore.clear() is deprecated. Use clearChatSubscription().');
-  },
+    return _chatMessages;
+  }
 };
 
-export default chatMessagesStore;
+// Re-export simplified interface
+export default {
+  chatMessagesStore,
+  initChatSubscription,
+  clearChatSubscription,
+  getChatSubscriptionParams
+};

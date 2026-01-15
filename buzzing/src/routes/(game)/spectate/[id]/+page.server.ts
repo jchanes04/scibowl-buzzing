@@ -6,7 +6,7 @@ import { env } from "$env/dynamic/public"
 
 export const load = async function ({ params, cookies }) {
     const { id } = params
-    const game = getGame(id)
+    const game = await getGame(id)
 
     if (!game)
         redirect(302, "/join")

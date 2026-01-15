@@ -47,15 +47,8 @@
                             memberId: member.id,
                         });
 
-                        // Then emit socket for instant UI feedback
+                        // Then emit socket to disconnect and reconnect // todo confirm this
                         socket.emit("promotePlayer", member.id);
-
-                        // Add chat message
-                        convex.mutation(api.chatMessages.add, {
-                            gameId: gId,
-                            type: "notification",
-                            text: `${member.name} has been promoted to a moderator`,
-                        });
                     }
 
                     $modalStore = null;
@@ -116,13 +109,6 @@
 
                         // Then emit socket for instant UI feedback
                         socket.emit("renamePlayer", member.id, value);
-
-                        // Add chat message
-                        convex.mutation(api.chatMessages.add, {
-                            gameId: gId,
-                            type: "notification",
-                            text: `${oldName} has been renamed to ${value}`,
-                        });
                     }
 
                     $modalStore = null;
@@ -135,11 +121,17 @@
 {#if member.type === "moderator"}
     <li class="moderator">
         {member.name}
+        {#if !member.isActive}
+            <span class="inactive-indicator" title="Inactive"></span>
+        {/if}
     </li>
 {:else}
-    <li>
+    <li class="{!member.isActive ? 'inactive' : ''}">
         {member.name}
         <span class="team">({member.team.name})</span>
+        {#if !member.isActive}
+            <span class="inactive-indicator" title="Inactive"></span>
+        {/if}
         {#if showControls}
             <div class="controls">
                 <button onclick={promote}>
@@ -186,6 +178,20 @@
     .moderator {
         color: $orange;
         font-weight: 600;
+    }
+
+    .inactive {
+        opacity: 0.6;
+    }
+
+    .inactive-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: $red;
+        border-radius: 50%;
+        margin-left: 0.5em;
+        flex-shrink: 0;
     }
 
     .controls {

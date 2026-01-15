@@ -1,15 +1,13 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
 
-// Get active members for a game (for client subscription)
+// Get all members for a game (for client subscription)
 export const getForGame = query({
   args: { gameId: v.string() },
   handler: async (ctx, args) => {
     const members = await ctx.db
       .query("gameMembers")
-      .withIndex("by_gameId_active", (q) =>
-        q.eq("gameId", args.gameId).eq("isActive", true)
-      )
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
       .collect();
 
     return members.map((m) => ({
@@ -17,6 +15,7 @@ export const getForGame = query({
       name: m.name,
       type: m.type,
       teamId: m.teamId,
+      isActive: m.isActive,
     }));
   },
 });

@@ -3,11 +3,11 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Backup cleanup: delete messages older than 24 hours every hour
-// This catches any messages where scheduled deletion failed
-crons.hourly(
+// Daily cleanup: delete messages older than 24 hours
+// Runs once per day to clean up old chat messages
+crons.daily(
   "cleanup old chat messages",
-  { minuteUTC: 0 },
+  { hourUTC: 0, minuteUTC: 0 },
   internal.chatMessages.cleanupOldMessages
 );
 

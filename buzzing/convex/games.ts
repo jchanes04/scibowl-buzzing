@@ -16,21 +16,56 @@ const scoreTypeValidator = v.union(
   v.literal("penalty")
 );
 
+// ============================================================================
+// QUERIES
+// ============================================================================
+
 /**
- * Query: Get scoreboard for a game
+ * Query: Get full game data by gameId
  */
-export const getForGame = query({
+export const getByGameId = query({
   args: {
     gameId: v.string(),
   },
   handler: async (ctx, args) => {
-    const scoreboard = await ctx.db
-      .query("scoreboard")
+    return await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+  },
+});
+
+/**
+ * Query: Get game by joinCode
+ */
+export const getByJoinCode = query({
+  args: {
+    joinCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("games")
+      .withIndex("by_joinCode", (q) => q.eq("joinCode", args.joinCode))
+      .first();
+  },
+});
+
+/**
+ * Query: Get scoreboard data for a game (for client subscription)
+ * Returns just scores and pointValues to match existing scoreboard subscription interface
+ */
+export const getScoreboard = query({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
       .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
       .first();
 
-    if (!scoreboard) {
-      // Return default empty scoreboard
+    if (!game) {
+      // Return default empty scoreboard if game not found
       return {
         scores: {},
         pointValues: {
@@ -38,62 +73,151 @@ export const getForGame = query({
           bonus: 10,
           penalty: -4,
         },
+        isActive: true,
       };
     }
 
     return {
-      scores: scoreboard.scores,
-      pointValues: scoreboard.pointValues,
+      scores: game.scores,
+      pointValues: game.pointValues,
+      isActive: game.isActive ?? true,
     };
   },
 });
 
-/**
- * Helper: Get or create scoreboard document for a game
- */
-async function getOrCreateScoreboard(ctx: any, gameId: string) {
-  let scoreboard = await ctx.db
-    .query("scoreboard")
-    .withIndex("by_gameId", (q: any) => q.eq("gameId", gameId))
-    .first();
+// ============================================================================
+// MUTATIONS - Game Lifecycle
+// ============================================================================
 
-  if (!scoreboard) {
-    const scoreboardId = await ctx.db.insert("scoreboard", {
-      gameId,
+/**
+ * Mutation: Create a new game with config and empty scoreboard
+ */
+export const create = mutation({
+  args: {
+    gameId: v.string(),
+    joinCode: v.string(),
+    name: v.string(),
+    settings: v.object({
+      individualsAllowed: v.boolean(),
+      newTeamsAllowed: v.boolean(),
+      spectatorsAllowed: v.boolean(),
+    }),
+    times: v.object({
+      tossup: v.array(v.number()),
+      bonus: v.array(v.number()),
+      visual: v.array(v.number()),
+    }),
+    pointValues: v.optional(v.object({
+      tossup: v.number(),
+      bonus: v.number(),
+      penalty: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("games", {
+      gameId: args.gameId,
+      joinCode: args.joinCode,
+      name: args.name,
+      settings: args.settings,
+      times: args.times,
       scores: {},
-      pointValues: {
+      pointValues: args.pointValues ?? {
         tossup: 4,
         bonus: 10,
         penalty: -4,
       },
-      lastUpdated: Date.now(),
+      createdAt: now,
+      lastUpdated: now,
+      isActive: true,
     });
-    scoreboard = await ctx.db.get(scoreboardId);
+  },
+});
+
+/**
+ * Mutation: Set game active/inactive state
+ */
+export const setActive = mutation({
+  args: {
+    gameId: v.string(),
+    isActive: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        isActive: args.isActive,
+        lastUpdated: Date.now(),
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: Delete a game (for cleanup on game end or sweep)
+ */
+export const deleteGame = mutation({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.delete(game._id);
+    }
+  },
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Helper: Get game document (throws if not found)
+ */
+async function getGame(ctx: any, gameId: string) {
+  const game = await ctx.db
+    .query("games")
+    .withIndex("by_gameId", (q: any) => q.eq("gameId", gameId))
+    .first();
+
+  if (!game) {
+    throw new Error(`Game not found: ${gameId}`);
   }
 
-  return scoreboard!;
+  return game;
 }
 
 /**
- * Helper: Update scoreboard (internal helper)
+ * Helper: Update game scores
  */
-async function updateScoreboard(
+async function updateScores(
   ctx: any,
   gameId: string,
-  updater: (scores: any, pointValues: any) => void
+  updater: (scores: any) => void
 ) {
-  const scoreboard = await getOrCreateScoreboard(ctx, gameId);
-  const scores = { ...scoreboard.scores };
-  const pointValues = { ...scoreboard.pointValues };
+  const game = await getGame(ctx, gameId);
+  const scores = { ...game.scores };
 
-  updater(scores, pointValues);
+  updater(scores);
 
-  await ctx.db.patch(scoreboard._id, {
+  await ctx.db.patch(game._id, {
     scores,
-    pointValues,
     lastUpdated: Date.now(),
   });
 }
+
+// ============================================================================
+// MUTATIONS - Scoring
+// ============================================================================
 
 /**
  * Mutation: Correct tossup
@@ -107,7 +231,7 @@ export const correctTossup = mutation({
     category: categoryValidator,
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow) {
         questionRow.tossup[args.teamId] = {
@@ -143,7 +267,7 @@ export const incorrectTossup = mutation({
     category: categoryValidator,
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow) {
         questionRow.tossup[args.teamId] = {
@@ -179,7 +303,7 @@ export const penalty = mutation({
     category: categoryValidator,
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow) {
         questionRow.tossup[args.teamId] = {
@@ -213,7 +337,7 @@ export const dead = mutation({
     category: categoryValidator,
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       if (!scores[args.number.toString()]) {
         scores[args.number.toString()] = {
           category: args.category,
@@ -236,7 +360,7 @@ export const correctBonus = mutation({
     category: categoryValidator,
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow) {
         questionRow.bonus = {
@@ -268,7 +392,7 @@ export const incorrectBonus = mutation({
     category: categoryValidator,
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow) {
         questionRow.bonus = {
@@ -302,7 +426,7 @@ export const editTossup = mutation({
     scoreType: v.union(scoreTypeValidator, v.literal("none")),
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow) {
         if (args.scoreType === "none") {
@@ -340,7 +464,7 @@ export const editBonus = mutation({
     scoreType: v.union(v.literal("correct"), v.literal("incorrect"), v.literal("none")),
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       const questionRow = scores[args.number.toString()];
       if (questionRow && args.scoreType === "none") {
         questionRow.bonus = null;
@@ -363,7 +487,7 @@ export const clearQuestion = mutation({
     number: v.number(),
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       delete scores[args.number.toString()];
     });
   },
@@ -378,7 +502,7 @@ export const deleteQuestion = mutation({
     number: v.number(),
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
+    await updateScores(ctx, args.gameId, (scores) => {
       delete scores[args.number.toString()];
       const max = Math.max(...Object.keys(scores).map(Number));
       for (let i = args.number + 1; i <= max; i++) {
@@ -393,16 +517,17 @@ export const deleteQuestion = mutation({
 });
 
 /**
- * Mutation: Clear all scores
+ * Mutation: Clear all scores (keeps game config)
  */
-export const clear = mutation({
+export const clearScores = mutation({
   args: {
     gameId: v.string(),
   },
   handler: async (ctx, args) => {
-    await updateScoreboard(ctx, args.gameId, (scores, _pointValues) => {
-      // Clear all scores
-      Object.keys(scores).forEach((key) => delete scores[key]);
+    const game = await getGame(ctx, args.gameId);
+    await ctx.db.patch(game._id, {
+      scores: {},
+      lastUpdated: Date.now(),
     });
   },
 });

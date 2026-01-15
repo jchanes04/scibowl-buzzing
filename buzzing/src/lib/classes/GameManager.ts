@@ -1,6 +1,8 @@
 import { Game, type GameSettings, type GameTimes } from './Game'
 import { createJoinCode, createMemberID, createTeamID } from '$lib/functions/createId'
 import { unsubscribeFromGame } from '$lib/server/gameMemberCache'
+import { getConvexClient, api } from '$lib/convex.server'
+import { env } from '$env/dynamic/private'
 
 // basically just a fancy array with methods and shit
 
@@ -8,8 +10,11 @@ export class GameManager {
     private games: Record<string, Game> = {}
     private joinCodes: string[] = []
 
-    get(id: string) {
-        return this.games[id] || null
+    async get(id: string) {
+        if (this.games[id]) {
+            return this.games[id];
+        }
+        return await this.reopenGame(id);
     }
 
     has(id: string) {
@@ -50,21 +55,58 @@ export class GameManager {
         delete this.games[id]
     }
 
-    sweepGames() {
+    async sweepGames() {
         const swept: string[] = []
 
-        if (process.env.DISABLE_GAME_SWEEPING === 'true') {
-            return swept
-        }
-
-        for (const [ id, g ] of Object.entries(this.games)) {
-            if (Date.now() - g.lastActive > 600_000) {
+        for (const [id, g] of Object.entries(this.games)) {
+            if (Date.now() - g.lastActive > 300_000) {
                 swept.push(id)
                 g.timer.end()
-                this.deleteGame(id)
+                g.gameClock.end()
+
+                // Mark inactive, DON'T delete
+                try {
+                    await getConvexClient().mutation(api.games.setActive, {
+                        gameId: id,
+                        isActive: false
+                    })
+                } catch (e) {
+                    console.error(`Failed to mark game ${id} inactive:`, e)
+                }
+
+                // Remove from memory but keep sockets connected
+                unsubscribeFromGame(id)
+                delete this.games[id]
             }
         }
 
         return swept
+    }
+
+    async reopenGame(gameId: string): Promise<Game | null> {
+        if (this.has(gameId)) return await this.get(gameId)
+
+        const convex = getConvexClient()
+        const gameData = await convex.query(api.games.getByGameId, { gameId })
+        if (!gameData) return null
+
+        const game = new Game({
+            name: gameData.name,
+            settings: gameData.settings,
+            teamNames: [],
+            ownerId: '',
+            ownerName: '',
+            joinCode: gameData.joinCode,
+            times: {
+                tossup: gameData.times.tossup as [number, number],
+                bonus: gameData.times.bonus as [number, number],
+                visual: gameData.times.visual as [number, number]
+            },
+            existingId: gameId  // Reuse the ID
+        })
+
+        this.games[gameId] = game
+        await convex.mutation(api.games.setActive, { gameId, isActive: true })
+        return game
     }
 }

@@ -16,6 +16,16 @@ export const actions = {
         const spectatorsAllowed = body.get("spectators-allowed") as string === "on"
         const teamNames = JSON.parse(body.get('teams') as string || "[]")
 
+        // Extract timer settings (extra time is always 2 seconds)
+        const tossupTime = parseInt(body.get("tossup-time") as string) || 5
+        const bonusTime = parseInt(body.get("bonus-time") as string) || 20
+        const visualTime = parseInt(body.get("visual-time") as string) || 30
+
+        // Extract point values
+        const tossupPoints = parseInt(body.get("tossup-points") as string) || 4
+        const bonusPoints = parseInt(body.get("bonus-points") as string) || 10
+        const penaltyPoints = parseInt(body.get("penalty-points") as string) || -4
+
         const gameData = {
             name: gameName,
             settings: {
@@ -23,7 +33,17 @@ export const actions = {
                 newTeamsAllowed,
                 spectatorsAllowed
             },
-            teamNames
+            teamNames,
+            times: {
+                tossup: [tossupTime, 2] as [number, number],
+                bonus: [bonusTime, 2] as [number, number],
+                visual: [visualTime, 2] as [number, number]
+            },
+            pointValues: {
+                tossup: tossupPoints,
+                bonus: bonusPoints,
+                penalty: penaltyPoints
+            }
         }
 
         const { game, ownerId } = await createNewGame(ownerName, gameData)

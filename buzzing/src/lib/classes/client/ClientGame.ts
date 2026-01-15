@@ -13,7 +13,6 @@ export interface ClientGame {
     moderators: ClientPlayer[],
     players: ClientPlayer[],
     teams: ClientTeam[],
-    spectators: Set<string>
 
     settings: GameSettings
 

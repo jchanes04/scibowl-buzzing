@@ -1,15 +1,13 @@
 <script lang="ts">
-    import { useChatMessages } from '$lib/stores/chatMessages.svelte';
+    import { chatMessagesStore } from '$lib/stores/chatMessages.svelte';
     import { tick } from 'svelte'
 
     let chatMessagesElement: HTMLElement
 
-    // Use the Convex query
-    const chatQuery = useChatMessages();
-
     $effect(() => {
         // React to changes in chat messages
-        if (chatQuery.data) {
+        const messages = chatMessagesStore.value;
+        if (messages && messages.length > 0) {
             tick().then(() => {
                 if (chatMessagesElement) {
                     chatMessagesElement.scrollTo(0, chatMessagesElement.scrollHeight)
@@ -22,15 +20,9 @@
 <div class="chatbox">
     <h2>Chat</h2>
     <div class="chat-messages" bind:this={chatMessagesElement}>
-        {#if chatQuery.isLoading}
-            <p class="notification">Loading messages...</p>
-        {:else if chatQuery.error}
-            <p class="warning">Failed to load messages</p>
-        {:else if chatQuery.data}
-            {#each chatQuery.data as message}
-                <p class={message.text.startsWith("Penalty") ? "penalty" : message.type}>{message.text}</p>
-            {/each}
-        {/if}
+        {#each chatMessagesStore.value as message}
+            <p class={message.text.startsWith("Penalty") ? "penalty" : message.type}>{message.text}</p>
+        {/each}
     </div>
 </div>
 

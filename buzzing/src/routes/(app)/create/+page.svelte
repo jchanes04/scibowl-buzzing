@@ -3,6 +3,8 @@
     import TeamList from "$lib/components/TeamList.svelte";
     import type { ActionData } from "./$types";
     import { user } from "$lib/stores/auth";
+    import { slide } from "svelte/transition";
+    import { quadOut } from "svelte/easing";
 
     interface Props {
         form?: { message?: string };
@@ -18,6 +20,17 @@
     let gameName = $state("");
     let defaultTeams = $state<string[]>([]);
     let newTeamName = $state("");
+    let showAdvancedSettings = $state(false);
+
+    // Timer settings (default values from Game.ts, extra time is always 2 seconds)
+    let tossupTime = $state(5);
+    let bonusTime = $state(20);
+    let visualTime = $state(30);
+
+    // Point value settings (default values from GameScoreboard.ts)
+    let tossupPoints = $state(4);
+    let bonusPoints = $state(10);
+    let penaltyPoints = $state(-4);
 
     // Auto-populate owner name from user profile on page load
     let hasAutoPopulated = $state(false);
@@ -85,41 +98,138 @@
         />
         <br />
 
-        <h2>Team Settings</h2>
-        <div class="checkbox-wrapper">
-            <label for="new-teams">
-                <input
-                    id="new-teams"
-                    type="checkbox"
-                    name="new-teams-allowed"
-                    bind:checked={newTeamsAllowed}
-                />
-                <span></span>
-                Members can create their own teams that others can join
-            </label>
-            <label for="individual-teams">
-                <input
-                    id="individual-teams"
-                    type="checkbox"
-                    name="individual-teams-allowed"
-                    bind:checked={individualTeamsAllowed}
-                />
-                <span></span>
-                Members can join the game on a team of just themselves
-            </label>
-            <label for="spectators">
-                <input
-                    id="spectators"
-                    type="checkbox"
-                    name="spectators-allowed"
-                />
-                <span></span>
-                Spectators allowed
-            </label>
-        </div>
         <h2 style="margin-bottom: 0rem">Default Teams</h2>
         <TeamList bind:teams={defaultTeams} bind:newTeamName />
         <br />
+
+        <button type="button" class="advanced-toggle" onclick={() => showAdvancedSettings = !showAdvancedSettings}>
+            Advanced Settings
+            <span class="toggle-icon">{showAdvancedSettings ? '-' : '+'}</span>
+        </button>
+
+        {#if showAdvancedSettings}
+            <div class="advanced-settings" transition:slide={{ duration: 300, easing: quadOut }}>
+                <h2>Team Settings</h2>
+                <div class="checkbox-wrapper">
+                    <label for="new-teams">
+                        <input
+                            id="new-teams"
+                            type="checkbox"
+                            name="new-teams-allowed"
+                            bind:checked={newTeamsAllowed}
+                        />
+                        <span></span>
+                        Members can create their own teams that others can join
+                    </label>
+                    <label for="individual-teams">
+                        <input
+                            id="individual-teams"
+                            type="checkbox"
+                            name="individual-teams-allowed"
+                            bind:checked={individualTeamsAllowed}
+                        />
+                        <span></span>
+                        Members can join the game on a team of just themselves
+                    </label>
+                    <label for="spectators">
+                        <input
+                            id="spectators"
+                            type="checkbox"
+                            name="spectators-allowed"
+                        />
+                        <span></span>
+                        Spectators allowed
+                    </label>
+                </div>
+
+                <!-- Timer Lengths -->
+                <h2>Timer Lengths</h2>
+                <div class="timer-grid">
+                    <div class="form-group">
+                        <label for="tossup-time">Tossup</label>
+                        <input
+                            type="number"
+                            id="tossup-time"
+                            name="tossup-time"
+                            bind:value={tossupTime}
+                            placeholder="5"
+                            min="1"
+                            max="300"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bonus-time">Bonus</label>
+                        <input
+                            type="number"
+                            id="bonus-time"
+                            name="bonus-time"
+                            bind:value={bonusTime}
+                            placeholder="20"
+                            min="1"
+                            max="300"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="visual-time">Visual</label>
+                        <input
+                            type="number"
+                            id="visual-time"
+                            name="visual-time"
+                            bind:value={visualTime}
+                            placeholder="30"
+                            min="1"
+                            max="300"
+                        />
+                    </div>
+                </div>
+
+                <!-- Point Values -->
+                <h2>Point Values</h2>
+                <div class="points-grid">
+                    <div class="form-group">
+                        <label for="tossup-points">Tossup</label>
+                        <input
+                            type="number"
+                            id="tossup-points"
+                            name="tossup-points"
+                            bind:value={tossupPoints}
+                            placeholder="4"
+                            min="-100"
+                            max="100"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bonus-points">Bonus</label>
+                        <input
+                            type="number"
+                            id="bonus-points"
+                            name="bonus-points"
+                            bind:value={bonusPoints}
+                            placeholder="10"
+                            min="-100"
+                            max="100"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="penalty-points">Penalty</label>
+                        <input
+                            type="number"
+                            id="penalty-points"
+                            name="penalty-points"
+                            bind:value={penaltyPoints}
+                            placeholder="-4"
+                            min="-100"
+                            max="100"
+                        />
+                    </div>
+                </div>
+            </div>
+        {/if}
+
         <button type="submit" disabled={!submitEnabled}>Create Game</button>
     </form>
 </main>
@@ -239,6 +349,72 @@
         margin-bottom: 1rem;
     }
 
+    .advanced-toggle {
+        @extend %button;
+        font-size: 1.25rem;
+        width: 90%;
+        padding: 0.8rem;
+        margin-left: 1.25em;
+        background: $background-1;
+        color: $primary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-weight: 500;
+
+
+        &:active {
+            transform: none;
+            filter: none;
+        }
+
+        .toggle-icon {
+
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+    }
+
+    .advanced-settings {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid $border-color;
+    }
+
+    .timer-grid, .points-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+        margin-top: 1rem;
+
+        @media (max-width: 600px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    label {
+        font-weight: 600;
+        color: $text;
+        font-size: 1rem;
+        text-align: left;
+        margin-left: 1em;
+    }
+
+    input[type="number"] {
+        @extend %text-input;
+        margin: 0;
+        font-size: 1.1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
     button[type="submit"] {
         @extend %button;
         font-size: 1.25rem;
@@ -248,3 +424,4 @@
         background: $primary;
     }
 </style>
+

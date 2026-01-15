@@ -17,18 +17,24 @@
     import { beforeNavigate } from "$app/navigation";
     import { untrack, onDestroy } from "svelte";
     import type { NewQuestionData } from "$lib/classes/Game";
-    import { initChatSubscription, clearChatSubscription } from "$lib/stores/chatMessages.svelte";
-    import { initScoreboardSubscription, clearScoreboardSubscription } from "$lib/stores/scoreboard.svelte";
+    import {
+        initChatSubscription,
+        clearChatSubscription,
+    } from "$lib/stores/chatMessages.svelte";
+    import {
+        initScoreboardSubscription,
+        clearScoreboardSubscription,
+    } from "$lib/stores/scoreboard.svelte";
     import gameIdStore from "$lib/stores/gameId.svelte";
     import {
         initMembersSubscription,
         clearMembersSubscription,
-        useMembers,
-        useTeams,
-        setMembers,
-        setTeams,
-        myMemberStore
+        myMemberStore,
     } from "$lib/stores/members.svelte";
+    import { gameInactiveModal, showGameInactiveModal, hideGameInactiveModal } from "$lib/stores/gameInactiveModal.svelte"
+    import GameInactiveModal from "$lib/components/GameInactiveModal.svelte"
+    import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
+    import { goto } from "$app/navigation";
 
     interface Props {
         data: PageServerData;
@@ -45,38 +51,45 @@
         const clientQuestion: NewQuestionData | null = serverQuestion
             ? serverQuestion.bonus
                 ? {
-                    bonus: true,
-                    category: serverQuestion.category,
-                    teamId: serverQuestion.teamId ?? "",
-                    number: serverQuestion.number,
-                    visual: serverQuestion.visual
-                }
+                      bonus: true,
+                      category: serverQuestion.category,
+                      teamId: serverQuestion.teamId ?? "",
+                      number: serverQuestion.number,
+                      visual: serverQuestion.visual,
+                  }
                 : {
-                    bonus: false,
-                    category: serverQuestion.category,
-                    number: serverQuestion.number
-                }
+                      bonus: false,
+                      category: serverQuestion.category,
+                      number: serverQuestion.number,
+                  }
             : null;
 
         const gameData: ClientGameData = {
             ...data.gameInfo,
-            state: (data.currentGameState.questionState === "open" || data.currentGameState.questionState === "buzzed") && clientQuestion
-                ? {
-                    questionState: "open",
-                    currentBuzzer: null,
-                    currentQuestion: clientQuestion,
-                    buzzingEnabled: true,
-                    buzzedTeamIds: data.currentGameState.buzzedTeamIds,
-                }
-                : {
-                    questionState: "idle",
-                    currentBuzzer: null,
-                    currentQuestion: null,
-                    buzzingEnabled: false,
-                    buzzedTeamIds: [],
-                }
+            state:
+                (data.currentGameState.questionState === "open" ||
+                    data.currentGameState.questionState === "buzzed") &&
+                clientQuestion
+                    ? {
+                          questionState: "open",
+                          currentBuzzer: null,
+                          currentQuestion: clientQuestion,
+                          buzzingEnabled: true,
+                          buzzedTeamIds: data.currentGameState.buzzedTeamIds,
+                      }
+                    : {
+                          questionState: "idle",
+                          currentBuzzer: null,
+                          currentQuestion: null,
+                          buzzingEnabled: false,
+                          buzzedTeamIds: [],
+                      },
         };
         gameStore.set(gameData);
+        gameIdStore.set(data.gameInfo.id);
+        initChatSubscription(data.gameInfo.id, data.myMemberId);
+        initScoreboardSubscription(data.gameInfo.id);
+        initMembersSubscription(data.gameInfo.id, data.myMemberId);
     }
 
     // Initialize game state synchronously for SSR
@@ -84,32 +97,15 @@
 
     // Initialize all subscriptions
     $effect(() => {
-        if (data.gameInfo.id && data.myMemberId) {
-            gameIdStore.set(data.gameInfo.id);
-            initChatSubscription(data.gameInfo.id, data.myMemberId);
-            initScoreboardSubscription(data.gameInfo.id);
-            initMembersSubscription(data.gameInfo.id, data.myMemberId);
-        }
-    });
-
-    // Get Convex queries for members and teams
-    const membersQuery = useMembers();
-    const teamsQuery = useTeams();
-
-    // Update stores from Convex queries
-    $effect(() => {
-        const members = membersQuery.data;
-        const teams = teamsQuery.data;
-        if (members) {
-            setMembers(members);
-        }
-        if (teams) {
-            setTeams(teams);
-        }
+        const _deps = [data.gameInfo, data.myMemberId];
+        untrack(() => {
+            initGameState();
+        });
     });
 
     // Cleanup on unmount
     onDestroy(() => {
+        hideGameInactiveModal()
         clearChatSubscription();
         clearScoreboardSubscription();
         clearMembersSubscription();
@@ -124,6 +120,21 @@
         });
     });
 
+    // Watch isActive via Convex subscription
+    $effect(() => {
+        if (scoreboardStore.isActive === false) {
+            showGameInactiveModal(
+                () => socket.emit('reopenGame'),
+                () => {
+                    goto('/')
+                    socket.disconnect()
+                }
+            )
+        } else if (scoreboardStore.isActive === true && gameInactiveModal.visible) {
+            hideGameInactiveModal()
+        }
+    })
+
     // svelte-ignore state_referenced_locally
     const debug = browser
         ? new Debugger(
@@ -137,7 +148,8 @@
 
     let buzzed = $derived(
         gameStore.value?.state.questionState === "buzzed" &&
-            gameStore.value?.state.currentBuzzer?.id === myMemberStore.value?.id,
+            gameStore.value?.state.currentBuzzer?.id ===
+                myMemberStore.value?.id,
     );
 
     beforeNavigate(() => {
@@ -169,6 +181,14 @@
         >Open Debug Log</button
     >
 </main>
+
+{#if gameInactiveModal.visible}
+  <div class="modal-background"></div>
+  <GameInactiveModal
+    reopenCallback={gameInactiveModal.reopenCallback || (() => {})}
+    leaveCallback={gameInactiveModal.leaveCallback || (() => {})}
+  />
+{/if}
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
@@ -239,5 +259,15 @@
                 top: max(10vh, 80px);
             }
         }
+    }
+
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
     }
 </style>

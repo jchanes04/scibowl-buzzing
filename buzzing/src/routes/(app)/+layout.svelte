@@ -8,9 +8,6 @@
 
     let { children }: Props = $props();
 
-    onMount(() => {
-        chatMessagesStore.clear();
-    });
 </script>
 
 <Header />

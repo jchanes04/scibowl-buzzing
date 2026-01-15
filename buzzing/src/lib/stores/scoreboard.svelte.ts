@@ -2,15 +2,50 @@ import { useQuery } from 'convex-svelte';
 import { api } from '../../../convex/_generated/api';
 import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
 
-// Store for the subscription parameter
+type ScoreboardData = {
+  scores: Record<number, QuestionPairScore>;
+  pointValues: {
+    tossup: number;
+    bonus: number;
+    penalty: number;
+  };
+  isActive: boolean;
+};
+
+// Subscription parameter
 let subscriptionGameId = $state<string | null>(null);
+
+// Private state populated automatically
+let _scoreboard = $state<ScoreboardData>({
+  scores: {},
+  pointValues: { tossup: 4, bonus: 10, penalty: -4 },
+  isActive: true
+});
+
+// Track if subscription is already initialized
+let isInitialized = $state(false);
 
 /**
  * Initialize the scoreboard subscription
  * Must be called from a component after setupConvex()
  */
 export function initScoreboardSubscription(gameId: string) {
+  // Only initialize once
+  if (isInitialized) return;
+
   subscriptionGameId = gameId;
+  isInitialized = true;
+
+  // Create single subscription shared via the internal state
+  const scoreboardQuery = useQuery(
+    api.games.getScoreboard,
+    () => subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
+  );
+
+  // Sync query results to state automatically
+  $effect(() => {
+    if (scoreboardQuery.data) _scoreboard = scoreboardQuery.data;
+  });
 }
 
 /**
@@ -18,29 +53,29 @@ export function initScoreboardSubscription(gameId: string) {
  */
 export function clearScoreboardSubscription() {
   subscriptionGameId = null;
+  _scoreboard = {
+    scores: {},
+    pointValues: { tossup: 4, bonus: 10, penalty: -4 },
+    isActive: true
+  };
+  isInitialized = false;
 }
 
 /**
- * Get the scoreboard query result
- * Must be called from a component context
+ * Scoreboard store - derived from Convex data
  */
-export function useScoreboard() {
-  return useQuery(
-    api.scoreboard.getForGame,
-    () => subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
-  );
-}
-
-// Read-only store interface matching the old API
-const scoreboardStore = {
-  get value(): Record<number, QuestionPairScore> {
-    console.warn('scoreboard.value is deprecated. Use useScoreboard() instead.');
-    return {};
+export const scoreboardStore = {
+  get value(): ScoreboardData {
+    return _scoreboard;
   },
-  get pointValues() {
-    console.warn('scoreboard.pointValues is deprecated. Use useScoreboard() instead.');
-    return { tossup: 4, bonus: 10, penalty: -4 };
-  },
+  get isActive(): boolean {
+    return _scoreboard.isActive;
+  }
 };
 
-export default scoreboardStore;
+// Re-export simplified interface
+export default {
+  scoreboardStore,
+  initScoreboardSubscription,
+  clearScoreboardSubscription
+};

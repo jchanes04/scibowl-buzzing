@@ -14,15 +14,37 @@ let subscriptionGameId = $state<string | null>(null);
 let myMemberId = $state<string | null>(null);
 
 // Internal state populated from Convex queries
-let _members = $state<Array<{ id: string; name: string; type: "player" | "moderator"; teamId?: string }>>([]);
+let _members = $state<Array<{ id: string; name: string; type: "player" | "moderator"; teamId?: string; isActive: boolean }>>([]);
 let _teams = $state<Array<{ teamId: string; name: string; type: "default" | "created" | "individual"; captainId?: string }>>([]);
+
+// Track if subscription is already initialized
+let isInitialized = $state(false);
 
 /**
  * Initialize subscriptions for members and teams
  */
 export function initMembersSubscription(gameId: string, memberId: string) {
+    // Only initialize once
+    if (isInitialized) return;
+
     subscriptionGameId = gameId;
     myMemberId = memberId;
+    isInitialized = true;
+
+    // These create single subscriptions shared via the internal state
+    const membersQuery = useQuery(api.gameMembers.getForGame, () =>
+        subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
+    );
+
+    const teamsQuery = useQuery(api.teams.getForGame, () =>
+        subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
+    );
+
+    // Sync query results to state automatically
+    $effect(() => {
+        if (membersQuery.data) _members = membersQuery.data;
+        if (teamsQuery.data) _teams = teamsQuery.data;
+    });
 }
 
 /**
@@ -33,38 +55,7 @@ export function clearMembersSubscription() {
     myMemberId = null;
     _members = [];
     _teams = [];
-}
-
-/**
- * Get the Convex query for members
- */
-export function useMembers() {
-    return useQuery(api.gameMembers.getForGame, () =>
-        subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
-    );
-}
-
-/**
- * Get the Convex query for teams
- */
-export function useTeams() {
-    return useQuery(api.teams.getForGame, () =>
-        subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
-    );
-}
-
-/**
- * Update internal members state from Convex query result
- */
-export function setMembers(members: typeof _members) {
-    _members = members;
-}
-
-/**
- * Update internal teams state from Convex query result
- */
-export function setTeams(teams: typeof _teams) {
-    _teams = teams;
+    isInitialized = false;
 }
 
 // Types for the derived stores
@@ -81,12 +72,14 @@ export type ClientPlayer = {
     name: string;
     type: "player";
     team: ClientTeamData;
+    isActive: boolean;
 };
 
 export type ClientModerator = {
     id: string;
     name: string;
     type: "moderator";
+    isActive: boolean;
 };
 
 export type MyMember = {
@@ -122,7 +115,8 @@ export const teamsStore = {
                     team.players[m.id] = {
                         id: m.id,
                         name: m.name,
-                        type: "player"
+                        type: "player",
+                        isActive: m.isActive
                     };
                 }
             }
@@ -148,7 +142,8 @@ export const playersStore = {
                         id: m.id,
                         name: m.name,
                         type: "player",
-                        team
+                        team,
+                        isActive: m.isActive
                     };
                 }
             }
@@ -170,7 +165,8 @@ export const moderatorsStore = {
                 moderators[m.id] = {
                     id: m.id,
                     name: m.name,
-                    type: "moderator"
+                    type: "moderator",
+                    isActive: m.isActive
                 };
             }
         }
@@ -216,16 +212,12 @@ export const myMemberStore = {
     }
 };
 
-// Re-export for backwards compatibility during migration
+// Re-export simplified interface
 export default {
     teamsStore,
     playersStore,
     moderatorsStore,
     myMemberStore,
     initMembersSubscription,
-    clearMembersSubscription,
-    useMembers,
-    useTeams,
-    setMembers,
-    setTeams
+    clearMembersSubscription
 };

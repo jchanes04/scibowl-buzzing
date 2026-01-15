@@ -288,10 +288,10 @@ export function createSocket(spectator: boolean = false) {
         socket.disconnect()
     })
 
-    socket.on('gameSwept', () => {
-        goto('/swept')
-        socket.disconnect()
-    })
+    // socket.on('gameSwept', () => {
+    //     goto('/swept')
+    //     socket.disconnect()
+    // })
 
     socket.on('gameEnd', () => {
         goto('/')
