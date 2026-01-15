@@ -6,6 +6,32 @@ import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
 import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
 
+// Get or create a persistent member ID for the user
+function getPersistentMemberId(cookies: any): { memberId: string, isNew: boolean } {
+    // Check if user is logged in (has WorkOS user cookie)
+    const workosUserCookie = cookies.get("workos_user")
+    if (workosUserCookie) {
+        try {
+            const userData = JSON.parse(workosUserCookie)
+            if (userData.id) {
+                return { memberId: userData.id, isNew: false }
+            }
+        } catch (e) {
+            // Fall through to anonymous handling
+        }
+    }
+
+    // Check for existing persistent member ID cookie
+    const existingMemberId = cookies.get("persistentMemberId")
+    if (existingMemberId) {
+        return { memberId: existingMemberId, isNew: false }
+    }
+
+    // Create new persistent member ID for anonymous user
+    const newMemberId = createMemberID()
+    return { memberId: newMemberId, isNew: true }
+}
+
 export const load = async function ({ params, url }) {
     const { id } = params
     const code = url.searchParams.get('code')
@@ -46,7 +72,22 @@ export const actions = {
         if (!game) return fail(400, { error: "Invalid game" })
 
         const convex = getConvexClient()
-        const playerId = createMemberID()
+
+        // Get persistent member ID (from WorkOS or cookie)
+        const { memberId: playerId, isNew: isNewMemberId } = getPersistentMemberId(cookies)
+
+        // Set cookie for new anonymous users
+        if (isNewMemberId) {
+            cookies.set("persistentMemberId", playerId, {
+                path: "/",
+                domain: (new URL(env.PUBLIC_COOKIE_URL as string)).hostname,
+                maxAge: 60 * 60 * 24 * 365 * 2, // 2 years
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax"
+            })
+        }
+
         let teamId: string
         let teamName: string
         let teamType: "default" | "created" | "individual"

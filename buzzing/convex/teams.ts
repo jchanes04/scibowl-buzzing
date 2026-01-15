@@ -103,6 +103,32 @@ export const deactivate = mutation({
   },
 });
 
+// Rejoin an existing inactive team
+export const rejoin = mutation({
+  args: {
+    gameId: v.string(),
+    teamId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const team = await ctx.db
+      .query("teams")
+      .withIndex("by_gameId_teamId", (q) =>
+        q.eq("gameId", args.gameId).eq("teamId", args.teamId)
+      )
+      .first();
+
+    if (!team) {
+      throw new Error(`Team ${args.teamId} not found in game ${args.gameId}`);
+    }
+
+    await ctx.db.patch(team._id, {
+      isActive: true,
+    });
+
+    return team._id;
+  },
+});
+
 // Change captain of a team
 export const changeCaptain = mutation({
   args: {

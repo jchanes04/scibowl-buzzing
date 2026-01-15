@@ -36,12 +36,9 @@ export const load = async function ({ params, cookies }) {
 
     
     if (member) {
-        await convex.mutation(api.gameMembers.add, {
+        await convex.mutation(api.gameMembers.rejoin, {
             gameId,
-            memberId,
-            name: member.name,
-            type: member.type,
-            teamId: member.teamId
+            memberId
         })
 
         // If it's a player with a created/individual team, reactivate the team too
@@ -49,12 +46,9 @@ export const load = async function ({ params, cookies }) {
             const allTeams = await convex.query(api.teams.getAllForGame, { gameId })
             const inactiveTeam = allTeams.find(t => t.teamId === member.teamId && !t.isActive)
             if (inactiveTeam) {
-                await convex.mutation(api.teams.add, {
+                await convex.mutation(api.teams.rejoin, {
                     gameId,
-                    teamId: member.teamId,
-                    name: member.name,
-                    type: member.type,
-                    captainId: member.captainId
+                    teamId: member.teamId
                 })
             }
         }

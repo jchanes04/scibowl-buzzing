@@ -10,8 +10,10 @@
 
 import type * as chatMessages from "../chatMessages.js";
 import type * as crons from "../crons.js";
+import type * as gameHistory from "../gameHistory.js";
 import type * as gameMembers from "../gameMembers.js";
 import type * as games from "../games.js";
+import type * as tags from "../tags.js";
 import type * as teams from "../teams.js";
 
 import type {
@@ -23,8 +25,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   chatMessages: typeof chatMessages;
   crons: typeof crons;
+  gameHistory: typeof gameHistory;
   gameMembers: typeof gameMembers;
   games: typeof games;
+  tags: typeof tags;
   teams: typeof teams;
 }>;
 

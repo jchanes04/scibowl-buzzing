@@ -64,7 +64,7 @@ export type ClientTeamData = {
     name: string;
     type: "default" | "created" | "individual";
     captainId: string | null;
-    players: Record<string, { id: string; name: string; type: "player" }>;
+    players: Record<string, Omit<ClientPlayer, "team">>;
 };
 
 export type ClientPlayer = {

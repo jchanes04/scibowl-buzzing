@@ -68,6 +68,23 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
         });
 
         console.log('Redirecting to home page after successful authentication');
+
+        // Check if user has a persistentMemberId cookie (from previous anonymous games)
+        const persistentMemberId = cookies.get('persistentMemberId');
+        if (persistentMemberId && persistentMemberId !== user.id) {
+            // Set a temporary cookie to trigger the account linking modal on the client
+            cookies.set('pendingAccountLink', JSON.stringify({
+                oldMemberId: persistentMemberId,
+                newMemberId: user.id
+            }), {
+                path: '/',
+                httpOnly: false,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 5 // 5 minutes - just needs to survive the redirect
+            });
+        }
+
         // Redirect to dashboard or home page
         throw redirect(302, '/?success=authenticated');
 

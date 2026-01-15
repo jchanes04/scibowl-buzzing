@@ -406,12 +406,11 @@ if (!globalAny._io_listeners_attached) {
             const currentMember = currentGame.getMember(memberId)
             if (currentMember?.type !== "moderator") return
 
-            // Clean up Convex data
-            await Promise.all([
-                getConvexClient().mutation(api.gameMembers.clearForGame, { gameId }),
-                getConvexClient().mutation(api.teams.clearForGame, { gameId }),
-                getConvexClient().mutation(api.games.deleteGame, { gameId })
-            ])
+            // Mark game as inactive but preserve data for game history
+            await getConvexClient().mutation(api.games.setActive, {
+                gameId,
+                isActive: false
+            })
 
             socket.to(gameId).emit('gameEnd')
             socket.emit('gameEnd')
@@ -512,9 +511,18 @@ if (!globalAny._io_interval_attached) {
     }, 100_000)
 }
 
-export async function createNewGame(ownerName: string, gameData: { name: string, settings: GameSettings, teamNames: string[], times?: { tossup: [number, number], bonus: [number, number], visual: [number, number] }, pointValues?: { tossup: number, bonus: number, penalty: number } }) {
-    const { game, ownerId, teamIds } = games.createGame({ ...gameData, ownerName })
-
+export async function createNewGame(ownerName: string,
+    gameData: { name: string, settings: GameSettings,
+        teamNames: string[],
+        times?: { tossup: [number, number],
+        bonus: [number, number], visual: [number, number] },
+        pointValues?: { tossup: number, bonus: number, penalty: number },
+        ownerId?: string,
+        tags?: string[]
+    }) {
+    console.log(gameData.ownerId, "gameData.ownerId")
+    const { game, ownerId, teamIds } = games.createGame({ ...gameData, ownerName, ownerId: gameData.ownerId })
+    console.log(ownerId, "ownerId")
     // Create game in Convex with config and empty scoreboard
     await getConvexClient().mutation(api.games.create, {
         gameId: game.id,
@@ -531,6 +539,7 @@ export async function createNewGame(ownerName: string, gameData: { name: string,
             visual: game.times.visual,
         },
         pointValues: gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
+        tags: gameData.tags,
     })
 
     // Add owner as moderator to Convex

@@ -148,6 +148,33 @@ export const promote = mutation({
   },
 });
 
+// Rejoin an existing inactive member
+export const rejoin = mutation({
+  args: {
+    gameId: v.string(),
+    memberId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const member = await ctx.db
+      .query("gameMembers")
+      .withIndex("by_gameId_memberId", (q) =>
+        q.eq("gameId", args.gameId).eq("memberId", args.memberId)
+      )
+      .first();
+
+    if (!member) {
+      throw new Error(`Member ${args.memberId} not found in game ${args.gameId}`);
+    }
+
+    await ctx.db.patch(member._id, {
+      isActive: true,
+      leftAt: undefined,
+    });
+
+    return member._id;
+  },
+});
+
 // Rename a member
 export const rename = mutation({
   args: {

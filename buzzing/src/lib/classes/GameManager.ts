@@ -31,11 +31,11 @@ export class GameManager {
         return null
     }
 
-    createGame(options: { name: string, settings: GameSettings, teamNames: string[], ownerName: string }): { game: Game, ownerId: string, teamIds: string[] } {
+    createGame(options: { name: string, settings: GameSettings, teamNames: string[], ownerName: string, ownerId?: string }): { game: Game, ownerId: string, teamIds: string[] } {
         const joinCode = createJoinCode()
         this.joinCodes.push(joinCode)
 
-        const ownerId = createMemberID()
+        const ownerId = options.ownerId || createMemberID()
         const teamIds = options.teamNames.map(() => createTeamID())
 
         const game = new Game({

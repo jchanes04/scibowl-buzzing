@@ -46,6 +46,9 @@ export default defineSchema({
       penalty: v.number(),
     }),
 
+    // Public tags (added by moderators, visible to all)
+    tags: v.optional(v.array(v.string())),
+
     // Timestamps
     createdAt: v.number(),
     lastUpdated: v.number(),
@@ -67,7 +70,8 @@ export default defineSchema({
   })
     .index("by_gameId", ["gameId"])
     .index("by_gameId_memberId", ["gameId", "memberId"])
-    .index("by_gameId_active", ["gameId", "isActive"]),
+    .index("by_gameId_active", ["gameId", "isActive"])
+    .index("by_memberId", ["memberId"]),
 
   teams: defineTable({
     gameId: v.string(),
@@ -80,4 +84,12 @@ export default defineSchema({
     .index("by_gameId", ["gameId"])
     .index("by_gameId_teamId", ["gameId", "teamId"])
     .index("by_gameId_active", ["gameId", "isActive"]),
+
+  // User data for private tags
+  // privateTags is a Record<tag, gameId[]> mapping tags to arrays of game IDs
+  users: defineTable({
+    userId: v.string(),
+    privateTags: v.any(), // Record<string, string[]>
+  })
+    .index("by_userId", ["userId"]),
 });

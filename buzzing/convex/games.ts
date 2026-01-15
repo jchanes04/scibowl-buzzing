@@ -90,6 +90,18 @@ export const getScoreboard = query({
 // ============================================================================
 
 /**
+ * Normalize a tag: lowercase, spaces to dashes, alphanumeric only
+ */
+function normalizeTag(tag: string): string | null {
+  let normalized = tag.trim().toLowerCase().replace(/\s+/g, "-");
+  normalized = normalized.replace(/[^a-z0-9-]/g, "");
+  normalized = normalized.replace(/-+/g, "-").replace(/^-|-$/g, "");
+  if (normalized.length === 0) return null;
+  if (normalized.length > 50) normalized = normalized.substring(0, 50);
+  return normalized;
+}
+
+/**
  * Mutation: Create a new game with config and empty scoreboard
  */
 export const create = mutation({
@@ -112,9 +124,16 @@ export const create = mutation({
       bonus: v.number(),
       penalty: v.number(),
     })),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // Normalize tags if provided
+    const normalizedTags = args.tags
+      ? [...new Set(args.tags.map(normalizeTag).filter((t): t is string => t !== null))]
+      : [];
+
     return await ctx.db.insert("games", {
       gameId: args.gameId,
       joinCode: args.joinCode,
@@ -127,6 +146,7 @@ export const create = mutation({
         bonus: 10,
         penalty: -4,
       },
+      tags: normalizedTags,
       createdAt: now,
       lastUpdated: now,
       isActive: true,
