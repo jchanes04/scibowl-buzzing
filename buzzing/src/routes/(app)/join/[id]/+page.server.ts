@@ -1,6 +1,6 @@
 import { generateGameToken } from "$lib/authentication"
 import { createMemberID, createTeamID } from "$lib/functions/createId"
-import { getGame, io } from "$lib/server"
+import { getGame } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
@@ -141,7 +141,7 @@ export const actions = {
         // Emit socket event for instant UI update
         const playerData = { id: playerId, name, type: "player" as const, teamID: teamId }
         const teamData = { id: teamId, name: teamName, type: teamType, captainId: null }
-        
+
         // Add chat message for player joining
         await addChatMessage({
             gameId,

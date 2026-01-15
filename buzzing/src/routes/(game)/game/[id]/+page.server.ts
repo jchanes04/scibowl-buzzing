@@ -1,5 +1,5 @@
 import { getDataFromGameToken } from "$lib/authentication"
-import { getGame, io } from "$lib/server"
+import { getGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
@@ -32,10 +32,10 @@ export const load = async function ({ params, cookies }) {
     if (!member) {
         // Member not in active cache - check Convex for inactive member
         const allMembers = await convex.query(api.gameMembers.getAllForGame, { gameId })
-        const member = allMembers.find(m => m.id === memberId)    
-    } 
+        const member = allMembers.find(m => m.id === memberId)
+    }
 
-    
+
     if (member) {
         await convex.mutation(api.gameMembers.rejoin, {
             gameId,
@@ -108,6 +108,6 @@ function buildPageData(game: Game | null, gameId: string, myMemberId: string) {
             state: currentGameState
         },
         myMemberId,
-        
+
     }
 }

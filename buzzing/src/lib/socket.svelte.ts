@@ -5,7 +5,6 @@ import { timerStore, gameClockStore } from "./stores/timer.svelte"
 import visualBonusStore from "./stores/visualBonus.svelte"
 import { goto, invalidateAll } from "$app/navigation"
 import type { Category, Question, ScoreType, BuzzerData } from "$lib/classes/Game"
-import { env } from "$env/dynamic/public"
 import {
     teamsStore,
     playersStore,
@@ -28,9 +27,10 @@ let existingSocket: Socket
 export function createSocket(spectator: boolean = false) {
     if (existingSocket) existingSocket.disconnect()
 
-    const socket = io(env.PUBLIC_WS_URL as string, {
+    // Connect to the same origin - no need for separate WebSocket URL
+    // Socket.io will automatically connect to the server that served the page
+    const socket = io({
         autoConnect: false,
-        secure: true,
         withCredentials: true,
         query: {
             spectator
@@ -157,10 +157,10 @@ export function createSocket(spectator: boolean = false) {
     socket.on('questionOpen', (question: Question) => {
         const myMember = getMyMember()
         const teams = getTeams()
-        const buzzingEnabled = !question.bonus 
-            || !!(question.teamId 
-                && question.teamId === myMember.team?.id 
-                && (teams[question.teamId]?.captainId === myMember.id 
+        const buzzingEnabled = !question.bonus
+            || !!(question.teamId
+                && question.teamId === myMember.team?.id
+                && (teams[question.teamId]?.captainId === myMember.id
                     || !teams[question.teamId]?.captainId))
         gameStore.newQuestion(question, buzzingEnabled)
 
@@ -202,8 +202,8 @@ export function createSocket(spectator: boolean = false) {
         const bonusOpen = !!game.state.currentQuestion?.bonus
             && (game.state.currentQuestion?.teamId === myMember.team?.id
                 && (teams[myMember.team?.id ?? ""]?.captainId === myMember.id || teams[myMember.team?.id ?? ""]?.captainId === null))
-        const buzzingEnabled = !myMember.moderator 
-            && (!game.state.currentQuestion?.bonus || bonusOpen) 
+        const buzzingEnabled = !myMember.moderator
+            && (!game.state.currentQuestion?.bonus || bonusOpen)
             && !game.state.buzzedTeamIds.includes(myMember.team?.id ?? "")
         gameStore.openQuestion(buzzingEnabled)
     })

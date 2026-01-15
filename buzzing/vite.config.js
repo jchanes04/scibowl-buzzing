@@ -2,6 +2,7 @@ import { sveltekit } from "@sveltejs/kit/vite"
 import { fileURLToPath } from "url"
 import { dirname } from 'path'
 import fs from 'fs'
+import { socketIOPlugin } from './src/lib/viteSocketPlugin'
 
 const filePath = fileURLToPath(import.meta.url)
 const dirPath = dirname(filePath)
@@ -12,7 +13,8 @@ const certPath = "./localhost.pem"
 /** @type {import('vite').UserConfig} */
 const config = {
     plugins: [
-        sveltekit()
+        sveltekit(),
+        socketIOPlugin()
     ],
     server: {
         https: {

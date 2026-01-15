@@ -1,7 +1,5 @@
 <script lang="ts">
     import { type User } from '$lib/stores/auth';
-    import { useConvexClient } from 'convex-svelte';
-    import { api } from '../../../../convex/_generated/api';
     import ScoreboardModal from './ScoreboardModal.svelte';
     import { getContext } from 'svelte';
     import { writable, type Writable } from 'svelte/store';
