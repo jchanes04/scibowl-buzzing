@@ -1,10 +1,4 @@
-import { createGameID, createMemberID } from "$lib/functions/createId"
-import { GameScoreboard } from "./GameScoreboard"
-import type { PlayerData } from "./Player"
-import type { ModeratorData } from "./Moderator"
-import type { ScoreboardData } from "./Scoreboard"
-import type { TeamData } from "./Team"
-import { Team } from "./Team"
+import { createGameID } from "$lib/functions/createId"
 import { Timer } from "./Timer"
 import {
     subscribeToGame,
@@ -37,29 +31,11 @@ export type LastScoredQuestion = {
     bonus: boolean
 }
 
-export type NewQuestionData = {
-    bonus: false,
-    category: Category
-    number: number
-} | {
-    bonus: true,
-    category: Category,
-    teamId: string,
-    number: number,
-    visual?: boolean
-}
 
 export type GameSettings = {
     individualsAllowed: boolean,
     newTeamsAllowed: boolean,
     spectatorsAllowed: boolean
-}
-
-export type GameScores = {
-    id: string,
-    name: string,
-    teams: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>,
-    players: Record<string, Omit<ScoreboardData, 'teamScoreboard'>>
 }
 
 // Simplified buzzer data - just the info we need for state
@@ -91,9 +67,6 @@ type OpenState = {
 }
 
 export type ScoreType = "correct" | "incorrect" | "penalty"
-
-// Legacy types kept for compatibility with page.server.ts data
-export type LeftPlayerData = PlayerData & { team?: TeamData & { type: "created" } }
 
 export type GameTimes = {
     tossup?: [number, number],
@@ -218,7 +191,7 @@ export class Game {
         return buzzerData
     }
 
-    newQuestion(question: NewQuestionData) {
+    newQuestion(question: Question) {
         if (!question) return
 
         // For bonus questions, verify the team exists

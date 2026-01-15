@@ -5,7 +5,7 @@
     import Select from "svelte-select";
     import { slide } from "svelte/transition";
     import type { PageData } from "./$types";
-    import type { TeamData } from "$lib/classes/Team";
+    import type { CachedTeam } from "$lib/server/gameMemberCache";
     import { user } from "$lib/stores/auth";
 
     interface Props {
@@ -20,7 +20,7 @@
 
     let memberName = $state("");
     let teamOrIndiv: "indiv" | "team" | "new-team" | null = $state(null);
-    let selectedTeam: TeamData | undefined = $state();
+    let selectedTeam: CachedTeam | undefined = $state();
     let newTeamName: string = $state("");
     let showRadio: boolean = $state(true);
 

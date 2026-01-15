@@ -27,7 +27,7 @@
     <ul>
         {#key playersStore.value}
             {#each Object.values(teamsStore.value) as team}
-                <li class:buzzed={gameStore.value.state.currentBuzzer?.team.id == team.id}>
+                <li class:buzzed={gameStore.value.state.currentBuzzer?.teamId == team.id}>
                     <h1>
                         <span class="team-name">{team.name}</span>
                         <span class="team-score">{sumQuestionScores(team.id)}</span>

@@ -1,6 +1,7 @@
 import type { ClientPlayer, ClientTeamData } from "$lib/stores/members.svelte"
 import type { Category, Game, ScoreType } from "$lib/classes/Game"
 import type { QuestionPairScore, Scores } from "$lib/classes/GameScoreboard"
+import type { ScoreboardPlayerNames, ScoreboardTeamNames } from "$lib/stores/scoreboard.svelte"
 import pkg from "json-2-csv"
 const { json2csv } = pkg
 
@@ -37,8 +38,8 @@ type CSVColumn = {
 }
 
 export async function convertToCSV(
-    teamList: Record<string, ClientTeamData>,
-    playerList: Record<string, ClientPlayer>,
+    teamList: ScoreboardTeamNames,
+    playerList: ScoreboardPlayerNames,
     players: Record<string, string[]>,
     scores: Record<number, QuestionPairScore>
 ) {
@@ -112,7 +113,7 @@ export async function convertToCSV(
             } else if (col.type === "player") {
                 doc[playerList[col.playerId]?.name || col.playerId] = col.entries[i]!
             } else if (col.type === "bonus") {
-                doc[(teamList[col.teamId]?.name || col.teamId) + " Bonus"] = col.entries[i]!
+                doc[(teamList[col.teamId] || col.teamId) + " Bonus"] = col.entries[i]!
             }
         }
         data.push(doc)

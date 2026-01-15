@@ -5,12 +5,15 @@
     interface Props {
         scoreType: ScoreType | "none";
         bonus: boolean;
-        onchange: (type: ScoreType | "none") => void;
+        onchange?: (type: ScoreType | "none") => void;
     }
 
     let { scoreType, bonus, onchange }: Props = $props();
 
+    let clickable = $derived(!!onchange);
+
     function handleClick() {
+        if (!onchange) return;
         if (scoreType === "none") {
             onchange("correct");
         } else if (scoreType === "correct") {
@@ -23,7 +26,7 @@
     }
 </script>
 
-<button onclick={handleClick} class={scoreType}>
+<button onclick={onchange ? handleClick : undefined} class={scoreType} class:clickable>
     {#if scoreType === "correct"}
         C
     {:else if scoreType === "incorrect"}
@@ -41,16 +44,27 @@
         background: none;
         padding: 0;
         margin: 0;
-        cursor: pointer;
         min-width: 1.8ch;
-        width: 2em;
-        height: 2em;
+        width: 2.2em;
+        height: 2.2em;
         font-weight: 600;
         transition: all 0.1s ease;
         border-radius: 0.2em;
 
-        &:hover {
-            filter: brightness(0.9);
+        &:not(.clickable) {
+            cursor: default;
+        }
+
+        &:not(.clickable):hover {
+            filter: none;
+        }
+
+        &.clickable {
+            cursor: pointer;
+
+            &:hover {
+                filter: brightness(0.9);
+            }
         }
 
         &.correct {

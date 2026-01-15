@@ -46,6 +46,10 @@ export default defineSchema({
       penalty: v.number(),
     }),
 
+    // Name lookups for scoreboard (updated only on score actions)
+    playerNames: v.optional(v.any()), // Record<string, {name: string, teamId: string}> - playerId -> player info
+    teamNames: v.optional(v.any()), // Record<string, string> - teamId -> teamName
+
     // Public tags (added by moderators, visible to all)
     tags: v.optional(v.array(v.string())),
 

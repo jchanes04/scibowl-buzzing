@@ -6,7 +6,7 @@ import { Server } from 'socket.io'
 
 import fs from 'fs'
 import type Debugger from '$lib/classes/Debugger'
-import type { Category, Game, GameSettings, NewQuestionData, ScoreType } from '$lib/classes/Game'
+import type { Category, Game, GameSettings,  Question,  ScoreType } from '$lib/classes/Game'
 import { getDataFromGameToken } from './authentication'
 import { env } from "$env/dynamic/public"
 import { addChatMessage, getConvexClient, api } from './convex.server'
@@ -105,8 +105,6 @@ if (!globalAny._io_listeners_attached) {
                     gameId,
                     memberId
                 })
-
-                socket.to(gameId).emit('memberLeave', memberId)
             }
         })
 
@@ -164,7 +162,8 @@ if (!globalAny._io_listeners_attached) {
                     addChatMessage({
                         gameId,
                         text: `${player.name} has buzzed`,
-                        type: "buzz"
+                        type: "buzz",
+                        target: Object.keys(currentGame.players).filter(id => id !== memberId)
                     })
                 } else {
                     socket.emit('buzzFailed')
@@ -189,7 +188,7 @@ if (!globalAny._io_listeners_attached) {
             }
         })
 
-        socket.on('newQuestion', async (question: NewQuestionData) => {
+        socket.on('newQuestion', async (question: Question) => {
             const currentGame = await getGame(gameId)
             if (!currentGame) return
 
@@ -232,8 +231,8 @@ if (!globalAny._io_listeners_attached) {
             socket.to(gameId).emit('timerStart', clientLength)
             socket.emit('timerStart', clientLength)
 
-            currentGame.timer.removeAllListeners('end')
-            currentGame.timer.once('end', () => {
+            currentGame.timer.removeAllListeners('finished')
+            currentGame.timer.once('finished', () => {
                 socket.to(gameId).emit('timerEnd')
 
                 // Add chat message for timer end
@@ -252,9 +251,9 @@ if (!globalAny._io_listeners_attached) {
             const currentMember = currentGame.getMember(memberId)
             if (currentMember?.type !== "moderator") return
 
+            currentGame.timer.removeAllListeners('finished')
             currentGame.timer.end()
-            currentGame.timer.removeAllListeners('end')
-            socket.to(gameId).emit('timerEnd')
+            socket.to(gameId).emit('timerStop')
         })
 
         socket.on('scoreQuestion', async (scoreType: 'correct' | 'incorrect' | 'penalty') => {
@@ -307,41 +306,6 @@ if (!globalAny._io_listeners_attached) {
             io.to(gameId).emit('deadQuestion', number, category)
         })
 
-        socket.on("editTossup", (
-            number: number,
-            playerId: string,
-            teamId: string,
-            category: Category,
-            scoreType: ScoreType | "none"
-        ) => {
-            // Scoreboard editing now handled by Convex - just broadcast the event
-            socket.to(gameId).emit("tossupEdit",
-                number,
-                playerId,
-                teamId,
-                category,
-                scoreType
-            )
-        })
-
-        socket.on("editBonus", (
-            number: number,
-            teamId: string,
-            scoreType: "correct" | "incorrect" | "none"
-        ) => {
-            // Scoreboard editing now handled by Convex - just broadcast the event
-            socket.to(gameId).emit("bonusEdit",
-                number,
-                teamId,
-                scoreType
-            )
-        })
-
-        socket.on("deleteQuestion", (number: number) => {
-            // Scoreboard deletion now handled by Convex - just broadcast the event
-            socket.to(gameId).emit("questionDelete", number)
-        })
-
         socket.on('kickPlayer', async (id: string) => {
             const currentGame = await getGame(gameId)
             if (!currentGame) return
@@ -359,7 +323,6 @@ if (!globalAny._io_listeners_attached) {
 
                 socket.to(id).emit('kicked')
                 io.in(id).disconnectSockets()
-                io.to(gameId).emit('memberLeave', id)
             }
         })
 
@@ -373,30 +336,6 @@ if (!globalAny._io_listeners_attached) {
             // Convex mutation is done in MemberListElement.svelte
             // Just emit the socket event for instant UI update
             io.to(gameId).emit('promotion', id)
-        })
-
-        socket.on('renamePlayer', async (id: string, name: string) => {
-            const currentGame = await getGame(gameId)
-            if (!currentGame) return
-
-            const currentMember = currentGame.getMember(memberId)
-            if (currentMember?.type !== "moderator") return
-
-            // Convex mutation is done in MemberListElement.svelte
-            // Just emit the socket event for instant UI update
-            io.to(gameId).emit("nameChange", id, name)
-        })
-
-        socket.on('clearScores', async () => {
-            const currentGame = await getGame(gameId)
-            if (!currentGame) return
-
-            const currentMember = currentGame.getMember(memberId)
-            if (currentMember?.type !== "moderator") return
-
-            // Scoreboard clearing now handled by Convex - just broadcast the event
-            socket.to(gameId).emit('scoresClear')
-            socket.emit('scoresClear')
         })
 
         socket.on('endGame', async () => {
@@ -487,7 +426,7 @@ if (!globalAny._io_listeners_attached) {
             if (currentMember?.type !== "player" || !currentMember.teamId) return
 
             // Convex mutation is done in PlayerControls.svelte
-            // Just emit the socket event for instant UI update
+            // Emit the socket event for buzz state update
             io.to(gameId).emit('changeCaptain', currentMember.teamId, memberId)
         })
 

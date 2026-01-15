@@ -6,7 +6,6 @@ declare namespace App {
 	interface Locals {
         gameId?: string,
         gameName?: string,
-		myData?: import('$lib/classes/Player').PlayerData | import('$lib/classes/Moderator').ModeratorData | null,
 		user?: {
 			id: string,
 			email: string,

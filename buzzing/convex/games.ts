@@ -16,6 +16,29 @@ const scoreTypeValidator = v.union(
   v.literal("penalty")
 );
 
+// Validators for player and team lists (client-side types)
+const playerListValidator = v.optional(v.array(v.object({
+  id: v.string(),
+  name: v.string(),
+  type: v.literal("player"),
+  team: v.object({
+    id: v.string(),
+    name: v.string(),
+    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+    captainId: v.union(v.string(), v.null()),
+    players: v.any(), // Record<string, player objects>
+  }),
+  isActive: v.boolean(),
+})));
+
+const teamListValidator = v.optional(v.array(v.object({
+  id: v.string(),
+  name: v.string(),
+  type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+  captainId: v.union(v.string(), v.null()),
+  players: v.any(), // Record<string, player objects>
+})));
+
 // ============================================================================
 // QUERIES
 // ============================================================================
@@ -74,6 +97,8 @@ export const getScoreboard = query({
           penalty: -4,
         },
         isActive: true,
+        playerNames: {},
+        teamNames: {},
       };
     }
 
@@ -81,6 +106,8 @@ export const getScoreboard = query({
       scores: game.scores,
       pointValues: game.pointValues,
       isActive: game.isActive ?? true,
+      playerNames: game.playerNames || {},
+      teamNames: game.teamNames || {},
     };
   },
 });
@@ -217,22 +244,46 @@ async function getGame(ctx: any, gameId: string) {
 }
 
 /**
- * Helper: Update game scores
+ * Helper: Update game scores and name lookups
  */
 async function updateScores(
   ctx: any,
   gameId: string,
-  updater: (scores: any) => void
+  updater: (scores: any) => void,
+  playerList?: any[],
+  teamList?: any[]
 ) {
   const game = await getGame(ctx, gameId);
   const scores = { ...game.scores };
 
   updater(scores);
 
-  await ctx.db.patch(game._id, {
+  const patchData: any = {
     scores,
     lastUpdated: Date.now(),
-  });
+  };
+
+  // Only patch player/team names mapping if playerList/teamList was provided
+  if (playerList && playerList.length > 0) {
+    const playerNames: Record<string, {name: string, teamId: string}> = {};
+    for (const player of playerList) {
+      playerNames[player.id] = {
+        name: player.name,
+        teamId: player.team.id
+      };
+    }
+    patchData.playerNames = playerNames;
+  }
+
+  if (teamList && teamList.length > 0) {
+    const teamNames: Record<string, string> = {};
+    for (const team of teamList) {
+      teamNames[team.id] = team.name;
+    }
+    patchData.teamNames = teamNames;
+  }
+
+  await ctx.db.patch(game._id, patchData);
 }
 
 // ============================================================================
@@ -249,6 +300,8 @@ export const correctTossup = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
+    playerList: playerListValidator,
+    teamList: teamListValidator,
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -271,7 +324,7 @@ export const correctTossup = mutation({
           bonus: null,
         };
       }
-    });
+    }, args.playerList, args.teamList);
   },
 });
 
@@ -285,6 +338,8 @@ export const incorrectTossup = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
+    playerList: playerListValidator,
+    teamList: teamListValidator,
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -307,7 +362,7 @@ export const incorrectTossup = mutation({
           bonus: null,
         };
       }
-    });
+    }, args.playerList, args.teamList);
   },
 });
 
@@ -321,6 +376,8 @@ export const penalty = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
+    playerList: playerListValidator,
+    teamList: teamListValidator,
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -343,7 +400,7 @@ export const penalty = mutation({
           bonus: null,
         };
       }
-    });
+    }, args.playerList, args.teamList);
   },
 });
 
@@ -355,6 +412,8 @@ export const dead = mutation({
     gameId: v.string(),
     number: v.number(),
     category: categoryValidator,
+    playerList: playerListValidator,
+    teamList: teamListValidator,
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -365,7 +424,7 @@ export const dead = mutation({
           bonus: null,
         };
       }
-    });
+    }, args.playerList, args.teamList);
   },
 });
 
@@ -378,6 +437,8 @@ export const correctBonus = mutation({
     number: v.number(),
     teamId: v.string(),
     category: categoryValidator,
+    playerList: playerListValidator,
+    teamList: teamListValidator,
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -397,7 +458,7 @@ export const correctBonus = mutation({
           },
         };
       }
-    });
+    }, args.playerList, args.teamList);
   },
 });
 
@@ -410,6 +471,8 @@ export const incorrectBonus = mutation({
     number: v.number(),
     teamId: v.string(),
     category: categoryValidator,
+    playerList: playerListValidator,
+    teamList: teamListValidator,
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -429,7 +492,7 @@ export const incorrectBonus = mutation({
           },
         };
       }
-    });
+    }, args.playerList, args.teamList);
   },
 });
 
@@ -547,6 +610,8 @@ export const clearScores = mutation({
     const game = await getGame(ctx, args.gameId);
     await ctx.db.patch(game._id, {
       scores: {},
+      playerNames: {},
+      teamNames: {},
       lastUpdated: Date.now(),
     });
   },

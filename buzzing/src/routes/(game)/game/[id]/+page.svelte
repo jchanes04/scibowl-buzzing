@@ -16,7 +16,7 @@
     import { createSocket } from "$lib/socket.svelte";
     import { beforeNavigate } from "$app/navigation";
     import { untrack, onDestroy } from "svelte";
-    import type { NewQuestionData } from "$lib/classes/Game";
+    import type { Question } from "$lib/classes/Game";
     import {
         initChatSubscription,
         clearChatSubscription,
@@ -47,45 +47,8 @@
 
     // Initialize game store with question state (not member data - that comes from Convex)
     function initGameState() {
-        const serverQuestion = data.currentGameState.currentQuestion;
-        const clientQuestion: NewQuestionData | null = serverQuestion
-            ? serverQuestion.bonus
-                ? {
-                      bonus: true,
-                      category: serverQuestion.category,
-                      teamId: serverQuestion.teamId ?? "",
-                      number: serverQuestion.number,
-                      visual: serverQuestion.visual,
-                  }
-                : {
-                      bonus: false,
-                      category: serverQuestion.category,
-                      number: serverQuestion.number,
-                  }
-            : null;
 
-        const gameData: ClientGameData = {
-            ...data.gameInfo,
-            state:
-                (data.currentGameState.questionState === "open" ||
-                    data.currentGameState.questionState === "buzzed") &&
-                clientQuestion
-                    ? {
-                          questionState: "open",
-                          currentBuzzer: null,
-                          currentQuestion: clientQuestion,
-                          buzzingEnabled: true,
-                          buzzedTeamIds: data.currentGameState.buzzedTeamIds,
-                      }
-                    : {
-                          questionState: "idle",
-                          currentBuzzer: null,
-                          currentQuestion: null,
-                          buzzingEnabled: false,
-                          buzzedTeamIds: [],
-                      },
-        };
-        gameStore.set(gameData);
+        gameStore.set(data.gameInfo);
         gameIdStore.set(data.gameInfo.id);
         initChatSubscription(data.gameInfo.id, data.myMemberId);
         initScoreboardSubscription(data.gameInfo.id);
@@ -110,14 +73,6 @@
         clearScoreboardSubscription();
         clearMembersSubscription();
         gameIdStore.clear();
-    });
-
-    // Update gameStore when question state changes (from socket events)
-    $effect.pre(() => {
-        const _deps = [data.gameInfo, data.currentGameState];
-        untrack(() => {
-            initGameState();
-        });
     });
 
     // Watch isActive via Convex subscription

@@ -106,9 +106,6 @@
                             memberId: member.id,
                             name: value,
                         });
-
-                        // Then emit socket for instant UI feedback
-                        socket.emit("renamePlayer", member.id, value);
                     }
 
                     $modalStore = null;

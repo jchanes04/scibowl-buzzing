@@ -2,6 +2,9 @@ import { useQuery } from 'convex-svelte';
 import { api } from '../../../convex/_generated/api';
 import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
 
+export type ScoreboardPlayerNames = Record<string, {name: string, teamId: string}>;
+export type ScoreboardTeamNames = Record<string, string>;
+
 type ScoreboardData = {
   scores: Record<number, QuestionPairScore>;
   pointValues: {
@@ -10,7 +13,11 @@ type ScoreboardData = {
     penalty: number;
   };
   isActive: boolean;
+  playerNames: ScoreboardPlayerNames;
+  teamNames: ScoreboardTeamNames;
 };
+
+
 
 // Subscription parameter
 let subscriptionGameId = $state<string | null>(null);
@@ -19,7 +26,9 @@ let subscriptionGameId = $state<string | null>(null);
 let _scoreboard = $state<ScoreboardData>({
   scores: {},
   pointValues: { tossup: 4, bonus: 10, penalty: -4 },
-  isActive: true
+  isActive: true,
+  playerNames: {},
+  teamNames: {}
 });
 
 // Track if subscription is already initialized
@@ -56,7 +65,9 @@ export function clearScoreboardSubscription() {
   _scoreboard = {
     scores: {},
     pointValues: { tossup: 4, bonus: 10, penalty: -4 },
-    isActive: true
+    isActive: true,
+    playerNames: {},
+    teamNames: {}
   };
   isInitialized = false;
 }

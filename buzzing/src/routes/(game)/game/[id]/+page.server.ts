@@ -3,7 +3,8 @@ import { getGame, io } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
-import type { Game } from "$lib/classes/Game"
+import type { BuzzerData, Game } from "$lib/classes/Game"
+import type { ClientGameData } from "$lib/stores/game.svelte"
 
 export const load = async function ({ params, cookies }) {
     const { id: gameId } = params
@@ -67,13 +68,35 @@ export const load = async function ({ params, cookies }) {
 function buildPageData(game: Game | null, gameId: string, myMemberId: string) {
     if (!game) throw new Error("Game not found")
 
-    const currentBuzzer = game.state.currentBuzzer
-        ? {
-            id: game.state.currentBuzzer.id,
-            name: game.state.currentBuzzer.name,
-            teamId: game.state.currentBuzzer.teamId
-        }
-        : null
+
+    let currentGameState: ClientGameData['state'];
+
+    if (game.state.questionState === "buzzed" && game.state.currentQuestion && game.state.currentBuzzer) {
+        currentGameState = {
+            questionState: "buzzed",
+            currentBuzzer: game.state.currentBuzzer,
+            currentQuestion: game.state.currentQuestion,
+            buzzingEnabled: false,
+            buzzedTeamIds: Array.from(game.state.buzzedTeamIds),
+        };
+    } else if (game.state.questionState === "open" && game.state.currentQuestion) {
+        currentGameState = {
+            questionState: "open",
+            currentBuzzer: null,
+            currentQuestion: game.state.currentQuestion,
+            buzzingEnabled: true,
+            buzzedTeamIds: Array.from(game.state.buzzedTeamIds),
+        };
+    } else {
+        currentGameState = {
+            questionState: "idle",
+            currentBuzzer: null,
+            currentQuestion: null,
+            buzzingEnabled: false,
+            buzzedTeamIds: [],
+        };
+    }
+
 
     return {
         gameInfo: {
@@ -81,14 +104,10 @@ function buildPageData(game: Game | null, gameId: string, myMemberId: string) {
             name: game.name,
             joinCode: game.joinCode,
             settings: game.settings,
-            times: game.times
+            times: game.times,
+            state: currentGameState
         },
         myMemberId,
-        currentGameState: {
-            questionState: game.state.questionState,
-            currentBuzzer,
-            currentQuestion: game.state.currentQuestion,
-            buzzedTeamIds: Array.from(game.state.buzzedTeamIds)
-        }
+        
     }
 }

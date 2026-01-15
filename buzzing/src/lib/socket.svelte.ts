@@ -4,7 +4,7 @@ import gameStore from "./stores/game.svelte"
 import { timerStore, gameClockStore } from "./stores/timer.svelte"
 import visualBonusStore from "./stores/visualBonus.svelte"
 import { goto, invalidateAll } from "$app/navigation"
-import type { Category, NewQuestionData, ScoreType } from "$lib/classes/Game"
+import type { Category, Question, ScoreType, BuzzerData } from "$lib/classes/Game"
 import { env } from "$env/dynamic/public"
 import {
     teamsStore,
@@ -46,32 +46,7 @@ export function createSocket(spectator: boolean = false) {
         console.log(event, args);
     })
 
-    socket.on('authenticated', ({ name }: { name: string }) => {
-        // Chat message handled by Convex (join message from page.server.ts)
-    })
-
-    // Member updates (playerJoin, memberRejoin, memberLeave, promotion, nameChange, changeCaptain)
-    // are now handled by Convex subscriptions - no store updates needed here
-
-    socket.on('playerJoin', () => {
-        // Member list updates handled by Convex subscription
-        // Chat message handled by Convex (from join/+page.server.ts)
-    })
-
-    socket.on('memberRejoin', () => {
-        // Member list updates handled by Convex subscription
-        // Chat message handled by Convex (from game/+page.server.ts)
-    })
-
-    socket.on('memberLeave', () => {
-        // Member list updates handled by Convex subscription
-        // Chat message handled by Convex (from server.ts disconnect handler)
-    })
-
     socket.on('promotion', async (memberId: string) => {
-        // Member list updates handled by Convex subscription
-        // Chat message handled by Convex (from MemberListElement.svelte)
-
         // If I was promoted, I need to refresh the page to get moderator controls
         const myMember = getMyMember()
         if (memberId === myMember.id) {
@@ -83,15 +58,11 @@ export function createSocket(spectator: boolean = false) {
         }
     })
 
-    socket.on('nameChange', () => {
-        // Member list updates handled by Convex subscription
-    })
 
     socket.on('changeCaptain', (teamId: string, memberId: string) => {
         // Team captain updates handled by Convex subscription
         // But we need to update buzzing state based on captain change
         const myMember = getMyMember()
-        const teams = getTeams()
 
         if (
             game.state.questionState === "open"
@@ -113,26 +84,22 @@ export function createSocket(spectator: boolean = false) {
     socket.on('buzz', (id: string) => {
         const player = getPlayers()[id]
         if (player) {
-            gameStore.buzz(player.team.id, player)
+            const buzzerData: BuzzerData = {
+                id: player.id,
+                name: player.name,
+                teamId: player.team.id
+            }
+            gameStore.buzz(player.team.id, buzzerData)
             buzzAudio?.play()
             timerStore.pause()
             // Chat message handled by Convex (from server.ts)
         }
     })
 
-    socket.on('buzzAccept', () => {
-        // Chat message handled by Convex (from server.ts)
-    })
-
     socket.on('buzzFailed', () => {
         const myMember = getMyMember()
         if (myMember.team) gameStore.removeTeamBuzz(myMember.team.id)
         // Chat message handled by Convex (from server.ts)
-    })
-
-    socket.on('scoresClear', () => {
-        // Scoreboard clearing handled by Convex subscription
-        // Chat message handled by Convex (from ExpandedScoreboard.svelte)
     })
 
     type ScoreData = {
@@ -187,22 +154,14 @@ export function createSocket(spectator: boolean = false) {
         // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
-    socket.on('tossupEdit', () => {
-        // Scoreboard editing handled by Convex subscription
-    })
-
-    socket.on("bonusEdit", () => {
-        // Scoreboard editing handled by Convex subscription
-    })
-
-    socket.on("questionDelete", () => {
-        // Scoreboard deletion handled by Convex subscription
-    })
-
-    socket.on('questionOpen', (question: NewQuestionData) => {
+    socket.on('questionOpen', (question: Question) => {
         const myMember = getMyMember()
         const teams = getTeams()
-        const buzzingEnabled = !question.bonus || !!(question.teamId && question.teamId === myMember.team?.id && teams[question.teamId]?.captainId === myMember.id)
+        const buzzingEnabled = !question.bonus 
+            || !!(question.teamId 
+                && question.teamId === myMember.team?.id 
+                && (teams[question.teamId]?.captainId === myMember.id 
+                    || !teams[question.teamId]?.captainId))
         gameStore.newQuestion(question, buzzingEnabled)
 
         if (!question.bonus || !question.visual) {
@@ -234,16 +193,19 @@ export function createSocket(spectator: boolean = false) {
         }
     })
 
+    // QuestionTimer events
+
     socket.on('timerStart', (length: number) => {
         timerStore.start(length)
         const myMember = getMyMember()
         const teams = getTeams()
-        const tossupOpen = !game.state.currentQuestion?.bonus && !game.state.buzzedTeamIds.includes(myMember.team?.id ?? "")
         const bonusOpen = !!game.state.currentQuestion?.bonus
             && (game.state.currentQuestion?.teamId === myMember.team?.id
                 && (teams[myMember.team?.id ?? ""]?.captainId === myMember.id || teams[myMember.team?.id ?? ""]?.captainId === null))
-        const questionOpen = !myMember.moderator && (tossupOpen || bonusOpen)
-        gameStore.openQuestion(questionOpen)
+        const buzzingEnabled = !myMember.moderator 
+            && (!game.state.currentQuestion?.bonus || bonusOpen) 
+            && !game.state.buzzedTeamIds.includes(myMember.team?.id ?? "")
+        gameStore.openQuestion(buzzingEnabled)
     })
 
     socket.on('timerEnd', () => {
@@ -253,6 +215,14 @@ export function createSocket(spectator: boolean = false) {
         }
         gameStore.stopQuestion()
     })
+
+    socket.on('timerStop', () => {
+        if (timerStore.live) {
+            timerStore.end()
+        }
+    })
+
+    // Game Clock events
 
     socket.on("gameClockStart", (length: number) => {
         gameClockStore.start(length)
@@ -283,15 +253,13 @@ export function createSocket(spectator: boolean = false) {
         // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
+
+    // Redirection events
+
     socket.on('kicked', () => {
         goto('/kicked')
         socket.disconnect()
     })
-
-    // socket.on('gameSwept', () => {
-    //     goto('/swept')
-    //     socket.disconnect()
-    // })
 
     socket.on('gameEnd', () => {
         goto('/')

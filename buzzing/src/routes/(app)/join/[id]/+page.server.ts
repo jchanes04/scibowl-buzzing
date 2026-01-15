@@ -141,8 +141,7 @@ export const actions = {
         // Emit socket event for instant UI update
         const playerData = { id: playerId, name, type: "player" as const, teamID: teamId }
         const teamData = { id: teamId, name: teamName, type: teamType, captainId: null }
-        io.to(gameId).emit('playerJoin', { player: playerData, team: teamData })
-
+        
         // Add chat message for player joining
         await addChatMessage({
             gameId,

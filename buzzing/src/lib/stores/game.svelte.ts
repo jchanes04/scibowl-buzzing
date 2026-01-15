@@ -1,10 +1,9 @@
-import type { GameSettings, GameTimes, NewQuestionData, Question } from "$lib/classes/Game";
-import type { ClientPlayer } from "./members.svelte";
+import type { GameSettings, GameTimes, Question, BuzzerData } from "$lib/classes/Game";
 
 type BuzzedState = {
     questionState: "buzzed",
-    currentBuzzer: ClientPlayer,
-    currentQuestion: NewQuestionData,
+    currentBuzzer: BuzzerData,
+    currentQuestion: Question,
     buzzingEnabled: false,
     buzzedTeamIds: string[]
 }
@@ -20,7 +19,7 @@ type IdleState = {
 type OpenState = {
     questionState: "open",
     currentBuzzer: null,
-    currentQuestion: NewQuestionData,
+    currentQuestion: Question,
     buzzingEnabled: boolean,
     buzzedTeamIds: string[]
 }
@@ -71,13 +70,13 @@ export default {
     enableBuzzing: () => {
         gameData.state.buzzingEnabled = true
     },
-    buzz: (teamId: string, player: ClientPlayer) => {
+    buzz: (teamId: string, buzzerData: BuzzerData) => {
         gameData.state.buzzingEnabled = false
         gameData.state.buzzedTeamIds.push(teamId)
         gameData.state = {
             ...gameData.state,
             questionState: "buzzed",
-            currentBuzzer: player,
+            currentBuzzer: buzzerData,
             buzzingEnabled: false,
             buzzedTeamIds: gameData.state.buzzedTeamIds
         } as BuzzedState
@@ -105,7 +104,7 @@ export default {
             buzzedTeamIds: []
         }
     },
-    newQuestion: (questionData: NewQuestionData, buzzingEnabled: boolean) => {
+    newQuestion: (questionData: Question, buzzingEnabled: boolean) => {
         gameData.state = {
             questionState: "open",
             currentQuestion: questionData,

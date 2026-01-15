@@ -26,7 +26,12 @@
         const myMember = myMemberStore.value
         const player = playersStore.value[myMember.id]
         if (player) {
-            gameStore.buzz(myMember.team?.id || "", player)
+            const buzzerData = {
+                id: player.id,
+                name: player.name,
+                teamId: player.team.id
+            }
+            gameStore.buzz(myMember.team?.id || "", buzzerData)
         }
         timerStore.pause()
 
