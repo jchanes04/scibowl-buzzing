@@ -12,11 +12,11 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 0.95rem;
     box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-    
+
     &:focus {
         border-color: variables.$primary;
         outline: none;
-        
+
         &::placeholder {
             color: transparent;
         }
@@ -25,10 +25,17 @@
     &::placeholder {
         color: variables.$gray-2;
     }
+
+    &:disabled {
+        opacity: 0.5;
+    }
 }
 
 %select-wrapper {
     --background: #{variables.$background-1};
+    --disabled-background: #{variables.$background-1};
+    --disabled-placeholder-color: #{variables.$gray-2};
+    --disabled-border-color: #{variables.$border-color};
     --border-radius: 0.5rem;
     --border: 3px solid #{variables.$border-color};
     --border-focused: 3px solid #{variables.$primary};
@@ -39,7 +46,12 @@
     --placeholder-color: #{variables.$gray-2};
     --list-background: #{variables.$background-1};
     --item-hover-bg: #{variables.$background-2};
-    --disabledBorderColor: #000;
+
+    &.disabled {
+        opacity: 0.5;
+        --border: 3px solid #{variables.$border-color};
+        --border-hover: 3px solid #{variables.$border-color};
+    }
 
     :global(.svelte-select) {
         box-sizing: border-box;

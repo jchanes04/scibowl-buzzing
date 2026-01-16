@@ -1,28 +1,119 @@
 <script lang="ts">
-    import { run } from "svelte/legacy";
-
-    import JoinMemberList from "$lib/components/JoinMemberList.svelte";
-    import Select from "svelte-select";
     import { slide } from "svelte/transition";
     import type { PageData } from "./$types";
-    import type { CachedTeam } from "$lib/server/gameMemberCache";
     import { user } from "$lib/stores/auth";
+    import { useQuery } from "convex-svelte";
+    import { api } from "../../../../../convex/_generated/api";
 
     interface Props {
         data: PageData;
     }
 
     let { data }: Props = $props();
-    let memberNames = $derived(data.memberNames);
+    let gameId = $derived(data.gameId);
     let gameName = $derived(data.gameName);
     let settings = $derived(data.settings);
-    let teams = $derived(data.teams);
+
+    // Initial data from server (used as fallback before Convex loads)
+    let initialMemberNames = $derived(data.memberNames);
+    let initialTeams = $derived(data.teams);
+
+    // Convex real-time queries for members and teams
+    let membersQuery = useQuery(api.gameMembers.getForGame, () =>
+        gameId ? { gameId } : "skip",
+    );
+    let teamsQuery = useQuery(api.teams.getForGame, () =>
+        gameId ? { gameId } : "skip",
+    );
+
+    // Derive member names from Convex query, falling back to initial server data
+    let memberNames = $derived.by(() => {
+        if (membersQuery.data) {
+            return membersQuery.data
+                .filter((m) => m.isActive)
+                .map((m) => m.name);
+        }
+        return initialMemberNames;
+    });
+
+    // Type for team selection (matches CachedTeam shape)
+    type SelectableTeam = {
+        id: string;
+        name: string;
+        type: "default" | "created" | "individual";
+        captainId?: string;
+    };
+
+    // Derive teams from Convex query, falling back to initial server data
+    // Filter out individual teams and transform teamId -> id for Select component
+    let teams: SelectableTeam[] = $derived.by(() => {
+        if (teamsQuery.data) {
+            return teamsQuery.data
+                .filter((t) => t.type !== "individual")
+                .map((t) => ({
+                    id: t.teamId,
+                    name: t.name,
+                    type: t.type,
+                    captainId: t.captainId,
+                }));
+        }
+        return initialTeams;
+    });
+
+    // Combine teams and members for display card
+    let teamsWithMembers = $derived.by(() => {
+        const currentTeams = teams;
+        // Fallback to empty array if data isn't loaded yet
+        const currentMembers = membersQuery.data || [];
+
+        return currentTeams.map((team) => {
+            const members = currentMembers
+                .filter((m) => m.teamId === team.id && m.isActive)
+                .sort((a, b) => {
+                    // Captain first
+                    if (a.id === team.captainId) return -1;
+                    if (b.id === team.captainId) return 1;
+                    return a.name.localeCompare(b.name);
+                });
+
+            return {
+                ...team,
+                members,
+            };
+        });
+    });
 
     let memberName = $state("");
-    let teamOrIndiv: "indiv" | "team" | "new-team" | null = $state(null);
-    let selectedTeam: CachedTeam | undefined = $state();
+    let selectedTeam: SelectableTeam | undefined = $state();
     let newTeamName: string = $state("");
-    let showRadio: boolean = $state(true);
+
+    // Determine if there is only one option for teamOrIndiv
+    function getInitialTeamOrIndiv(): "indiv" | "team" | "new-team" | null {
+        if (
+            settings.individualsAllowed &&
+            teams.length === 0 &&
+            !settings.newTeamsAllowed
+        ) {
+            return "indiv";
+        } else if (
+            settings.newTeamsAllowed &&
+            teams.length === 0 &&
+            !settings.individualsAllowed
+        ) {
+            return "new-team";
+        } else if (
+            !settings.individualsAllowed &&
+            !settings.newTeamsAllowed &&
+            teams.length > 0
+        ) {
+            return "team";
+        }
+        return null;
+    }
+
+    let teamOrIndiv: "indiv" | "team" | "new-team" | null = $state(
+        getInitialTeamOrIndiv(),
+    );
 
     // Auto-populate member name from user profile on page load
     let hasAutoPopulated = $state(false);
@@ -31,7 +122,8 @@
             user.subscribe((currentUser) => {
                 if (currentUser && !memberName) {
                     // Use username by default, fallback to firstName
-                    const displayName = currentUser.username || currentUser.firstName;
+                    const displayName =
+                        currentUser.username || currentUser.firstName;
                     if (displayName) {
                         memberName = displayName;
                         hasAutoPopulated = true;
@@ -41,16 +133,6 @@
         }
     });
 
-    $effect.pre(() => {
-        if (settings.individualsAllowed && teams.length == 0)
-            teamOrIndiv = "indiv";
-        if (settings.newTeamsAllowed && teams.length == 0)
-            teamOrIndiv = "new-team";
-        if (!(settings.individualsAllowed || settings.newTeamsAllowed))
-            teamOrIndiv = "team";
-
-        if (teamOrIndiv !== null) showRadio = false;
-    });
     let disabled = $derived(
         !memberName ||
             !teamOrIndiv ||
@@ -81,95 +163,108 @@
                 bind:value={memberName}
             />
             <h2>Team:</h2>
-            {#if !showRadio}
-                <input type="hidden" name="team-or-indiv" value={teamOrIndiv} />
-            {/if}
-            {#if settings.individualsAllowed && showRadio}
-                <div class="radio-wrapper">
-                    <label for="indiv">
-                        <input
-                            id="indiv"
-                            type="radio"
-                            name="team-or-indiv"
-                            value="indiv"
-                            bind:group={teamOrIndiv}
-                        />
-                        <span></span>
-                        Play on my own
-                    </label>
+
+            {#if teamsWithMembers.length > 0}
+                <div class="team-list">
+                    {#each teamsWithMembers as team (team.id)}
+                        <label
+                            class="team-card"
+                            class:selected={teamOrIndiv === "team" &&
+                                selectedTeam?.id === team.id}
+                        >
+                            <input
+                                type="radio"
+                                name="team-or-indiv"
+                                value="team"
+                                onchange={() => {
+                                    teamOrIndiv = "team";
+                                    selectedTeam = team;
+                                }}
+                                checked={teamOrIndiv === "team" &&
+                                    selectedTeam?.id === team.id}
+                            />
+                            <div class="card-content">
+                                <div class="team-header">
+                                    <span class="team-name">{team.name}</span>
+                                </div>
+                                {#if team.members.length > 0}
+                                    <ul class="member-list">
+                                        {#each team.members as member}
+                                            <li
+                                                class:captain={member.id ===
+                                                    team.captainId}
+                                            >
+                                                {member.name}
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                {:else}
+                                    <p class="empty-team">No members yet</p>
+                                {/if}
+                            </div>
+                        </label>
+                    {/each}
+                    <input
+                        type="hidden"
+                        name="team-id"
+                        value={selectedTeam?.id}
+                    />
                 </div>
             {/if}
-            {#if settings.newTeamsAllowed}
-                {#if showRadio}
-                    <div class="radio-wrapper">
-                        <label for="new-team">
+
+            {#if settings.individualsAllowed || settings.newTeamsAllowed}
+                <div class="other-options">
+                    {#if settings.individualsAllowed}
+                        <label
+                            class="team-card"
+                            class:selected={teamOrIndiv === "indiv"}
+                        >
                             <input
-                                id="new-team"
+                                type="radio"
+                                name="team-or-indiv"
+                                value="indiv"
+                                bind:group={teamOrIndiv}
+                            />
+                            <div class="card-content">
+                                <span class="team-name">Play on my own</span>
+                            </div>
+                        </label>
+                    {/if}
+
+                    {#if settings.newTeamsAllowed}
+                        <label
+                            class="team-card"
+                            class:selected={teamOrIndiv === "new-team"}
+                        >
+                            <input
                                 type="radio"
                                 name="team-or-indiv"
                                 value="new-team"
                                 bind:group={teamOrIndiv}
                             />
-                            <span></span>
-                            Create a new team:
+                            <div class="card-content">
+                                <span class="team-name">Create a new team</span>
+                                {#if teamOrIndiv === "new-team"}
+                                    <div transition:slide={{ duration: 200 }}>
+                                        <input
+                                            type="text"
+                                            class="card-input"
+                                            placeholder="Team Name"
+                                            name="new-team-name"
+                                            bind:value={newTeamName}
+                                            oninput={handleTeamNameInput}
+                                            onclick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+                                {/if}
+                            </div>
                         </label>
-                    </div>
-                {/if}
-                {#if teamOrIndiv === "new-team"}
-                    <div transition:slide={{ duration: 200 }}>
-                        <input
-                            type="text"
-                            placeholder="Team Name"
-                            name="new-team-name"
-                            bind:value={newTeamName}
-                            oninput={handleTeamNameInput}
-                        />
-                    </div>
-                {/if}
+                    {/if}
+                </div>
             {/if}
-            {#if teams.length > 0}
-                {#if showRadio}
-                    <div class="radio-wrapper">
-                        <label for="team">
-                            <input
-                                id="team"
-                                type="radio"
-                                name="team-or-indiv"
-                                value="team"
-                                bind:group={teamOrIndiv}
-                            />
-                            <span></span>
-                            Play with an existing team:
-                        </label>
-                    </div>
-                {/if}
 
-                {#if teamOrIndiv === "team"}
-                    <div
-                        class="select-wrapper"
-                        transition:slide={{ duration: 200 }}
-                        style="align: center;"
-                    >
-                        <Select
-                            itemId="id"
-                            label="name"
-                            items={teams}
-                            bind:value={selectedTeam}
-                            placeholder="Team"
-                            searchable={false}
-                            showChevron={true}
-                        />
-                        <input
-                            type="hidden"
-                            name="team-id"
-                            value={selectedTeam?.id}
-                        />
-                    </div>
-                {/if}
-            {/if}
             <button id="join-game" {disabled}>Join</button>
         </div>
-        <JoinMemberList {memberNames} />
     </form>
 </div>
 
@@ -178,13 +273,13 @@
 
     form {
         margin: 2rem auto;
-        max-width: 500px;
+        max-width: min(500px, 60%);
         border-radius: 1.5rem;
         text-align: center;
         padding: 3rem;
         background: $background-1;
         box-shadow: $shadow;
-        border: 1px solid $border-color;
+        border: 3px solid $border-color;
     }
 
     h1 {
@@ -205,12 +300,6 @@
         text-align: left;
     }
 
-    .radio-wrapper {
-        text-align: left;
-        display: block;
-        margin-top: 0.5rem;
-    }
-
     input[type="text"] {
         @extend %text-input;
         font-size: 1.1rem;
@@ -219,59 +308,101 @@
         margin-bottom: 0rem;
     }
 
-    label {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        padding: 0.75rem 1rem;
-        border-radius: 0.75rem;
-        transition: all 0.2s;
-        border: 1px solid transparent;
+    .team-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        width: 100%;
+        text-align: left;
+    }
 
-        input {
+    .other-options {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        width: 100%;
+        text-align: left;
+    }
+
+    .team-card {
+        cursor: pointer;
+        background: $background-1;
+        border: 3px solid $border-color;
+        border-radius: 1rem;
+        padding: 1rem;
+        transition: all 0.2s;
+        position: relative;
+        display: block;
+
+        input[type="radio"] {
             position: absolute;
             opacity: 0;
             width: 0;
             height: 0;
         }
 
-        span {
-            width: 1.25rem;
-            height: 1.25rem;
-            border-radius: 50%;
-            border: $gray-2 2px solid;
-            display: grid;
-            place-content: center;
-            background: $background-1;
-            transition: all 0.2s;
-
-            &::after {
-                content: "";
-                display: block;
-                width: 0.6rem;
-                height: 0.6rem;
-                border-radius: 50%;
-                background: $primary;
-                transform: #{"scale(0)"};
-                transition: transform 0.2s;
-            }
+        &:hover {
+            border-color: $gray-2;
+            transform: translateY(-2px);
         }
 
-        input:checked ~ span {
+        &.selected {
             border-color: $primary;
-            &::after {
-                transform: #{"scale(1)"};
+            box-shadow: 0 4px 12px rgba($primary, 0.15);
+            transform: translateY(-2px);
+
+            .team-name {
+                color: $primary;
             }
         }
-    }
 
-    .select-wrapper {
-        @extend %select-wrapper;
-        width: 90%;
-        margin: 0.5rem auto 1.5rem auto;
+        .team-header {
+            margin-bottom: 0.5rem;
+        }
+
+        .team-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: $text;
+            display: block;
+        }
+
+        .member-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .member-list li {
+            font-size: 0.9rem;
+            color: $gray-2;
+            padding: 0.1rem 0;
+
+            &.captain {
+                font-weight: 600;
+                color: $primary;
+            }
+        }
+
+        .empty-team {
+            margin: 0;
+            font-size: 0.9rem;
+            color: $text-muted;
+            font-style: italic;
+        }
+
+        .card-input {
+            margin-top: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 1rem;
+            padding: 0.5rem;
+        }
     }
 
     button#join-game {
@@ -279,7 +410,6 @@
         font-size: 1.25rem;
         width: 90%;
         padding: 0.8rem;
-        margin-top: 1rem;
         background: $primary;
     }
 </style>

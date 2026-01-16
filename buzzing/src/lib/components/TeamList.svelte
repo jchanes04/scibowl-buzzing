@@ -5,103 +5,177 @@
     }
 
     let { teams = $bindable([]), newTeamName = $bindable() }: Props = $props();
-    let teamsJSON = $derived(JSON.stringify(teams))
+    let teamsJSON = $derived(JSON.stringify(teams));
 
     function addTeam() {
         if (newTeamName && !teams.includes(newTeamName)) {
-            teams = [...teams, newTeamName]
+            teams = [...teams, newTeamName];
+            newTeamName = "";
         }
-        newTeamName = ''
     }
 
-    function handleKeydown(e: KeyboardEvent) {
-        if (e.code === "Enter" || e.keyCode === 13) {
-            addTeam()
+    function removeTeam(teamToRemove: string) {
+        teams = teams.filter((t) => t !== teamToRemove);
+    }
+
+    function handleInputKeydown(e: KeyboardEvent) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addTeam();
         }
     }
 
     function handleInput() {
         if (newTeamName.length > 30) {
-            newTeamName = newTeamName.slice(0, 30)
+            newTeamName = newTeamName.slice(0, 30);
         }
     }
 </script>
 
-<div>
+<div class="team-list">
     <input type="hidden" name="teams" value={teamsJSON} />
-    <ul>
-        {#each teams as team}
-            <li>
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <span onclick={() => {teams = teams.filter(x => x !== team)}}>
-                    <span class="remove"></span>
-                </span>
-                {team}
-            </li>
-        {/each}
-        <li>
-            <input type="text" id="default-team-name" bind:value={newTeamName} oninput={handleInput} />
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <span onclick={addTeam}>
-                <span class="add"></span>
-            </span>
-        </li>
-    </ul>
+
+    {#each teams as team}
+        <div class="team-card">
+            <span class="team-name">{team}</span>
+            <button
+                type="button"
+                class="icon-btn remove"
+                onclick={() => removeTeam(team)}
+                aria-label="Remove team"
+            ></button>
+        </div>
+    {/each}
+
+    <div class="team-card input-card">
+        <input
+            type="text"
+            placeholder="Add Team..."
+            bind:value={newTeamName}
+            onkeydown={handleInputKeydown}
+            oninput={handleInput}
+        />
+        <button
+            type="button"
+            class="icon-btn add"
+            onclick={addTeam}
+            aria-label="Add team"
+        ></button>
+    </div>
 </div>
 
-<svelte:body onkeydown={handleKeydown}></svelte:body>
-
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
-    ul {
-        list-style: none;
+    .team-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        width: 90%;
+        max-width: 100%;
+        margin: 1rem auto 0;
+    }
+
+    .team-card {
+        background: $background-1;
+        border: 3px solid $border-color;
+        border-radius: 1rem;
+        padding: 0.75rem 1rem;
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
-        padding: 0;
-    }
+        transition: all 0.2s;
 
-    li {
-        margin-top: 0.3em;
-        margin-bottom: 0.3em;
-    }
-
-    li > span {
-        width: 1em;
-        height: 1em;
-        display: inline-block;
-        cursor: pointer;
-        vertical-align: middle;
-
-        span {
-            width: 100%;
-            height: 100%;
-            display: inline-block;
+        .team-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: $text;
+            word-break: break-word;
         }
-    }
 
-    .add {
-        background: $primary;
-        clip-path: polygon(0 40%, 40% 40%, 40% 0, 60% 0, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%);
-        margin-left: 0.2em;
-        float: right;
-    }
-
-    .remove {
-        background: $red;
-        clip-path: polygon(15% 0, 0 15%, 35% 50%, 0 85%, 15% 100%, 50% 65%, 85% 100%, 100% 85%, 65% 50%, 100% 15%, 85% 0, 50% 35%);
-        margin-right: 0.5em;
+        &.input-card {
+            &:focus-within {
+                border-color: $primary;
+            }
+        }
     }
 
     input[type="text"] {
         @extend %text-input;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        padding: 0 0.25rem;
+        font-size: 1.1rem;
+        width: 100%;
+        text-align: left;
+        line-height: 1.5;
 
-        font-size: 16px;
-        margin: 0.5em auto;
-        width: 25ch;
-        text-align: center;
+        &:focus {
+            outline: none;
+            border: none;
+            box-shadow: none;
+        }
+    }
+
+    .icon-btn {
+        width: 1.5rem;
+        height: 1.5rem;
+        border: none;
+        cursor: pointer;
+        display: block;
+        transition:
+            transform 0.1s,
+            opacity 0.2s;
+        flex-shrink: 0;
+        margin-left: 0.75rem;
+        padding: 0;
+        -webkit-appearance: none;
+        appearance: none;
+
+        &:hover {
+            opacity: 0.8;
+            transform: #{"scale(1.1)"};
+        }
+        &:active {
+            transform: #{"scale(0.95)"};
+        }
+
+        &.add {
+            background: $primary;
+            clip-path: polygon(
+                0 40%,
+                40% 40%,
+                40% 0,
+                60% 0,
+                60% 40%,
+                100% 40%,
+                100% 60%,
+                60% 60%,
+                60% 100%,
+                40% 100%,
+                40% 60%,
+                0 60%
+            );
+        }
+
+        &.remove {
+            background: $red;
+            clip-path: polygon(
+                20% 0%,
+                0% 20%,
+                30% 50%,
+                0% 80%,
+                20% 100%,
+                50% 70%,
+                80% 100%,
+                100% 80%,
+                70% 50%,
+                100% 20%,
+                80% 0%,
+                50% 30%
+            );
+        }
     }
 </style>

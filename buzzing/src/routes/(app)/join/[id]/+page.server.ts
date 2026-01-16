@@ -53,6 +53,7 @@ export const load = async function ({ params, url }) {
     const teams = Object.values(game.teams).filter(t => t.type !== "individual")
 
     return {
+        gameId: id,
         memberNames,
         settings,
         teams,
