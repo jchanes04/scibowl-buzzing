@@ -1,8 +1,8 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import TeamList from "$lib/components/TeamList.svelte";
-    import type { ActionData } from "./$types";
     import { user } from "$lib/stores/auth";
+    import CollapsibleSection from "$lib/components/CollapsibleSection.svelte";
 
     interface Props {
         form?: { message?: string };
@@ -23,6 +23,11 @@
     let tossupTime = $state(5);
     let bonusTime = $state(20);
     let visualTime = $state(30);
+
+    let teamSettingsOpen = $state(false);
+    let defaultTeamsOpen = $state(false);
+    let timerSettingsOpen = $state(false);
+    let pointSettingsOpen = $state(false);
 
     // Point value settings (default values from GameScoreboard.ts)
     let tossupPoints = $state(4);
@@ -96,45 +101,45 @@
         />
         <br />
 
-        <h2>Team Settings</h2>
-        <div class="checkbox-wrapper">
-            <label for="new-teams">
-                <input
-                    id="new-teams"
-                    type="checkbox"
-                    name="new-teams-allowed"
-                    bind:checked={newTeamsAllowed}
-                />
-                <span></span>
-                Members can create their own teams that others can join
-            </label>
-            <label for="individual-teams">
-                <input
-                    id="individual-teams"
-                    type="checkbox"
-                    name="individual-teams-allowed"
-                    bind:checked={individualTeamsAllowed}
-                />
-                <span></span>
-                Members can join the game on a team of just themselves
-            </label>
-            <label for="spectators">
-                <input
-                    id="spectators"
-                    type="checkbox"
-                    name="spectators-allowed"
-                />
-                <span></span>
-                Spectators allowed
-            </label>
-        </div>
+        <CollapsibleSection title="Team Settings" bind:open={teamSettingsOpen}>
+            <div class="checkbox-wrapper">
+                <label for="new-teams">
+                    <input
+                        id="new-teams"
+                        type="checkbox"
+                        name="new-teams-allowed"
+                        bind:checked={newTeamsAllowed}
+                    />
+                    <span></span>
+                    Members can create their own teams that others can join
+                </label>
+                <label for="individual-teams">
+                    <input
+                        id="individual-teams"
+                        type="checkbox"
+                        name="individual-teams-allowed"
+                        bind:checked={individualTeamsAllowed}
+                    />
+                    <span></span>
+                    Members can join the game on a team of just themselves
+                </label>
+                <label for="spectators">
+                    <input
+                        id="spectators"
+                        type="checkbox"
+                        name="spectators-allowed"
+                    />
+                    <span></span>
+                    Spectators allowed
+                </label>
+            </div>
+        </CollapsibleSection>
 
-        <h2 style="margin-bottom: 0rem">Default Teams</h2>
-        <TeamList bind:teams={defaultTeams} bind:newTeamName />
+        <CollapsibleSection title="Default Teams" bind:open={defaultTeamsOpen}>
+            <TeamList bind:teams={defaultTeams} bind:newTeamName />
+        </CollapsibleSection>
 
-        <div class="advanced-settings">
-            <!-- Timer Lengths -->
-            <h2>Timer Lengths</h2>
+        <CollapsibleSection title="Timer Lengths" bind:open={timerSettingsOpen}>
             <div class="timer-grid">
                 <div class="form-group">
                     <label for="tossup-time">Tossup</label>
@@ -175,9 +180,9 @@
                     />
                 </div>
             </div>
+        </CollapsibleSection>
 
-            <!-- Point Values -->
-            <h2>Point Values</h2>
+        <CollapsibleSection title="Point Values" bind:open={pointSettingsOpen}>
             <div class="points-grid">
                 <div class="form-group">
                     <label for="tossup-points">Tossup</label>
@@ -218,7 +223,7 @@
                     />
                 </div>
             </div>
-        </div>
+        </CollapsibleSection>
 
         <button type="submit" disabled={!submitEnabled}>Create Game</button>
     </form>
@@ -251,15 +256,6 @@
         text-align: center;
         text-decoration: underline var(--primary) 3px;
         text-underline-offset: 0.2em;
-    }
-
-    h2 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-top: 1.5rem;
-        margin-bottom: 0.5rem;
-        color: $primary;
-        text-align: left;
     }
 
     .error {

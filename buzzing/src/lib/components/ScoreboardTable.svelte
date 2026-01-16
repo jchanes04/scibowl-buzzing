@@ -26,25 +26,25 @@
     let rowNumber = $derived(
         scoreboardData
             ? Math.max(0, ...Object.keys(scoreboardData.scores).map(Number))
-            : 0
+            : 0,
     );
     let rowArray = $derived(Array.from({ length: rowNumber }, (_, i) => i + 1));
     let playersFromScores = $derived(
         scoreboardData
             ? Object.values(scoreboardData.scores).reduce(
-                (acc: Record<string, string[]>, s: any) => {
-                    for (const t of Object.keys(s.tossup)) {
-                        if (!acc[t]) {
-                            acc[t] = [s.tossup[t]!.playerId];
-                        } else if (!acc[t]!.includes(s.tossup[t]!.playerId)) {
-                            acc[t]!.push(s.tossup[t]!.playerId);
-                        }
-                    }
-                    return acc;
-                },
-                {} as Record<string, string[]>,
-            )
-            : {}
+                  (acc: Record<string, string[]>, s: any) => {
+                      for (const t of Object.keys(s.tossup)) {
+                          if (!acc[t]) {
+                              acc[t] = [s.tossup[t]!.playerId];
+                          } else if (!acc[t]!.includes(s.tossup[t]!.playerId)) {
+                              acc[t]!.push(s.tossup[t]!.playerId);
+                          }
+                      }
+                      return acc;
+                  },
+                  {} as Record<string, string[]>,
+              )
+            : {},
     );
     let playersFromTeams = $derived(
         (() => {
@@ -52,16 +52,25 @@
             if (!scoreboardData) return result;
             const { playerNames, teamNames } = scoreboardData;
             // Only use teams that exist in teamNames
-            for (const [playerId, playerInfo] of Object.entries(playerNames || {})) {
-                if (playerInfo && (playerInfo as any).teamId && teamNames[(playerInfo as any).teamId]) {
-                    if (!result[(playerInfo as any).teamId]) result[(playerInfo as any).teamId] = [];
-                    if (!result[(playerInfo as any).teamId]?.includes(playerId)) {
+            for (const [playerId, playerInfo] of Object.entries(
+                playerNames || {},
+            )) {
+                if (
+                    playerInfo &&
+                    (playerInfo as any).teamId &&
+                    teamNames[(playerInfo as any).teamId]
+                ) {
+                    if (!result[(playerInfo as any).teamId])
+                        result[(playerInfo as any).teamId] = [];
+                    if (
+                        !result[(playerInfo as any).teamId]?.includes(playerId)
+                    ) {
                         result[(playerInfo as any).teamId]?.push(playerId);
                     }
                 }
             }
             return result;
-        })()
+        })(),
     );
     let players = $derived(
         combinePlayersLists(playersFromScores, playersFromTeams),
@@ -69,36 +78,44 @@
     let runningScores = $derived(
         scoreboardData
             ? (() => {
-                // Compute running total for each team row by row.
-                let totals: Record<string, number> = {};
-                let scoreHistory: Record<number, Record<string, number>> = {};
-                Object.entries(scoreboardData.scores || {}).forEach(([rowNumStr, row]: [string, any]) => {
-                    const i = Number(rowNumStr);
-                    // Copy previous
-                    totals = { ...totals };
-                    if (row) {
-                        // Tossups
-                        for (const [teamId, entry] of Object.entries(row.tossup) as [string, any][]) {
-                            if (!totals[teamId]) totals[teamId] = 0;
-                            if (entry.scoreType === "correct") totals[teamId] += 4;
-                            else if (entry.scoreType === "incorrect")
-                                totals[teamId] -= 1;
-                            else if (entry.scoreType === "penalty")
-                                totals[teamId] -= 4;
-                        }
-                        // Bonus
-                        const bonus = row.bonus;
-                        if (bonus && bonus.teamId) {
-                            const current = totals[bonus.teamId] ?? 0;
-                            totals[bonus.teamId] =
-                                current + (bonus.correct ? 10 : 0);
-                        }
-                    }
-                    scoreHistory[i] = { ...totals };
-                });
-                return scoreHistory;
-            })()
-            : {}
+                  // Compute running total for each team row by row.
+                  let totals: Record<string, number> = {};
+                  let scoreHistory: Record<number, Record<string, number>> = {};
+                  Object.entries(scoreboardData.scores || {}).forEach(
+                      ([rowNumStr, row]: [string, any]) => {
+                          const i = Number(rowNumStr);
+                          // Copy previous
+                          totals = { ...totals };
+                          if (row) {
+                              // Tossups
+                              for (const [teamId, entry] of Object.entries(
+                                  row.tossup,
+                              ) as [string, any][]) {
+                                  if (!totals[teamId]) totals[teamId] = 0;
+                                  if (entry.scoreType === "correct")
+                                      totals[teamId] +=
+                                          scoreboardData.pointValues.tossup;
+                                  else if (entry.scoreType === "penalty")
+                                      totals[teamId] -=
+                                          scoreboardData.pointValues.penalty;
+                              }
+                              // Bonus
+                              const bonus = row.bonus;
+                              if (bonus && bonus.teamId) {
+                                  const current = totals[bonus.teamId] ?? 0;
+                                  totals[bonus.teamId] =
+                                      current +
+                                      (bonus.correct
+                                          ? scoreboardData.pointValues.bonus
+                                          : 0);
+                              }
+                          }
+                          scoreHistory[i] = { ...totals };
+                      },
+                  );
+                  return scoreHistory;
+              })()
+            : {},
     );
 
     function combinePlayersLists(
@@ -198,23 +215,26 @@
     }
 
     const pointValues = $derived(
-        scoreboardData?.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
+        scoreboardData?.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
     );
 
     function sumQuestionScores(teamId: string) {
         if (!scoreboardData) return 0;
-        return Object.values(scoreboardData.scores).reduce((acc: number, q: any) => {
-            if (q.tossup[teamId]?.scoreType === "correct") {
-                acc += pointValues.tossup;
-            } else if (q.tossup[teamId]?.scoreType === "penalty") {
-                acc += pointValues.penalty;
-            }
+        return Object.values(scoreboardData.scores).reduce(
+            (acc: number, q: any) => {
+                if (q.tossup[teamId]?.scoreType === "correct") {
+                    acc += pointValues.tossup;
+                } else if (q.tossup[teamId]?.scoreType === "penalty") {
+                    acc += pointValues.penalty;
+                }
 
-            if (q.bonus?.teamId === teamId && q.bonus?.correct) {
-                acc += pointValues.bonus;
-            }
-            return acc;
-        }, 0);
+                if (q.bonus?.teamId === teamId && q.bonus?.correct) {
+                    acc += pointValues.bonus;
+                }
+                return acc;
+            },
+            0,
+        );
     }
 </script>
 
@@ -225,11 +245,13 @@
             {#each p as _}
                 <col style="width: 2.2em;" />
             {/each}
-            <col style="width: 2.2em;" />  <!-- bonus -->
-            <col style="width: 2.2em;" />    <!-- score -->
+            <col style="width: 2.2em;" />
+            <!-- bonus -->
+            <col style="width: 2.2em;" />
+            <!-- score -->
         {/each}
         {#if isModerator}
-            <col />  <!-- delete button -->
+            <col /> <!-- delete button -->
         {/if}
     </colgroup>
     <thead>
@@ -257,7 +279,8 @@
                 {#each Object.values(players) as p}
                     {#each p as playerId}
                         <th class="player-name" style:font-weight="normal"
-                            >{scoreboardData.playerNames[playerId]?.name || "Unknown"}</th
+                            >{scoreboardData.playerNames[playerId]?.name ||
+                                "Unknown"}</th
                         >
                     {/each}
                     <th class="player-name" style:font-weight="bold">Bonus</th>
@@ -293,38 +316,40 @@
                                         ? tossupEntry.scoreType
                                         : "none"}
                                     bonus={false}
-                                    onchange={isModerator ? (val) =>
-                                        handleTossupChange(
-                                            i,
-                                            playerId,
-                                            teamId,
-                                            scoreRow.category,
-                                            val,
-                                        ) : undefined}
+                                    onchange={isModerator
+                                        ? (val) =>
+                                              handleTossupChange(
+                                                  i,
+                                                  playerId,
+                                                  teamId,
+                                                  scoreRow.category,
+                                                  val,
+                                              )
+                                        : undefined}
                                 />
                             </td>
                         {/each}
-                            <td
-                                class="bonus {scoreRow.bonus?.teamId ===
-                                teamId
+                        <td
+                            class="bonus {scoreRow.bonus?.teamId === teamId
+                                ? scoreRow.bonus.correct
+                                    ? 'correct'
+                                    : 'incorrect'
+                                : ''}"
+                        >
+                            <ScoreboardTableCell
+                                scoreType={scoreRow.bonus?.teamId === teamId
                                     ? scoreRow.bonus.correct
-                                        ? 'correct'
-                                        : 'incorrect'
-                                    : ''}"
-                            >
-                                <ScoreboardTableCell
-                                    scoreType={scoreRow.bonus?.teamId ===
-                                    teamId
-                                        ? scoreRow.bonus.correct
-                                            ? "correct"
-                                            : "incorrect"
-                                        : "none"}
-                                    bonus={true}
-                                    onchange={isModerator ? (val) =>
-                                        val !== "penalty" &&
-                                        handleBonusChange(i, teamId, val) : undefined}
-                                />
-                            </td>
+                                        ? "correct"
+                                        : "incorrect"
+                                    : "none"}
+                                bonus={true}
+                                onchange={isModerator
+                                    ? (val) =>
+                                          val !== "penalty" &&
+                                          handleBonusChange(i, teamId, val)
+                                    : undefined}
+                            />
+                        </td>
                         <td class="scores">
                             {runningScores[i]?.[teamId] ?? 0}
                         </td>
@@ -473,7 +498,7 @@
         box-shadow: none;
         font-size: 0.8rem;
         padding: 0.3em 0.6em;
-        margin: .3em;
+        margin: 0.3em;
 
         &:hover {
             background: rgba($red, 0.1);

@@ -71,6 +71,21 @@ export default defineSchema({
     teamId: v.optional(v.string()),
     isActive: v.boolean(),
     leftAt: v.optional(v.number()),
+    // Denormalized game data - snapshotted when member leaves for efficient history queries
+    gameSnapshot: v.optional(v.object({
+      name: v.string(),
+      createdAt: v.number(),
+      isActive: v.boolean(),
+      playerNames: v.any(), // Record<string, {name: string, teamId: string}>
+      teamNames: v.any(), // Record<string, string>
+      scores: v.any(), // Record<number, QuestionPairScore>
+      pointValues: v.object({
+        tossup: v.number(),
+        bonus: v.number(),
+        penalty: v.number(),
+      }),
+      tags: v.array(v.string()),
+    })),
   })
     .index("by_gameId", ["gameId"])
     .index("by_gameId_memberId", ["gameId", "memberId"])

@@ -2,6 +2,7 @@
     import { stopPropagation } from "svelte/legacy";
 
     import themeStore, { colorSchemes } from "$lib/stores/theme.svelte";
+    import ExpandChevron from "./ExpandChevron.svelte";
 
     let menuOpen = $state(false);
     let clickLock = false;
@@ -108,7 +109,7 @@
         bind:this={buttonElement}
         aria-label="Select color theme"
     >
-        <svg class="icon" viewBox="0 0 22 22" fill="none">
+        <svg class="icon" viewBox="0 0 24 24" fill="none">
             <g transform="rotate(25 12 12)">
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -132,13 +133,13 @@
             <circle
                 cx="12"
                 cy="12"
-                r="9"
+                r="10"
                 stroke={isDarkMode ? "#ffffff" : "#000000"}
                 stroke-width="2"
                 fill="none"
             />
         </svg>
-        <span class="icon chevron" class:open={menuOpen}>▼</span>
+        <ExpandChevron expanded={menuOpen} size="1em" />
     </button>
 
     {#if menuOpen}
@@ -300,16 +301,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .chevron {
-            font-size: 0.7em;
-            transition: transform 0.2s;
-            transform: rotate(0deg);
-
-            &.open {
-                transform: rotate(180deg);
-            }
         }
     }
 

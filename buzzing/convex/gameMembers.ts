@@ -83,6 +83,7 @@ export const add = mutation({
 });
 
 // Soft delete - mark member as inactive (for disconnect)
+// Also snapshots game data for efficient history queries
 export const leave = mutation({
   args: {
     gameId: v.string(),
@@ -97,9 +98,33 @@ export const leave = mutation({
       .first();
 
     if (member) {
+      // Fetch game data to snapshot for history
+      const game = await ctx.db
+        .query("games")
+        .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+        .first();
+
+      const gameSnapshot = game
+        ? {
+          name: game.name,
+          createdAt: game.createdAt,
+          isActive: game.isActive ?? false,
+          playerNames: game.playerNames ?? {},
+          teamNames: game.teamNames ?? {},
+          scores: game.scores ?? {},
+          pointValues: game.pointValues ?? {
+            tossup: 4,
+            bonus: 10,
+            penalty: -4,
+          },
+          tags: game.tags ?? [],
+        }
+        : undefined;
+
       await ctx.db.patch(member._id, {
         isActive: false,
         leftAt: Date.now(),
+        gameSnapshot,
       });
     }
   },

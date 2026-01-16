@@ -3,6 +3,7 @@ import { query, mutation } from "./_generated/server";
 
 /**
  * Get all games a member has participated in (for game history)
+ * Uses denormalized gameSnapshot data when available for efficiency
  */
 export const getByMemberId = query({
   args: {
@@ -15,31 +16,43 @@ export const getByMemberId = query({
       .withIndex("by_memberId", (q) => q.eq("memberId", args.memberId))
       .collect();
 
-    // Get unique game IDs
-    const gameIds = [...new Set(memberships.map((m) => m.gameId))];
-
-    // Fetch game details for each
+    // Process memberships - use snapshot data when available
     const games = await Promise.all(
-      gameIds.map(async (gameId) => {
+      memberships.map(async (membership) => {
+        // If we have a snapshot (member has left), use it directly
+        if (membership.gameSnapshot) {
+          return {
+            gameId: membership.gameId,
+            name: membership.gameSnapshot.name,
+            createdAt: membership.gameSnapshot.createdAt,
+            isActive: membership.gameSnapshot.isActive,
+            memberType: membership.type,
+            memberName: membership.name,
+            playerNames: membership.gameSnapshot.playerNames,
+            teamNames: membership.gameSnapshot.teamNames,
+            scores: membership.gameSnapshot.scores,
+            pointValues: membership.gameSnapshot.pointValues,
+            tags: membership.gameSnapshot.tags,
+          };
+        }
+
+        // For active members without snapshot, fetch game data (only happens for in-progress games)
         const game = await ctx.db
           .query("games")
-          .withIndex("by_gameId", (q) => q.eq("gameId", gameId))
+          .withIndex("by_gameId", (q) => q.eq("gameId", membership.gameId))
           .first();
 
         if (!game) return null;
-
-        // Find the member's role in this game
-        const membership = memberships.find((m) => m.gameId === gameId);
 
         return {
           gameId: game.gameId,
           name: game.name,
           createdAt: game.createdAt,
           isActive: game.isActive ?? false,
-          memberType: membership?.type ?? "player",
-          memberName: membership?.name ?? "",
-          playerNames: game.playerNames ?? [],
-          teamNames: game.teamNames ?? [],
+          memberType: membership.type,
+          memberName: membership.name,
+          playerNames: game.playerNames ?? {},
+          teamNames: game.teamNames ?? {},
           scores: game.scores ?? {},
           pointValues: game.pointValues ?? {
             tossup: 4,

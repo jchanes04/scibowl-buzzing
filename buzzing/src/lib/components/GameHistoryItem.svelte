@@ -1,8 +1,10 @@
 <script lang="ts">
-    import { type User } from '$lib/stores/auth';
-    import ScoreboardModal from './ScoreboardModal.svelte';
-    import { getContext } from 'svelte';
-    import { writable, type Writable } from 'svelte/store';
+    import { type User } from "$lib/stores/auth";
+    import ScoreboardModal from "./ScoreboardModal.svelte";
+    import { getContext } from "svelte";
+    import { writable, type Writable } from "svelte/store";
+    import { slide } from "svelte/transition";
+    import ExpandChevron from "./ExpandChevron.svelte";
 
     interface Props {
         game: {
@@ -32,7 +34,19 @@
         removePublicTag: (gameId: string, tag: string) => Promise<void>;
     }
 
-    let { game, expandedGames, tagInputs, currentUser, privateTagsQuery, toggleGameExpanded, getPrivateTagsForGame, addPrivateTag, removePrivateTag, addPublicTag, removePublicTag }: Props = $props();
+    let {
+        game,
+        expandedGames,
+        tagInputs,
+        currentUser,
+        privateTagsQuery,
+        toggleGameExpanded,
+        getPrivateTagsForGame,
+        addPrivateTag,
+        removePrivateTag,
+        addPublicTag,
+        removePublicTag,
+    }: Props = $props();
 
     type ModalStore = Writable<{
         component: any;
@@ -40,7 +54,9 @@
     } | null>;
     const modalStore: ModalStore = getContext("modalStore");
 
-    const pointValues = $derived(game.pointValues || { tossup: 4, bonus: 10, penalty: -4 });
+    const pointValues = $derived(
+        game.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
+    );
 
     function sumQuestionScores(teamId: string): number {
         if (!game.scores) return 0;
@@ -76,7 +92,15 @@
 </script>
 
 <li class="game-item-wrapper">
-    <div class="game-item" onclick={() => toggleGameExpanded(game.gameId)} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleGameExpanded(game.gameId)} role="button" tabindex="0">
+    <div
+        class="game-item"
+        onclick={() => toggleGameExpanded(game.gameId)}
+        onkeydown={(e) =>
+            (e.key === "Enter" || e.key === " ") &&
+            toggleGameExpanded(game.gameId)}
+        role="button"
+        tabindex="0"
+    >
         <div class="game-info">
             <span class="game-name">{game.name}</span>
             {#if getPrivateTagsForGame(game.gameId).length > 0}
@@ -92,13 +116,15 @@
         </div>
         <span class="game-meta">
             <span class="game-role">{game.memberType}</span>
-            <span class="game-date">{new Date(game.createdAt).toLocaleDateString()}</span>
-            <span class="expand-icon">{expandedGames.has(game.gameId) ? '▼' : '▶'}</span>
+            <span class="game-date"
+                >{new Date(game.createdAt).toLocaleDateString()}</span
+            >
+            <ExpandChevron expanded={expandedGames.has(game.gameId)} />
         </span>
     </div>
 
     {#if expandedGames.has(game.gameId)}
-        <div class="game-details">
+        <div class="game-details" transition:slide>
             <!-- Private Tags Section -->
             <div class="tag-section">
                 <h4>Private Tags (only visible to you)</h4>
@@ -106,7 +132,12 @@
                     {#each getPrivateTagsForGame(game.gameId) as tag}
                         <span class="tag private">
                             {tag}
-                            <button class="tag-remove" onclick={() => removePrivateTag(game.gameId, tag)}>×</button>
+                            <button
+                                class="tag-remove"
+                                onclick={() =>
+                                    removePrivateTag(game.gameId, tag)}
+                                >×</button
+                            >
                         </span>
                     {/each}
                 </div>
@@ -115,21 +146,29 @@
                         type="text"
                         placeholder="Add private tag..."
                         bind:value={tagInputs[game.gameId]}
-                        onkeydown={(e) => e.key === 'Enter' && addPrivateTag(game.gameId)}
+                        onkeydown={(e) =>
+                            e.key === "Enter" && addPrivateTag(game.gameId)}
                     />
-                    <button onclick={() => addPrivateTag(game.gameId)}>Add</button>
+                    <button onclick={() => addPrivateTag(game.gameId)}
+                        >Add</button
+                    >
                 </div>
             </div>
 
             <!-- Public Tags Section (moderators only) -->
-            {#if game.memberType === 'moderator'}
+            {#if game.memberType === "moderator"}
                 <div class="tag-section">
                     <h4>Public Tags (visible to all)</h4>
                     <div class="tags-list">
                         {#each game.tags as tag}
                             <span class="tag public">
                                 {tag}
-                                <button class="tag-remove" onclick={() => removePublicTag(game.gameId, tag)}>×</button>
+                                <button
+                                    class="tag-remove"
+                                    onclick={() =>
+                                        removePublicTag(game.gameId, tag)}
+                                    >×</button
+                                >
                             </span>
                         {/each}
                     </div>
@@ -138,9 +177,12 @@
                             type="text"
                             placeholder="Add public tag..."
                             bind:value={tagInputs[`public-${game.gameId}`]}
-                            onkeydown={(e) => e.key === 'Enter' && addPublicTag(game.gameId)}
+                            onkeydown={(e) =>
+                                e.key === "Enter" && addPublicTag(game.gameId)}
                         />
-                        <button onclick={() => addPublicTag(game.gameId)}>Add</button>
+                        <button onclick={() => addPublicTag(game.gameId)}
+                            >Add</button
+                        >
                     </div>
                 </div>
             {/if}
@@ -153,11 +195,17 @@
                         {#each Object.entries(game.teamNames) as [teamId, teamName]}
                             <div class="team-score-item">
                                 <span class="team-name">{teamName}</span>
-                                <span class="team-score-value">{sumQuestionScores(teamId)}</span>
+                                <span class="team-score-value"
+                                    >{sumQuestionScores(teamId)}</span
+                                >
                             </div>
                         {/each}
                     </div>
-                    <button class="view-scoreboard-button" onclick={() => openScoreboardModal()}>View Full Scoreboard</button>
+                    <button
+                        class="view-scoreboard-button"
+                        onclick={() => openScoreboardModal()}
+                        >View Full Scoreboard</button
+                    >
                 </div>
             {/if}
         </div>
@@ -165,7 +213,7 @@
 </li>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .game-item-wrapper {
         display: flex;
@@ -288,12 +336,6 @@
         }
     }
 
-    .expand-icon {
-        font-size: 0.75rem;
-        color: $text-muted;
-        margin-left: 0.5rem;
-    }
-
     .view-scoreboard-button {
         @extend %button;
         font-size: 0.9rem;
@@ -321,7 +363,6 @@
             color: $text;
         }
     }
-
 
     .tags-list {
         display: flex;
@@ -362,7 +403,7 @@
         button {
             font-size: 1rem;
             padding: 0.5rem 1rem;
-            margin: .5rem;
+            margin: 0.5rem;
             @extend %button;
         }
     }
