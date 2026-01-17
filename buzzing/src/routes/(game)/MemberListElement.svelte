@@ -4,17 +4,15 @@
         ClientModerator,
         ClientPlayer,
     } from "$lib/stores/members.svelte";
-    import { getContext } from "svelte";
-    import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import kickSvg from "$lib/icons/kick.svg?raw";
     import badgeSvg from "$lib/icons/badge.svg?raw";
     import editNameSvg from "$lib/icons/edit-name.svg?raw";
-    import TextField from "$lib/components/TextField.svelte";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
     import gameIdStore from "$lib/stores/gameId.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
 
     interface Props {
         member: ClientPlayer | ClientModerator;
@@ -25,95 +23,72 @@
 
     const socket = getSocket();
     const convex = useConvexClient();
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
+    let newName = $state("");
 
     function promote() {
-        $modalStore = {
-            component: Confirm,
-            props: {
-                title: "Promote " + member.name,
-                message:
-                    "Are you sure you want to promote " +
-                    member.name +
-                    " to moderator?",
-                cancelCallback: () => ($modalStore = null),
-                confirmCallback: async () => {
-                    const gId = gameIdStore.value;
-                    if (gId) {
-                        // Update Convex first
-                        await convex.mutation(api.gameMembers.promote, {
-                            gameId: gId,
-                            memberId: member.id,
-                        });
+        modalStore.show({
+            title: "Promote " + member.name,
+            message:
+                "Are you sure you want to promote " +
+                member.name +
+                " to moderator?",
+            cancelCallback: () => modalStore.hide(),
+            confirmCallback: async () => {
+                const gId = gameIdStore.value;
+                if (gId) {
+                    // Update Convex first
+                    await convex.mutation(api.gameMembers.promote, {
+                        gameId: gId,
+                        memberId: member.id,
+                    });
 
-                        // Then emit socket to disconnect and reconnect // todo confirm this
-                        socket.emit("promotePlayer", member.id);
-                    }
+                    // Then emit socket to disconnect and reconnect // todo confirm this
+                    socket.emit("promotePlayer", member.id);
+                }
 
-                    $modalStore = null;
-                },
+                modalStore.hide();
             },
-        };
+        });
     }
 
     function kick() {
-        $modalStore = {
-            component: Confirm,
-            props: {
-                title: "Kick " + member.name,
-                message: "Are you sure you want to kick " + member.name + "?",
-                cancelCallback: () => ($modalStore = null),
-                confirmCallback: async () => {
-                    const gId = gameIdStore.value;
-                    if (gId) {
-                        // Server handles the Convex kick mutation
-                        // Just emit socket event
-                        socket.emit("kickPlayer", member.id);
+        modalStore.show({
+            title: "Kick " + member.name,
+            message: "Are you sure you want to kick " + member.name + "?",
+            cancelCallback: () => modalStore.hide(),
+            confirmCallback: async () => {
+                const gId = gameIdStore.value;
+                if (gId) {
+                    socket.emit("kickPlayer", member.id);
+                    socket.emit("addChatMessage", {
+                        type: "notification",
+                        text: `${member.name} has been kicked`,
+                    });
+                }
 
-                        // Add chat message via socket
-                        socket.emit("addChatMessage", {
-                            type: "notification",
-                            text: `${member.name} has been kicked`,
-                        });
-                    }
-
-                    $modalStore = null;
-                },
+                modalStore.hide();
             },
-        };
+        });
     }
 
     function rename() {
-        const oldName = member.name;
-        $modalStore = {
-            component: TextField,
-            props: {
-                title: "Rename Player",
-                message: `Change player name "${member.name}" to :`,
-                options: {
-                    defaultValue: member.name,
-                    fieldName: "New name",
-                },
-                cancelCallback: () => ($modalStore = null),
-                confirmCallback: async (value: string) => {
-                    const gId = gameIdStore.value;
-                    if (gId) {
-                        // Update Convex first
-                        await convex.mutation(api.gameMembers.rename, {
-                            gameId: gId,
-                            memberId: member.id,
-                            name: value,
-                        });
-                    }
-
-                    $modalStore = null;
-                },
+        newName = member.name;
+        modalStore.show({
+            title: "Rename Player",
+            message: renameMessage,
+            cancelCallback: () => modalStore.hide(),
+            confirmCallback: async () => {
+                const gId = gameIdStore.value;
+                if (gId) {
+                    await convex.mutation(api.gameMembers.rename, {
+                        gameId: gId,
+                        memberId: member.id,
+                        name: newName,
+                    });
+                }
+                modalStore.hide();
             },
-        };
+        });
     }
 
     async function toggleSub() {
@@ -141,6 +116,32 @@
         }
     }
 </script>
+
+{#snippet renameMessage()}
+    <p class="modal-message-text">Change player name "{member.name}" to :</p>
+    <!-- svelte-ignore a11y_autofocus -->
+    <input
+        type="text"
+        class="modal-input"
+        bind:value={newName}
+        placeholder="New name"
+        autofocus
+        onkeydown={(e) =>
+            e.key === "Enter" &&
+            newName.trim() !== "" &&
+            (async () => {
+                const gId = gameIdStore.value;
+                if (gId) {
+                    await convex.mutation(api.gameMembers.rename, {
+                        gameId: gId,
+                        memberId: member.id,
+                        name: newName,
+                    });
+                }
+                modalStore.hide();
+            })()}
+    />
+{/snippet}
 
 {#if member.type === "moderator"}
     <li class="moderator">

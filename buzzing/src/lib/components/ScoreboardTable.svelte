@@ -1,12 +1,11 @@
 <script lang="ts">
-    import { getContext } from "svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
+    import gameIdStore from "$lib/stores/gameId.svelte";
     import type { Category, ScoreType } from "$lib/classes/Game";
     import ScoreboardTableCell from "./ScoreboardTableCell.svelte";
     import Confirm from "$lib/components/Confirm.svelte";
-    import type { Writable } from "svelte/store";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
-    import gameIdStore from "$lib/stores/gameId.svelte";
 
     interface Props {
         scoreboardData: any;
@@ -16,12 +15,6 @@
     let { scoreboardData, isModerator = false }: Props = $props();
 
     const convex = useConvexClient();
-
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
 
     let rowNumber = $derived(
         scoreboardData
@@ -203,26 +196,23 @@
 
     function deleteQuestion(number: number) {
         if (!isModerator) return;
-        $modalStore = {
-            component: Confirm,
-            props: {
-                title: "Delete Question #" + number,
-                message: `Are you sure you want to delete question #${number}?`,
-                confirmCallback: () => {
-                    const gId = gameIdStore.value;
-                    if (gId) {
-                        convex.mutation(api.games.deleteQuestion, {
-                            gameId: gId,
-                            number,
-                        });
-                    }
-                    $modalStore = null;
-                },
-                cancelCallback: () => {
-                    $modalStore = null;
-                },
+        modalStore.show({
+            title: "Delete Question #" + number,
+            message: `Are you sure you want to delete question #${number}?`,
+            confirmCallback: () => {
+                const gId = gameIdStore.value;
+                if (gId) {
+                    convex.mutation(api.games.deleteQuestion, {
+                        gameId: gId,
+                        number,
+                    });
+                }
+                modalStore.hide();
             },
-        };
+            cancelCallback: () => {
+                modalStore.hide();
+            },
+        });
     }
 
     const pointValues = $derived(

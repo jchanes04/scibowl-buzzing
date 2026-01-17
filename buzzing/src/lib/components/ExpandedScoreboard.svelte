@@ -1,14 +1,13 @@
 <script lang="ts">
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
-    import { getContext } from "svelte";
     import { convertToCSV } from "$lib/functions/scoreboard";
     import Confirm from "$lib/components/Confirm.svelte";
-    import type { Writable } from "svelte/store";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
     import gameIdStore from "$lib/stores/gameId.svelte";
     import ScoreboardTable from "./ScoreboardTable.svelte";
     import getSocket from "$lib/socket.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
 
     interface Props {
         isModerator?: boolean;
@@ -18,12 +17,6 @@
 
     const convex = useConvexClient();
     const socket = getSocket();
-
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
 
     async function exportScores() {
         // Need to compute players for CSV export
@@ -111,31 +104,28 @@
 
     function clearScores() {
         if (!isModerator) return;
-        $modalStore = {
-            component: Confirm,
-            props: {
-                title: "Clear Scores",
-                message: "Are you sure you want to clear scores?",
-                cancelCallback: () => {
-                    $modalStore = null;
-                },
-                confirmCallback: () => {
-                    const gId = gameIdStore.value;
-                    if (gId) {
-                        // Clear scores via Convex
-                        convex.mutation(api.games.clearScores, { gameId: gId });
-
-                        // Add chat message via socket
-                        socket.emit("addChatMessage", {
-                            type: "notification",
-                            text: "Scores cleared",
-                        });
-                    }
-
-                    $modalStore = null;
-                },
+        modalStore.show({
+            title: "Clear Scores",
+            message: "Are you sure you want to clear scores?",
+            cancelCallback: () => {
+                modalStore.hide();
             },
-        };
+            confirmCallback: () => {
+                const gId = gameIdStore.value;
+                if (gId) {
+                    // Clear scores via Convex
+                    convex.mutation(api.games.clearScores, { gameId: gId });
+
+                    // Add chat message via socket
+                    socket.emit("addChatMessage", {
+                        type: "notification",
+                        text: "Scores cleared",
+                    });
+                }
+
+                modalStore.hide();
+            },
+        });
     }
 </script>
 

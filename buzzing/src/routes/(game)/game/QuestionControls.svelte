@@ -42,11 +42,11 @@
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { gameClockStore } from "$lib/stores/timer.svelte";
     import getSocket from "$lib/socket.svelte";
-    import type { Writable } from "svelte/store";
+    import gameIdStore from "$lib/stores/gameId.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
     import Confirm from "$lib/components/Confirm.svelte";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../../convex/_generated/api";
-    import gameIdStore from "$lib/stores/gameId.svelte";
 
     let teamSelectValue = $state<ClientTeamData | undefined>();
     let selectedCategory: Category | "" = $state("");
@@ -65,11 +65,6 @@
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
     const convex = useConvexClient();
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
 
     let newQuestionDisabled = $derived(
         !questionType ||
@@ -132,65 +127,54 @@
         visualBonusFilename = "";
     }
 
-    const timeEndedModal = (confirmCallback: () => void) => ({
-        component: Confirm,
-        props: {
-            title: "Confirm New Question",
-            message:
-                "The game clock has ended. Are you sure you want to open a new question?",
-            confirmCallback,
-            cancelCallback: () => {
-                modalStore.set(null);
-            },
-        },
-    });
-    const overwriteQuestionModal = (
-        number: number,
-        confirmCallback: () => void,
-    ) => ({
-        component: Confirm,
-        props: {
-            title: "Overwrite Question #" + number,
-            message: `There is already a question #${number} in the scoreboard. Are you sure you want to overwrite it?`,
-            confirmCallback,
-            cancelCallback: () => {
-                modalStore.set(null);
-            },
-        },
-    });
-
     function confirmNewQuestion() {
         if (gameClockStore.ended) {
-            modalStore.set(
-                timeEndedModal(() => {
+            modalStore.show({
+                title: "Confirm New Question",
+                message:
+                    "The game clock has ended. Are you sure you want to open a new question?",
+                confirmCallback: () => {
                     if (
                         questionType === "tossup" &&
                         scoreboardStore.value.scores[questionNumber] &&
                         questionNumber !== 0
                     ) {
-                        modalStore.set(
-                            overwriteQuestionModal(questionNumber, () => {
+                        modalStore.show({
+                            title: "Overwrite Question #" + questionNumber,
+                            message: `There is already a question #${questionNumber} in the scoreboard. Are you sure you want to overwrite it?`,
+                            confirmCallback: () => {
                                 newQuestion();
-                                modalStore.set(null);
-                            }),
-                        );
+                                modalStore.hide();
+                            },
+                            cancelCallback: () => {
+                                modalStore.hide();
+                            },
+                        });
                     } else {
                         newQuestion();
-                        modalStore.set(null);
+                        modalStore.hide();
                     }
-                }),
-            );
+                },
+                cancelCallback: () => {
+                    modalStore.hide();
+                },
+            });
         } else if (
             questionType === "tossup" &&
             scoreboardStore.value.scores[questionNumber] &&
             questionNumber !== 0
         ) {
-            modalStore.set(
-                overwriteQuestionModal(questionNumber, () => {
+            modalStore.show({
+                title: "Overwrite Question #" + questionNumber,
+                message: `There is already a question #${questionNumber} in the scoreboard. Are you sure you want to overwrite it?`,
+                confirmCallback: () => {
                     newQuestion();
-                    modalStore.set(null);
-                }),
-            );
+                    modalStore.hide();
+                },
+                cancelCallback: () => {
+                    modalStore.hide();
+                },
+            });
         } else {
             newQuestion();
         }

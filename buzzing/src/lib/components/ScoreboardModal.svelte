@@ -1,7 +1,6 @@
 <script lang="ts">
     import ScoreboardTable from "./ScoreboardTable.svelte";
-    import { getContext } from "svelte";
-    import type { Writable } from "svelte/store";
+    import { modalStore } from "$lib/stores/modal.svelte";
 
     interface Props {
         scoreboardData: any;
@@ -9,25 +8,20 @@
 
     let { scoreboardData }: Props = $props();
 
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
-
     function closeModal() {
-        if (modalStore) {
-            $modalStore = null;
-        }
+        modalStore.hide();
     }
 </script>
 
+<svelte:window onkeydown={(e) => e.key === "Escape" && closeModal()} />
+
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
     class="scoreboard-modal"
     onclick={closeModal}
-    onkeydown={(e) => e.key === "Escape" && closeModal()}
     role="button"
     tabindex="-1"
+    aria-label="Close modal"
 >
     <div
         class="modal-content"

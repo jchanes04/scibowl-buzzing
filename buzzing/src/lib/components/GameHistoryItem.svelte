@@ -1,10 +1,9 @@
 <script lang="ts">
     import { type User } from "$lib/stores/auth";
     import ScoreboardModal from "./ScoreboardModal.svelte";
-    import { getContext } from "svelte";
-    import { writable, type Writable } from "svelte/store";
     import { slide } from "svelte/transition";
     import ExpandChevron from "./ExpandChevron.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
 
     interface Props {
         game: {
@@ -48,12 +47,6 @@
         removePublicTag,
     }: Props = $props();
 
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
-
     const pointValues = $derived(
         game.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
     );
@@ -75,19 +68,14 @@
     }
 
     function openScoreboardModal() {
-        if (!modalStore) return;
-
-        $modalStore = {
-            component: ScoreboardModal,
-            props: {
-                scoreboardData: {
-                    scores: game.scores || {},
-                    teamNames: game.teamNames || {},
-                    playerNames: game.playerNames || {},
-                    pointValues: pointValues,
-                },
+        modalStore.showComponent(ScoreboardModal, {
+            scoreboardData: {
+                scores: game.scores || {},
+                teamNames: game.teamNames || {},
+                playerNames: game.playerNames || {},
+                pointValues: pointValues,
             },
-        };
+        });
     }
 </script>
 

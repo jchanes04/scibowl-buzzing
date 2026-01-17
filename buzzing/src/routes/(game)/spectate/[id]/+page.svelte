@@ -15,11 +15,15 @@
     import gameIdStore from "$lib/stores/gameId.svelte";
     import {
         initMembersSubscription,
-        clearMembersSubscription
+        clearMembersSubscription,
     } from "$lib/stores/members.svelte";
-    import { initScoreboardSubscription, clearScoreboardSubscription, scoreboardStore } from "$lib/stores/scoreboard.svelte";
-    import { gameInactiveModal, showGameInactiveModal, hideGameInactiveModal } from "$lib/stores/gameInactiveModal.svelte"
-    import GameInactiveModal from "$lib/components/GameInactiveModal.svelte"
+    import {
+        initScoreboardSubscription,
+        clearScoreboardSubscription,
+        scoreboardStore,
+    } from "$lib/stores/scoreboard.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
+    import Confirm from "$lib/components/Confirm.svelte";
     import { goto } from "$app/navigation";
 
     interface Props {
@@ -58,21 +62,29 @@
     // Watch isActive via Convex subscription
     $effect(() => {
         if (scoreboardStore.isActive === false) {
-            showGameInactiveModal(
-                () => socket.emit('reopenGame'),
-                () => {
-                    goto('/')
-                    socket.disconnect()
-                }
-            )
-        } else if (scoreboardStore.isActive === true && gameInactiveModal.visible) {
-            hideGameInactiveModal()
+            modalStore.show({
+                title: "Game Inactive",
+                message:
+                    "This game has been paused due to inactivity. You can reopen it to continue playing, or leave to return to the home page.",
+                confirmText: "Reopen Game",
+                cancelText: "Leave Game",
+                confirmCallback: () => socket.emit("reopenGame"),
+                cancelCallback: () => {
+                    goto("/");
+                    socket.disconnect();
+                },
+            });
+        } else if (
+            scoreboardStore.isActive === true &&
+            modalStore.current?.title === "Game Inactive"
+        ) {
+            modalStore.hide();
         }
-    })
+    });
 
     // Cleanup
     onDestroy(() => {
-        hideGameInactiveModal()
+        modalStore.hide();
         clearMembersSubscription();
         clearScoreboardSubscription();
         gameIdStore.clear();
@@ -96,14 +108,6 @@
     <Chatbox />
 </main>
 
-{#if gameInactiveModal.visible}
-  <div class="modal-background"></div>
-  <GameInactiveModal
-    reopenCallback={gameInactiveModal.reopenCallback || (() => {})}
-    leaveCallback={gameInactiveModal.leaveCallback || (() => {})}
-  />
-{/if}
-
 <style lang="scss">
     main {
         display: grid;
@@ -126,15 +130,5 @@
                 ". scoreboard ."
                 ". member-list .";
         }
-    }
-
-    .modal-background {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 99;
     }
 </style>

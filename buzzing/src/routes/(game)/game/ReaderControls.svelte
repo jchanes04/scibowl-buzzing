@@ -11,19 +11,13 @@
     import QuestionControls from "./QuestionControls.svelte";
     import ScoringControls from "./ScoringControls.svelte";
 
+    import { modalStore } from "$lib/stores/modal.svelte";
 
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
     const convex = useConvexClient();
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
-
 
     let scoreboardExpanded = $state(false);
-
 </script>
 
 <div id="buttons" class:scoreboard-expanded={scoreboardExpanded}>

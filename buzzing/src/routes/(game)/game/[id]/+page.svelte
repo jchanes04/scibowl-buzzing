@@ -31,12 +31,8 @@
         clearMembersSubscription,
         myMemberStore,
     } from "$lib/stores/members.svelte";
-    import {
-        gameInactiveModal,
-        showGameInactiveModal,
-        hideGameInactiveModal,
-    } from "$lib/stores/gameInactiveModal.svelte";
-    import GameInactiveModal from "$lib/components/GameInactiveModal.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
+    import Confirm from "$lib/components/Confirm.svelte";
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { goto } from "$app/navigation";
 
@@ -71,7 +67,7 @@
 
     // Cleanup on unmount
     onDestroy(() => {
-        hideGameInactiveModal();
+        modalStore.hide();
         clearChatMessages();
         clearScoreboardSubscription();
         clearMembersSubscription();
@@ -81,18 +77,23 @@
     // Watch isActive via Convex subscription
     $effect(() => {
         if (scoreboardStore.isActive === false) {
-            showGameInactiveModal(
-                () => socket.emit("reopenGame"),
-                () => {
+            modalStore.show({
+                title: "Game Inactive",
+                message:
+                    "This game has been paused due to inactivity. You can reopen it to continue playing, or leave to return to the home page.",
+                confirmText: "Reopen Game",
+                cancelText: "Leave Game",
+                confirmCallback: () => socket.emit("reopenGame"),
+                cancelCallback: () => {
                     goto("/");
                     socket.disconnect();
                 },
-            );
+            });
         } else if (
             scoreboardStore.isActive === true &&
-            gameInactiveModal.visible
+            modalStore.current?.title === "Game Inactive"
         ) {
-            hideGameInactiveModal();
+            modalStore.hide();
         }
     });
 
@@ -142,14 +143,6 @@
         >Open Debug Log</button
     >
 </main>
-
-{#if gameInactiveModal.visible}
-    <div class="modal-background"></div>
-    <GameInactiveModal
-        reopenCallback={gameInactiveModal.reopenCallback || (() => {})}
-        leaveCallback={gameInactiveModal.leaveCallback || (() => {})}
-    />
-{/if}
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
@@ -220,15 +213,5 @@
                 top: max(10vh, 80px);
             }
         }
-    }
-
-    .modal-background {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 99;
     }
 </style>

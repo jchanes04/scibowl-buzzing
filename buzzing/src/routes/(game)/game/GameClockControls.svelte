@@ -10,18 +10,11 @@
     import { api } from "../../../../convex/_generated/api";
     import gameIdStore from "$lib/stores/gameId.svelte";
     import getSocket from "$lib/socket.svelte";
-    import { getContext } from "svelte";
-    import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
 
     const socket = getSocket();
     const convex = useConvexClient();
-
-    type ModalStore = Writable<{
-        component: any;
-        props: Record<string, unknown>;
-    } | null>;
-    const modalStore: ModalStore = getContext("modalStore");
 
     let gameClockTime: number = $state(0);
     let startGameClockDisabled = $state(false);
@@ -86,18 +79,15 @@
     }
 
     function endGame() {
-        modalStore.set({
-            component: Confirm,
-            props: {
-                title: "End Game",
-                message: "Are you sure you want to end the game?",
-                cancelCallback: () => {
-                    modalStore.set(null);
-                },
-                confirmCallback: () => {
-                    socket.emit("endGame");
-                    modalStore.set(null);
-                },
+        modalStore.show({
+            title: "End Game",
+            message: "Are you sure you want to end the game?",
+            cancelCallback: () => {
+                modalStore.hide();
+            },
+            confirmCallback: () => {
+                socket.emit("endGame");
+                modalStore.hide();
             },
         });
     }
