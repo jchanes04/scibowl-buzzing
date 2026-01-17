@@ -16,6 +16,7 @@ export const getForGame = query({
       type: m.type,
       teamId: m.teamId,
       isActive: m.isActive,
+      isSubbed: m.isSubbed ?? false,
     }));
   },
 });
@@ -35,6 +36,7 @@ export const getAllForGame = query({
       type: m.type,
       teamId: m.teamId,
       isActive: m.isActive,
+      isSubbed: m.isSubbed ?? false,
       leftAt: m.leftAt,
     }));
   },
@@ -234,6 +236,29 @@ export const clearForGame = mutation({
 
     for (const member of members) {
       await ctx.db.delete(member._id);
+    }
+  },
+});
+
+// Set player subbed status
+export const setSub = mutation({
+  args: {
+    gameId: v.string(),
+    memberId: v.string(),
+    isSubbed: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const member = await ctx.db
+      .query("gameMembers")
+      .withIndex("by_gameId_memberId", (q) =>
+        q.eq("gameId", args.gameId).eq("memberId", args.memberId)
+      )
+      .first();
+
+    if (member) {
+      await ctx.db.patch(member._id, {
+        isSubbed: args.isSubbed,
+      });
     }
   },
 });

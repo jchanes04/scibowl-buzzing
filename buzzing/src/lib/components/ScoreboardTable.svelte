@@ -73,7 +73,17 @@
         })(),
     );
     let players = $derived(
-        combinePlayersLists(playersFromScores, playersFromTeams),
+        Object.entries(
+            combinePlayersLists(playersFromScores, playersFromTeams),
+        ).sort(([idA], [idB]) => {
+            const nameA = (
+                scoreboardData?.teamNames?.[idA] || idA
+            ).toLowerCase();
+            const nameB = (
+                scoreboardData?.teamNames?.[idB] || idB
+            ).toLowerCase();
+            return nameA.localeCompare(nameB);
+        }),
     );
     let runningScores = $derived(
         scoreboardData
@@ -96,7 +106,7 @@
                                       totals[teamId] +=
                                           scoreboardData.pointValues.tossup;
                                   else if (entry.scoreType === "penalty")
-                                      totals[teamId] -=
+                                      totals[teamId] +=
                                           scoreboardData.pointValues.penalty;
                               }
                               // Bonus
@@ -148,6 +158,7 @@
         correct: "C",
         incorrect: "I",
         penalty: "P",
+        subbed: "",
     };
 
     function handleTossupChange(
@@ -241,7 +252,7 @@
 <table>
     <colgroup>
         <col span="2" class="question-info" />
-        {#each Object.values(players) as p}
+        {#each players as [_, p]}
             {#each p as _}
                 <col style="width: 2.2em;" />
             {/each}
@@ -257,8 +268,7 @@
     <thead>
         <tr>
             <th colspan="2"></th>
-            {#each Object.keys(players) as teamId}
-                {@const teamPlayers = players[teamId]}
+            {#each players as [teamId, teamPlayers]}
                 {#if teamPlayers}
                     <th
                         colspan={teamPlayers.length + 2}
@@ -276,7 +286,7 @@
         {#if rowArray.length}
             <tr>
                 <th colspan="2"></th>
-                {#each Object.values(players) as p}
+                {#each players as [_, p]}
                     {#each p as playerId}
                         <th class="player-name" style:font-weight="normal"
                             >{scoreboardData.playerNames[playerId]?.name ||
@@ -301,7 +311,7 @@
                     <td class="question-category"
                         >{categories[scoreRow.category as Category]}</td
                     >
-                    {#each Object.entries(players) as [teamId, p]}
+                    {#each players as [teamId, p]}
                         {@const tossupEntry = scoreRow.tossup[teamId]}
                         {#each p as playerId}
                             <td
@@ -346,6 +356,7 @@
                                 onchange={isModerator
                                     ? (val) =>
                                           val !== "penalty" &&
+                                          val !== "subbed" &&
                                           handleBonusChange(i, teamId, val)
                                     : undefined}
                             />
@@ -364,7 +375,7 @@
                     {/if}
                 {:else}
                     <td></td>
-                    {#each Object.entries(players) as [teamId, p]}
+                    {#each players as [teamId, p]}
                         {#each p as _}
                             <td></td>
                         {/each}
@@ -379,8 +390,8 @@
         {:else}
             <tr>
                 <td
-                    colspan={Object.values(players).reduce(
-                        (acc, x) => acc + x.length + 2,
+                    colspan={players.reduce(
+                        (acc, [_, x]) => acc + x.length + 2,
                         0,
                     ) + (isModerator ? 3 : 2)}
                 >
@@ -494,7 +505,8 @@
     .delete-button {
         background: transparent;
         color: $red;
-        border: 1px solid rgba($red, 0.2);
+        border: 2px solid rgba($red, 0.2);
+        border-radius: 0.5em;
         box-shadow: none;
         font-size: 0.8rem;
         padding: 0.3em 0.6em;
@@ -504,6 +516,7 @@
             background: rgba($red, 0.1);
             border-color: $red;
             transform: none;
+            transition: all 0.2s ease-in-out;
         }
     }
 </style>

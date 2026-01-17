@@ -54,6 +54,7 @@ export default defineSchema({
     type: v.union(v.literal("player"), v.literal("moderator")),
     teamId: v.optional(v.string()),
     isActive: v.boolean(),
+    isSubbed: v.optional(v.boolean()),
     leftAt: v.optional(v.number()),
     // Denormalized game data - snapshotted when member leaves for efficient history queries
     gameSnapshot: v.optional(v.object({

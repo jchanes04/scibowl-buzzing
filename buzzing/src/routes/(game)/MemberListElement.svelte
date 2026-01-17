@@ -115,6 +115,31 @@
             },
         };
     }
+
+    async function toggleSub() {
+        const gId = gameIdStore.value;
+        if (gId && member.type === "player") {
+            const newSubStatus = !(member as ClientPlayer).isSubbed;
+
+            // Update Convex
+            await convex.mutation(api.gameMembers.setSub, {
+                gameId: gId,
+                memberId: member.id,
+                isSubbed: newSubStatus,
+            });
+
+            // Emit socket for instant UI update
+            socket.emit("setPlayerSub", member.id, newSubStatus);
+
+            // Add chat message
+            socket.emit("addChatMessage", {
+                type: "notification",
+                text: newSubStatus
+                    ? `${member.name} has been subbed out`
+                    : `${member.name} is now in play`,
+            });
+        }
+    }
 </script>
 
 {#if member.type === "moderator"}
@@ -128,11 +153,20 @@
     <li class={!member.isActive ? "inactive" : ""}>
         {member.name}
         <span class="team">({member.team.name})</span>
+        {#if member.isSubbed}
+            <span class="subbed-text">subbed out</span>
+        {/if}
         {#if !member.isActive}
             <span class="inactive-indicator" title="Inactive"></span>
         {/if}
         {#if showControls}
             <div class="controls">
+                <button
+                    onclick={toggleSub}
+                    title={member.isSubbed ? "Put in play" : "Sub out"}
+                >
+                    {member.isSubbed ? "In" : "Sub"}
+                </button>
                 <button onclick={promote}>
                     <Icon svg={badgeSvg} />
                 </button>
@@ -206,12 +240,12 @@
         align-items: center;
         justify-content: center;
         height: 1.75em;
-        width: 1.75em;
+        min-width: 1.75em;
         cursor: pointer;
         border: none;
         background: transparent;
-        padding: 0;
-        font-size: 1.1rem;
+        padding: 0 0.25em;
+        font-size: 0.9rem;
         border-radius: 0.25em;
         transition: all 0.2s;
         color: $gray-2;
@@ -221,9 +255,16 @@
             color: $primary;
         }
 
-        &:nth-child(2):hover {
+        &:nth-child(3):hover {
             background: rgba($red, 0.1);
             color: $red;
         }
+    }
+
+    .subbed-text {
+        color: $text-muted;
+        font-style: italic;
+        font-size: 0.8rem;
+        margin-left: 0.5em;
     }
 </style>

@@ -139,6 +139,18 @@ export const actions = {
             teamId
         })
 
+        // Check if player is joining mid-game - if so, backfill subbed scores for prior questions
+        const gameData = await convex.query(api.games.getByGameId, { gameId })
+        if (gameData && gameData.scores && Object.keys(gameData.scores).length > 0) {
+            await convex.mutation(api.games.backfillSubbedScores, {
+                gameId,
+                playerId,
+                playerName: name,
+                teamId,
+                teamName,
+            })
+        }
+
         // Emit socket event for instant UI update
         const playerData = { id: playerId, name, type: "player" as const, teamID: teamId }
         const teamData = { id: teamId, name: teamName, type: teamType, captainId: null }

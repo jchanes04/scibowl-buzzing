@@ -148,7 +148,6 @@ function setupSocketListeners(io: Server) {
             const currentGame = await getGame(gameId)
             const member = currentGame?.getMember(memberId)
             if (member) {
-                // Soft delete in Convex (mark as inactive)
                 await getConvexClient().mutation(api.gameMembers.leave, {
                     gameId,
                     memberId
@@ -184,6 +183,17 @@ function setupSocketListeners(io: Server) {
 
             const player = currentGame.players[memberId]
             if (!player) return
+
+            // Check if player is subbed
+            if (player.isSubbed) {
+                socket.emit('buzzFailed')
+                emitChatMessage(currentGame, {
+                    text: "You are currently subbed out",
+                    type: "warning",
+                    target: [memberId]
+                })
+                return
+            }
 
             // Check if buzzing is allowed
             const isQuestionOpen = currentGame.state.questionState === 'open'
@@ -473,6 +483,20 @@ function setupSocketListeners(io: Server) {
             // Convex mutation is done in PlayerControls.svelte
             // Emit the socket event for buzz state update
             io.to(gameId).emit('changeCaptain', currentMember.teamId, memberId)
+        })
+
+        socket.on('setPlayerSub', async (targetPlayerId: string, isSubbed: boolean) => {
+            if (spectator) return
+
+            const currentGame = await getGame(gameId)
+            if (!currentGame) return
+
+            const currentMember = currentGame.getMember(memberId)
+            if (currentMember?.type !== "moderator") return
+
+            // Convex mutation is done in MemberListElement.svelte
+            // Emit socket event for instant UI update
+            io.to(gameId).emit('playerSubChanged', targetPlayerId, isSubbed)
         })
 
         socket.onAny(async () => {

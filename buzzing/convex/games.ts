@@ -13,7 +13,8 @@ const categoryValidator = v.union(
 const scoreTypeValidator = v.union(
   v.literal("correct"),
   v.literal("incorrect"),
-  v.literal("penalty")
+  v.literal("penalty"),
+  v.literal("subbed")
 );
 
 // Validators for player and team lists (client-side types)
@@ -29,6 +30,7 @@ const playerListValidator = v.optional(v.array(v.object({
     players: v.any(), // Record<string, player objects>
   }),
   isActive: v.boolean(),
+  isSubbed: v.boolean(),
 })));
 
 const teamListValidator = v.optional(v.array(v.object({
@@ -265,7 +267,7 @@ async function updateScores(
 
   // Only patch player/team names mapping if playerList/teamList was provided
   if (playerList && playerList.length > 0) {
-    const playerNames: Record<string, {name: string, teamId: string}> = {};
+    const playerNames: Record<string, { name: string, teamId: string }> = {};
     for (const player of playerList) {
       playerNames[player.id] = {
         name: player.name,
@@ -506,7 +508,7 @@ export const editTossup = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
-    scoreType: v.union(scoreTypeValidator, v.literal("none")),
+    scoreType: v.union(scoreTypeValidator, v.literal("none"))
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -532,6 +534,52 @@ export const editTossup = mutation({
           bonus: null,
         };
       }
+    });
+  },
+});
+
+/**
+ * Mutation: Backfill subbed scores for a late-joining player
+ * Efficiently updates all prior questions in a single database operation
+ */
+export const backfillSubbedScores = mutation({
+  args: {
+    gameId: v.string(),
+    playerId: v.string(),
+    playerName: v.string(),
+    teamId: v.string(),
+    teamName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await getGame(ctx, args.gameId);
+    const scores = { ...game.scores };
+
+    // Add subbed score for each question where this team doesn't have a score
+    for (const [qNumStr, questionData] of Object.entries(scores)) {
+      const row = questionData as any;
+      if (row && !row.tossup[args.teamId]) {
+        row.tossup[args.teamId] = {
+          playerId: args.playerId,
+          scoreType: "subbed",
+        };
+      }
+    }
+
+    // Update playerNames and teamNames with the new player
+    const playerNames = { ...(game.playerNames || {}) };
+    playerNames[args.playerId] = {
+      name: args.playerName,
+      teamId: args.teamId,
+    };
+
+    const teamNames = { ...(game.teamNames || {}) };
+    teamNames[args.teamId] = args.teamName;
+
+    await ctx.db.patch(game._id, {
+      scores,
+      playerNames,
+      teamNames,
+      lastUpdated: Date.now(),
     });
   },
 });

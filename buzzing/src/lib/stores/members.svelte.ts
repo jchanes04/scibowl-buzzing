@@ -14,7 +14,7 @@ let subscriptionGameId = $state<string | null>(null);
 let myMemberId = $state<string | null>(null);
 
 // Internal state populated from Convex queries
-let _members = $state<Array<{ id: string; name: string; type: "player" | "moderator"; teamId?: string; isActive: boolean }>>([]);
+let _members = $state<Array<{ id: string; name: string; type: "player" | "moderator"; teamId?: string; isActive: boolean; isSubbed?: boolean }>>([]);
 let _teams = $state<Array<{ teamId: string; name: string; type: "default" | "created" | "individual"; captainId?: string }>>([]);
 
 // Track if subscription is already initialized
@@ -73,6 +73,7 @@ export type ClientPlayer = {
     type: "player";
     team: ClientTeamData;
     isActive: boolean;
+    isSubbed: boolean;
 };
 
 export type ClientModerator = {
@@ -87,6 +88,7 @@ export type MyMember = {
     name: string;
     moderator: boolean;
     team?: ClientTeamData;
+    isSubbed?: boolean;
 };
 
 /**
@@ -116,7 +118,8 @@ export const teamsStore = {
                         id: m.id,
                         name: m.name,
                         type: "player",
-                        isActive: m.isActive
+                        isActive: m.isActive,
+                        isSubbed: m.isSubbed ?? false,
                     };
                 }
             }
@@ -143,7 +146,8 @@ export const playersStore = {
                         name: m.name,
                         type: "player",
                         team,
-                        isActive: m.isActive
+                        isActive: m.isActive,
+                        isSubbed: m.isSubbed ?? false,
                     };
                 }
             }
@@ -194,7 +198,8 @@ export const myMemberStore = {
                 id: player.id,
                 name: player.name,
                 moderator: false,
-                team: player.team
+                team: player.team,
+                isSubbed: player.isSubbed,
             };
         }
 

@@ -1,6 +1,5 @@
 <script lang="ts">
     import type { ScoreType } from "$lib/classes/Game";
-    import { createEventDispatcher } from "svelte";
 
     interface Props {
         scoreType: ScoreType | "none";
@@ -11,28 +10,33 @@
     let { scoreType, bonus, onchange }: Props = $props();
 
     let clickable = $derived(!!onchange);
+    const scoreTypes: (ScoreType | "none")[] = $derived(
+        bonus
+            ? ["none", "correct", "incorrect"]
+            : ["none", "subbed", "correct", "incorrect", "penalty"],
+    );
 
     function handleClick() {
         if (!onchange) return;
-        if (scoreType === "none") {
-            onchange("correct");
-        } else if (scoreType === "correct") {
-            onchange("incorrect");
-        } else if (scoreType === "incorrect" && !bonus) {
-            onchange("penalty");
-        } else {
-            onchange("none");
-        }
+        const index = scoreTypes.indexOf(scoreType);
+        scoreType = scoreTypes[index + 1] || "none";
+        onchange(scoreType);
     }
 </script>
 
-<button onclick={onchange ? handleClick : undefined} class={scoreType} class:clickable>
+<button
+    onclick={onchange ? handleClick : undefined}
+    class={scoreType}
+    class:clickable
+>
     {#if scoreType === "correct"}
         C
     {:else if scoreType === "incorrect"}
         I
     {:else if scoreType === "penalty"}
         P
+    {:else if scoreType === "subbed"}
+        S
     {/if}
 </button>
 
@@ -80,6 +84,11 @@
         &.penalty {
             color: $purple-dark;
             background: rgba($purple, 0.15);
+        }
+
+        &.subbed {
+            color: light-dark(#666, #aaa);
+            background: light-dark(#666, #aaa);
         }
     }
 </style>

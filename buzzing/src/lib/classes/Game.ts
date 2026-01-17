@@ -66,7 +66,7 @@ type OpenState = {
     buzzedTeamIds: Set<string>,
 }
 
-export type ScoreType = "correct" | "incorrect" | "penalty"
+export type ScoreType = "correct" | "incorrect" | "penalty" | "subbed"
 
 export type GameTimes = {
     tossup?: [number, number],

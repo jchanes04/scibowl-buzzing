@@ -88,9 +88,14 @@
     }
 
     let visualBonus = $derived(visualBonusStore.value);
+    let isSubbed = $derived(myMemberStore.value.isSubbed ?? false);
     let claimCaptainDisabled = $derived(
-        teamsStore.value[myMemberStore.value.team?.id || ""]?.captainId ===
-            myMemberStore.value.id,
+        isSubbed ||
+            teamsStore.value[myMemberStore.value.team?.id || ""]?.captainId ===
+                myMemberStore.value.id,
+    );
+    let buzzingDisabled = $derived(
+        !gameStore.value.state.buzzingEnabled || isSubbed,
     );
     let visualBonusEnabled = $derived(
         gameStore.value.state.questionState === "open" &&
@@ -105,14 +110,16 @@
         const { code, keyCode } = e;
         if (
             (code === "Space" || code === "Enter") &&
-            gameStore.value.state.buzzingEnabled
+            gameStore.value.state.buzzingEnabled &&
+            !isSubbed
         ) {
             e.preventDefault();
             buzz();
         } else if (code === null || code === undefined) {
             if (
                 (keyCode === 32 || keyCode === 13) &&
-                gameStore.value.state.buzzingEnabled
+                gameStore.value.state.buzzingEnabled &&
+                !isSubbed
             ) {
                 e.preventDefault();
                 buzz();
@@ -122,11 +129,11 @@
 />
 
 <div class="player-controls" class:scoreboard-expanded={scoreboardExpanded}>
+    {#if isSubbed}
+        <div class="subbed-indicator">You are currently subbed out</div>
+    {/if}
     <div class="controls-element">
-        <button
-            id="buzz"
-            onclick={buzz}
-            disabled={!gameStore.value.state.buzzingEnabled}>Buzz</button
+        <button id="buzz" onclick={buzz} disabled={buzzingDisabled}>Buzz</button
         >
         <div class="timer-wrapper">
             <h2>
@@ -245,5 +252,15 @@
         margin: 0;
         color: $gray-2;
         font-variant-numeric: tabular-nums;
+    }
+
+    .subbed-indicator {
+        background: rgba($orange, 0.15);
+        color: $orange-dark;
+        padding: 0.75em 1.5em;
+        border-radius: 0.5em;
+        font-weight: 600;
+        text-align: center;
+        border: 1px solid rgba($orange, 0.3);
     }
 </style>

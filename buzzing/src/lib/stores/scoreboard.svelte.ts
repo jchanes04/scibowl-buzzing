@@ -1,12 +1,30 @@
 import { useQuery } from 'convex-svelte';
 import { api } from '../../../convex/_generated/api';
-import type { QuestionPairScore } from "$lib/classes/GameScoreboard";
+import type { Category, ScoreType } from "$lib/classes/Game";
 
-export type ScoreboardPlayerNames = Record<string, {name: string, teamId: string}>;
+export type ScoreboardPlayerNames = Record<string, { name: string, teamId: string }>;
 export type ScoreboardTeamNames = Record<string, string>;
 
+
+
+export type QuestionPairScore = {
+  category: Category,
+  tossup: Record<string, TossupScore>,
+  bonus: {
+    teamId: string,
+    correct: boolean
+  } | null
+}
+
+type TossupScore = {
+  playerId: string,
+  scoreType: ScoreType
+}
+
+export type Scores = Record<number, QuestionPairScore>
+
 type ScoreboardData = {
-  scores: Record<number, QuestionPairScore>;
+  scores: Scores;
   pointValues: {
     tossup: number;
     bonus: number;

@@ -6,6 +6,7 @@ export type CachedMember = {
   name: string;
   type: "player" | "moderator";
   teamId?: string;
+  isSubbed?: boolean;
 };
 
 export type CachedTeam = {
@@ -57,6 +58,7 @@ export function subscribeToGame(gameId: string): void {
           name: m.name,
           type: m.type,
           teamId: m.teamId,
+          isSubbed: m.isSubbed,
         };
       }
       cache.members = memberMap;
