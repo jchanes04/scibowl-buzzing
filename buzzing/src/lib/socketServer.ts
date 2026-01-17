@@ -7,10 +7,11 @@ import { Server, Socket as IOSocket } from 'socket.io'
 import type { Server as HTTPServer } from 'http'
 import type { Server as HTTPSServer } from 'https'
 import type Debugger from '$lib/classes/Debugger'
-import type { Category, Game, GameSettings, Question, ScoreType } from '$lib/classes/Game'
+import type { Category, GameSettings, Question, ScoreType, ChatMessage } from '$lib/classes/Game'
+import { Game } from '$lib/classes/Game'
 import { getDataFromGameToken } from './authentication'
 import { env } from "$env/dynamic/public"
-import { addChatMessage, getConvexClient, api } from './convex.server'
+import { getConvexClient, api } from './convex.server'
 import fs from 'fs'
 
 // Use a global variable to persist the socket.io server and game manager across HMR reloads in dev mode
@@ -25,6 +26,27 @@ let io: Server | null = globalAny._io || null
 
 export function getIO(): Server | null {
     return io
+}
+
+// Helper function to add a chat message and emit it via socket
+function emitChatMessage(
+    game: Game,
+    message: Omit<ChatMessage, 'timestamp'>
+) {
+    if (!io) return
+
+    const chatMessage = game.addChatMessage(message)
+
+    if (message.target === undefined || message.target === null) {
+        // Broadcast to entire game room (no target specified)
+        io.to(game.id).emit('chatMessage', chatMessage)
+    } else if (message.target.length > 0) {
+        // Emit to specific members
+        for (const memberId of message.target) {
+            io.to(memberId).emit('chatMessage', chatMessage)
+        }
+    }
+    // If target is an empty array, the message is stored but not emitted to anyone
 }
 
 export function attachSocketIO(httpServer: HTTPServer | HTTPSServer): Server {
@@ -106,6 +128,19 @@ function setupSocketListeners(io: Server) {
             }
         }
 
+        // Handle chat message requests from clients
+        socket.on('addChatMessage', async (data: { text: string; type: 'buzz' | 'notification' | 'warning' | 'success' }) => {
+            if (spectator) return
+
+            const currentGame = await getGame(gameId)
+            if (!currentGame) return
+
+            emitChatMessage(currentGame, {
+                text: data.text,
+                type: data.type
+            })
+        })
+
         socket.on('disconnect', async () => {
             // Spectators don't need tracking - just disconnect
             if (spectator) return
@@ -130,8 +165,7 @@ function setupSocketListeners(io: Server) {
             if (reopenedGame) {
                 const member = reopenedGame.getMember(memberId)
                 if (member) {
-                    addChatMessage({
-                        gameId,
+                    emitChatMessage(reopenedGame, {
                         text: `${member.name} has reopened the game`,
                         type: "notification"
                     })
@@ -164,26 +198,26 @@ function setupSocketListeners(io: Server) {
                     socket.to(gameId).emit('buzz', memberId)
 
                     // Add chat message for the buzzer (targeted)
-                    addChatMessage({
-                        gameId,
+                    emitChatMessage(currentGame, {
                         text: "You have buzzed",
                         type: "buzz",
                         target: [memberId]
                     })
 
-                    // Add chat message for others (broadcast)
-                    addChatMessage({
-                        gameId,
-                        text: `${player.name} has buzzed`,
-                        type: "buzz",
-                        target: Object.keys(currentGame.players).filter(id => id !== memberId)
-                    })
+                    // Add chat message for others (all members except buzzer)
+                    const otherMembers = Object.keys(currentGame.people).filter(id => id !== memberId)
+                    if (otherMembers.length > 0) {
+                        emitChatMessage(currentGame, {
+                            text: `${player.name} has buzzed`,
+                            type: "buzz",
+                            target: otherMembers
+                        })
+                    }
                 } else {
                     socket.emit('buzzFailed')
 
                     // Add targeted warning for the player who was outbuzzed
-                    addChatMessage({
-                        gameId,
+                    emitChatMessage(currentGame, {
                         text: "You have been outbuzzed",
                         type: "warning",
                         target: [memberId]
@@ -192,8 +226,7 @@ function setupSocketListeners(io: Server) {
             } else {
                 socket.emit('buzzFailed')
 
-                addChatMessage({
-                    gameId,
+                emitChatMessage(currentGame, {
                     text: "You have been outbuzzed",
                     type: "warning",
                     target: [memberId]
@@ -249,8 +282,7 @@ function setupSocketListeners(io: Server) {
                 socket.to(gameId).emit('timerEnd')
 
                 // Add chat message for timer end
-                addChatMessage({
-                    gameId,
+                emitChatMessage(currentGame, {
                     text: "Time is up",
                     type: "warning"
                 })
@@ -462,7 +494,7 @@ function setupGameSweeper(io: Server) {
         for (const id of swept) {
             io.to(id).emit('gameSwept')
         }
-    }, 100_000)
+    }, 300_000)
 }
 
 export async function createNewGame(ownerName: string,

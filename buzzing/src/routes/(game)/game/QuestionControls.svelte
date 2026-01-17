@@ -32,7 +32,12 @@
             `,
         };
     }
-    import { moderatorsStore, playersStore, teamsStore, type ClientTeamData } from "$lib/stores/members.svelte";
+    import {
+        moderatorsStore,
+        playersStore,
+        teamsStore,
+        type ClientTeamData,
+    } from "$lib/stores/members.svelte";
     import gameStore from "$lib/stores/game.svelte";
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { gameClockStore } from "$lib/stores/timer.svelte";
@@ -103,21 +108,12 @@
             number: questionNumber,
         });
 
-        // Add chat message via Convex
+        // Add chat message via socket
         const gId = gameIdStore.value;
         if (gId) {
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            socket.emit("addChatMessage", {
                 type: "notification",
-                text: `New Question ${questionNumber ? "#" + questionNumber : ""}: ${(questionType[0] || "").toUpperCase() + questionType.slice(1)} - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
-                target: Object.values(moderatorsStore.value).map(m => m.id)
-            });
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
-                type: "notification",
-                text: `${(questionType[0] || "").toUpperCase() + questionType.slice(1)} ${questionNumber ? "#" + questionNumber : ""} Opened`,
-                target: Object.values(playersStore.value).map(m => m.id)
-
+                text: `${(questionType[0] || "").toUpperCase() + questionType.slice(1)} #${questionNumber} Opened - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
             });
         }
 
@@ -127,10 +123,10 @@
                 bonus: !(questionType === "tossup"),
                 number: questionNumber,
                 teamId: teamSelectValue?.id as string,
-                visual: questionType === "visual"
+                visual: questionType === "visual",
             },
-            true
-        )
+            true,
+        );
 
         questionType = "";
         visualBonusFilename = "";
@@ -165,30 +161,36 @@
 
     function confirmNewQuestion() {
         if (gameClockStore.ended) {
-            modalStore.set(timeEndedModal(() => {
-                if (
-                    questionType === "tossup" &&
-                    scoreboardStore.value.scores[questionNumber] &&
-                    questionNumber !== 0
-                ) {
-                    modalStore.set(overwriteQuestionModal(questionNumber, () => {
+            modalStore.set(
+                timeEndedModal(() => {
+                    if (
+                        questionType === "tossup" &&
+                        scoreboardStore.value.scores[questionNumber] &&
+                        questionNumber !== 0
+                    ) {
+                        modalStore.set(
+                            overwriteQuestionModal(questionNumber, () => {
+                                newQuestion();
+                                modalStore.set(null);
+                            }),
+                        );
+                    } else {
                         newQuestion();
                         modalStore.set(null);
-                    }));
-                } else {
-                    newQuestion();
-                    modalStore.set(null);
-                }
-            }));
+                    }
+                }),
+            );
         } else if (
             questionType === "tossup" &&
             scoreboardStore.value.scores[questionNumber] &&
             questionNumber !== 0
         ) {
-            modalStore.set(overwriteQuestionModal(questionNumber, () => {
-                newQuestion();
-                modalStore.set(null);
-            }));
+            modalStore.set(
+                overwriteQuestionModal(questionNumber, () => {
+                    newQuestion();
+                    modalStore.set(null);
+                }),
+            );
         } else {
             newQuestion();
         }
@@ -238,12 +240,12 @@
         </label>
     </div>
     <span style="display :flex;  flex-direction: row;">
-        <div
-            id="target-team-wrapper"
-            class:disabled={questionType !== "bonus" &&
-                questionType !== "visual"}
-        >
-            <div class="select-wrapper">
+        <div id="target-team-wrapper">
+            <div
+                class="select-wrapper"
+                class:disabled={questionType !== "bonus" &&
+                    questionType !== "visual"}
+            >
                 <Select
                     items={Object.values(teamsStore.value)}
                     itemId="id"
@@ -297,17 +299,14 @@
             bind:value={questionNumber}
             onchange={handleQuestionNumberChange}
         />
-        <button
-            onclick={confirmNewQuestion}
-            disabled={newQuestionDisabled}>New Question</button
+        <button onclick={confirmNewQuestion} disabled={newQuestionDisabled}
+            >New Question</button
         >
     </div>
 </ControlSection>
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
-
-    
 
     .select-wrapper {
         @extend %select-wrapper;
@@ -426,10 +425,10 @@
     #target-team-wrapper {
         flex: 1 1 0%;
         min-width: 0;
+    }
 
-        &.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-        }
+    .select-wrapper.disabled {
+        opacity: 0.3;
+        pointer-events: none;
     }
 </style>

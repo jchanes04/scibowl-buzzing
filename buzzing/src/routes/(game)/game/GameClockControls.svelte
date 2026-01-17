@@ -38,11 +38,10 @@
 
         socket.emit("startGameClock", gameClockTime);
 
-        // Add chat message via Convex
+        // Add chat message via socket
         const gId = gameIdStore.value;
         if (gId) {
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            socket.emit("addChatMessage", {
                 type: "notification",
                 text: `${timeDisplay} game clock started`,
             });
@@ -57,12 +56,13 @@
 
         socket.emit("pauseGameClock");
 
-        // Add chat message via Convex
+        // Add chat message via socket
         const gId = gameIdStore.value;
         if (gId) {
-            const messageText = gameClockStore.live ? "Game clock paused" : "Game clock resumed";
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            const messageText = gameClockStore.live
+                ? "Game clock paused"
+                : "Game clock resumed";
+            socket.emit("addChatMessage", {
                 type: "notification",
                 text: messageText,
             });
@@ -75,11 +75,10 @@
 
         socket.emit("stopGameClock");
 
-        // Add chat message via Convex
+        // Add chat message via socket
         const gId = gameIdStore.value;
         if (gId) {
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            socket.emit("addChatMessage", {
                 type: "notification",
                 text: "Game clock stopped",
             });

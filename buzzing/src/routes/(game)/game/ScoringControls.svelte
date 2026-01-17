@@ -2,7 +2,11 @@
     import ControlSection from "./ControlSection.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import stopSvg from "$lib/icons/stop.svg?raw";
-    import { moderatorsStore, playersStore, teamsStore } from "$lib/stores/members.svelte";
+    import {
+        moderatorsStore,
+        playersStore,
+        teamsStore,
+    } from "$lib/stores/members.svelte";
     import gameStore from "$lib/stores/game.svelte";
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { timerStore } from "$lib/stores/timer.svelte";
@@ -118,10 +122,13 @@
 
         socket.emit("scoreQuestion", selectedScore);
 
-        // Add chat message via Convex
+        // Add chat message via socket
         if (gId) {
-            const category = gameStore.value.state.currentQuestion?.category || "";
-            const categoryDisplay = category ? (category[0] || "").toUpperCase() + category.slice(1) : "";
+            const category =
+                gameStore.value.state.currentQuestion?.category || "";
+            const categoryDisplay = category
+                ? (category[0] || "").toUpperCase() + category.slice(1)
+                : "";
 
             let messageText = "";
             let messageType: "success" | "warning" = "success";
@@ -137,8 +144,7 @@
                 messageType = "warning";
             }
 
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            socket.emit("addChatMessage", {
                 type: messageType,
                 text: messageText,
             });
@@ -166,10 +172,9 @@
 
         socket.emit("markDead");
 
-        // Add chat message via Convex
+        // Add chat message via socket
         if (gId) {
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            socket.emit("addChatMessage", {
                 type: "notification",
                 text: "Question marked dead",
             });
@@ -177,7 +182,6 @@
 
         debug.addEvent("markDead", {});
     }
-
 </script>
 
 <ControlSection
@@ -223,8 +227,7 @@
             onclick={markDead}
             class="scoring mark-dead-btn"
             disabled={gameStore.value.state.questionState !== "open" ||
-                gameStore.value.state.currentQuestion.bonus}
-            >Mark Dead</button
+                gameStore.value.state.currentQuestion.bonus}>Mark Dead</button
         >
     </div>
     <button

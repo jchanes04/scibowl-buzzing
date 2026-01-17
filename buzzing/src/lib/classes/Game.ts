@@ -74,6 +74,13 @@ export type GameTimes = {
     visual?: [number, number]
 }
 
+export type ChatMessage = {
+    text: string
+    type: 'buzz' | 'notification' | 'warning' | 'success'
+    target?: string[]
+    timestamp: number
+}
+
 type GameParameters = {
     name: string,
     settings?: Partial<GameSettings>,
@@ -103,6 +110,8 @@ export class Game {
     lastActive: number
 
     state: IdleState | OpenState | BuzzedState
+
+    chatMessages: ChatMessage[] = []
 
     constructor({ name, settings, teamNames, ownerId, ownerName, joinCode, times, existingId }: GameParameters) {
         this.id = existingId || createGameID()
@@ -165,6 +174,23 @@ export class Game {
     // Get a specific team from cache
     getTeam(id: string): CachedTeam | null {
         return getTeamFromCache(this.id, id)
+    }
+
+    // Add a chat message and return it with timestamp
+    addChatMessage(message: Omit<ChatMessage, 'timestamp'>): ChatMessage {
+        const chatMessage: ChatMessage = { ...message, timestamp: Date.now() }
+        this.chatMessages.push(chatMessage)
+        return chatMessage
+    }
+
+    // Get chat messages filtered for a specific member
+    // - No target (null/undefined) = broadcast to all
+    // - Empty array = no one receives it
+    // - Array with members = only those members receive it
+    getChatMessagesForMember(memberId: string): ChatMessage[] {
+        return this.chatMessages.filter(msg =>
+            msg.target === undefined || msg.target === null || msg.target.includes(memberId)
+        )
     }
 
     buzz(playerId: string): BuzzerData | null {

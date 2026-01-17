@@ -1,6 +1,9 @@
 <script lang="ts">
     import getSocket from "$lib/socket.svelte";
-    import type { ClientModerator, ClientPlayer } from "$lib/stores/members.svelte";
+    import type {
+        ClientModerator,
+        ClientPlayer,
+    } from "$lib/stores/members.svelte";
     import { getContext } from "svelte";
     import type { Writable } from "svelte/store";
     import Confirm from "$lib/components/Confirm.svelte";
@@ -71,9 +74,8 @@
                         // Just emit socket event
                         socket.emit("kickPlayer", member.id);
 
-                        // Add chat message
-                        convex.mutation(api.chatMessages.add, {
-                            gameId: gId,
+                        // Add chat message via socket
+                        socket.emit("addChatMessage", {
                             type: "notification",
                             text: `${member.name} has been kicked`,
                         });
@@ -123,7 +125,7 @@
         {/if}
     </li>
 {:else}
-    <li class="{!member.isActive ? 'inactive' : ''}">
+    <li class={!member.isActive ? "inactive" : ""}>
         {member.name}
         <span class="team">({member.team.name})</span>
         {#if !member.isActive}

@@ -10,6 +10,7 @@ import {
     playersStore,
     myMemberStore
 } from "./stores/members.svelte"
+import { addChatMessage, type ChatMessage } from "./stores/chatMessages.svelte"
 
 // Direct access to store values via getters
 const getTeams = () => teamsStore.value
@@ -44,6 +45,11 @@ export function createSocket(spectator: boolean = false) {
 
     socket.onAny((event: string, ...args: any[]) => {
         console.log(event, args);
+    })
+
+    // Handle new chat messages from socket
+    socket.on('chatMessage', (message: ChatMessage) => {
+        addChatMessage(message)
     })
 
     socket.on('promotion', async (memberId: string) => {

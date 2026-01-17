@@ -18,8 +18,8 @@
     import { untrack, onDestroy } from "svelte";
     import type { Question } from "$lib/classes/Game";
     import {
-        initChatSubscription,
-        clearChatSubscription,
+        initChatMessages,
+        clearChatMessages,
     } from "$lib/stores/chatMessages.svelte";
     import {
         initScoreboardSubscription,
@@ -31,8 +31,12 @@
         clearMembersSubscription,
         myMemberStore,
     } from "$lib/stores/members.svelte";
-    import { gameInactiveModal, showGameInactiveModal, hideGameInactiveModal } from "$lib/stores/gameInactiveModal.svelte"
-    import GameInactiveModal from "$lib/components/GameInactiveModal.svelte"
+    import {
+        gameInactiveModal,
+        showGameInactiveModal,
+        hideGameInactiveModal,
+    } from "$lib/stores/gameInactiveModal.svelte";
+    import GameInactiveModal from "$lib/components/GameInactiveModal.svelte";
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { goto } from "$app/navigation";
 
@@ -47,10 +51,9 @@
 
     // Initialize game store with question state (not member data - that comes from Convex)
     function initGameState() {
-
         gameStore.set(data.gameInfo);
         gameIdStore.set(data.gameInfo.id);
-        initChatSubscription(data.gameInfo.id, data.myMemberId);
+        initChatMessages(data.chatHistory);
         initScoreboardSubscription(data.gameInfo.id);
         initMembersSubscription(data.gameInfo.id, data.myMemberId);
     }
@@ -68,8 +71,8 @@
 
     // Cleanup on unmount
     onDestroy(() => {
-        hideGameInactiveModal()
-        clearChatSubscription();
+        hideGameInactiveModal();
+        clearChatMessages();
         clearScoreboardSubscription();
         clearMembersSubscription();
         gameIdStore.clear();
@@ -79,16 +82,19 @@
     $effect(() => {
         if (scoreboardStore.isActive === false) {
             showGameInactiveModal(
-                () => socket.emit('reopenGame'),
+                () => socket.emit("reopenGame"),
                 () => {
-                    goto('/')
-                    socket.disconnect()
-                }
-            )
-        } else if (scoreboardStore.isActive === true && gameInactiveModal.visible) {
-            hideGameInactiveModal()
+                    goto("/");
+                    socket.disconnect();
+                },
+            );
+        } else if (
+            scoreboardStore.isActive === true &&
+            gameInactiveModal.visible
+        ) {
+            hideGameInactiveModal();
         }
-    })
+    });
 
     // svelte-ignore state_referenced_locally
     const debug = browser
@@ -138,11 +144,11 @@
 </main>
 
 {#if gameInactiveModal.visible}
-  <div class="modal-background"></div>
-  <GameInactiveModal
-    reopenCallback={gameInactiveModal.reopenCallback || (() => {})}
-    leaveCallback={gameInactiveModal.leaveCallback || (() => {})}
-  />
+    <div class="modal-background"></div>
+    <GameInactiveModal
+        reopenCallback={gameInactiveModal.reopenCallback || (() => {})}
+        leaveCallback={gameInactiveModal.leaveCallback || (() => {})}
+    />
 {/if}
 
 <style lang="scss">

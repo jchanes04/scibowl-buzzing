@@ -2,7 +2,7 @@ import { getDataFromGameToken } from "$lib/authentication"
 import { getGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
-import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
+import { getConvexClient, api } from "$lib/convex.server"
 import type { BuzzerData, Game } from "$lib/classes/Game"
 import type { ClientGameData } from "$lib/stores/game.svelte"
 
@@ -108,6 +108,6 @@ function buildPageData(game: Game | null, gameId: string, myMemberId: string) {
             state: currentGameState
         },
         myMemberId,
-
+        chatHistory: game.getChatMessagesForMember(myMemberId)
     }
 }

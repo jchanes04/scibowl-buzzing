@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as chatMessages from "../chatMessages.js";
 import type * as crons from "../crons.js";
 import type * as gameHistory from "../gameHistory.js";
 import type * as gameMembers from "../gameMembers.js";
@@ -23,7 +22,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  chatMessages: typeof chatMessages;
   crons: typeof crons;
   gameHistory: typeof gameHistory;
   gameMembers: typeof gameMembers;

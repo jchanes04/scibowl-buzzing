@@ -8,6 +8,7 @@
     import { api } from "../../../convex/_generated/api";
     import gameIdStore from "$lib/stores/gameId.svelte";
     import ScoreboardTable from "./ScoreboardTable.svelte";
+    import getSocket from "$lib/socket.svelte";
 
     interface Props {
         isModerator?: boolean;
@@ -16,6 +17,7 @@
     let { isModerator = false }: Props = $props();
 
     const convex = useConvexClient();
+    const socket = getSocket();
 
     type ModalStore = Writable<{
         component: any;
@@ -46,9 +48,16 @@
             const result: Record<string, string[]> = {};
             const { playerNames, teamNames } = scoreboardData;
             // Only use teams that exist in teamNames
-            for (const [playerId, playerInfo] of Object.entries(playerNames || {})) {
-                if (playerInfo && playerInfo.teamId && teamNames[playerInfo.teamId]) {
-                    if (!result[playerInfo.teamId]) result[playerInfo.teamId] = [];
+            for (const [playerId, playerInfo] of Object.entries(
+                playerNames || {},
+            )) {
+                if (
+                    playerInfo &&
+                    playerInfo.teamId &&
+                    teamNames[playerInfo.teamId]
+                ) {
+                    if (!result[playerInfo.teamId])
+                        result[playerInfo.teamId] = [];
                     if (!result[playerInfo.teamId]?.includes(playerId)) {
                         result[playerInfo.teamId]?.push(playerId);
                     }
@@ -62,7 +71,10 @@
             list2: Record<string, string[]>,
         ) {
             const list: Record<string, string[]> = {};
-            const keys = new Set([...Object.keys(list1), ...Object.keys(list2)]);
+            const keys = new Set([
+                ...Object.keys(list1),
+                ...Object.keys(list2),
+            ]);
             for (const teamId of keys) {
                 list[teamId] = [
                     ...(list1[teamId] || []),
@@ -74,7 +86,10 @@
             return list;
         }
 
-        const players = combinePlayersLists(playersFromScores, playersFromTeams);
+        const players = combinePlayersLists(
+            playersFromScores,
+            playersFromTeams,
+        );
 
         const csv = await convertToCSV(
             scoreboardData.teamNames,
@@ -110,9 +125,8 @@
                         // Clear scores via Convex
                         convex.mutation(api.games.clearScores, { gameId: gId });
 
-                        // Add chat message via Convex
-                        convex.mutation(api.chatMessages.add, {
-                            gameId: gId,
+                        // Add chat message via socket
+                        socket.emit("addChatMessage", {
                             type: "notification",
                             text: "Scores cleared",
                         });
@@ -126,10 +140,7 @@
 </script>
 
 <div class="expanded-scoreboard">
-    <ScoreboardTable
-        scoreboardData={scoreboardStore.value}
-        {isModerator}
-    />
+    <ScoreboardTable scoreboardData={scoreboardStore.value} {isModerator} />
     <div class="actions">
         <button onclick={exportScores}>Export Scores</button>
         {#if isModerator}
@@ -166,4 +177,3 @@
         padding: 0.5em 1em;
     }
 </style>
-

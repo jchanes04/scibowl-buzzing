@@ -24,19 +24,3 @@ export function getConvexRealtimeClient(): ConvexClient {
 
 // Re-export api for convenience
 export { api };
-
-// Helper type for message creation
-export type ChatMessageInput = {
-  gameId: string;
-  text: string;
-  type: "buzz" | "notification" | "warning" | "success";
-  target?: string[];
-};
-
-/**
- * Add a chat message from server-side code
- */
-export async function addChatMessage(message: ChatMessageInput) {
-  const convex = getConvexClient();
-  return convex.mutation(api.chatMessages.add, message);
-}

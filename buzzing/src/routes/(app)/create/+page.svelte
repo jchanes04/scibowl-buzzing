@@ -335,10 +335,6 @@
         margin-bottom: 1rem;
     }
 
-    .advanced-settings {
-        margin-top: 1rem;
-    }
-
     .timer-grid,
     .points-grid {
         display: grid;

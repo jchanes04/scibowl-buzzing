@@ -1,10 +1,10 @@
 import { generateGameToken } from "$lib/authentication"
 import { createMemberID, createTeamID } from "$lib/functions/createId"
-import { getGame } from "$lib/server"
+import { getGame, getIO } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import { env } from "$env/dynamic/public"
-import { addChatMessage, getConvexClient, api } from "$lib/convex.server"
+import { getConvexClient, api } from "$lib/convex.server"
 
 // Get or create a persistent member ID for the user
 function getPersistentMemberId(cookies: any): { memberId: string, isNew: boolean } {
@@ -143,12 +143,15 @@ export const actions = {
         const playerData = { id: playerId, name, type: "player" as const, teamID: teamId }
         const teamData = { id: teamId, name: teamName, type: teamType, captainId: null }
 
-        // Add chat message for player joining
-        await addChatMessage({
-            gameId,
+        // Add chat message for player joining (stores in game memory and emits via socket)
+        const chatMessage = game.addChatMessage({
             text: `${name} has joined the game`,
             type: "notification"
         })
+        const io = getIO()
+        if (io) {
+            io.to(gameId).emit('chatMessage', chatMessage)
+        }
 
         const gameToken = generateGameToken({ memberId: playerId, gameId }, '6h')
         cookies.set("gameToken", gameToken, {

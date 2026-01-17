@@ -1,63 +1,37 @@
-import { useQuery } from 'convex-svelte';
-import { api } from '../../../convex/_generated/api';
-
+// Chat message type (matches server-side ChatMessage)
 export type ChatMessage = {
-  _id: string;
   text: string;
   type: "buzz" | "notification" | "warning" | "success";
+  target?: string[];
   timestamp: number;
 };
 
-// Subscription parameters
-let subscriptionParams = $state<{ gameId: string; memberId: string } | null>(null);
-
-// Private state populated automatically
+// Private state for chat messages
 let _chatMessages = $state<ChatMessage[]>([]);
 
-// Track if subscription is already initialized
-let isInitialized = $state(false);
-
 /**
- * Initialize the chat messages subscription
- * Must be called from a component after setupConvex()
+ * Initialize chat messages from page data
  */
-export function initChatSubscription(gameId: string, memberId: string) {
-  // Only initialize once
-  if (isInitialized) return;
-
-  subscriptionParams = { gameId, memberId };
-  isInitialized = true;
-
-  // Create single subscription shared via the internal state
-  const chatMessagesQuery = useQuery(
-    api.chatMessages.getForGame,
-    () => subscriptionParams ?? 'skip'
-  );
-
-  // Sync query results to state automatically
-  $effect(() => {
-    if (chatMessagesQuery.data) _chatMessages = chatMessagesQuery.data;
-  });
+export function initChatMessages(messages: ChatMessage[]) {
+  _chatMessages = messages;
 }
 
 /**
- * Clear the subscription (when leaving game)
+ * Add a new chat message (called when socket receives 'chatMessage' event)
  */
-export function clearChatSubscription() {
-  subscriptionParams = null;
+export function addChatMessage(message: ChatMessage) {
+  _chatMessages = [..._chatMessages, message];
+}
+
+/**
+ * Clear chat messages (when leaving game)
+ */
+export function clearChatMessages() {
   _chatMessages = [];
-  isInitialized = false;
 }
 
 /**
- * Get the current subscription params (for components that need gameId/memberId)
- */
-export function getChatSubscriptionParams() {
-  return subscriptionParams;
-}
-
-/**
- * Chat messages store - derived from Convex data
+ * Chat messages store - provides reactive access to messages
  */
 export const chatMessagesStore = {
   get value(): ChatMessage[] {
@@ -68,7 +42,7 @@ export const chatMessagesStore = {
 // Re-export simplified interface
 export default {
   chatMessagesStore,
-  initChatSubscription,
-  clearChatSubscription,
-  getChatSubscriptionParams
+  initChatMessages,
+  addChatMessage,
+  clearChatMessages
 };

@@ -4,7 +4,11 @@
     import getSocket from "$lib/socket.svelte";
     import { timerStore, gameClockStore } from "$lib/stores/timer.svelte";
     import { getContext } from "svelte";
-    import { myMemberStore, teamsStore, playersStore } from "$lib/stores/members.svelte";
+    import {
+        myMemberStore,
+        teamsStore,
+        playersStore,
+    } from "$lib/stores/members.svelte";
     import visualBonusStore from "$lib/stores/visualBonus.svelte";
     import { browser } from "$app/environment";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
@@ -12,30 +16,30 @@
     import { api } from "../../../../convex/_generated/api";
     import gameIdStore from "$lib/stores/gameId.svelte";
 
-    const socket = getSocket()
-    const debug: Debugger = getContext('debug')
-    const convex = useConvexClient()
-    const buzzAudio = browser ? new Audio('/buzz.mp3') : null
+    const socket = getSocket();
+    const debug: Debugger = getContext("debug");
+    const convex = useConvexClient();
+    const buzzAudio = browser ? new Audio("/buzz.mp3") : null;
 
-    let scoreboardExpanded = $state(false)
+    let scoreboardExpanded = $state(false);
 
     function buzz() {
-        socket.emit('buzz');
-        buzzAudio?.play()
+        socket.emit("buzz");
+        buzzAudio?.play();
 
-        const myMember = myMemberStore.value
-        const player = playersStore.value[myMember.id]
+        const myMember = myMemberStore.value;
+        const player = playersStore.value[myMember.id];
         if (player) {
             const buzzerData = {
                 id: player.id,
                 name: player.name,
-                teamId: player.team.id
-            }
-            gameStore.buzz(myMember.team?.id || "", buzzerData)
+                teamId: player.team.id,
+            };
+            gameStore.buzz(myMember.team?.id || "", buzzerData);
         }
-        timerStore.pause()
+        timerStore.pause();
 
-        debug.addEvent('buzz', {})
+        debug.addEvent("buzz", {});
     }
 
     async function claimCaptain() {
@@ -52,67 +56,100 @@
             });
 
             // Then emit socket for instant UI feedback
-            socket.emit('claimCaptain')
+            socket.emit("claimCaptain");
 
-            // Add chat message
-            convex.mutation(api.chatMessages.add, {
-                gameId: gId,
+            // Add chat message via socket
+            socket.emit("addChatMessage", {
                 type: "notification",
                 text: `${myMember.name} is now captain of ${team.name}`,
             });
         }
 
-        debug.addEvent('claimCaptain', {})
+        debug.addEvent("claimCaptain", {});
     }
 
     function openVisual() {
-        if (!visualBonus.url) return
+        if (!visualBonus.url) return;
 
-        const newWindow = window.open("", "VisualBonus", "width=800,height=600")
-        if (!newWindow) return
+        const newWindow = window.open(
+            "",
+            "VisualBonus",
+            "width=800,height=600",
+        );
+        if (!newWindow) return;
 
         visualBonusStore.value = {
             url: visualBonus.url,
-            window: newWindow
-        }
-        const img = new Image()
-        img.src = visualBonus.url
-        newWindow.document.body.innerHTML =
-            `<style>img { width: 100%; }</style><div>${img.outerHTML}</div>`
+            window: newWindow,
+        };
+        const img = new Image();
+        img.src = visualBonus.url;
+        newWindow.document.body.innerHTML = `<style>img { width: 100%; }</style><div>${img.outerHTML}</div>`;
     }
 
-    let visualBonus = $derived(visualBonusStore.value)
-    let claimCaptainDisabled = $derived(teamsStore.value[myMemberStore.value.team?.id || ""]?.captainId === myMemberStore.value.id)
-    let visualBonusEnabled = $derived(gameStore.value.state.questionState === "open"
-            && gameStore.value.state.currentQuestion.bonus
-            && gameStore.value.state.currentQuestion.visual
-            && !!visualBonus.url)
+    let visualBonus = $derived(visualBonusStore.value);
+    let claimCaptainDisabled = $derived(
+        teamsStore.value[myMemberStore.value.team?.id || ""]?.captainId ===
+            myMemberStore.value.id,
+    );
+    let visualBonusEnabled = $derived(
+        gameStore.value.state.questionState === "open" &&
+            gameStore.value.state.currentQuestion.bonus &&
+            gameStore.value.state.currentQuestion.visual &&
+            !!visualBonus.url,
+    );
 </script>
 
-<svelte:body onkeydown={(e) => {
-    const { code, keyCode } = e
-    if ((code === "Space" || code === "Enter") && gameStore.value.state.buzzingEnabled) {
-        e.preventDefault()
-        buzz()
-    } else if (code === null || code === undefined) {
-        if ((keyCode === 32 || keyCode === 13) && gameStore.value.state.buzzingEnabled) {
-            e.preventDefault()
-            buzz()
+<svelte:body
+    onkeydown={(e) => {
+        const { code, keyCode } = e;
+        if (
+            (code === "Space" || code === "Enter") &&
+            gameStore.value.state.buzzingEnabled
+        ) {
+            e.preventDefault();
+            buzz();
+        } else if (code === null || code === undefined) {
+            if (
+                (keyCode === 32 || keyCode === 13) &&
+                gameStore.value.state.buzzingEnabled
+            ) {
+                e.preventDefault();
+                buzz();
+            }
         }
-    }
-}} />
+    }}
+/>
 
 <div class="player-controls" class:scoreboard-expanded={scoreboardExpanded}>
     <div class="controls-element">
-        <button id="buzz" onclick={buzz} disabled={!gameStore.value.state.buzzingEnabled}>Buzz</button>
+        <button
+            id="buzz"
+            onclick={buzz}
+            disabled={!gameStore.value.state.buzzingEnabled}>Buzz</button
+        >
         <div class="timer-wrapper">
-            <h2>{Math.floor(timerStore.value / 60).toString().padStart(2, "0") + ":" + (timerStore.value % 60).toString().padStart(2, "0")}</h2>
-            <h3>{Math.floor(gameClockStore.value / 60).toString().padStart(2, "0") + ":" + (gameClockStore.value % 60).toString().padStart(2, "0")}</h3>
+            <h2>
+                {Math.floor(timerStore.value / 60)
+                    .toString()
+                    .padStart(2, "0") +
+                    ":" +
+                    (timerStore.value % 60).toString().padStart(2, "0")}
+            </h2>
+            <h3>
+                {Math.floor(gameClockStore.value / 60)
+                    .toString()
+                    .padStart(2, "0") +
+                    ":" +
+                    (gameClockStore.value % 60).toString().padStart(2, "0")}
+            </h3>
             <br />
-            <button onclick={claimCaptain} disabled={claimCaptainDisabled}>Claim Captain</button>
+            <button onclick={claimCaptain} disabled={claimCaptainDisabled}
+                >Claim Captain</button
+            >
             <br />
             <br />
-            <button onclick={() => scoreboardExpanded = !scoreboardExpanded}>
+            <button onclick={() => (scoreboardExpanded = !scoreboardExpanded)}>
                 {#if scoreboardExpanded}
                     Collapse Scoreboard
                 {:else}
@@ -132,10 +169,8 @@
     {/if}
 </div>
 
-
-
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .player-controls {
         grid-area: control-panel;
@@ -145,9 +180,8 @@
         justify-content: center;
         gap: 3em;
         box-sizing: border-box;
-        
+
         position: relative;
-        
     }
 
     .controls-element {
@@ -175,8 +209,10 @@
         padding: 1.5em 2.5em;
         border-radius: 1em;
         background: $primary;
-        box-shadow: 0 10px 15px -3px rgba($primary-rgb, 0.3), 0 4px 6px -2px rgba($primary-rgb, 0.05);
-        
+        box-shadow:
+            0 10px 15px -3px rgba($primary-rgb, 0.3),
+            0 4px 6px -2px rgba($primary-rgb, 0.05);
+
         &:disabled {
             background: $gray-1;
             box-shadow: none;
