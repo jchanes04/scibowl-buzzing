@@ -76,7 +76,9 @@
             });
         } else if (
             scoreboardStore.isActive === true &&
-            modalStore.current?.title === "Game Inactive"
+            modalStore.current &&
+            "title" in modalStore.current &&
+            modalStore.current.title === "Game Inactive"
         ) {
             modalStore.hide();
         }

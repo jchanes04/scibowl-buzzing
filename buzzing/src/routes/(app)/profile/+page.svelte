@@ -1,12 +1,12 @@
 <script lang="ts">
-    import { user, isAuthenticated, type User } from '$lib/stores/auth';
-    import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-    import { useQuery, useConvexClient } from 'convex-svelte';
-    import { api } from '../../../../convex/_generated/api';
-    import GameHistoryItem from '$lib/components/GameHistoryItem.svelte';
-    import { setContext } from 'svelte';
-    import { writable } from 'svelte/store';
+    import { user, isAuthenticated, type User } from "$lib/stores/auth";
+    import { goto } from "$app/navigation";
+    import { onMount } from "svelte";
+    import { useQuery, useConvexClient } from "convex-svelte";
+    import { api } from "../../../../convex/_generated/api";
+    import GameHistoryItem from "$lib/components/GameHistoryItem.svelte";
+    import { setContext } from "svelte";
+    import { writable } from "svelte/store";
 
     const convex = useConvexClient();
 
@@ -15,7 +15,7 @@
         component: any;
         props: Record<string, unknown>;
     } | null>(null);
-    setContext('modalStore', modalStore);
+    setContext("modalStore", modalStore);
 
     let authenticated = $state(false);
     let currentUser = $state<User | null>(null);
@@ -25,22 +25,26 @@
     // Game history query - will be undefined until user is loaded
     let gameHistoryQuery = $derived(
         currentUser?.id
-            ? useQuery(api.gameHistory.getByMemberId, { memberId: currentUser.id })
-            : null
+            ? useQuery(api.gameHistory.getByMemberId, {
+                  memberId: currentUser.id,
+              })
+            : null,
     );
 
     // Private tags query
     let privateTagsQuery = $derived(
         currentUser?.id
             ? useQuery(api.tags.getPrivateTags, { userId: currentUser.id })
-            : null
+            : null,
     );
 
     // Filtered game history based on selected role
     let filteredGameHistory = $derived(
         gameHistoryQuery?.data
-            ? gameHistoryQuery.data.filter(game => game.memberType === selectedHistoryRole)
-            : []
+            ? gameHistoryQuery.data.filter(
+                  (game) => game.memberType === selectedHistoryRole,
+              )
+            : [],
     );
 
     // Tag input state per game
@@ -78,11 +82,11 @@
             await convex.mutation(api.tags.addPrivateTag, {
                 userId: currentUser.id,
                 gameId,
-                tag
+                tag,
             });
-            tagInputs[gameId] = '';
+            tagInputs[gameId] = "";
         } catch (e) {
-            console.error('Failed to add tag:', e);
+            console.error("Failed to add tag:", e);
         }
     }
 
@@ -93,10 +97,10 @@
             await convex.mutation(api.tags.removePrivateTag, {
                 userId: currentUser.id,
                 gameId,
-                tag
+                tag,
             });
         } catch (e) {
-            console.error('Failed to remove tag:', e);
+            console.error("Failed to remove tag:", e);
         }
     }
 
@@ -107,11 +111,11 @@
         try {
             await convex.mutation(api.tags.addPublicTags, {
                 gameId,
-                tags: [tag]
+                tags: [tag],
             });
-            tagInputs[`public-${gameId}`] = '';
+            tagInputs[`public-${gameId}`] = "";
         } catch (e) {
-            console.error('Failed to add public tag:', e);
+            console.error("Failed to add public tag:", e);
         }
     }
 
@@ -119,31 +123,33 @@
         try {
             await convex.mutation(api.tags.removePublicTag, {
                 gameId,
-                tag
+                tag,
             });
         } catch (e) {
-            console.error('Failed to remove public tag:', e);
+            console.error("Failed to remove public tag:", e);
         }
     }
 
     // Form fields
-    let firstName = $state('');
-    let lastName = $state('');
-    let username = $state('');
-    let school = $state('');
+    let firstName = $state("");
+    let lastName = $state("");
+    let username = $state("");
+    let school = $state("");
 
     // Subscribe to auth state
     $effect(() => {
-        const unsubscribeUser = user.subscribe(value => {
+        const unsubscribeUser = user.subscribe((value) => {
             currentUser = value;
             if (value) {
-                firstName = value.firstName || '';
-                lastName = value.lastName || '';
-                username = value.username || '';
-                school = value.school || '';
+                firstName = value.firstName || "";
+                lastName = value.lastName || "";
+                username = value.username || "";
+                school = value.school || "";
             }
         });
-        const unsubscribeAuth = isAuthenticated.subscribe(value => authenticated = value);
+        const unsubscribeAuth = isAuthenticated.subscribe(
+            (value) => (authenticated = value),
+        );
 
         return () => {
             unsubscribeUser();
@@ -155,12 +161,12 @@
 
     onMount(() => {
         if (!authenticated) {
-            goto('/');
+            goto("/");
         }
     });
 
     function handleLogout() {
-        window.location.href = '/auth/logout';
+        window.location.href = "/auth/logout";
     }
 
     async function handleSubmit() {
@@ -168,10 +174,10 @@
         success = false;
 
         try {
-            const response = await fetch('/api/profile', {
-                method: 'POST',
+            const response = await fetch("/api/profile", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     firstName: firstName.trim(),
@@ -185,14 +191,14 @@
                 const updatedUser = await response.json();
                 user.set(updatedUser);
                 success = true;
-                setTimeout(() => success = false, 2000);
+                setTimeout(() => (success = false), 2000);
             } else {
                 const error = await response.json();
-                alert(`Error: ${error.message || 'Failed to update profile'}`);
+                alert(`Error: ${error.message || "Failed to update profile"}`);
             }
         } catch (error) {
-            console.error('Error updating profile:', error);
-            alert('Failed to update profile. Please try again.');
+            console.error("Error updating profile:", error);
+            alert("Failed to update profile. Please try again.");
         } finally {
             loading = false;
         }
@@ -217,13 +223,15 @@
                 <div class="form-group full-width">
                     <label for="email-display">Email</label>
                     <div id="email-display" class="email-text">
-                        {currentUser?.email || ''}
+                        {currentUser?.email || ""}
                     </div>
                 </div>
 
                 <!-- Row 2: Names -->
                 <div class="form-group">
-                    <label for="firstName">First Name <span class="required">*</span></label>
+                    <label for="firstName"
+                        >First Name <span class="required">*</span></label
+                    >
                     <input
                         type="text"
                         id="firstName"
@@ -234,7 +242,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="lastName">Last Name <span class="required">*</span></label>
+                    <label for="lastName"
+                        >Last Name <span class="required">*</span></label
+                    >
                     <input
                         type="text"
                         id="lastName"
@@ -246,7 +256,10 @@
 
                 <!-- Row 3: Optional Info -->
                 <div class="form-group">
-                    <label for="username">Username <span class="optional">(Optional)</span></label>
+                    <label for="username"
+                        >Username <span class="optional">(Optional)</span
+                        ></label
+                    >
                     <input
                         type="text"
                         id="username"
@@ -256,7 +269,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="school">School <span class="optional">(Optional)</span></label>
+                    <label for="school"
+                        >School <span class="optional">(Optional)</span></label
+                    >
                     <input
                         type="text"
                         id="school"
@@ -267,7 +282,11 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" disabled={!submitEnabled || loading || success} class="submit-button">
+                <button
+                    type="submit"
+                    disabled={!submitEnabled || loading || success}
+                    class="submit-button"
+                >
                     {#if loading}
                         Update Profile
                     {:else if success}
@@ -329,14 +348,14 @@
                     {/each}
                 </ul>
             {:else}
-                <p class="no-games">No {selectedHistoryRole} games played yet.</p>
+                <p class="no-games">
+                    No {selectedHistoryRole} games played yet.
+                </p>
             {/if}
         </div>
     </div>
 {:else}
-    <div class="loading">
-        Redirecting to login...
-    </div>
+    <div class="loading">Redirecting to login...</div>
 {/if}
 
 {#if $modalStore}
@@ -346,7 +365,7 @@
 {/if}
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .profile-container {
         max-width: 900px;
@@ -376,7 +395,7 @@
     .profile-form {
         display: flex;
         flex-direction: column;
-        gap: .5rem;
+        gap: 0.5rem;
     }
 
     .form-grid {
@@ -533,8 +552,8 @@
         }
     }
 
-
-    .loading-text, .no-games {
+    .loading-text,
+    .no-games {
         color: $text-muted;
         font-size: 1rem;
     }
@@ -557,5 +576,4 @@
         background-color: rgba(0, 0, 0, 0.3);
         z-index: 1000;
     }
-
 </style>

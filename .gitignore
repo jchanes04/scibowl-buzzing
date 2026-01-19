@@ -16,3 +16,8 @@ jwt.key.pub
 # Local SQLite database
 *.db
 buzzing-local.db
+
+# Playwright
+/buzzing/test-results/
+/buzzing/playwright-report/
+/buzzing/playwright/.cache/
