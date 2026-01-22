@@ -126,8 +126,8 @@ export async function createGame(browser: Browser, settings: GameSettings = {}):
     const joinCodeButton = modPage.locator('button.join-code').first();
     await joinCodeButton.waitFor({ state: 'visible', timeout: 10000 });
     const joinCodeText = await joinCodeButton.textContent() || '';
-    // The join code is a 4-character alphanumeric string at the start of the button text
-    const joinCodeMatch = joinCodeText.trim().match(/^[A-Z0-9]{4}/);
+    // The join code is a 6-character alphanumeric string at the start of the button text
+    const joinCodeMatch = joinCodeText.trim().match(/^[A-Z0-9]{6}/);
     const joinCode = joinCodeMatch ? joinCodeMatch[0] : '';
 
     debugLog(`Game setup complete - ID: ${gameId}, Join Code: ${joinCode}`);
@@ -153,7 +153,7 @@ export type TeamOption = 'individual' | 'new-team' | { teamName: string };
  * Creates its own browser context to isolate cookies from other players/moderator.
  * 
  * @param browser - The Playwright Browser instance
- * @param joinCode - The 4-character join code for the game
+ * @param joinCode - The 6-character join code for the game
  * @param playerName - The name for the player
  * @param teamOption - How to join: 'individual', 'new-team', or { teamName: 'Team Name' }
  * @param newTeamName - Required when teamOption is 'new-team', the name for the new team

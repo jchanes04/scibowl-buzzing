@@ -25,7 +25,7 @@ const playerListValidator = v.optional(v.array(v.object({
   team: v.object({
     id: v.string(),
     name: v.string(),
-    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
     captainId: v.union(v.string(), v.null()),
     players: v.any(), // Record<string, player objects>
   }),
@@ -36,7 +36,7 @@ const playerListValidator = v.optional(v.array(v.object({
 const teamListValidator = v.optional(v.array(v.object({
   id: v.string(),
   name: v.string(),
-  type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+  type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
   captainId: v.union(v.string(), v.null()),
   players: v.any(), // Record<string, player objects>
 })));
@@ -72,6 +72,21 @@ export const getByJoinCode = query({
       .query("games")
       .withIndex("by_joinCode", (q) => q.eq("joinCode", args.joinCode))
       .first();
+  },
+});
+
+/**
+ * Query: Get all games for a tournament
+ */
+export const getByTournamentId = query({
+  args: {
+    tournamentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("games")
+      .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
+      .collect();
   },
 });
 
@@ -154,6 +169,10 @@ export const create = mutation({
       penalty: v.number(),
     })),
     tags: v.optional(v.array(v.string())),
+    // Tournament link (optional)
+    tournamentId: v.optional(v.string()),
+    tournamentMatchIndex: v.optional(v.number()),
+    moderatorJoinCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -179,12 +198,15 @@ export const create = mutation({
       createdAt: now,
       lastUpdated: now,
       isActive: true,
+      tournamentId: args.tournamentId,
+      tournamentMatchIndex: args.tournamentMatchIndex,
+      moderatorJoinCode: args.moderatorJoinCode,
     });
   },
 });
 
 /**
- * Mutation: Set game active/inactive state
+ * Mutation: Set game active/inactive state (whether game is in memory)
  */
 export const setActive = mutation({
   args: {
@@ -200,6 +222,29 @@ export const setActive = mutation({
     if (game) {
       await ctx.db.patch(game._id, {
         isActive: args.isActive,
+        lastUpdated: Date.now(),
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: Set game completed state (whether game has ended via endGame)
+ */
+export const setCompleted = mutation({
+  args: {
+    gameId: v.string(),
+    isCompleted: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (game) {
+      await ctx.db.patch(game._id, {
+        isCompleted: args.isCompleted,
         lastUpdated: Date.now(),
       });
     }

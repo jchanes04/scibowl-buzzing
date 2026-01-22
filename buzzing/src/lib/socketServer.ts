@@ -153,6 +153,23 @@ function setupSocketListeners(io: Server) {
                     memberId
                 })
             }
+
+            // Check if the room is now empty (no more connected sockets)
+            // Use setTimeout to allow the socket to fully leave the room
+            setTimeout(async () => {
+                const room = io.sockets.adapter.rooms.get(gameId)
+                const roomSize = room?.size ?? 0
+
+                if (roomSize === 0 && games.has(gameId)) {
+                    // No members left, remove game from memory
+                    await getConvexClient().mutation(api.games.setActive, {
+                        gameId,
+                        isActive: false
+                    })
+                    games.deleteGame(gameId)
+                    console.log(`Game ${gameId} removed from memory - all members left`)
+                }
+            }, 100)
         })
 
         socket.on('reopenGame', async () => {
@@ -400,16 +417,98 @@ function setupSocketListeners(io: Server) {
             const currentMember = currentGame.getMember(memberId)
             if (currentMember?.type !== "moderator") return
 
-            // Mark game as inactive but preserve data for game history
-            await getConvexClient().mutation(api.games.setActive, {
+            // Mark game as completed (game has ended)
+            await getConvexClient().mutation(api.games.setCompleted, {
                 gameId,
-                isActive: false
+                isCompleted: true
             })
+
+            // Check if this is a tournament game and handle bracket advancement
+            const gameData = await getConvexClient().query(api.games.getByGameId, { gameId })
+            if (gameData?.tournamentId && gameData.tournamentMatchIndex !== undefined) {
+                try {
+                    // Calculate team scores
+                    const scores = gameData.scores || {}
+                    const pointValues = gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
+                    const teamScores: Record<string, number> = {}
+
+                    for (const qNum of Object.keys(scores)) {
+                        const questionRow = scores[qNum]
+                        if (!questionRow) continue
+
+                        // Process tossup scores
+                        for (const teamId of Object.keys(questionRow.tossup || {})) {
+                            const tossupData = questionRow.tossup[teamId]
+                            if (!teamScores[teamId]) teamScores[teamId] = 0
+
+                            if (tossupData.scoreType === 'correct') {
+                                teamScores[teamId] += pointValues.tossup
+                            } else if (tossupData.scoreType === 'penalty') {
+                                teamScores[teamId] += pointValues.penalty
+                            }
+                            // incorrect and subbed don't add points
+                        }
+
+                        // Process bonus
+                        if (questionRow.bonus?.teamId) {
+                            const bonusTeamId = questionRow.bonus.teamId
+                            if (!teamScores[bonusTeamId]) teamScores[bonusTeamId] = 0
+                            if (questionRow.bonus.correct) {
+                                teamScores[bonusTeamId] += pointValues.bonus
+                            }
+                        }
+                    }
+
+                    // Determine winner
+                    const teamIds = Object.keys(teamScores)
+                    console.log(`Tournament ${gameData.tournamentId} match ${gameData.tournamentMatchIndex}: Final scores`, teamScores)
+
+                    if (teamIds.length >= 2) {
+                        const sortedTeams = teamIds.sort((a, b) => teamScores[b]! - teamScores[a]!)
+                        const topTeamId = sortedTeams[0]!
+                        const secondTeamId = sortedTeams[1]!
+                        const topScore = teamScores[topTeamId]!
+                        const secondScore = teamScores[secondTeamId]!
+
+                        // Only advance if there's a clear winner (no tie)
+                        if (topScore > secondScore) {
+                            await getConvexClient().mutation(api.tournaments.advanceWinner, {
+                                tournamentId: gameData.tournamentId,
+                                matchIndex: gameData.tournamentMatchIndex,
+                                winningTeamId: topTeamId,
+                            })
+                            console.log(`Tournament ${gameData.tournamentId}: Team ${topTeamId} (${topScore}) advanced from match ${gameData.tournamentMatchIndex}, defeating team ${secondTeamId} (${secondScore})`)
+                        } else {
+                            console.log(`Tournament ${gameData.tournamentId}: Tie (${topScore}-${secondScore}) in match ${gameData.tournamentMatchIndex}, manual resolution required`)
+                        }
+                    } else if (teamIds.length === 1) {
+                        // Only one team scored - they win by forfeit/walkover
+                        const winnerId = teamIds[0]!
+                        await getConvexClient().mutation(api.tournaments.advanceWinner, {
+                            tournamentId: gameData.tournamentId,
+                            matchIndex: gameData.tournamentMatchIndex,
+                            winningTeamId: winnerId,
+                        })
+                        console.log(`Tournament ${gameData.tournamentId}: Team ${winnerId} advanced from match ${gameData.tournamentMatchIndex} (only team with scores)`)
+                    } else {
+                        console.log(`Tournament ${gameData.tournamentId}: No teams scored in match ${gameData.tournamentMatchIndex}, manual resolution required`)
+                    }
+                } catch (e) {
+                    console.error('Failed to advance tournament winner:', e)
+                }
+            }
 
             socket.to(gameId).emit('gameEnd')
             socket.emit('gameEnd')
             game.timer.end()
             game.gameClock.end()
+
+            // Mark game as inactive (no longer in memory)
+            await getConvexClient().mutation(api.games.setActive, {
+                gameId,
+                isActive: false
+            })
+
             games.deleteGame(gameId)
             io.in(gameId).disconnectSockets(true)
         })

@@ -32,7 +32,7 @@ export function createGameID(): string {
 export function createJoinCode(): string {
     let joinCode: string
     do {
-        joinCode = Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36)
+        joinCode = (Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36) + Math.floor(Math.random() * 36).toString(36)).toUpperCase()
     } while (joinCodes.includes(joinCode))
     return joinCode
 }
@@ -56,6 +56,13 @@ export function createTeamID(): string {
     const seedComponent = incrementSeed()
     const body: string = seedComponent + timeComponent
     return body + getSumDigit("T", body)
+}
+
+export function createTournamentID(): string {
+    const timeComponent: string = Date.now().toString(36).substring(1)    // resets every ~13 hours, prevents collisions
+    const seedComponent = incrementSeed()
+    const body: string = seedComponent + timeComponent
+    return body + getSumDigit("R", body)  // R for touRnament
 }
 
 

@@ -12,7 +12,7 @@ export type CachedMember = {
 export type CachedTeam = {
   id: string;
   name: string;
-  type: "default" | "created" | "individual";
+  type: "default" | "created" | "individual" | "tournament";
   captainId?: string;
 };
 

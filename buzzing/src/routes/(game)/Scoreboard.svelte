@@ -1,24 +1,17 @@
 <script lang="ts">
     import { teamsStore, playersStore } from "$lib/stores/members.svelte";
-    import gameStore from "$lib/stores/game.svelte"
-    import { scoreboardStore } from "$lib/stores/scoreboard.svelte"
+    import gameStore from "$lib/stores/game.svelte";
+    import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
+    import { calculateTeamScore } from "$lib/functions/scoreboard";
 
     function sumQuestionScores(teamId: string) {
         const scoreboardData = scoreboardStore.value;
         if (!scoreboardData) return 0;
-        const pointValues = scoreboardData.pointValues;
-        return Object.values(scoreboardData.scores).reduce((acc: number, q: any) => {
-            if (q.tossup[teamId]?.scoreType === "correct") {
-                acc += pointValues.tossup
-            } else if (q.tossup[teamId]?.scoreType === "penalty") {
-                acc += pointValues.penalty
-            }
-
-            if (q.bonus?.teamId === teamId && q.bonus?.correct) {
-                acc += pointValues.bonus
-            }
-            return acc
-        }, 0)
+        return calculateTeamScore(
+            teamId,
+            scoreboardData.scores,
+            scoreboardData.pointValues,
+        );
     }
 </script>
 
@@ -27,15 +20,23 @@
     <ul>
         {#key playersStore.value}
             {#each Object.values(teamsStore.value) as team}
-                <li class:buzzed={gameStore.value.state.currentBuzzer?.teamId == team.id}>
+                <li
+                    class:buzzed={gameStore.value.state.currentBuzzer?.teamId ==
+                        team.id}
+                >
                     <h1>
                         <span class="team-name">{team.name}</span>
-                        <span class="team-score">{sumQuestionScores(team.id)}</span>
+                        <span class="team-score"
+                            >{sumQuestionScores(team.id)}</span
+                        >
                     </h1>
                     {#if team.type !== "individual"}
                         <ul>
                             {#each Object.values(team.players) as player}
-                                <li class="player-row" class:captain={player.id === team.captainId}>
+                                <li
+                                    class="player-row"
+                                    class:captain={player.id === team.captainId}
+                                >
                                     {player.name}
                                 </li>
                             {/each}
@@ -48,7 +49,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .scoreboard {
         @include vertical-scrollable();
@@ -73,7 +74,7 @@
         justify-content: space-between;
         align-items: center;
         margin: 0;
-        
+
         .team-name {
             font-size: 1.1rem;
             font-weight: 700;
@@ -82,7 +83,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .team-score {
             font-size: 1.5rem;
             font-weight: 800;
@@ -120,9 +121,9 @@
         gap: 0.5em;
         position: relative;
         overflow: hidden;
-        
+
         &::before {
-            content: '';
+            content: "";
             position: absolute;
             left: 0;
             top: 0;
@@ -135,12 +136,14 @@
         &.buzzed {
             border-color: $orange;
             transform: #{"scale(1.02)"};
-            box-shadow: 0 10px 15px -3px rgba($orange, 0.1), 0 4px 6px -2px rgba($orange, 0.05);
-            
+            box-shadow:
+                0 10px 15px -3px rgba($orange, 0.1),
+                0 4px 6px -2px rgba($orange, 0.05);
+
             &::before {
                 background: $orange;
             }
-            
+
             .team-score {
                 color: $orange-dark;
             }
@@ -154,17 +157,17 @@
         flex-direction: column;
         gap: 0.25em;
     }
-    
+
     .player-row {
         font-size: 0.95rem;
         color: $gray-2;
         display: flex;
         gap: 0.5em;
-        padding: .5em;
-        border-radius: .5rem;
+        padding: 0.5em;
+        border-radius: 0.5rem;
         border: 0px solid $border-color;
         background: $background-1;
-        
+
         &.captain {
             font-weight: 600;
             color: $primary;

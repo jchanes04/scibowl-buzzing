@@ -42,10 +42,17 @@ export default defineSchema({
     lastUpdated: v.number(),
 
     // Game state
-    isActive: v.optional(v.boolean()),
+    isActive: v.optional(v.boolean()), // Whether game is in memory (socket server)
+    isCompleted: v.optional(v.boolean()), // Whether game has ended (set on endGame)
+
+    // Tournament link (if this game is part of a tournament)
+    tournamentId: v.optional(v.string()),
+    tournamentMatchIndex: v.optional(v.number()), // 0=semifinal1, 1=semifinal2, 2=final
+    moderatorJoinCode: v.optional(v.string()), // Legacy field for existing data
   })
     .index("by_gameId", ["gameId"])
-    .index("by_joinCode", ["joinCode"]),
+    .index("by_joinCode", ["joinCode"])
+    .index("by_tournamentId", ["tournamentId"]),
 
   gameMembers: defineTable({
     gameId: v.string(),
@@ -81,13 +88,18 @@ export default defineSchema({
     gameId: v.string(),
     teamId: v.string(),
     name: v.string(),
-    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
     captainId: v.optional(v.string()),
     isActive: v.boolean(),
+    // Tournament fields
+    tournamentId: v.optional(v.string()),
+    playerNames: v.optional(v.array(v.string())), // Player names for tournament teams
+    registeredBy: v.optional(v.string()), // userId who registered the team (for tournament teams)
   })
     .index("by_gameId", ["gameId"])
     .index("by_gameId_teamId", ["gameId", "teamId"])
-    .index("by_gameId_active", ["gameId", "isActive"]),
+    .index("by_gameId_active", ["gameId", "isActive"])
+    .index("by_tournamentId", ["tournamentId"]),
 
   // User data for private tags
   // privateTags is a Record<tag, gameId[]> mapping tags to arrays of game IDs
@@ -96,4 +108,72 @@ export default defineSchema({
     privateTags: v.any(), // Record<string, string[]>
   })
     .index("by_userId", ["userId"]),
+
+  // Tournament data
+  tournaments: defineTable({
+    tournamentId: v.string(),
+    name: v.string(),
+    organizerId: v.optional(v.string()), // New format
+    settings: v.optional(v.object({
+      spectatorsAllowed: v.boolean(),
+      times: v.object({
+        tossup: v.array(v.number()),
+        bonus: v.array(v.number()),
+        visual: v.array(v.number()),
+      }),
+      pointValues: v.object({
+        tossup: v.number(),
+        bonus: v.number(),
+        penalty: v.number(),
+      }),
+      minPlayers: v.number(),
+      maxPlayers: v.number(),
+    })),
+    gameIds: v.optional(v.array(v.string())), // New format - 3 games
+    bracketSeeds: v.optional(v.array(v.object({
+      seed: v.number(),
+      teamId: v.string()
+    }))),
+    bracketResults: v.optional(v.array(v.object({
+      matchIndex: v.number(), // 0=SF1, 1=SF2, 2=Final
+      winningTeamId: v.string(),
+    }))),
+    createdAt: v.number(),
+    // Legacy fields
+    ownerId: v.optional(v.string()),
+    signupCode: v.optional(v.string()),
+    bracketSize: v.optional(v.number()), // Number of teams in the bracket (any size)
+    bracketConfirmed: v.optional(v.boolean()), // Whether bracket structure is locked
+    started: v.optional(v.boolean()),
+    gameSettings: v.optional(v.object({
+      spectatorsAllowed: v.boolean(),
+      times: v.object({
+        tossup: v.array(v.number()),
+        bonus: v.array(v.number()),
+        visual: v.array(v.number()),
+      }),
+      pointValues: v.object({
+        tossup: v.number(),
+        bonus: v.number(),
+        penalty: v.number(),
+      }),
+    })),
+  })
+    .index("by_tournamentId", ["tournamentId"])
+    .index("by_organizerId", ["organizerId"]),
+
+  // Tournament team registrations (canonical team identity)
+  // Teams in this table are created during registration, before any game
+  // When players join a game, a corresponding entry is created in the teams table
+  tournamentTeams: defineTable({
+    tournamentTeamId: v.string(),      // Unique ID for this team (used as teamId in games)
+    tournamentId: v.string(),          // Which tournament this team belongs to
+    name: v.string(),                  // Team name
+    playerNames: v.array(v.string()),  // List of registered player names
+    registeredBy: v.string(),          // userId who registered the team
+    createdAt: v.number(),             // Registration timestamp
+  })
+    .index("by_tournamentId", ["tournamentId"])
+    .index("by_tournamentTeamId", ["tournamentTeamId"]),
+
 });

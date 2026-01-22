@@ -46,8 +46,11 @@ export const add = mutation({
     gameId: v.string(),
     teamId: v.string(),
     name: v.string(),
-    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual")),
+    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
     captainId: v.optional(v.string()),
+    tournamentId: v.optional(v.string()),
+    playerNames: v.optional(v.array(v.string())),
+    registeredBy: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check if team already exists
@@ -65,6 +68,9 @@ export const add = mutation({
         type: args.type,
         captainId: args.captainId,
         isActive: true,
+        tournamentId: args.tournamentId,
+        playerNames: args.playerNames,
+        registeredBy: args.registeredBy,
       });
       return existing._id;
     }
@@ -77,6 +83,9 @@ export const add = mutation({
       type: args.type,
       captainId: args.captainId,
       isActive: true,
+      tournamentId: args.tournamentId,
+      playerNames: args.playerNames,
+      registeredBy: args.registeredBy,
     });
   },
 });

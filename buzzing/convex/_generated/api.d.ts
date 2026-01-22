@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as clearTables from "../clearTables.js";
 import type * as crons from "../crons.js";
 import type * as gameHistory from "../gameHistory.js";
 import type * as gameMembers from "../gameMembers.js";
 import type * as games from "../games.js";
 import type * as tags from "../tags.js";
 import type * as teams from "../teams.js";
+import type * as tournaments from "../tournaments.js";
 
 import type {
   ApiFromModules,
@@ -22,12 +24,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  clearTables: typeof clearTables;
   crons: typeof crons;
   gameHistory: typeof gameHistory;
   gameMembers: typeof gameMembers;
   games: typeof games;
   tags: typeof tags;
   teams: typeof teams;
+  tournaments: typeof tournaments;
 }>;
 
 /**

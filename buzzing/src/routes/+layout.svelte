@@ -5,6 +5,7 @@
   import { browser } from "$app/environment";
   import { modalStore } from "$lib/stores/modal.svelte";
   import Confirm from "$lib/components/Confirm.svelte";
+  import Toast from "$lib/components/Toast.svelte";
   import { api } from "../../convex/_generated/api";
 
   interface Props {
@@ -108,6 +109,8 @@
     <Confirm {...modalStore.current} />
   {/if}
 {/if}
+
+<Toast />
 
 {@render children?.()}
 

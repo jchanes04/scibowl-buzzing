@@ -2,20 +2,16 @@
     import gameStore from "$lib/stores/game.svelte";
     import { env } from "$env/dynamic/public";
     import { fade } from "svelte/transition";
+    import { Copy, Check } from "lucide-svelte";
 
     interface Props {
         gameName: string;
         joinCode: string;
         spectator?: boolean;
-        children?: import('svelte').Snippet;
+        children?: import("svelte").Snippet;
     }
 
-    let {
-        gameName,
-        joinCode,
-        spectator = false,
-        children
-    }: Props = $props();
+    let { gameName, joinCode, spectator = false, children }: Props = $props();
 
     let copied = $state(false);
     let joinLink = $derived(
@@ -40,9 +36,22 @@
             {joinCode}
             <div class="icon-wrapper">
                 {#if !copied}
-                    <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon copy"></span>
+                    <span
+                        in:fade={{ duration: 150 }}
+                        out:fade={{ duration: 150 }}
+                        style="position: absolute; display: flex;"
+                    >
+                        <Copy size="1em" strokeWidth={2.25} />
+                    </span>
                 {:else}
-                    <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon check"></span>
+                    <span
+                        in:fade={{ duration: 150 }}
+                        out:fade={{ duration: 150 }}
+                        class="check-icon"
+                        style="position: absolute; display: flex;"
+                    >
+                        <Check size="1em" strokeWidth={2.25} />
+                    </span>
                 {/if}
             </div>
         </button>
@@ -58,9 +67,22 @@
         {joinCode}
         <div class="icon-wrapper">
             {#if !copied}
-                <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon copy"></span>
+                <span
+                    in:fade={{ duration: 150 }}
+                    out:fade={{ duration: 150 }}
+                    style="position: absolute; display: flex;"
+                >
+                    <Copy size="1em" />
+                </span>
             {:else}
-                <span in:fade={{ duration: 150 }} out:fade={{ duration: 150 }} class="icon check"></span>
+                <span
+                    in:fade={{ duration: 150 }}
+                    out:fade={{ duration: 150 }}
+                    class="check-icon"
+                    style="position: absolute; display: flex;"
+                >
+                    <Check size="1em" />
+                </span>
             {/if}
         </div>
     </button>
@@ -70,7 +92,7 @@
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     #top-bar {
         grid-area: top-bar;
@@ -133,36 +155,8 @@
         margin-bottom: 0.1em;
     }
 
-    .icon {
-        position: absolute;
-        display: inline-block;
-        height: 1em;
-        width: 1em;
-        cursor: pointer;
-    }
-
-    .copy {
-        background-color: $primary;
-        mask-image: url('/copy.svg');
-        mask-size: contain;
-        mask-repeat: no-repeat;
-        mask-position: center;
-        -webkit-mask-image: url('/copy.svg');
-        -webkit-mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-    }
-
-    .check {
-        background-color: $green;
-        mask-image: url('/check.svg');
-        mask-size: contain;
-        mask-repeat: no-repeat;
-        mask-position: center;
-        -webkit-mask-image: url('/check.svg');
-        -webkit-mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        -webkit-mask-position: center;
+    .check-icon {
+        color: $green;
     }
 
     #mobile-top-bar {

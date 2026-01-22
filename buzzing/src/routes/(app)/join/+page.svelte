@@ -17,7 +17,7 @@
 
     async function handleFormInput() {
         actionError = undefined;
-        if (joinCodeValue.length === 4) {
+        if (joinCodeValue.length === 6) {
             const res = await fetch("/api/code-exists?code=" + joinCodeValue);
             const response = await res.json();
             codeExists = response.exists;
@@ -34,16 +34,16 @@
 <form method="POST" oninput={handleFormInput} autocomplete="off">
     <h1>Enter a join code</h1>
     <Controlled
-        validateFunction={(value) => /^[a-zA-Z0-9]{0,4}$/.test(value)}
+        validateFunction={(value) => /^[a-zA-Z0-9]{0,6}$/.test(value)}
         name="join-code"
         placeholderValue="Join Code"
         bind:value={joinCodeValue}
     />
     <br />
-    {#if actionError || (!codeExists && joinCodeValue?.length === 4)}
+    {#if actionError || (!codeExists && joinCodeValue?.length === 6)}
         <p class="error">Invalid code</p>
     {/if}
-    <button id="join-game" disabled={!codeExists || joinCodeValue.length !== 4}
+    <button id="join-game" disabled={!codeExists || joinCodeValue.length !== 6}
         >Join</button
     >
 </form>

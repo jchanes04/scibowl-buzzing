@@ -1,82 +1,95 @@
 <script lang="ts">
     interface Props {
-        teams?: string[];
-        newTeamName: string;
+        items?: string[];
+        newItemName?: string;
+        placeholder?: string;
+        maxItems?: number;
     }
 
-    let { teams = $bindable([]), newTeamName = $bin     dable() }: Props = $props();
-    let teamsJSON = $derived(JSON.stringify(teams));
+    let {
+        items = $bindable([]),
+        newItemName = $bindable(""),
+        placeholder = "Add item...",
+        maxItems = undefined,
+    }: Props = $props();
 
-    function addTeam() {
-        if (newTeamName && !teams.includes(newTeamName)) {
-            teams = [...teams, newTeamName];
-            newTeamName = "";
+    let itemsJSON = $derived(JSON.stringify(items));
+
+    function addItem() {
+        if (newItemName && !items.includes(newItemName.trim())) {
+            items = [...items, newItemName.trim()];
+            newItemName = "";
         }
     }
 
-    function removeTeam(teamToRemove: string) {
-        teams = teams.filter((t) => t !== teamToRemove);
+    function removeItem(itemToRemove: string) {
+        items = items.filter((t) => t !== itemToRemove);
     }
 
     function handleInputKeydown(e: KeyboardEvent) {
         if (e.key === "Enter") {
             e.preventDefault();
-            addTeam();
+            addItem();
         }
     }
 
     function handleInput() {
-        if (newTeamName.length > 30) {
-            newTeamName = newTeamName.slice(0, 30);
+        if (newItemName.length > 30) {
+            newItemName = newItemName.slice(0, 30);
         }
     }
+
+    let canAddMore = $derived(
+        maxItems === undefined || items.length < maxItems,
+    );
 </script>
 
-<div class="team-list">
-    <input type="hidden" name="teams" value={teamsJSON} />
+<div class="multi-name-list">
+    <input type="hidden" name="items" value={itemsJSON} />
 
-    {#each teams as team}
-        <div class="team-card">
-            <span class="team-name">{team}</span>
+    {#each items as item}
+        <div class="item-card">
+            <span class="item-name">{item}</span>
             <button
                 type="button"
                 class="icon-btn remove"
-                onclick={() => removeTeam(team)}
-                aria-label="Remove team"
+                onclick={() => removeItem(item)}
+                aria-label="Remove item"
             ></button>
         </div>
     {/each}
 
-    <div class="team-card input-card">
-        <input
-            type="text"
-            placeholder="Add Team..."
-            bind:value={newTeamName}
-            onkeydown={handleInputKeydown}
-            oninput={handleInput}
-        />
-        <button
-            type="button"
-            class="icon-btn add"
-            onclick={addTeam}
-            aria-label="Add team"
-        ></button>
-    </div>
+    {#if canAddMore}
+        <div class="item-card input-card">
+            <input
+                type="text"
+                {placeholder}
+                bind:value={newItemName}
+                onkeydown={handleInputKeydown}
+                oninput={handleInput}
+            />
+            <button
+                type="button"
+                class="icon-btn add"
+                onclick={addItem}
+                aria-label="Add item"
+            ></button>
+        </div>
+    {/if}
 </div>
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
 
-    .team-list {
+    .multi-name-list {
         display: grid;
         grid-template-columns: 1fr;
         gap: 0.5rem;
-        width: 90%;
+        width: 100%;
         max-width: 100%;
-        margin: 1rem auto 0;
     }
 
-    .team-card {
+    .item-card {
         background: $background-1;
         border: 3px solid $border-color;
         border-radius: 1rem;
@@ -86,7 +99,7 @@
         align-items: center;
         transition: all 0.2s;
 
-        .team-name {
+        .item-name {
             font-size: 1.1rem;
             font-weight: 700;
             color: $text;

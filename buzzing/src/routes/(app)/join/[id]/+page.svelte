@@ -13,6 +13,9 @@
     let gameId = $derived(data.gameId);
     let gameName = $derived(data.gameName);
     let settings = $derived(data.settings);
+    let isTournamentGame = $derived(data.isTournamentGame);
+    let tournamentData = $derived(data.tournamentData);
+    let isModerator = $derived(data.isModerator);
 
     // Initial data from server (used as fallback before Convex loads)
     let initialMemberNames = $derived(data.memberNames);
@@ -40,7 +43,7 @@
     type SelectableTeam = {
         id: string;
         name: string;
-        type: "default" | "created" | "individual";
+        type: "default" | "created" | "individual" | "tournament";
         captainId?: string;
     };
 
@@ -57,7 +60,7 @@
                     captainId: t.captainId,
                 }));
         }
-        return initialTeams;
+        return initialTeams as SelectableTeam[];
     });
 
     // Combine teams and members for display card
@@ -86,6 +89,30 @@
     let memberName = $state("");
     let selectedTeam: SelectableTeam | undefined = $state();
     let newTeamName: string = $state("");
+
+    // Tournament-specific state
+    let selectedTournamentPlayer: {
+        name: string;
+        teamId: string;
+        teamName: string;
+    } | null = $state(null);
+
+    // Build list of all players from tournament teams for dropdown
+    let tournamentPlayerOptions = $derived.by(() => {
+        if (!tournamentData?.teams) return [];
+        const options: { name: string; teamId: string; teamName: string }[] =
+            [];
+        for (const team of tournamentData.teams) {
+            for (const playerName of team.players) {
+                options.push({
+                    name: playerName,
+                    teamId: team.teamId,
+                    teamName: team.name,
+                });
+            }
+        }
+        return options;
+    });
 
     // Determine if there is only one option for teamOrIndiv
     function getInitialTeamOrIndiv(): "indiv" | "team" | "new-team" | null {
@@ -134,10 +161,14 @@
     });
 
     let disabled = $derived(
-        !memberName ||
-            !teamOrIndiv ||
-            (teamOrIndiv === "new-team" && !newTeamName) ||
-            (teamOrIndiv === "team" && !selectedTeam),
+        isTournamentGame && !isModerator
+            ? !selectedTournamentPlayer // Tournament player needs to select from dropdown
+            : isModerator
+              ? !memberName // Moderator just needs name
+              : !memberName ||
+                !teamOrIndiv ||
+                (teamOrIndiv === "new-team" && !newTeamName) ||
+                (teamOrIndiv === "team" && !selectedTeam),
     );
 
     function handleTeamNameInput() {
@@ -155,16 +186,85 @@
     <form method="POST" autocomplete="off">
         <h1>Join {gameName}</h1>
         <div>
-            <input
-                type="text"
-                placeholder="Your Name"
-                name="name"
-                id="name-input"
-                bind:value={memberName}
-            />
-            <h2>Team:</h2>
+            {#if isTournamentGame && !isModerator}
+                <!-- Tournament Player Selection -->
+                <h2>Select Your Name</h2>
+                <p class="tournament-info">
+                    This is a tournament game. Select your name from the list
+                    below.
+                </p>
+                {#if tournamentPlayerOptions.length > 0}
+                    <select
+                        class="tournament-select"
+                        onchange={(e) => {
+                            const val = (e.target as HTMLSelectElement).value;
+                            if (val) {
+                                const opt = tournamentPlayerOptions.find(
+                                    (p) => `${p.name}|${p.teamId}` === val,
+                                );
+                                if (opt) selectedTournamentPlayer = opt;
+                            } else {
+                                selectedTournamentPlayer = null;
+                            }
+                        }}
+                    >
+                        <option value="">-- Select your name --</option>
+                        {#each tournamentPlayerOptions as player}
+                            <option value="{player.name}|{player.teamId}">
+                                {player.name} [{player.teamName}]
+                            </option>
+                        {/each}
+                    </select>
+                    {#if selectedTournamentPlayer}
+                        <input
+                            type="hidden"
+                            name="name"
+                            value={selectedTournamentPlayer.name}
+                        />
+                        <input
+                            type="hidden"
+                            name="team-or-indiv"
+                            value="team"
+                        />
+                        <input
+                            type="hidden"
+                            name="team-id"
+                            value={selectedTournamentPlayer.teamId}
+                        />
+                        <input
+                            type="hidden"
+                            name="tournament-player"
+                            value="true"
+                        />
+                    {/if}
+                {:else}
+                    <p class="no-players">
+                        No teams have been assigned to this match yet.
+                    </p>
+                {/if}
+            {:else if isModerator}
+                <!-- Moderator Join - Just Name -->
+                <input
+                    type="text"
+                    placeholder="Your Name"
+                    name="name"
+                    id="name-input"
+                    bind:value={memberName}
+                />
+                <input type="hidden" name="moderator" value="true" />
+            {:else}
+                <!-- Regular Game Join -->
+                <input
+                    type="text"
+                    placeholder="Your Name"
+                    name="name"
+                    id="name-input"
+                    bind:value={memberName}
+                />
+                <h2>Team:</h2>
+            {/if}
 
-            {#if teamsWithMembers.length > 0}
+            {#if !isTournamentGame && !isModerator}
                 <div class="team-list">
                     {#each teamsWithMembers as team (team.id)}
                         <label
@@ -212,7 +312,7 @@
                 </div>
             {/if}
 
-            {#if settings.individualsAllowed || settings.newTeamsAllowed}
+            {#if !isTournamentGame && !isModerator && (settings.individualsAllowed || settings.newTeamsAllowed)}
                 <div class="other-options">
                     {#if settings.individualsAllowed}
                         <label
@@ -411,5 +511,26 @@
         width: 90%;
         padding: 0.8rem;
         background: $primary;
+    }
+
+    // Tournament game styles
+    .tournament-info {
+        color: $text-muted;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+
+    .tournament-select {
+        @extend %text-input;
+        font-size: 1.1rem;
+        width: 90%;
+        cursor: pointer;
+        margin-bottom: 1rem;
+    }
+
+    .no-players {
+        color: $text-muted;
+        font-style: italic;
+        padding: 1rem;
     }
 </style>

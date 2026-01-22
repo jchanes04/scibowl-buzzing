@@ -38,6 +38,15 @@
             : null,
     );
 
+    // Tournaments query - get all tournaments created by this user
+    let tournamentsQuery = $derived(
+        currentUser?.id
+            ? useQuery(api.tournaments.getByOrganizer, {
+                  organizerId: currentUser.id,
+              })
+            : null,
+    );
+
     // Filtered game history based on selected role
     let filteredGameHistory = $derived(
         gameHistoryQuery?.data
@@ -299,6 +308,44 @@
         </form>
     </div>
 
+    <!-- My Tournaments Section -->
+    <div class="tournaments-container">
+        <div class="tournaments-header">
+            <h2>My Tournaments</h2>
+            <button
+                class="create-tournament-btn"
+                onclick={() => goto("/tournament/create")}
+            >
+                Create Tournament
+            </button>
+        </div>
+        <div class="tournaments-section">
+            {#if tournamentsQuery?.isLoading}
+                <p class="loading-text">Loading tournaments...</p>
+            {:else if tournamentsQuery?.data && tournamentsQuery.data.length > 0}
+                <div class="tournament-list">
+                    {#each tournamentsQuery.data as tournament}
+                        <a
+                            href="/tournament/{tournament.tournamentId}"
+                            class="tournament-card"
+                        >
+                            <div class="tournament-name">{tournament.name}</div>
+                            <div class="tournament-date">
+                                {new Date(
+                                    tournament.createdAt,
+                                ).toLocaleDateString()}
+                            </div>
+                        </a>
+                    {/each}
+                </div>
+            {:else}
+                <p class="no-tournaments">
+                    No tournaments created yet. Create one to get started!
+                </p>
+            {/if}
+        </div>
+    </div>
+
     <!-- Game History Section -->
     <div class="game-history-container">
         <div class="game-history-header">
@@ -550,6 +597,78 @@
                 }
             }
         }
+    }
+
+    // Tournaments Panel Styles
+    .tournaments-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: $background-1;
+        border: 3px solid $border-color;
+        border-radius: 1rem;
+        box-shadow: $shadow;
+    }
+
+    .tournaments-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid $border-color;
+
+        h2 {
+            color: $text;
+            margin: 0;
+            font-size: 2rem;
+        }
+    }
+
+    .create-tournament-btn {
+        @extend %button;
+        background: $primary;
+        font-size: 1rem;
+        padding: 0.6rem 1.2rem;
+    }
+
+    .tournament-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .tournament-card {
+        display: block;
+        background: $background-2;
+        border: 2px solid $border-color;
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        text-decoration: none;
+        transition: all 0.2s;
+
+        &:hover {
+            border-color: $primary;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba($primary, 0.15);
+        }
+
+        .tournament-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: $text;
+            margin-bottom: 0.25rem;
+        }
+
+        .tournament-date {
+            font-size: 0.9rem;
+            color: $text-muted;
+        }
+    }
+
+    .no-tournaments {
+        color: $text-muted;
+        font-size: 1rem;
     }
 
     .loading-text,

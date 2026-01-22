@@ -6,6 +6,7 @@
     import Confirm from "$lib/components/Confirm.svelte";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
+    import { calculateTeamScore } from "$lib/functions/scoreboard";
 
     interface Props {
         scoreboardData: any;
@@ -221,21 +222,7 @@
 
     function sumQuestionScores(teamId: string) {
         if (!scoreboardData) return 0;
-        return Object.values(scoreboardData.scores).reduce(
-            (acc: number, q: any) => {
-                if (q.tossup[teamId]?.scoreType === "correct") {
-                    acc += pointValues.tossup;
-                } else if (q.tossup[teamId]?.scoreType === "penalty") {
-                    acc += pointValues.penalty;
-                }
-
-                if (q.bonus?.teamId === teamId && q.bonus?.correct) {
-                    acc += pointValues.bonus;
-                }
-                return acc;
-            },
-            0,
-        );
+        return calculateTeamScore(teamId, scoreboardData.scores, pointValues);
     }
 </script>
 

@@ -15,7 +15,7 @@ let myMemberId = $state<string | null>(null);
 
 // Internal state populated from Convex queries
 let _members = $state<Array<{ id: string; name: string; type: "player" | "moderator"; teamId?: string; isActive: boolean; isSubbed?: boolean }>>([]);
-let _teams = $state<Array<{ teamId: string; name: string; type: "default" | "created" | "individual"; captainId?: string }>>([]);
+let _teams = $state<Array<{ teamId: string; name: string; type: "default" | "created" | "individual" | "tournament"; captainId?: string }>>([]);;
 
 // Track if subscription is already initialized
 let isInitialized = $state(false);
@@ -62,7 +62,7 @@ export function clearMembersSubscription() {
 export type ClientTeamData = {
     id: string;
     name: string;
-    type: "default" | "created" | "individual";
+    type: "default" | "created" | "individual" | "tournament";
     captainId: string | null;
     players: Record<string, Omit<ClientPlayer, "team">>;
 };

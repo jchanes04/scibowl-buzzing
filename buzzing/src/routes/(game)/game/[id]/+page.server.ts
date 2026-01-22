@@ -26,13 +26,13 @@ export const load = async function ({ params, cookies }) {
     }
 
     // Check if member is active in cache
-    const member = game.people[memberId]
+    let member = game.people[memberId]
     const convex = getConvexClient()
 
     if (!member) {
         // Member not in active cache - check Convex for inactive member
         const allMembers = await convex.query(api.gameMembers.getAllForGame, { gameId })
-        const member = allMembers.find(m => m.id === memberId)
+        member = allMembers.find(m => m.id === memberId)
     }
 
 

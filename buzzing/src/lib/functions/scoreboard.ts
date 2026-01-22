@@ -4,6 +4,34 @@ import type { ScoreboardPlayerNames, ScoreboardTeamNames } from "$lib/stores/sco
 import pkg from "json-2-csv"
 const { json2csv } = pkg
 
+export type PointValues = {
+    tossup: number;
+    bonus: number;
+    penalty: number;
+};
+
+/**
+ * Calculate the total score for a team given scores data and point values
+ */
+export function calculateTeamScore(
+    teamId: string,
+    scores: Scores | Record<string, any>,
+    pointValues: PointValues
+): number {
+    return Object.values(scores).reduce((acc: number, q: any) => {
+        if (q.tossup[teamId]?.scoreType === "correct") {
+            acc += pointValues.tossup;
+        } else if (q.tossup[teamId]?.scoreType === "penalty") {
+            acc += pointValues.penalty;
+        }
+
+        if (q.bonus?.teamId === teamId && q.bonus?.correct) {
+            acc += pointValues.bonus;
+        }
+        return acc;
+    }, 0);
+}
+
 const scoreTypes: Record<ScoreType, string> = {
     "correct": "C",
     "incorrect": "I",
