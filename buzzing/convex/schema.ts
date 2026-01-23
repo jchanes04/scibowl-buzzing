@@ -48,6 +48,7 @@ export default defineSchema({
     // Tournament link (if this game is part of a tournament)
     tournamentId: v.optional(v.string()),
     tournamentMatchIndex: v.optional(v.number()), // 0=semifinal1, 1=semifinal2, 2=final
+    tournamentMatchBracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"))), // For double elimination
     moderatorJoinCode: v.optional(v.string()), // Legacy field for existing data
   })
     .index("by_gameId", ["gameId"])
@@ -136,8 +137,11 @@ export default defineSchema({
     }))),
     bracketResults: v.optional(v.array(v.object({
       matchIndex: v.number(), // 0=SF1, 1=SF2, 2=Final
+      bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"))), // For double elimination
       winningTeamId: v.string(),
     }))),
+    bracketType: v.optional(v.union(v.literal("single"), v.literal("double"))), // Single or double elimination
+    grandFinalReset: v.optional(v.boolean()), // For double elimination: whether bracket reset is enabled
     createdAt: v.number(),
     // Legacy fields
     ownerId: v.optional(v.string()),

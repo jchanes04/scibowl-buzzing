@@ -54,6 +54,8 @@ export function initTournamentSubscription(
                 bracketSeeds: tournamentQuery.data.bracketSeeds || [],
                 bracketResults: tournamentQuery.data.bracketResults || [],
                 bracketSize: tournamentQuery.data.bracketSize,
+                bracketType: tournamentQuery.data.bracketType,
+                grandFinalReset: tournamentQuery.data.grandFinalReset,
                 bracketConfirmed: tournamentQuery.data.bracketConfirmed,
                 createdAt: tournamentQuery.data.createdAt,
                 gameIds: tournamentQuery.data.gameIds || [],
@@ -83,6 +85,7 @@ export function initTournamentSubscription(
                     isActive: game.isActive,
                     isCompleted: game.isCompleted,
                     tournamentMatchIndex: game.tournamentMatchIndex,
+                    tournamentMatchBracket: game.tournamentMatchBracket,
                 }));
         }
     });

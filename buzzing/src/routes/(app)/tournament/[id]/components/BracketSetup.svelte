@@ -6,18 +6,78 @@
     } from "$lib/stores/tournament.svelte";
     import {
         bracketSizeStore,
+        bracketTypeStore,
+        grandFinalResetStore,
         randomizeSeeds,
     } from "$lib/stores/bracket.svelte";
+    import type { BracketType } from "../types";
 
     // Get values from stores
     let tournament = $derived(tournamentStore.value);
     let isOrganizer = $derived(tournamentStore.isOrganizer);
     let teams = $derived(tournamentTeamsStore.value);
     let selectedBracketSize = $derived(bracketSizeStore.value);
+    let selectedBracketType = $derived(bracketTypeStore.value);
+    let selectedGrandFinalReset = $derived(grandFinalResetStore.value);
+
+    // Helper to check if a number is a power of 2
+    function isPowerOfTwo(n: number): boolean {
+        return n > 0 && (n & (n - 1)) === 0;
+    }
+
+    // Get valid bracket sizes based on bracket type
+    function getValidBracketSizes(bracketType: BracketType, maxTeams: number): number[] {
+        const sizes: number[] = [];
+        if (bracketType === "double") {
+            // Double elimination only supports power of 2
+            for (let p = 2; p <= Math.max(maxTeams, 16); p *= 2) {
+                sizes.push(p);
+            }
+        } else {
+            // Single elimination supports any size >= 2
+            for (let i = 2; i <= Math.max(maxTeams, 16); i++) {
+                sizes.push(i);
+            }
+        }
+        return sizes;
+    }
+
+    // Get the nearest valid bracket size when switching types
+    function getNearestValidSize(currentSize: number, bracketType: BracketType): number {
+        if (bracketType === "single") return currentSize;
+
+        // For double elimination, find nearest power of 2
+        if (isPowerOfTwo(currentSize)) return currentSize;
+
+        // Find next power of 2 >= currentSize
+        let power = 2;
+        while (power < currentSize) {
+            power *= 2;
+        }
+        return power;
+    }
+
+    let validBracketSizes = $derived(getValidBracketSizes(selectedBracketType, teams?.length ?? 0));
 
     function handleBracketSizeChange(event: Event) {
         const target = event.target as HTMLSelectElement;
         bracketSizeStore.value = parseInt(target.value);
+    }
+
+    function handleBracketTypeChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        const newType = target.value as BracketType;
+        bracketTypeStore.value = newType;
+
+        // Adjust bracket size if switching to double elimination with non-power-of-2 size
+        if (newType === "double" && !isPowerOfTwo(selectedBracketSize)) {
+            bracketSizeStore.value = getNearestValidSize(selectedBracketSize, newType);
+        }
+    }
+
+    function handleGrandFinalResetChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        grandFinalResetStore.value = target.checked;
     }
 </script>
 
@@ -39,18 +99,54 @@
             {/if}
         </div>
 
-        <div class="bracket-size-selector">
-            <label for="bracket-size">Bracket Size:</label>
-            <select
-                id="bracket-size"
-                value={selectedBracketSize}
-                onchange={handleBracketSizeChange}
-                disabled={tournament.bracketConfirmed}
-            >
-                {#each Array.from({ length: Math.max(teams?.length ?? 0, 16) }, (_, i) => i + 2) as size}
-                    <option value={size}>{size} Teams</option>
-                {/each}
-            </select>
+        <div class="bracket-options">
+            <div class="bracket-size-selector">
+                <label for="bracket-size">Bracket Size:</label>
+                <select
+                    id="bracket-size"
+                    value={selectedBracketSize}
+                    onchange={handleBracketSizeChange}
+                    disabled={tournament.bracketConfirmed}
+                >
+                    {#each validBracketSizes as size}
+                        <option value={size}>{size} Teams</option>
+                    {/each}
+                </select>
+                {#if selectedBracketType === "double"}
+                    <span class="size-hint">(Double elimination requires power of 2)</span>
+                {/if}
+            </div>
+
+            <div class="bracket-type-selector">
+                <label for="bracket-type">Bracket Type:</label>
+                <select
+                    id="bracket-type"
+                    value={selectedBracketType}
+                    onchange={handleBracketTypeChange}
+                    disabled={tournament.bracketConfirmed}
+                >
+                    <option value="single">Single Elimination</option>
+                    <option value="double">Double Elimination</option>
+                </select>
+            </div>
+
+            {#if selectedBracketType === "double"}
+                <div class="grand-final-reset-toggle">
+                    <label for="grand-final-reset">
+                        <input
+                            type="checkbox"
+                            id="grand-final-reset"
+                            checked={selectedGrandFinalReset}
+                            onchange={handleGrandFinalResetChange}
+                            disabled={tournament.bracketConfirmed}
+                        />
+                        Grand Final Bracket Reset
+                    </label>
+                    <span class="reset-hint">
+                        (If losers bracket champion wins first Grand Final, play a reset match)
+                    </span>
+                </div>
+            {/if}
         </div>
 
         <div class="setup-actions">
@@ -105,21 +201,68 @@
     }
 
     .bracket-setup-section {
-        .bracket-size-selector {
+        .bracket-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: $background-2;
+            border-radius: 0.75rem;
+            border: 2px solid $border-color;
+        }
+
+        .bracket-size-selector,
+        .bracket-type-selector {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1rem;
+            flex-wrap: wrap;
 
             label {
                 font-weight: 600;
                 color: $text;
+                min-width: 100px;
             }
 
             select {
                 @extend %text-input;
                 padding: 0.5rem;
                 font-size: 1rem;
+            }
+        }
+
+        .bracket-size-selector .size-hint {
+            color: $text-muted;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .grand-final-reset-toggle {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+
+            label {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 600;
+                color: $text;
+                cursor: pointer;
+
+                input[type="checkbox"] {
+                    width: 1.2rem;
+                    height: 1.2rem;
+                    cursor: pointer;
+                }
+            }
+
+            .reset-hint {
+                color: $text-muted;
+                font-size: 0.85rem;
+                font-style: italic;
             }
         }
 

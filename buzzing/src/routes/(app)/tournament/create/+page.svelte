@@ -54,10 +54,15 @@
     let minPlayers = $state(1);
     let maxPlayers = $state(5);
 
+    // Bracket settings
+    let bracketType = $state<"single" | "double">("single");
+    let grandFinalReset = $state(true);
+
     // Collapsible section states
     let timerSettingsOpen = $state(false);
     let pointSettingsOpen = $state(false);
     let teamSettingsOpen = $state(false);
+    let bracketSettingsOpen = $state(false);
 
     let submitEnabled = $derived(authenticated && tournamentName.trim());
 </script>
@@ -224,6 +229,53 @@
                 </div>
             </CollapsibleSection>
 
+            <CollapsibleSection
+                title="Bracket Format"
+                bind:open={bracketSettingsOpen}
+            >
+                <div class="settings-grid two-col">
+                    <div class="form-group">
+                        <label for="bracket-type">Bracket Type</label>
+                        <select
+                            id="bracket-type"
+                            name="bracket-type"
+                            bind:value={bracketType}
+                        >
+                            <option value="single">Single Elimination</option>
+                            <option value="double">Double Elimination</option>
+                        </select>
+                    </div>
+
+                    {#if bracketType === "double"}
+                        <div class="form-group">
+                            <label for="grand-final-reset">Grand Final Reset</label>
+                            <select
+                                id="grand-final-reset"
+                                name="grand-final-reset"
+                                bind:value={grandFinalReset}
+                            >
+                                <option value={true}>Enabled</option>
+                                <option value={false}>Disabled</option>
+                            </select>
+                        </div>
+                    {/if}
+                </div>
+
+                <p class="settings-hint">
+                    {#if bracketType === "single"}
+                        <strong>Single Elimination:</strong> Teams are eliminated after one loss.
+                    {:else}
+                        <strong>Double Elimination:</strong> Teams must lose twice to be eliminated.
+                        {#if grandFinalReset}
+                            If the losers bracket champion wins the first Grand Final, a reset match is played.
+                        {:else}
+                            No reset match - single Grand Final determines the winner.
+                        {/if}
+                    {/if}
+                    <br/><small>Note: Bracket format can also be changed during bracket setup.</small>
+                </p>
+            </CollapsibleSection>
+
             <button type="submit" disabled={!submitEnabled}
                 >Create Tournament</button
             >
@@ -298,9 +350,34 @@
         gap: 1.5rem;
         margin-top: 1rem;
 
+        &.two-col {
+            grid-template-columns: 1fr 1fr;
+        }
+
         @media (max-width: 600px) {
             grid-template-columns: 1fr;
         }
+    }
+
+    .settings-hint {
+        color: $text-muted;
+        font-size: 0.9rem;
+        font-style: italic;
+        margin-top: 1rem;
+        text-align: left;
+        padding: 0.75rem;
+        background: $background-2;
+        border-radius: 0.5rem;
+        border: 1px solid $border-color;
+    }
+
+    select {
+        @extend %text-input;
+        margin: 0;
+        font-size: 1.1rem;
+        width: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
     }
 
     .form-group {

@@ -184,7 +184,11 @@
 
 <div>
     <form method="POST" autocomplete="off">
-        <h1>Join {gameName}</h1>
+        {#if isModerator}
+            <h1>Moderate {gameName}</h1>
+        {:else}
+            <h1>Join {gameName}</h1>
+        {/if}
         <div>
             {#if isTournamentGame && !isModerator}
                 <!-- Tournament Player Selection -->
@@ -249,9 +253,11 @@
                     placeholder="Your Name"
                     name="name"
                     id="name-input"
+                    class="mod-name"
                     bind:value={memberName}
                 />
                 <input type="hidden" name="moderator" value="true" />
+                <br style="margin-bottom: 2em" />
             {:else}
                 <!-- Regular Game Join -->
                 <input

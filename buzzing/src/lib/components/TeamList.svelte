@@ -4,7 +4,7 @@
         newTeamName: string;
     }
 
-    let { teams = $bindable([]), newTeamName = $bin     dable() }: Props = $props();
+    let { teams = $bindable([]), newTeamName = $bindable("") }: Props = $props();
     let teamsJSON = $derived(JSON.stringify(teams));
 
     function addTeam() {

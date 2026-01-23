@@ -7,6 +7,8 @@ import { env } from "$env/dynamic/public"
 import { getConvexClient, api } from "$lib/convex.server"
 
 // Bracket generation helpers (same as in tournaments.ts)
+type MatchBracket = "winners" | "losers" | "grand_final";
+
 type BracketMatch = {
     matchIndex: number;
     round: number;
@@ -14,6 +16,22 @@ type BracketMatch = {
     team2Seed: number | null;
     sourceMatch1?: number;
     sourceMatch2?: number;
+}
+
+type SourceMatch = {
+    matchIndex: number;
+    bracket: MatchBracket;
+    takesWinner: boolean;
+}
+
+type DoubleEliminationMatch = {
+    matchIndex: number;
+    bracket: MatchBracket;
+    round: number;
+    team1Seed: number | null;
+    team2Seed: number | null;
+    sourceMatch1?: SourceMatch;
+    sourceMatch2?: SourceMatch;
 }
 
 function generateSeedPositions(bracketSize: number): number[] {
@@ -69,6 +87,169 @@ function generateBracketMatches(bracketSize: number): BracketMatch[] {
     }
 
     return matches
+}
+
+function generateDoubleEliminationMatches(bracketSize: number, grandFinalReset: boolean = true): {
+    winners: DoubleEliminationMatch[];
+    losers: DoubleEliminationMatch[];
+    grandFinal: DoubleEliminationMatch[];
+} {
+    if (bracketSize < 2) return { winners: [], losers: [], grandFinal: [] }
+
+    const numRounds = Math.ceil(Math.log2(bracketSize))
+    const fullBracketSize = Math.pow(2, numRounds)
+    const seedPositions = generateSeedPositions(fullBracketSize)
+
+    // WINNERS BRACKET
+    const winners: DoubleEliminationMatch[] = []
+    let winnersMatchIndex = 0
+
+    const firstRoundMatches = fullBracketSize / 2
+    for (let i = 0; i < firstRoundMatches; i++) {
+        const seed1 = seedPositions[i * 2] ?? 0
+        const seed2 = seedPositions[i * 2 + 1] ?? 0
+        winners.push({
+            matchIndex: winnersMatchIndex,
+            bracket: "winners",
+            round: 0,
+            team1Seed: seed1 > 0 && seed1 <= bracketSize ? seed1 : null,
+            team2Seed: seed2 > 0 && seed2 <= bracketSize ? seed2 : null,
+        })
+        winnersMatchIndex++
+    }
+
+    let matchesInRound = firstRoundMatches / 2
+    let previousRoundStart = 0
+    for (let round = 1; round < numRounds; round++) {
+        for (let i = 0; i < matchesInRound; i++) {
+            winners.push({
+                matchIndex: winnersMatchIndex,
+                bracket: "winners",
+                round,
+                team1Seed: null,
+                team2Seed: null,
+                sourceMatch1: { matchIndex: previousRoundStart + i * 2, bracket: "winners", takesWinner: true },
+                sourceMatch2: { matchIndex: previousRoundStart + i * 2 + 1, bracket: "winners", takesWinner: true },
+            })
+            winnersMatchIndex++
+        }
+        previousRoundStart += matchesInRound * 2
+        matchesInRound = Math.floor(matchesInRound / 2)
+    }
+
+    const winnersFinalMatchIndex = winnersMatchIndex - 1
+
+    // LOSERS BRACKET
+    const losers: DoubleEliminationMatch[] = []
+    let losersMatchIndex = 0
+
+    const winnersMatchesByRound: number[][] = []
+    let startIdx = 0
+    let countInRound = firstRoundMatches
+    for (let r = 0; r < numRounds; r++) {
+        const matchesInThisRound: number[] = []
+        for (let i = 0; i < countInRound; i++) {
+            matchesInThisRound.push(startIdx + i)
+        }
+        winnersMatchesByRound.push(matchesInThisRound)
+        startIdx += countInRound
+        countInRound = Math.floor(countInRound / 2)
+    }
+
+    let losersRound = 0
+    let prevLosersMatchIndices: number[] = []
+
+    const r0Losers = winnersMatchesByRound[0] || []
+    const losersR0Matches = r0Losers.length / 2
+
+    for (let i = 0; i < losersR0Matches; i++) {
+        losers.push({
+            matchIndex: losersMatchIndex,
+            bracket: "losers",
+            round: losersRound,
+            team1Seed: null,
+            team2Seed: null,
+            sourceMatch1: { matchIndex: r0Losers[i * 2]!, bracket: "winners", takesWinner: false },
+            sourceMatch2: { matchIndex: r0Losers[i * 2 + 1]!, bracket: "winners", takesWinner: false },
+        })
+        prevLosersMatchIndices.push(losersMatchIndex)
+        losersMatchIndex++
+    }
+    losersRound++
+
+    for (let winnersRound = 1; winnersRound < numRounds; winnersRound++) {
+        const winnersDropouts = winnersMatchesByRound[winnersRound] || []
+        const matchesThisRound: number[] = []
+        const numMatches = Math.min(prevLosersMatchIndices.length, winnersDropouts.length)
+
+        for (let i = 0; i < numMatches; i++) {
+            const dropoutIdx = winnersDropouts.length - 1 - i
+            losers.push({
+                matchIndex: losersMatchIndex,
+                bracket: "losers",
+                round: losersRound,
+                team1Seed: null,
+                team2Seed: null,
+                sourceMatch1: { matchIndex: prevLosersMatchIndices[i]!, bracket: "losers", takesWinner: true },
+                sourceMatch2: { matchIndex: winnersDropouts[dropoutIdx]!, bracket: "winners", takesWinner: false },
+            })
+            matchesThisRound.push(losersMatchIndex)
+            losersMatchIndex++
+        }
+        losersRound++
+
+        if (matchesThisRound.length > 1) {
+            const consolidationMatches: number[] = []
+            const numConsolidation = matchesThisRound.length / 2
+
+            for (let i = 0; i < numConsolidation; i++) {
+                losers.push({
+                    matchIndex: losersMatchIndex,
+                    bracket: "losers",
+                    round: losersRound,
+                    team1Seed: null,
+                    team2Seed: null,
+                    sourceMatch1: { matchIndex: matchesThisRound[i * 2]!, bracket: "losers", takesWinner: true },
+                    sourceMatch2: { matchIndex: matchesThisRound[i * 2 + 1]!, bracket: "losers", takesWinner: true },
+                })
+                consolidationMatches.push(losersMatchIndex)
+                losersMatchIndex++
+            }
+            losersRound++
+            prevLosersMatchIndices = consolidationMatches
+        } else {
+            prevLosersMatchIndices = matchesThisRound
+        }
+    }
+
+    const losersFinalMatchIndex = losersMatchIndex - 1
+
+    // GRAND FINAL
+    const grandFinal: DoubleEliminationMatch[] = []
+
+    grandFinal.push({
+        matchIndex: 0,
+        bracket: "grand_final",
+        round: 0,
+        team1Seed: null,
+        team2Seed: null,
+        sourceMatch1: { matchIndex: winnersFinalMatchIndex, bracket: "winners", takesWinner: true },
+        sourceMatch2: { matchIndex: losersFinalMatchIndex, bracket: "losers", takesWinner: true },
+    })
+
+    if (grandFinalReset) {
+        grandFinal.push({
+            matchIndex: 1,
+            bracket: "grand_final",
+            round: 1,
+            team1Seed: null,
+            team2Seed: null,
+            sourceMatch1: { matchIndex: 0, bracket: "grand_final", takesWinner: true },
+            sourceMatch2: { matchIndex: 0, bracket: "grand_final", takesWinner: false },
+        })
+    }
+
+    return { winners, losers, grandFinal }
 }
 
 // Get or create a persistent member ID for the user
@@ -147,60 +328,170 @@ export const load = async function ({ params, url, cookies }) {
         if (tournament && tournamentTeams) {
             // Get teams assigned to this match based on seeds or bracket results
             const matchIndex = gameData.tournamentMatchIndex ?? 0
+            const matchBracket = gameData.tournamentMatchBracket as MatchBracket | undefined
             const bracketResults = tournament.bracketResults || []
             const bracketSize = tournament.bracketSize || 4
+            const bracketType = tournament.bracketType || "single"
+            const grandFinalReset = tournament.grandFinalReset ?? true
 
             let matchTeams: Array<{ teamId: string; name: string; players: string[] }> = []
 
-            // Generate bracket structure to find which seeds/sources are in this match
-            const matches = generateBracketMatches(bracketSize)
-            const thisMatch = matches.find(m => m.matchIndex === matchIndex)
+            // Helper to get team from a seed
+            const getTeamFromSeed = (seed: number | null) => {
+                if (seed === null || seed === 0) return null
+                const seedData = tournament.bracketSeeds?.find((s: any) => s.seed === seed)
+                if (!seedData) return null
+                return tournamentTeams.find((t: any) => t.teamId === seedData.teamId)
+            }
 
-            if (thisMatch) {
-                // Helper to get team from a seed
-                const getTeamFromSeed = (seed: number | null) => {
-                    if (seed === null || seed === 0) return null
-                    const seedData = tournament.bracketSeeds?.find((s: any) => s.seed === seed)
-                    if (!seedData) return null
-                    return tournamentTeams.find((t: any) => t.teamId === seedData.teamId)
+            if (bracketType === "double" && matchBracket) {
+                // DOUBLE ELIMINATION
+                const { winners, losers, grandFinal } = generateDoubleEliminationMatches(bracketSize, grandFinalReset)
+
+                // Find the match in the correct bracket
+                let thisMatch: DoubleEliminationMatch | undefined
+                if (matchBracket === "winners") {
+                    thisMatch = winners.find(m => m.matchIndex === matchIndex)
+                } else if (matchBracket === "losers") {
+                    thisMatch = losers.find(m => m.matchIndex === matchIndex)
+                } else if (matchBracket === "grand_final") {
+                    thisMatch = grandFinal.find(m => m.matchIndex === matchIndex)
                 }
 
-                // Helper to get winner from a previous match
-                const getWinnerFromMatch = (sourceMatchIndex: number | undefined) => {
-                    if (sourceMatchIndex === undefined) return null
-                    const result = bracketResults.find((r: any) => r.matchIndex === sourceMatchIndex)
-                    if (result) {
-                        return tournamentTeams.find((t: any) => t.teamId === result.winningTeamId)
-                    }
-                    // Check if source match was a bye (one team has seed, other is null)
-                    const sourceMatch = matches.find(m => m.matchIndex === sourceMatchIndex)
-                    if (sourceMatch) {
-                        if (sourceMatch.team1Seed !== null && sourceMatch.team2Seed === null) {
-                            return getTeamFromSeed(sourceMatch.team1Seed)
+                if (thisMatch) {
+                    // Helper to get winner from a double elimination match
+                    const getWinnerFromDEMatch = (sourceMatchIndex: number, sourceBracket: MatchBracket): any => {
+                        const result = bracketResults.find((r: any) =>
+                            r.matchIndex === sourceMatchIndex && (r.bracket || undefined) === sourceBracket
+                        )
+                        if (result) {
+                            return tournamentTeams.find((t: any) => t.teamId === result.winningTeamId)
                         }
-                        if (sourceMatch.team2Seed !== null && sourceMatch.team1Seed === null) {
-                            return getTeamFromSeed(sourceMatch.team2Seed)
+                        // Check for bye in winners bracket first round
+                        if (sourceBracket === "winners") {
+                            const sourceMatch = winners.find(m => m.matchIndex === sourceMatchIndex)
+                            if (sourceMatch) {
+                                if (sourceMatch.team1Seed !== null && sourceMatch.team2Seed === null && !sourceMatch.sourceMatch2) {
+                                    return getTeamFromSeed(sourceMatch.team1Seed)
+                                }
+                                if (sourceMatch.team2Seed !== null && sourceMatch.team1Seed === null && !sourceMatch.sourceMatch1) {
+                                    return getTeamFromSeed(sourceMatch.team2Seed)
+                                }
+                            }
+                        }
+                        return null
+                    }
+
+                    // Helper to get loser from a double elimination match
+                    const getLoserFromDEMatch = (sourceMatchIndex: number, sourceBracket: MatchBracket): any => {
+                        const winnerId = getWinnerFromDEMatch(sourceMatchIndex, sourceBracket)?.teamId
+                        if (!winnerId) return null
+
+                        // Get both teams that were in the match
+                        let sourceMatch: DoubleEliminationMatch | undefined
+                        if (sourceBracket === "winners") {
+                            sourceMatch = winners.find(m => m.matchIndex === sourceMatchIndex)
+                        } else if (sourceBracket === "losers") {
+                            sourceMatch = losers.find(m => m.matchIndex === sourceMatchIndex)
+                        } else {
+                            sourceMatch = grandFinal.find(m => m.matchIndex === sourceMatchIndex)
+                        }
+
+                        if (!sourceMatch) return null
+
+                        // Get both teams in that match
+                        const team1 = sourceMatch.team1Seed !== null
+                            ? getTeamFromSeed(sourceMatch.team1Seed)
+                            : (sourceMatch.sourceMatch1
+                                ? (sourceMatch.sourceMatch1.takesWinner
+                                    ? getWinnerFromDEMatch(sourceMatch.sourceMatch1.matchIndex, sourceMatch.sourceMatch1.bracket)
+                                    : getLoserFromDEMatch(sourceMatch.sourceMatch1.matchIndex, sourceMatch.sourceMatch1.bracket))
+                                : null)
+                        const team2 = sourceMatch.team2Seed !== null
+                            ? getTeamFromSeed(sourceMatch.team2Seed)
+                            : (sourceMatch.sourceMatch2
+                                ? (sourceMatch.sourceMatch2.takesWinner
+                                    ? getWinnerFromDEMatch(sourceMatch.sourceMatch2.matchIndex, sourceMatch.sourceMatch2.bracket)
+                                    : getLoserFromDEMatch(sourceMatch.sourceMatch2.matchIndex, sourceMatch.sourceMatch2.bracket))
+                                : null)
+
+                        // Return the one that's not the winner
+                        if (team1?.teamId === winnerId) return team2
+                        if (team2?.teamId === winnerId) return team1
+                        return null
+                    }
+
+                    // Helper to get team from source match
+                    const getTeamFromSource = (source: SourceMatch | undefined): any => {
+                        if (!source) return null
+                        if (source.takesWinner) {
+                            return getWinnerFromDEMatch(source.matchIndex, source.bracket)
+                        } else {
+                            return getLoserFromDEMatch(source.matchIndex, source.bracket)
                         }
                     }
-                    return null
-                }
 
-                // Get team 1
-                if (thisMatch.team1Seed !== null) {
-                    const team = getTeamFromSeed(thisMatch.team1Seed)
-                    if (team) matchTeams.push(team)
-                } else if (thisMatch.sourceMatch1 !== undefined) {
-                    const team = getWinnerFromMatch(thisMatch.sourceMatch1)
-                    if (team) matchTeams.push(team)
-                }
+                    // Get team 1
+                    if (thisMatch.team1Seed !== null) {
+                        const team = getTeamFromSeed(thisMatch.team1Seed)
+                        if (team) matchTeams.push(team)
+                    } else {
+                        const team = getTeamFromSource(thisMatch.sourceMatch1)
+                        if (team) matchTeams.push(team)
+                    }
 
-                // Get team 2
-                if (thisMatch.team2Seed !== null) {
-                    const team = getTeamFromSeed(thisMatch.team2Seed)
-                    if (team) matchTeams.push(team)
-                } else if (thisMatch.sourceMatch2 !== undefined) {
-                    const team = getWinnerFromMatch(thisMatch.sourceMatch2)
-                    if (team) matchTeams.push(team)
+                    // Get team 2
+                    if (thisMatch.team2Seed !== null) {
+                        const team = getTeamFromSeed(thisMatch.team2Seed)
+                        if (team) matchTeams.push(team)
+                    } else {
+                        const team = getTeamFromSource(thisMatch.sourceMatch2)
+                        if (team) matchTeams.push(team)
+                    }
+                }
+            } else {
+                // SINGLE ELIMINATION
+                const matches = generateBracketMatches(bracketSize)
+                const thisMatch = matches.find(m => m.matchIndex === matchIndex)
+
+                if (thisMatch) {
+                    // Helper to get winner from a previous match
+                    const getWinnerFromMatch = (sourceMatchIndex: number | undefined) => {
+                        if (sourceMatchIndex === undefined) return null
+                        const result = bracketResults.find((r: any) => r.matchIndex === sourceMatchIndex && !r.bracket)
+                        if (result) {
+                            return tournamentTeams.find((t: any) => t.teamId === result.winningTeamId)
+                        }
+                        // Check if source match was a bye (one team has seed, other is null)
+                        const sourceMatch = matches.find(m => m.matchIndex === sourceMatchIndex)
+                        if (sourceMatch) {
+                            if (sourceMatch.team1Seed !== null && sourceMatch.team2Seed === null) {
+                                return getTeamFromSeed(sourceMatch.team1Seed)
+                            }
+                            if (sourceMatch.team2Seed !== null && sourceMatch.team1Seed === null) {
+                                return getTeamFromSeed(sourceMatch.team2Seed)
+                            }
+                        }
+                        return null
+                    }
+
+                    // Get team 1
+                    if (thisMatch.team1Seed !== null) {
+                        const team = getTeamFromSeed(thisMatch.team1Seed)
+                        if (team) matchTeams.push(team)
+                    } else if (thisMatch.sourceMatch1 !== undefined) {
+                        const team = getWinnerFromMatch(thisMatch.sourceMatch1)
+                        if (team) matchTeams.push(team)
+                    }
+
+                    // Get team 2
+                    if (thisMatch.team2Seed !== null) {
+                        const team = getTeamFromSeed(thisMatch.team2Seed)
+                        if (team) matchTeams.push(team)
+                    } else if (thisMatch.sourceMatch2 !== undefined) {
+                        const team = getWinnerFromMatch(thisMatch.sourceMatch2)
+                        if (team) matchTeams.push(team)
+                    }
                 }
             }
 
