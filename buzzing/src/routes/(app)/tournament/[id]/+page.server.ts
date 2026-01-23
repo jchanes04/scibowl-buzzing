@@ -14,10 +14,12 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
     // Check if current user is the organizer
     let isOrganizer = false;
+    let userId: string | null = null;
     const workosUserCookie = cookies.get("workos_user");
     if (workosUserCookie) {
         try {
             const userData = JSON.parse(workosUserCookie);
+            userId = userData.id;
             isOrganizer = userData.id === tournament.organizerId;
         } catch {
             // Not authenticated
@@ -27,6 +29,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     return {
         tournamentId,
         isOrganizer,
+        userId,
         initialTournament: {
             id: tournament.tournamentId,
             name: tournament.name,
@@ -40,3 +43,4 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
         },
     };
 };
+

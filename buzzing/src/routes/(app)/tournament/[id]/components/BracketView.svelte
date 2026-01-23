@@ -8,77 +8,55 @@
     import {
         tournamentStore,
         tournamentTeamsStore,
-        tournamentGamesStore,
     } from "$lib/stores/tournament.svelte";
     import {
         bracketSizeStore,
         bracketTypeStore,
-        bracketMatchesStore,
-        doubleEliminationStore,
+        bracketStore,
         handleSeedChange,
         getByeSeedFromSource,
         getMatchesByRound,
         getDisplayRounds,
-        getFirstDisplayedRound,
         getFirstRoundPairs,
         getMatchGridPosition,
         getMatchName,
-        getRoundTitle,
         getGame,
         isMatchLive,
         matchNeedsTieResolution,
         matchEndedInTie,
         getTeamsForMatch,
         buildTeamSlot,
-        // Double elimination helpers
-        getDoubleEliminationGame,
-        isDoubleEliminationMatchLive,
-        doubleEliminationMatchNeedsTieResolution,
-        doubleEliminationMatchEndedInTie,
-        getDoubleEliminationTeamsForMatch,
-        buildDoubleEliminationTeamSlot,
-        getDoubleEliminationMatchName,
-        getWinnersMatchesByRound,
-        getLosersMatchesByRound,
-        getWinnersDisplayRounds,
-        getLosersDisplayRounds,
-        isDoubleEliminationByeMatch,
-        isGrandFinalResetNeeded,
-        // Grid layout helpers
         getDoubleEliminationGridDimensions,
         getDoubleEliminationGridPosition,
-        getAllDoubleEliminationMatchesForGrid,
-        getDoubleEliminationColumnHeaders,
+        getAllMatchesForGrid,
+        getColumnHeaders,
         type BracketMatch,
     } from "$lib/stores/bracket.svelte";
+    import {
+        isByeMatch,
+        getSingleEliminationRoundTitle,
+    } from "$lib/functions/bracketGeneration";
     import type { TournamentTeam, MatchBracket } from "../types";
 
     // Get values from stores
     let tournament = $derived(tournamentStore.value);
     let isOrganizer = $derived(tournamentStore.isOrganizer);
     let teams = $derived(tournamentTeamsStore.value);
-    let games = $derived(tournamentGamesStore.value);
     let selectedBracketSize = $derived(bracketSizeStore.value);
     let bracketType = $derived(bracketTypeStore.value);
 
-    // Single elimination bracket structure
-    let totalGridRows = $derived(bracketMatchesStore.totalGridRows);
-    let displayRounds = $derived(getDisplayRounds());
-    let firstDisplayedRound = $derived(getFirstDisplayedRound());
-
-    // Double elimination bracket structure
-    let winnersMatches = $derived(doubleEliminationStore.winners);
-    let losersMatches = $derived(doubleEliminationStore.losers);
-    let grandFinalMatches = $derived(doubleEliminationStore.grandFinal);
-    let winnersDisplayRounds = $derived(getWinnersDisplayRounds());
-    let losersDisplayRounds = $derived(getLosersDisplayRounds());
+    // Unified bracket structure
+    let totalGridRows = $derived(bracketStore.totalGridRows);
+    let displayRoundsArr = $derived(getDisplayRounds("winners"));
+    let firstDisplayedRound = $derived(displayRoundsArr.length > 0 ? displayRoundsArr[0]! : 0);
+    let grandFinalMatches = $derived(bracketStore.grandFinal);
 
     // Double elimination grid layout
     let deGridDimensions = $derived(
         getDoubleEliminationGridDimensions(selectedBracketSize),
     );
-    let deAllMatches = $derived(getAllDoubleEliminationMatchesForGrid());
-    let deColumnHeaders = $derived(getDoubleEliminationColumnHeaders());
+    let deAllMatches = $derived(getAllMatchesForGrid());
+    let deColumnHeaders = $derived(getColumnHeaders());
 
     const convex = useConvexClient();
 
@@ -89,20 +67,9 @@
         })),
     );
 
-    // Copy moderator link to clipboard (single elimination)
-    function copyModeratorLink(matchIndex: number) {
-        const game = getGame(matchIndex);
-        if (!game) return;
-        const url = `${window.location.origin}/join/${game.gameId}?code=${game.moderatorJoinCode}`;
-        navigator.clipboard.writeText(url);
-    }
-
-    // Copy moderator link for double elimination
-    function copyDoubleEliminationModLink(
-        matchIndex: number,
-        bracket: MatchBracket,
-    ) {
-        const game = getDoubleEliminationGame(matchIndex, bracket);
+    // Copy moderator link to clipboard (works for both SE and DE)
+    function copyModeratorLink(matchIndex: number, bracket: MatchBracket = "winners") {
+        const game = getGame(matchIndex, bracket);
         if (!game) return;
         const url = `${window.location.origin}/join/${game.gameId}?code=${game.moderatorJoinCode}`;
         navigator.clipboard.writeText(url);
@@ -119,32 +86,9 @@
         tieModalOpen = true;
     }
 
-    // Open scoreboard modal for a match (single elimination)
-    function openScoreboardModal(matchIndex: number) {
-        const game = getGame(matchIndex);
-        if (!game) return;
-
-        const pointValues = game.pointValues || {
-            tossup: 4,
-            bonus: 10,
-            penalty: -4,
-        };
-        modalStore.showComponent(ScoreboardModal, {
-            scoreboardData: {
-                scores: game.scores || {},
-                teamNames: game.teamNames || {},
-                playerNames: game.playerNames || {},
-                pointValues: pointValues,
-            },
-        });
-    }
-
-    // Open scoreboard modal for double elimination
-    function openDoubleEliminationScoreboard(
-        matchIndex: number,
-        bracket: MatchBracket,
-    ) {
-        const game = getDoubleEliminationGame(matchIndex, bracket);
+    // Open scoreboard modal for a match (works for both SE and DE)
+    function openScoreboardModal(matchIndex: number, bracket: MatchBracket = "winners") {
+        const game = getGame(matchIndex, bracket);
         if (!game) return;
 
         const pointValues = game.pointValues || {
@@ -175,13 +119,10 @@
         tieBracket = null;
     }
 
-    // Get teams for tie resolution (handles both single and double elimination)
+    // Get teams for tie resolution (works for both SE and DE)
     function getTieTeams() {
         if (tieMatchIndex === null) return [];
-        if (tieBracket) {
-            return getDoubleEliminationTeamsForMatch(tieMatchIndex, tieBracket);
-        }
-        return getTeamsForMatch(tieMatchIndex);
+        return getTeamsForMatch(tieMatchIndex, tieBracket || "winners");
     }
 </script>
 
@@ -214,11 +155,9 @@
                     {#each deAllMatches as match}
                         {@const pos = getDoubleEliminationGridPosition(match)}
                         {@const matchesInRound =
-                            match.bracket === "winners"
-                                ? getWinnersMatchesByRound(match.round)
-                                : match.bracket === "losers"
-                                  ? getLosersMatchesByRound(match.round)
-                                  : grandFinalMatches}
+                            match.bracket === "grand_final"
+                                ? grandFinalMatches
+                                : getMatchesByRound(match.round, match.bracket)}
                         {@const matchIdxInRound = matchesInRound.findIndex(
                             (m) => m.matchIndex === match.matchIndex,
                         )}
@@ -228,33 +167,34 @@
                                 1} / span {pos.rowSpan}"
                         >
                             <BracketGame
-                                matchName={getDoubleEliminationMatchName(
+                                matchName={getMatchName(
                                     match,
+                                    0,
                                     Math.max(0, matchIdxInRound),
                                 )}
-                                endedInTie={doubleEliminationMatchEndedInTie(
+                                endedInTie={matchEndedInTie(
                                     match.matchIndex,
                                     match.bracket,
                                 )}
-                                hasGame={!!getDoubleEliminationGame(
+                                hasGame={!!getGame(
                                     match.matchIndex,
                                     match.bracket,
                                 )}
-                                isLive={isDoubleEliminationMatchLive(
+                                isLive={isMatchLive(
                                     match.matchIndex,
                                     match.bracket,
                                 )}
-                                team1={buildDoubleEliminationTeamSlot(match, 0)}
-                                team2={buildDoubleEliminationTeamSlot(match, 1)}
+                                team1={buildTeamSlot(match, 0)}
+                                team2={buildTeamSlot(match, 1)}
                                 {teamOptions}
                                 {isOrganizer}
-                                needsTieResolution={doubleEliminationMatchNeedsTieResolution(
+                                needsTieResolution={matchNeedsTieResolution(
                                     match.matchIndex,
                                     match.bracket,
                                 )}
                                 onSeedChange={handleSeedChange}
                                 onCopyModLink={() =>
-                                    copyDoubleEliminationModLink(
+                                    copyModeratorLink(
                                         match.matchIndex,
                                         match.bracket,
                                     )}
@@ -264,7 +204,7 @@
                                         match.bracket,
                                     )}
                                 onOpenScoreboard={() =>
-                                    openDoubleEliminationScoreboard(
+                                    openScoreboardModal(
                                         match.matchIndex,
                                         match.bracket,
                                     )}
@@ -275,13 +215,13 @@
             {:else}
                 <!-- SINGLE ELIMINATION BRACKET -->
                 <div class="bracket" style="--total-grid-rows: {totalGridRows}">
-                    {#each displayRounds as round, roundIdx}
+                    {#each displayRoundsArr as round, roundIdx}
                         {@const matchesInRound = getMatchesByRound(round)}
                         {@const isFirstDisplayedRound =
                             round === firstDisplayedRound}
                         <div class="bracket-round">
                             <div class="round-title">
-                                {getRoundTitle(roundIdx)}
+                                {getSingleEliminationRoundTitle(roundIdx, displayRoundsArr.length)}
                             </div>
                             <div class="round-matches">
                                 {#if isFirstDisplayedRound}

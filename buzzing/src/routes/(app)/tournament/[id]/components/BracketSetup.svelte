@@ -11,10 +11,15 @@
         randomizeSeeds,
     } from "$lib/stores/bracket.svelte";
     import type { BracketType } from "../types";
+    import CollapsibleSection from "$lib/components/CollapsibleSection.svelte";
+
+    // Collapsible state for registered teams
+    let teamsOpen = $state(false);
 
     // Get values from stores
     let tournament = $derived(tournamentStore.value);
     let isOrganizer = $derived(tournamentStore.isOrganizer);
+    let currentUserId = $derived(tournamentStore.userId);
     let teams = $derived(tournamentTeamsStore.value);
     let selectedBracketSize = $derived(bracketSizeStore.value);
     let selectedBracketType = $derived(bracketTypeStore.value);
@@ -26,7 +31,10 @@
     }
 
     // Get valid bracket sizes based on bracket type
-    function getValidBracketSizes(bracketType: BracketType, maxTeams: number): number[] {
+    function getValidBracketSizes(
+        bracketType: BracketType,
+        maxTeams: number,
+    ): number[] {
         const sizes: number[] = [];
         if (bracketType === "double") {
             // Double elimination only supports power of 2
@@ -43,7 +51,10 @@
     }
 
     // Get the nearest valid bracket size when switching types
-    function getNearestValidSize(currentSize: number, bracketType: BracketType): number {
+    function getNearestValidSize(
+        currentSize: number,
+        bracketType: BracketType,
+    ): number {
         if (bracketType === "single") return currentSize;
 
         // For double elimination, find nearest power of 2
@@ -57,7 +68,9 @@
         return power;
     }
 
-    let validBracketSizes = $derived(getValidBracketSizes(selectedBracketType, teams?.length ?? 0));
+    let validBracketSizes = $derived(
+        getValidBracketSizes(selectedBracketType, teams?.length ?? 0),
+    );
 
     function handleBracketSizeChange(event: Event) {
         const target = event.target as HTMLSelectElement;
@@ -71,13 +84,17 @@
 
         // Adjust bracket size if switching to double elimination with non-power-of-2 size
         if (newType === "double" && !isPowerOfTwo(selectedBracketSize)) {
-            bracketSizeStore.value = getNearestValidSize(selectedBracketSize, newType);
+            bracketSizeStore.value = getNearestValidSize(
+                selectedBracketSize,
+                newType,
+            );
         }
     }
 
-    function handleGrandFinalResetChange(event: Event) {
+    function handleWinnerTakesAllChange(event: Event) {
         const target = event.target as HTMLInputElement;
-        grandFinalResetStore.value = target.checked;
+        // Winner Takes All = true means no reset (grandFinalReset = false)
+        grandFinalResetStore.value = !target.checked;
     }
 </script>
 
@@ -85,19 +102,25 @@
     <section class="bracket-setup-section">
         <h2>Bracket Setup</h2>
 
-        <!-- Registered Teams (inline in setup) -->
-        <div class="registered-teams-inline">
-            <h3>Registered Teams ({teams?.length ?? 0})</h3>
+        <!-- Registered Teams (collapsible) -->
+        <CollapsibleSection
+            title="Registered Teams ({teams?.length ?? 0})"
+            bind:open={teamsOpen}
+        >
             {#if teams?.length === 0}
                 <p class="no-teams">No teams registered yet.</p>
             {:else}
                 <div class="teams-grid">
                     {#each teams ?? [] as team}
-                        <TournamentTeamCard {team} />
+                        <TournamentTeamCard
+                            {team}
+                            {currentUserId}
+                            tournamentId={tournament.id}
+                        />
                     {/each}
                 </div>
             {/if}
-        </div>
+        </CollapsibleSection>
 
         <div class="bracket-options">
             <div class="bracket-size-selector">
@@ -113,7 +136,9 @@
                     {/each}
                 </select>
                 {#if selectedBracketType === "double"}
-                    <span class="size-hint">(Double elimination requires power of 2)</span>
+                    <span class="size-hint"
+                        >(Double elimination requires power of 2)</span
+                    >
                 {/if}
             </div>
 
@@ -132,18 +157,18 @@
 
             {#if selectedBracketType === "double"}
                 <div class="grand-final-reset-toggle">
-                    <label for="grand-final-reset">
+                    <label for="winner-takes-all">
                         <input
                             type="checkbox"
-                            id="grand-final-reset"
-                            checked={selectedGrandFinalReset}
-                            onchange={handleGrandFinalResetChange}
+                            id="winner-takes-all"
+                            checked={!selectedGrandFinalReset}
+                            onchange={handleWinnerTakesAllChange}
                             disabled={tournament.bracketConfirmed}
                         />
-                        Grand Final Bracket Reset
+                        Winner Takes All Finals
                     </label>
                     <span class="reset-hint">
-                        (If losers bracket champion wins first Grand Final, play a reset match)
+                        (Single finals match determines tournament winner)
                     </span>
                 </div>
             {/if}
@@ -285,18 +310,9 @@
             margin: 0;
         }
 
-        .registered-teams-inline {
+        :global(.collapsible-section) {
+            margin-top: 0;
             margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: $background-2;
-            border-radius: 0.75rem;
-            border: 2px solid $border-color;
-
-            h3 {
-                margin: 0 0 0.75rem 0;
-                font-size: 1.1rem;
-                color: $text;
-            }
         }
     }
 </style>

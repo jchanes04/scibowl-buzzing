@@ -14,6 +14,7 @@ import type {
 
 let subscriptionTournamentId = $state<string | null>(null);
 let _isOrganizer = $state(false);
+let _userId = $state<string | null>(null);
 
 let _tournament = $state<Tournament | null>(null);
 let _teams = $state<TournamentTeam[]>([]);
@@ -25,10 +26,12 @@ let _games = $state<TournamentGame[]>([]);
 export function initTournamentSubscription(
     tournamentId: string,
     isOrganizer: boolean,
-    initialTournament?: Tournament
+    initialTournament?: Tournament,
+    userId?: string | null
 ) {
     subscriptionTournamentId = tournamentId;
     _isOrganizer = isOrganizer;
+    _userId = userId ?? null;
     _tournament = initialTournament ?? null;
 
     // Create subscriptions
@@ -97,6 +100,7 @@ export function initTournamentSubscription(
 export function clearTournamentSubscription() {
     subscriptionTournamentId = null;
     _isOrganizer = false;
+    _userId = null;
     _tournament = null;
     _teams = [];
     _games = [];
@@ -115,6 +119,9 @@ export const tournamentStore = {
     },
     get isOrganizer(): boolean {
         return _isOrganizer;
+    },
+    get userId(): string | null {
+        return _userId;
     },
 };
 

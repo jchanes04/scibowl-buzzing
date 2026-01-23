@@ -1,13 +1,18 @@
 <script lang="ts">
+    import { Pencil } from "lucide-svelte";
+
     interface Props {
         team: {
             teamId: string;
             name: string;
             players?: string[]; // Server data uses string[]
+            registeredBy?: string;
         };
         currentSeed?: number | null;
         maxSeed?: number; // Used to generate dropdown options
         isOrganizer?: boolean;
+        currentUserId?: string | null; // Current user's ID for edit permission
+        tournamentId?: string; // For edit link
         onSeedChange?: (teamId: string, seed: string) => void;
     }
 
@@ -16,29 +21,47 @@
         currentSeed = null,
         maxSeed = 0,
         isOrganizer = false,
+        currentUserId = null,
+        tournamentId = "",
         onSeedChange,
     }: Props = $props();
+
+    // Check if current user can edit this team
+    let canEdit = $derived(
+        currentUserId && team.registeredBy === currentUserId && tournamentId,
+    );
 </script>
 
 <div class="team-card-setup">
     <div class="card-header">
         <span class="team-name">{team.name || "Unknown Team"}</span>
-        {#if isOrganizer && onSeedChange}
-            <select
-                class="seed-select-inline"
-                value={currentSeed ?? ""}
-                onchange={(e) => {
-                    const val = (e.target as HTMLSelectElement).value;
-                    if (team.teamId) onSeedChange(team.teamId, val);
-                }}
-                disabled={!isOrganizer}
-            >
-                <option value="">Seed</option>
-                {#each Array.from({ length: maxSeed }, (_, i) => i + 1) as seedNum}
-                    <option value={seedNum}>#{seedNum}</option>
-                {/each}
-            </select>
-        {/if}
+        <div class="header-actions">
+            {#if canEdit}
+                <a
+                    href="/tournament/register/{tournamentId}?edit={team.teamId}"
+                    class="edit-btn"
+                    title="Edit team"
+                >
+                    <Pencil size={16} />
+                </a>
+            {/if}
+            {#if isOrganizer && onSeedChange}
+                <select
+                    class="seed-select-inline"
+                    value={currentSeed ?? ""}
+                    onchange={(e) => {
+                        const val = (e.target as HTMLSelectElement).value;
+                        if (team.teamId) onSeedChange(team.teamId, val);
+                    }}
+                    disabled={!isOrganizer}
+                >
+                    <option value="">Seed</option>
+                    {#each Array.from({ length: maxSeed }, (_, i) => i + 1) as seedNum}
+                        <option value={seedNum}>#{seedNum}</option>
+                    {/each}
+                </select>
+            {/if}
+        </div>
     </div>
     <div class="card-players">
         {#if team.players && team.players.length > 0}
@@ -88,6 +111,32 @@
                 font-size: 1.1rem;
                 word-break: break-word;
                 line-height: 1.3;
+            }
+
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-shrink: 0;
+            }
+
+            .edit-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 1.75rem;
+                height: 1.75rem;
+                border-radius: 0.375rem;
+                background: $gray-2;
+                color: $text;
+                transition: all 0.2s;
+                text-decoration: none;
+
+                &:hover {
+                    background: $primary;
+                    color: white;
+                    transform: #{"scale(1.1)"};
+                }
             }
 
             .seed-select-inline {

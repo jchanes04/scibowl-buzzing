@@ -475,9 +475,10 @@ function setupSocketListeners(io: Server) {
                             await getConvexClient().mutation(api.tournaments.advanceWinner, {
                                 tournamentId: gameData.tournamentId,
                                 matchIndex: gameData.tournamentMatchIndex,
+                                bracket: gameData.tournamentMatchBracket,
                                 winningTeamId: topTeamId,
                             })
-                            console.log(`Tournament ${gameData.tournamentId}: Team ${topTeamId} (${topScore}) advanced from match ${gameData.tournamentMatchIndex}, defeating team ${secondTeamId} (${secondScore})`)
+                            console.log(`Tournament ${gameData.tournamentId}: Team ${topTeamId} (${topScore}) advanced from match ${gameData.tournamentMatchIndex} (${gameData.tournamentMatchBracket || 'single'}), defeating team ${secondTeamId} (${secondScore})`)
                         } else {
                             console.log(`Tournament ${gameData.tournamentId}: Tie (${topScore}-${secondScore}) in match ${gameData.tournamentMatchIndex}, manual resolution required`)
                         }
@@ -487,9 +488,10 @@ function setupSocketListeners(io: Server) {
                         await getConvexClient().mutation(api.tournaments.advanceWinner, {
                             tournamentId: gameData.tournamentId,
                             matchIndex: gameData.tournamentMatchIndex,
+                            bracket: gameData.tournamentMatchBracket,
                             winningTeamId: winnerId,
                         })
-                        console.log(`Tournament ${gameData.tournamentId}: Team ${winnerId} advanced from match ${gameData.tournamentMatchIndex} (only team with scores)`)
+                        console.log(`Tournament ${gameData.tournamentId}: Team ${winnerId} advanced from match ${gameData.tournamentMatchIndex} (${gameData.tournamentMatchBracket || 'single'}) (only team with scores)`)
                     } else {
                         console.log(`Tournament ${gameData.tournamentId}: No teams scored in match ${gameData.tournamentMatchIndex}, manual resolution required`)
                     }

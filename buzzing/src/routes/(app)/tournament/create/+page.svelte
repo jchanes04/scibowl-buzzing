@@ -248,14 +248,16 @@
 
                     {#if bracketType === "double"}
                         <div class="form-group">
-                            <label for="grand-final-reset">Grand Final Reset</label>
+                            <label for="grand-final-reset"
+                                >Winner Takes All Finals</label
+                            >
                             <select
                                 id="grand-final-reset"
                                 name="grand-final-reset"
                                 bind:value={grandFinalReset}
                             >
-                                <option value={true}>Enabled</option>
-                                <option value={false}>Disabled</option>
+                                <option value={false}>Enabled</option>
+                                <option value={true}>Disabled</option>
                             </select>
                         </div>
                     {/if}
@@ -263,16 +265,19 @@
 
                 <p class="settings-hint">
                     {#if bracketType === "single"}
-                        <strong>Single Elimination:</strong> Teams are eliminated after one loss.
+                        <strong>Single Elimination:</strong> Teams are eliminated
+                        after one loss.
                     {:else}
-                        <strong>Double Elimination:</strong> Teams must lose twice to be eliminated.
-                        {#if grandFinalReset}
-                            If the losers bracket champion wins the first Grand Final, a reset match is played.
+                        <strong>Double Elimination:</strong> Teams must lose
+                        twice to be eliminated.
+                        {#if !grandFinalReset}
+                            A single finals match determines the winner.
                         {:else}
-                            No reset match - single Grand Final determines the winner.
+                            If the losers bracket champion wins the first finals
+                            match, a second match is played to determine the
+                            tournament winner.
                         {/if}
                     {/if}
-                    <br/><small>Note: Bracket format can also be changed during bracket setup.</small>
                 </p>
             </CollapsibleSection>
 

@@ -4,15 +4,38 @@
  * Handles pending seed assignments, bracket size selection, bracket operations,
  * and bracket match generation/display logic.
  * Works in conjunction with tournament.svelte.ts for full tournament context.
+ *
+ * Uses the unified bracket generation module from $lib/functions/bracketGeneration
  */
 import { api } from '../../../convex/_generated/api';
 import { tournamentStore, tournamentTeamsStore, tournamentGamesStore } from './tournament.svelte';
 import { calculateTeamScore } from '$lib/functions/scoreboard';
 import { toastStore } from './toast.svelte';
-import type { BracketSeed, TournamentTeam, TournamentGame, BracketResult, BracketType, MatchBracket, SourceMatch, BracketMatch } from '../../routes/(app)/tournament/[id]/types';
+import type { BracketSeed, TournamentTeam, TournamentGame, BracketResult, BracketType } from '../../routes/(app)/tournament/[id]/types';
 
-// Re-export BracketMatch for consumers
-export type { BracketMatch };
+// Import from unified bracket generation module
+import {
+    generateBracket,
+    isByeMatch,
+    getByeSeed,
+    getAllMatches as getAllMatchesFn,
+    getDisplayRounds as getDisplayRoundsFn,
+    getSingleEliminationMatchName,
+    getSingleEliminationRoundTitle,
+    getDoubleEliminationMatchName as getDEMatchName,
+    getDoubleEliminationGridDimensions as getDEGridDimensions,
+    getDoubleEliminationGridPosition as getDEGridPosition,
+    getDoubleEliminationColumnHeaders as getDEColumnHeaders,
+    type BracketMatch,
+    type MatchBracket,
+    type SourceMatch,
+    type GeneratedBracket,
+    type DEGridDimensions,
+    type DEGridPosition,
+} from '$lib/functions/bracketGeneration';
+
+// Re-export types for consumers
+export type { BracketMatch, MatchBracket, SourceMatch, GeneratedBracket, DEGridDimensions, DEGridPosition };
 
 export interface TeamSlot {
     display: string;
@@ -123,7 +146,8 @@ export const bracketTypeStore = {
 };
 
 /**
- * Grand final reset store (for double elimination)
+ * Winner takes all finals store (for double elimination)
+ * When false, a bracket reset match is played if losers bracket champion wins first Grand Final
  */
 export const grandFinalResetStore = {
     get value(): boolean {
@@ -357,7 +381,7 @@ export async function confirmBracketStructure(convex: any) {
     }
 
     const bracketTypeName = _selectedBracketType === "double" ? "Double Elimination" : "Single Elimination";
-    const resetInfo = _selectedBracketType === "double" ? (_selectedGrandFinalReset ? " with bracket reset" : " without bracket reset") : "";
+    const resetInfo = _selectedBracketType === "double" ? (_selectedGrandFinalReset ? "" : " (winner takes all finals)") : "";
 
     if (
         !confirm(
@@ -396,291 +420,41 @@ export async function confirmBracketStructure(convex: any) {
 }
 
 // --- Bracket Match Generation ---
+// Uses unified generateBracket from $lib/functions/bracketGeneration
 
 /**
- * Generate seed positions using standard tournament bracket seeding
- * (1 vs 16, 8 vs 9, etc. pattern)
+ * Get generated bracket for current settings
  */
-function generateSeedPositions(bracketSize: number): number[] {
-    if (bracketSize === 2) return [1, 2];
-    const half = bracketSize / 2;
-    const left = generateSeedPositions(half);
-    const right = generateSeedPositions(half);
-    const result: number[] = [];
-    for (let i = 0; i < half; i++) {
-        result.push(left[i]!);
-        result.push(bracketSize + 1 - right[i]!);
-    }
-    return result;
-}
-
-/**
- * Generate all bracket matches for a given bracket size (single elimination)
- * Returns unified BracketMatch format with bracket: "winners"
- */
-function generateBracketMatches(bracketSize: number): BracketMatch[] {
-    if (bracketSize < 2) return [];
-
-    const matches: BracketMatch[] = [];
-    const numRounds = Math.ceil(Math.log2(bracketSize));
-    const fullBracketSize = Math.pow(2, numRounds);
-
-    let matchIndex = 0;
-    const firstRoundMatches = fullBracketSize / 2;
-    const seedPositions = generateSeedPositions(fullBracketSize);
-
-    // Generate first round matches
-    for (let i = 0; i < firstRoundMatches; i++) {
-        const seed1 = seedPositions[i * 2] ?? 0;
-        const seed2 = seedPositions[i * 2 + 1] ?? 0;
-        matches.push({
-            matchIndex,
-            bracket: "winners",
-            round: 0,
-            team1Seed: seed1 > 0 && seed1 <= bracketSize ? seed1 : null,
-            team2Seed: seed2 > 0 && seed2 <= bracketSize ? seed2 : null,
-        });
-        matchIndex++;
-    }
-
-    // Generate subsequent rounds
-    let matchesInRound = firstRoundMatches / 2;
-    let previousRoundStart = 0;
-    for (let round = 1; round < numRounds; round++) {
-        for (let i = 0; i < matchesInRound; i++) {
-            matches.push({
-                matchIndex,
-                bracket: "winners",
-                round,
-                team1Seed: null,
-                team2Seed: null,
-                sourceMatch1: { matchIndex: previousRoundStart + i * 2, bracket: "winners", takesWinner: true },
-                sourceMatch2: { matchIndex: previousRoundStart + i * 2 + 1, bracket: "winners", takesWinner: true },
-            });
-            matchIndex++;
-        }
-        previousRoundStart += matchesInRound * 2;
-        matchesInRound = Math.floor(matchesInRound / 2);
-    }
-
-    return matches;
-}
-
-/**
- * Generate all bracket matches for double elimination
- */
-function generateDoubleEliminationMatches(bracketSize: number, grandFinalReset: boolean = true): {
-    winners: BracketMatch[];
-    losers: BracketMatch[];
-    grandFinal: BracketMatch[];
-} {
-    if (bracketSize < 2) return { winners: [], losers: [], grandFinal: [] };
-
-    const numRounds = Math.ceil(Math.log2(bracketSize));
-    const fullBracketSize = Math.pow(2, numRounds);
-    const seedPositions = generateSeedPositions(fullBracketSize);
-
-    // ============ WINNERS BRACKET ============
-    const winners: BracketMatch[] = [];
-    let winnersMatchIndex = 0;
-
-    // First round (with seeds)
-    const firstRoundMatches = fullBracketSize / 2;
-    for (let i = 0; i < firstRoundMatches; i++) {
-        const seed1 = seedPositions[i * 2] ?? 0;
-        const seed2 = seedPositions[i * 2 + 1] ?? 0;
-        winners.push({
-            matchIndex: winnersMatchIndex,
-            bracket: "winners",
-            round: 0,
-            team1Seed: seed1 > 0 && seed1 <= bracketSize ? seed1 : null,
-            team2Seed: seed2 > 0 && seed2 <= bracketSize ? seed2 : null,
-        });
-        winnersMatchIndex++;
-    }
-
-    // Subsequent rounds in winners bracket
-    let matchesInRound = firstRoundMatches / 2;
-    let previousRoundStart = 0;
-    for (let round = 1; round < numRounds; round++) {
-        for (let i = 0; i < matchesInRound; i++) {
-            winners.push({
-                matchIndex: winnersMatchIndex,
-                bracket: "winners",
-                round,
-                team1Seed: null,
-                team2Seed: null,
-                sourceMatch1: { matchIndex: previousRoundStart + i * 2, bracket: "winners", takesWinner: true },
-                sourceMatch2: { matchIndex: previousRoundStart + i * 2 + 1, bracket: "winners", takesWinner: true },
-            });
-            winnersMatchIndex++;
-        }
-        previousRoundStart += matchesInRound * 2;
-        matchesInRound = Math.floor(matchesInRound / 2);
-    }
-
-    const winnersFinalMatchIndex = winnersMatchIndex - 1;
-
-    // ============ LOSERS BRACKET ============
-    const losers: BracketMatch[] = [];
-    let losersMatchIndex = 0;
-
-    // Track matches by round for winners
-    const winnersMatchesByRound: number[][] = [];
-    let startIdx = 0;
-    let countInRound = firstRoundMatches;
-    for (let r = 0; r < numRounds; r++) {
-        const matchesInThisRound: number[] = [];
-        for (let i = 0; i < countInRound; i++) {
-            matchesInThisRound.push(startIdx + i);
-        }
-        winnersMatchesByRound.push(matchesInThisRound);
-        startIdx += countInRound;
-        countInRound = Math.floor(countInRound / 2);
-    }
-
-    // Build losers bracket
-    let losersRound = 0;
-    let prevLosersMatchIndices: number[] = [];
-
-    // First losers round: R0 losers play each other
-    const r0Losers = winnersMatchesByRound[0] || [];
-    const losersR0Matches = r0Losers.length / 2;
-
-    for (let i = 0; i < losersR0Matches; i++) {
-        losers.push({
-            matchIndex: losersMatchIndex,
-            bracket: "losers",
-            round: losersRound,
-            team1Seed: null,
-            team2Seed: null,
-            sourceMatch1: { matchIndex: r0Losers[i * 2]!, bracket: "winners", takesWinner: false },
-            sourceMatch2: { matchIndex: r0Losers[i * 2 + 1]!, bracket: "winners", takesWinner: false },
-        });
-        prevLosersMatchIndices.push(losersMatchIndex);
-        losersMatchIndex++;
-    }
-    losersRound++;
-
-    // Continue building losers bracket
-    for (let winnersRound = 1; winnersRound < numRounds; winnersRound++) {
-        const winnersDropouts = winnersMatchesByRound[winnersRound] || [];
-
-        // Previous losers winners vs winners dropouts
-        const matchesThisRound: number[] = [];
-        const numMatches = Math.min(prevLosersMatchIndices.length, winnersDropouts.length);
-
-        for (let i = 0; i < numMatches; i++) {
-            const dropoutIdx = winnersDropouts.length - 1 - i;
-            losers.push({
-                matchIndex: losersMatchIndex,
-                bracket: "losers",
-                round: losersRound,
-                team1Seed: null,
-                team2Seed: null,
-                sourceMatch1: { matchIndex: prevLosersMatchIndices[i]!, bracket: "losers", takesWinner: true },
-                sourceMatch2: { matchIndex: winnersDropouts[dropoutIdx]!, bracket: "winners", takesWinner: false },
-            });
-            matchesThisRound.push(losersMatchIndex);
-            losersMatchIndex++;
-        }
-        losersRound++;
-
-        // Consolidation round if needed
-        if (matchesThisRound.length > 1) {
-            const consolidationMatches: number[] = [];
-            const numConsolidation = matchesThisRound.length / 2;
-
-            for (let i = 0; i < numConsolidation; i++) {
-                losers.push({
-                    matchIndex: losersMatchIndex,
-                    bracket: "losers",
-                    round: losersRound,
-                    team1Seed: null,
-                    team2Seed: null,
-                    sourceMatch1: { matchIndex: matchesThisRound[i * 2]!, bracket: "losers", takesWinner: true },
-                    sourceMatch2: { matchIndex: matchesThisRound[i * 2 + 1]!, bracket: "losers", takesWinner: true },
-                });
-                consolidationMatches.push(losersMatchIndex);
-                losersMatchIndex++;
-            }
-            losersRound++;
-            prevLosersMatchIndices = consolidationMatches;
-        } else {
-            prevLosersMatchIndices = matchesThisRound;
-        }
-    }
-
-    const losersFinalMatchIndex = losersMatchIndex - 1;
-
-    // ============ GRAND FINAL ============
-    const grandFinal: BracketMatch[] = [];
-
-    grandFinal.push({
-        matchIndex: 0,
-        bracket: "grand_final",
-        round: 0,
-        team1Seed: null,
-        team2Seed: null,
-        sourceMatch1: { matchIndex: winnersFinalMatchIndex, bracket: "winners", takesWinner: true },
-        sourceMatch2: { matchIndex: losersFinalMatchIndex, bracket: "losers", takesWinner: true },
+function getCurrentBracket(): GeneratedBracket {
+    return generateBracket({
+        bracketSize: _selectedBracketSize,
+        bracketType: _selectedBracketType,
+        grandFinalReset: _selectedGrandFinalReset,
     });
-
-    if (grandFinalReset) {
-        grandFinal.push({
-            matchIndex: 1,
-            bracket: "grand_final",
-            round: 1,
-            team1Seed: null,
-            team2Seed: null,
-            sourceMatch1: { matchIndex: 0, bracket: "grand_final", takesWinner: true },
-            sourceMatch2: { matchIndex: 0, bracket: "grand_final", takesWinner: false },
-        });
-    }
-
-    return { winners, losers, grandFinal };
 }
 
 // --- Bracket Matches Store ---
 
 /**
- * Store for computed bracket match data (single elimination)
+ * Unified bracket store that works for both SE and DE
+ * For SE: winners bracket only, losers and grandFinal are empty
+ * For DE: all three sections populated
  */
-export const bracketMatchesStore = {
-    get matches(): BracketMatch[] {
-        return generateBracketMatches(_selectedBracketSize);
-    },
-    get numRounds(): number {
-        const matches = this.matches;
-        return matches.length > 0 ? (matches[matches.length - 1]?.round ?? -1) + 1 : 0;
-    },
-    get firstRoundMatchCount(): number {
-        return this.numRounds > 0 ? Math.pow(2, this.numRounds - 1) : 0;
-    },
-    get totalGridRows(): number {
-        return this.firstRoundMatchCount;
-    },
-};
-
-/**
- * Store for double elimination bracket data
- */
-export const doubleEliminationStore = {
-    get brackets(): { winners: BracketMatch[]; losers: BracketMatch[]; grandFinal: BracketMatch[] } {
-        return generateDoubleEliminationMatches(_selectedBracketSize, _selectedGrandFinalReset);
+export const bracketStore = {
+    get bracket(): GeneratedBracket {
+        return getCurrentBracket();
     },
     get winners(): BracketMatch[] {
-        return this.brackets.winners;
+        return this.bracket.winners;
     },
     get losers(): BracketMatch[] {
-        return this.brackets.losers;
+        return this.bracket.losers;
     },
     get grandFinal(): BracketMatch[] {
-        return this.brackets.grandFinal;
+        return this.bracket.grandFinal;
     },
     get allMatches(): BracketMatch[] {
-        const b = this.brackets;
-        return [...b.winners, ...b.losers, ...b.grandFinal];
+        return getAllMatchesFn(this.bracket);
     },
     get winnersNumRounds(): number {
         const matches = this.winners;
@@ -690,83 +464,74 @@ export const doubleEliminationStore = {
         const matches = this.losers;
         return matches.length > 0 ? (matches[matches.length - 1]?.round ?? -1) + 1 : 0;
     },
+    get firstRoundMatchCount(): number {
+        return this.winnersNumRounds > 0 ? Math.pow(2, this.winnersNumRounds - 1) : 0;
+    },
+    get totalGridRows(): number {
+        return this.firstRoundMatchCount;
+    },
 };
 
-/**
- * Get all matches for the current bracket type
- */
-export function getAllMatches(): BracketMatch[] {
-    if (_selectedBracketType === "double") {
-        return doubleEliminationStore.allMatches;
-    }
-    return bracketMatchesStore.matches;
-}
-
 // --- Match Helper Functions ---
-
-/**
- * Check if a match is a bye (one team has a seed, the other is null with no source match)
- */
-export function isByeMatch(match: BracketMatch): boolean {
-    const team1IsBye = match.team1Seed === null && match.sourceMatch1 === undefined;
-    const team2IsBye = match.team2Seed === null && match.sourceMatch2 === undefined;
-    return (team1IsBye && match.team2Seed !== null) || (team2IsBye && match.team1Seed !== null);
-}
-
-/**
- * Get the seed that advances from a bye match
- */
-export function getByeSeed(match: BracketMatch): number | null {
-    if (!isByeMatch(match)) return null;
-    if (match.team1Seed !== null && match.team2Seed === null) return match.team1Seed;
-    if (match.team2Seed !== null && match.team1Seed === null) return match.team2Seed;
-    return null;
-}
+// Re-exported from $lib/functions/bracketGeneration for convenience
+export { isByeMatch, getByeSeed } from '$lib/functions/bracketGeneration';
 
 /**
  * Get the bye seed from a source match reference
  */
 export function getByeSeedFromSource(source: SourceMatch | undefined): number | null {
     if (source === undefined) return null;
-    const allMatches = getAllMatches();
+    const allMatches = bracketStore.allMatches;
     const sourceMatch = allMatches.find((m) => m.matchIndex === source.matchIndex && m.bracket === source.bracket);
     return sourceMatch ? getByeSeed(sourceMatch) : null;
 }
 
 /**
- * Get non-bye matches for a specific round
+ * Get non-bye matches for a specific round (winners bracket for SE, specified bracket for DE)
  */
-export function getMatchesByRound(round: number): BracketMatch[] {
-    return bracketMatchesStore.matches.filter((m) => m.round === round && !isByeMatch(m));
-}
-
-/**
- * Check if a round has any non-bye matches
- */
-export function roundHasMatches(round: number): boolean {
-    return bracketMatchesStore.matches.some((m) => m.round === round && !isByeMatch(m));
+export function getMatchesByRound(round: number, bracket: MatchBracket = "winners"): BracketMatch[] {
+    let matches: BracketMatch[];
+    switch (bracket) {
+        case "winners":
+            matches = bracketStore.winners;
+            break;
+        case "losers":
+            matches = bracketStore.losers;
+            break;
+        case "grand_final":
+            matches = bracketStore.grandFinal;
+            break;
+        default:
+            matches = bracketStore.winners;
+    }
+    return matches.filter((m) => m.round === round && !isByeMatch(m));
 }
 
 /**
  * Get rounds that have non-bye matches (for display)
  */
-export function getDisplayRounds(): number[] {
-    const numRounds = bracketMatchesStore.numRounds;
-    return Array.from({ length: numRounds }, (_, i) => i).filter((round) => roundHasMatches(round));
-}
-
-/**
- * Get the first displayed round index
- */
-export function getFirstDisplayedRound(): number {
-    const displayRounds = getDisplayRounds();
-    return displayRounds.length > 0 ? displayRounds[0]! : 0;
+export function getDisplayRounds(bracket: MatchBracket = "winners"): number[] {
+    let matches: BracketMatch[];
+    switch (bracket) {
+        case "winners":
+            matches = bracketStore.winners;
+            break;
+        case "losers":
+            matches = bracketStore.losers;
+            break;
+        case "grand_final":
+            matches = bracketStore.grandFinal;
+            break;
+        default:
+            matches = bracketStore.winners;
+    }
+    return getDisplayRoundsFn(matches);
 }
 
 /**
  * Get the pair index for a first-round match
  */
-export function getFirstRoundPairIndex(match: BracketMatch): number {
+function getFirstRoundPairIndex(match: BracketMatch): number {
     return Math.floor(match.matchIndex / 2);
 }
 
@@ -789,10 +554,10 @@ export function getFirstRoundPairs(): Map<number, BracketMatch[]> {
 }
 
 /**
- * Get grid position for a match based on bracket structure
+ * Get grid position for a match based on bracket structure (single elimination)
  */
 export function getMatchGridPosition(match: BracketMatch): { start: number; end: number } {
-    const matches = bracketMatchesStore.matches;
+    const matches = bracketStore.winners;
 
     if (match.round === 0) {
         const pairIdx = getFirstRoundPairIndex(match);
@@ -814,20 +579,17 @@ export function getMatchGridPosition(match: BracketMatch): { start: number; end:
 }
 
 // --- Match Naming ---
+// Uses unified naming functions from bracketGeneration
 
 /**
- * Get match name (SE1-A, SE1-B, etc. or "Final" for finals)
+ * Get match name for any bracket type
  */
 export function getMatchName(match: BracketMatch, displayRoundIdx: number, matchIdxInRound: number): string {
-    const displayRounds = getDisplayRounds();
-    if (displayRoundIdx === displayRounds.length - 1) {
-        return 'Final';
+    if (_selectedBracketType === "double") {
+        return getDEMatchName(match, matchIdxInRound, bracketStore.bracket, _selectedBracketSize);
     }
-    const roundNumber = displayRoundIdx + 1;
-    const repeatCount = Math.floor(matchIdxInRound / 26) + 1;
-    const charCode = 65 + (matchIdxInRound % 26);
-    const letter = String.fromCharCode(charCode).repeat(repeatCount);
-    return `SE${roundNumber}-${letter}`;
+    const displayRoundsArr = getDisplayRounds("winners");
+    return getSingleEliminationMatchName(match, displayRoundIdx, matchIdxInRound, displayRoundsArr.length);
 }
 
 /**
@@ -835,42 +597,27 @@ export function getMatchName(match: BracketMatch, displayRoundIdx: number, match
  * Uses appropriate naming based on bracket type
  */
 export function getMatchNameByIndex(matchIndex: number, bracket: MatchBracket = "winners"): string {
-    // For double elimination with losers/grand_final, use DE naming
-    if (_selectedBracketType === "double" && bracket !== "winners") {
-        return getDoubleEliminationMatchNameByIndex(matchIndex, bracket);
-    }
+    const allMatches = bracketStore.allMatches;
+    const match = allMatches.find((m) => m.matchIndex === matchIndex && m.bracket === bracket);
+    if (!match) return `Match ${matchIndex + 1}`;
 
-    // For single elimination or winners bracket
     if (_selectedBracketType === "double") {
-        return getDoubleEliminationMatchNameByIndex(matchIndex, bracket);
+        const matchesInRound = getMatchesByRound(match.round, bracket);
+        const matchIdxInRound = matchesInRound.findIndex((m) => m.matchIndex === matchIndex);
+        return getDEMatchName(match, matchIdxInRound, bracketStore.bracket, _selectedBracketSize);
     }
 
     // Single elimination naming
-    const matches = bracketMatchesStore.matches;
-    const displayRounds = getDisplayRounds();
-    const match = matches.find((m) => m.matchIndex === matchIndex);
-    if (!match) return `Match ${matchIndex + 1}`;
-
-    const displayRoundIdx = displayRounds.indexOf(match.round);
+    const displayRoundsArr = getDisplayRounds("winners");
+    const displayRoundIdx = displayRoundsArr.indexOf(match.round);
     if (displayRoundIdx === -1) {
         return `Match ${matchIndex + 1}`;
     }
 
-    const matchesInRound = getMatchesByRound(match.round);
+    const matchesInRound = getMatchesByRound(match.round, "winners");
     const matchIdxInRound = matchesInRound.findIndex((m) => m.matchIndex === matchIndex);
 
-    return getMatchName(match, displayRoundIdx, matchIdxInRound);
-}
-
-/**
- * Get round title (SE1, SE2, etc. or "Finals")
- */
-export function getRoundTitle(displayRoundIdx: number): string {
-    const displayRounds = getDisplayRounds();
-    if (displayRoundIdx === displayRounds.length - 1) {
-        return 'Finals';
-    }
-    return `SE${displayRoundIdx + 1}`;
+    return getSingleEliminationMatchName(match, displayRoundIdx, matchIdxInRound, displayRoundsArr.length);
 }
 
 // --- Winner/Result Logic ---
@@ -912,7 +659,7 @@ export function getTeamScoreForMatch(matchIndex: number, bracket: MatchBracket, 
  */
 export function getMatchWinner(matchIndex: number, bracket: MatchBracket = "winners"): string | null {
     const tournament = tournamentStore.value;
-    const allMatches = getAllMatches();
+    const allMatches = bracketStore.allMatches;
 
     // Check stored results
     const result = tournament.bracketResults?.find((r: BracketResult) =>
@@ -950,7 +697,7 @@ export function getMatchLoser(matchIndex: number, bracket: MatchBracket): string
  * Get display text for a team slot in a match (unified for both bracket types)
  */
 export function getMatchTeamDisplay(match: BracketMatch, slotIndex: 0 | 1): string {
-    const allMatches = getAllMatches();
+    const allMatches = bracketStore.allMatches;
     const seed = slotIndex === 0 ? match.team1Seed : match.team2Seed;
 
     if (seed !== null) {
@@ -1048,7 +795,7 @@ export function matchEndedInTie(matchIndex: number, bracket: MatchBracket = "win
  * Get teams participating in a match (unified for both bracket types)
  */
 export function getTeamsForMatch(matchIndex: number, bracket: MatchBracket = "winners"): Array<{ teamId: string; name: string }> {
-    const allMatches = getAllMatches();
+    const allMatches = bracketStore.allMatches;
     const match = allMatches.find((m) => m.matchIndex === matchIndex && m.bracket === bracket);
     if (!match) return [];
 
@@ -1142,188 +889,10 @@ export function buildTeamSlot(match: BracketMatch, slotIndex: 0 | 1, byeSeed: nu
     };
 }
 
-// =============================================================================
-// BACKWARD COMPATIBILITY ALIASES
-// These functions delegate to the unified functions above
-// =============================================================================
-
-/** @deprecated Use isByeMatch instead */
-export const isDoubleEliminationByeMatch = isByeMatch;
-
-/** @deprecated Use getByeSeed instead */
-export const getDoubleEliminationByeSeed = getByeSeed;
-
-/** @deprecated Use getGame(matchIndex, bracket) instead */
-export const getDoubleEliminationGame = getGame;
-
-/** @deprecated Use isMatchLive(matchIndex, bracket) instead */
-export const isDoubleEliminationMatchLive = isMatchLive;
-
-/** @deprecated Use getTeamScoreForMatch(matchIndex, bracket, teamId) instead */
-export const getDoubleEliminationTeamScore = getTeamScoreForMatch;
-
-/** @deprecated Use getMatchWinner(matchIndex, bracket) instead */
-export const getDoubleEliminationMatchWinner = getMatchWinner;
-
-/** @deprecated Use getMatchLoser(matchIndex, bracket) instead */
-export const getDoubleEliminationMatchLoser = getMatchLoser;
-
-/** @deprecated Use getTeamsForMatch(matchIndex, bracket) instead */
-export const getDoubleEliminationTeamsForMatch = getTeamsForMatch;
-
-/**
- * Get the match name for a double elimination match by index and bracket
- */
-export function getDoubleEliminationMatchNameByIndex(matchIndex: number, bracket: MatchBracket): string {
-    const { winners, losers, grandFinal } = doubleEliminationStore.brackets;
-    const numRounds = Math.ceil(Math.log2(_selectedBracketSize));
-
-    if (bracket === "grand_final") {
-        return matchIndex === 0 ? "Finals" : "Reset";
-    }
-
-    if (bracket === "winners") {
-        const match = winners.find(m => m.matchIndex === matchIndex);
-        if (!match) return `W${matchIndex + 1}`;
-
-        const col = getWinnersColumnForRound(match.round, numRounds);
-        const winnersRounds = [...new Set(winners.map(m => m.round))].sort((a, b) => a - b);
-
-        if (match.round === winnersRounds[winnersRounds.length - 1]) {
-            return `DE${col}-WF`;
-        }
-
-        const matchesInRound = winners.filter(m => m.round === match.round && !isByeMatch(m));
-        const matchIdxInRound = matchesInRound.findIndex(m => m.matchIndex === matchIndex);
-        const repeatCount = Math.floor(matchIdxInRound / 26) + 1;
-        const charCode = 65 + (matchIdxInRound % 26);
-        const letter = String.fromCharCode(charCode).repeat(repeatCount);
-        return `DE${col}-W${letter}`;
-    }
-
-    if (bracket === "losers") {
-        const match = losers.find(m => m.matchIndex === matchIndex);
-        if (!match) return `L${matchIndex + 1}`;
-
-        const col = getLosersColumnForRound(match.round);
-        const losersRounds = [...new Set(losers.map(m => m.round))].sort((a, b) => a - b);
-
-        if (match.round === losersRounds[losersRounds.length - 1]) {
-            return `DE${col}-LF`;
-        }
-
-        const matchesInRound = losers.filter(m => m.round === match.round);
-        const matchIdxInRound = matchesInRound.findIndex(m => m.matchIndex === matchIndex);
-        const repeatCount = Math.floor(matchIdxInRound / 26) + 1;
-        const charCode = 65 + (matchIdxInRound % 26);
-        const letter = String.fromCharCode(charCode).repeat(repeatCount);
-        return `DE${col}-L${letter}`;
-    }
-
-    return `Match ${matchIndex + 1}`;
-}
-
-/** @deprecated Use getMatchTeamDisplay instead */
-export const getDoubleEliminationTeamDisplay = getMatchTeamDisplay;
-
-/** @deprecated Use isMatchWinner instead */
-export const isDoubleEliminationMatchWinnerSlot = isMatchWinner;
-
-/** @deprecated Use matchNeedsTieResolution(matchIndex, bracket) instead */
-export const doubleEliminationMatchNeedsTieResolution = matchNeedsTieResolution;
-
-/** @deprecated Use matchEndedInTie(matchIndex, bracket) instead */
-export const doubleEliminationMatchEndedInTie = matchEndedInTie;
-
-/**
- * Get match name for double elimination
- * Uses grid column position for round number to match visual layout:
- * - DE1-WA, DE2-WA (winners in columns 1, 2)
- * - DE2-LA, DE3-LA (losers in columns 2, 3)
- * - DE4-WF (winners final)
- * - DE5-LF (losers final)
- * - Finals (grand final)
- */
-export function getDoubleEliminationMatchName(match: BracketMatch, matchIdxInRound: number): string {
-    const { winners, losers } = doubleEliminationStore.brackets;
-    const numRounds = Math.ceil(Math.log2(_selectedBracketSize));
-
-    if (match.bracket === "grand_final") {
-        return match.matchIndex === 0 ? "Finals" : "Reset";
-    }
-
-    if (match.bracket === "winners") {
-        // Get the grid column for this match
-        const col = getWinnersColumnForRound(match.round, numRounds);
-
-        // Check if this is the winners final
-        const winnersRounds = [...new Set(winners.map(m => m.round))].sort((a, b) => a - b);
-        if (match.round === winnersRounds[winnersRounds.length - 1]) {
-            return `DE${col}-WF`;
-        }
-
-        const repeatCount = Math.floor(matchIdxInRound / 26) + 1;
-        const charCode = 65 + (matchIdxInRound % 26);
-        const letter = String.fromCharCode(charCode).repeat(repeatCount);
-        return `DE${col}-W${letter}`;
-    }
-
-    if (match.bracket === "losers") {
-        // Get the grid column for this match
-        const col = getLosersColumnForRound(match.round);
-
-        // Check if this is the losers final
-        const losersRounds = [...new Set(losers.map(m => m.round))].sort((a, b) => a - b);
-        if (match.round === losersRounds[losersRounds.length - 1]) {
-            return `DE${col}-LF`;
-        }
-
-        const repeatCount = Math.floor(matchIdxInRound / 26) + 1;
-        const charCode = 65 + (matchIdxInRound % 26);
-        const letter = String.fromCharCode(charCode).repeat(repeatCount);
-        return `DE${col}-L${letter}`;
-    }
-
-    return `Match ${match.matchIndex + 1}`;
-}
-
-
-/** @deprecated Use buildTeamSlot instead */
-export const buildDoubleEliminationTeamSlot = buildTeamSlot;
-
-/**
- * Get non-bye matches for a specific round in winners bracket
- */
-export function getWinnersMatchesByRound(round: number): BracketMatch[] {
-    return doubleEliminationStore.winners.filter(m => m.round === round && !isByeMatch(m));
-}
-
-/**
- * Get matches for a specific round in losers bracket
- */
-export function getLosersMatchesByRound(round: number): BracketMatch[] {
-    return doubleEliminationStore.losers.filter(m => m.round === round);
-}
-
-/**
- * Get display rounds for winners bracket (rounds with non-bye matches)
- */
-export function getWinnersDisplayRounds(): number[] {
-    const rounds = [...new Set(doubleEliminationStore.winners.map(m => m.round))].sort((a, b) => a - b);
-    return rounds.filter(round => doubleEliminationStore.winners.some(m => m.round === round && !isDoubleEliminationByeMatch(m)));
-}
-
-/**
- * Get display rounds for losers bracket
- */
-export function getLosersDisplayRounds(): number[] {
-    return [...new Set(doubleEliminationStore.losers.map(m => m.round))].sort((a, b) => a - b);
-}
-
 /**
  * Check if GF Reset match is needed (only if losers bracket champion wins GF1)
  */
-export function isGrandFinalResetNeeded(): boolean {
+function isGrandFinalResetNeeded(): boolean {
     const tournament = tournamentStore.value;
     if (!tournament.grandFinalReset) return false;
 
@@ -1331,7 +900,7 @@ export function isGrandFinalResetNeeded(): boolean {
     if (!gf1Winner) return false;
 
     // Get the losers bracket champion (team that came from losers bracket in GF1)
-    const grandFinal = doubleEliminationStore.grandFinal;
+    const grandFinal = bracketStore.grandFinal;
     const gf1Match = grandFinal.find(m => m.matchIndex === 0);
     if (!gf1Match) return false;
 
@@ -1347,193 +916,53 @@ export function isGrandFinalResetNeeded(): boolean {
 // =============================================================================
 // DOUBLE ELIMINATION GRID LAYOUT HELPERS
 // =============================================================================
-
-export interface DEGridDimensions {
-    totalCols: number;
-    totalRows: number;
-    winnersRows: number;
-    losersRows: number;
-}
-
-export interface DEGridPosition {
-    col: number;
-    rowStart: number;
-    rowSpan: number;
-}
+// Uses unified functions from $lib/functions/bracketGeneration
 
 /**
  * Calculate grid dimensions for double elimination bracket
- *
- * For an 8-team bracket, the layout is:
- * - Round 1: W1 (4 matches)
- * - Round 2: W2 (2 matches), L1 (2 matches - losers from W1)
- * - Round 3: L2 (2 matches - L1 winners vs W2 losers)
- * - Round 4: WF (1 match), L3 (1 match - L2 consolidation)
- * - Round 5: LF (1 match - L3 winner vs WF loser)
- * - Finals: GF
- *
- * Total columns = losers rounds + 1 (for finals) + 1 (for reset if enabled)
  */
-export function getDoubleEliminationGridDimensions(bracketSize: number): DEGridDimensions {
-    const numRounds = Math.ceil(Math.log2(bracketSize));
-    const fullBracketSize = Math.pow(2, numRounds);
-
-    // Losers bracket has 2*(numRounds-1) rounds for brackets >= 4 teams
-    // For 4 teams: L1, L2 (2 rounds)
-    // For 8 teams: L1, L2, L3, L4 (4 rounds)
-    // For 16 teams: L1, L2, L3, L4, L5, L6 (6 rounds)
-    const losersRoundCount = Math.max(1, 2 * (numRounds - 1));
-
-    // Total columns: 1 (W1) + losersRounds + 1 (Finals) + (1 if reset)
-    // This gives us: Round 1, Round 2, ..., Round N, Finals
-    const totalCols = 1 + losersRoundCount + 1 + (_selectedGrandFinalReset ? 1 : 0);
-
-    // Rows: Winners portion + Losers portion
-    // Winners: first round has fullBracketSize/2 matches, each needs 2 units for spacing
-    const winnersFirstRoundMatches = fullBracketSize / 2;
-    const winnersRows = winnersFirstRoundMatches * 2;
-
-    // Losers: needs enough rows for the largest losers round
-    // First losers round has fullBracketSize/4 matches
-    const losersFirstRoundMatches = Math.max(1, fullBracketSize / 4);
-    const losersRows = Math.max(2, losersFirstRoundMatches * 2);
-
-    return {
-        totalCols,
-        totalRows: winnersRows + losersRows,
-        winnersRows,
-        losersRows,
-    };
-}
-
-/**
- * Map winners bracket round to grid column
- * Winners rounds are offset to align with losers bracket progression:
- * - W1 (round 0) → Column 1
- * - W2 (round 1) → Column 2
- * - WF (round 2 for 8-team) → Column 4 (skips column 3)
- *
- * Pattern: Winners round R maps to column 2*R + 1 for R > 0, column 1 for R = 0
- */
-function getWinnersColumnForRound(winnersRound: number, numRounds: number): number {
-    if (winnersRound === 0) return 1;
-    // Each winners round after R0 maps to every other column
-    // W1 → col 2, WF → col 4 (for 8-team)
-    // W1 → col 2, W2 → col 4, WF → col 6 (for 16-team)
-    return winnersRound * 2;
-}
-
-/**
- * Map losers bracket round to grid column
- * Losers rounds fill in sequentially starting from column 2:
- * - L1 (round 0) → Column 2
- * - L2 (round 1) → Column 3
- * - L3 (round 2) → Column 4
- * - LF (round 3) → Column 5
- */
-function getLosersColumnForRound(losersRound: number): number {
-    return losersRound + 2;
+export function getDoubleEliminationGridDimensions(bracketSize: number = _selectedBracketSize): DEGridDimensions {
+    return getDEGridDimensions(bracketSize, _selectedGrandFinalReset);
 }
 
 /**
  * Get grid position for a double elimination match
  */
 export function getDoubleEliminationGridPosition(match: BracketMatch): DEGridPosition {
-    const bracketSize = _selectedBracketSize;
-    const numRounds = Math.ceil(Math.log2(bracketSize));
-    const dims = getDoubleEliminationGridDimensions(bracketSize);
-
-    const { winners, losers } = doubleEliminationStore.brackets;
-
-    if (match.bracket === "winners") {
-        // Winners bracket column based on round with gaps
-        const col = getWinnersColumnForRound(match.round, numRounds);
-
-        // Calculate row position based on match index within the round
-        const matchesInRound = winners.filter(m => m.round === match.round && !isByeMatch(m));
-        const matchIdxInRound = matchesInRound.findIndex(m => m.matchIndex === match.matchIndex);
-
-        const totalMatchesInRound = matchesInRound.length;
-        const rowSpan = Math.max(1, Math.floor(dims.winnersRows / totalMatchesInRound));
-        const rowStart = matchIdxInRound * rowSpan + 1;
-
-        return { col, rowStart, rowSpan };
-    }
-
-    if (match.bracket === "losers") {
-        // Losers bracket: sequential columns starting from 2
-        const col = getLosersColumnForRound(match.round);
-
-        // Row position: starts after winners rows
-        const matchesInRound = losers.filter(m => m.round === match.round);
-        const matchIdxInRound = matchesInRound.findIndex(m => m.matchIndex === match.matchIndex);
-
-        const totalMatchesInRound = matchesInRound.length;
-        const availableRows = dims.losersRows;
-        const rowSpan = Math.max(1, Math.floor(availableRows / Math.max(1, totalMatchesInRound)));
-        const rowStart = dims.winnersRows + matchIdxInRound * rowSpan + 1;
-
-        return { col, rowStart, rowSpan };
-    }
-
-    if (match.bracket === "grand_final") {
-        // Grand final: after all losers rounds
-        const losersRoundCount = Math.max(1, 2 * (numRounds - 1));
-        const col = losersRoundCount + 2 + match.matchIndex;
-
-        // Grand final spans start of wf location till end of lf location (bridging winners and losers)
-        const rowStart = Math.max(1, Math.floor(dims.winnersRows / 2) + 1);
-        const rowSpan = Math.max(2, Math.floor(dims.totalRows / 2));
-
-        return { col, rowStart, rowSpan };
-    }
-
-    // Fallback
-    return { col: 1, rowStart: 1, rowSpan: 1 };
+    return getDEGridPosition(match, bracketStore.bracket, _selectedBracketSize, _selectedGrandFinalReset);
 }
 
 /**
- * Get all double elimination matches as a flat array for grid rendering
+ * Get all matches for grid rendering (works for both SE and DE)
  */
-export function getAllDoubleEliminationMatchesForGrid(): BracketMatch[] {
+export function getAllMatchesForGrid(): BracketMatch[] {
     const tournament = tournamentStore.value;
-    const { winners, losers, grandFinal } = doubleEliminationStore.brackets;
+    const bracket = bracketStore.bracket;
 
     // Filter out bye matches from winners
-    const displayWinners = winners.filter(m => !isByeMatch(m));
+    const displayWinners = bracket.winners.filter(m => !isByeMatch(m));
 
-    // Filter grand final reset if not needed
-    const displayGrandFinal = grandFinal.filter((m, idx) => {
+    if (_selectedBracketType === "single") {
+        return displayWinners;
+    }
+
+    // For DE, include losers and grand final
+    const displayGrandFinal = bracket.grandFinal.filter((m, idx) => {
         if (idx === 0) return true; // Always show GF1
         // Show GF Reset only if bracket allows it and either not confirmed or reset is actually needed
         return _selectedGrandFinalReset && (isGrandFinalResetNeeded() || !tournament.bracketConfirmed);
     });
 
-    return [...displayWinners, ...losers, ...displayGrandFinal];
+    return [...displayWinners, ...bracket.losers, ...displayGrandFinal];
 }
 
 /**
- * Get column header labels for the grid (Round 1, Round 2, ..., Finals)
+ * Get column header labels for the grid
  */
-export function getDoubleEliminationColumnHeaders(): string[] {
-    const bracketSize = _selectedBracketSize;
-    const numRounds = Math.ceil(Math.log2(bracketSize));
-    const losersRoundCount = Math.max(1, 2 * (numRounds - 1));
-
-    const headers: string[] = [];
-
-    // Round 1 through Round N (where N = losersRoundCount + 1)
-    for (let i = 1; i <= losersRoundCount + 1; i++) {
-        headers.push(`DE ${i}`);
+export function getColumnHeaders(): string[] {
+    if (_selectedBracketType === "single") {
+        const displayRoundsArr = getDisplayRounds("winners");
+        return displayRoundsArr.map((_, idx) => getSingleEliminationRoundTitle(idx, displayRoundsArr.length));
     }
-
-    // Finals column
-    headers.push('Finals');
-
-    // Reset column if enabled
-    if (_selectedGrandFinalReset) {
-        headers.push('Finals-2');
-    }
-
-    return headers;
+    return getDEColumnHeaders(_selectedBracketSize, _selectedGrandFinalReset);
 }

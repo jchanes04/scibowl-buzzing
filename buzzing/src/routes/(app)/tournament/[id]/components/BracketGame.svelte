@@ -204,8 +204,7 @@
         padding: 0rem;
         align-self: center;
         justify-self: center;
-        width: 80%;
-        position: relative; // For absolute positioning if needed, though flex is better
+        width: max(80%, 160px);
 
         .header {
             display: flex;
@@ -264,9 +263,11 @@
 
     .bracket-select {
         min-width: 150px;
-        --chevron-height: 0.9rem;
+        --clear-select-width: 1.5rem;
+        --chevron-width: 2rem;
+        --chevron-height: 1rem;
         --font-size: 0.9rem;
-        --padding: calc(0.5rem - 4px) 0.5rem;
+        --padding: calc(0.5rem - 4px) 0rem calc(0.5rem - 4px) 0.5rem;
         --border-radius: 0.5rem;
         --height: 2rem;
         --background: $background-2;

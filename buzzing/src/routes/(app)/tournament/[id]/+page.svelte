@@ -26,6 +26,7 @@
         data.tournamentId,
         data.isOrganizer,
         data.initialTournament,
+        data.userId,
     );
     initBracketStore();
 
