@@ -59,13 +59,15 @@ export interface Tournament {
     name: string;
     settings?: TournamentSettings;
     bracketSeeds?: BracketSeed[];
-    bracketResults?: BracketResult[];
+    bracket?: {
+        gameIds: string[];
+        results: BracketResult[];
+    };
     bracketSize?: number;
     bracketConfirmed?: boolean;
     bracketType?: BracketType; // Single or double elimination
-    grandFinalReset?: boolean; // For double elimination: whether bracket reset is enabled
+    winnerTakesAll?: boolean; // For double elimination: whether bracket reset is enabled
     createdAt: number;
-    gameIds?: string[];
 }
 
 export interface TournamentTeam {

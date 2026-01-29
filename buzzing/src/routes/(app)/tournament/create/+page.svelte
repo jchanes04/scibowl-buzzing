@@ -56,7 +56,7 @@
 
     // Bracket settings
     let bracketType = $state<"single" | "double">("single");
-    let grandFinalReset = $state(true);
+    let winnerTakesAll = $state(true);
 
     // Collapsible section states
     let timerSettingsOpen = $state(false);
@@ -254,7 +254,7 @@
                             <select
                                 id="grand-final-reset"
                                 name="grand-final-reset"
-                                bind:value={grandFinalReset}
+                                bind:value={winnerTakesAll}
                             >
                                 <option value={false}>Enabled</option>
                                 <option value={true}>Disabled</option>
@@ -270,7 +270,7 @@
                     {:else}
                         <strong>Double Elimination:</strong> Teams must lose
                         twice to be eliminated.
-                        {#if !grandFinalReset}
+                        {#if !winnerTakesAll}
                             A single finals match determines the winner.
                         {:else}
                             If the losers bracket champion wins the first finals

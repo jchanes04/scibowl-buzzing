@@ -17,12 +17,12 @@
 /**
  * Match bracket type (which sub-bracket the match belongs to)
  */
-export type MatchBracket = "winners" | "losers" | "grand_final";
+export type MatchBracket = "winners" | "losers" | "grand_final" | "roundrobin";
 
 /**
- * Bracket type (single or double elimination)
+ * Bracket type (single or double elimination, or round robin)
  */
-export type BracketType = "single" | "double";
+export type BracketType = "single" | "double" | "roundrobin";
 
 /**
  * Source match reference - indicates where a team advances from
@@ -48,12 +48,13 @@ export interface BracketMatch {
 }
 
 /**
- * Generated bracket structure (unified for both SE and DE)
+ * Generated bracket structure (unified for SE, DE, and RR)
  */
 export interface GeneratedBracket {
     winners: BracketMatch[];
     losers: BracketMatch[];
     grandFinal: BracketMatch[];
+    roundrobin: BracketMatch[];
 }
 
 /**
@@ -62,7 +63,7 @@ export interface GeneratedBracket {
 export interface BracketGenerationOptions {
     bracketSize: number;
     bracketType: BracketType;
-    grandFinalReset?: boolean; // Only applies to double elimination
+    winnerTakesAll?: boolean; // Only applies to double elimination
 }
 
 // ============================================================================
@@ -103,17 +104,27 @@ export function generateSeedPositions(bracketSize: number): number[] {
  * Generate a complete bracket structure for any bracket type
  *
  * @param options - Bracket generation options
- * @returns Generated bracket with winners, losers, and grandFinal arrays
+ * @returns Generated bracket with winners, losers, grandFinal, and roundrobin arrays
  */
 export function generateBracket(options: BracketGenerationOptions): GeneratedBracket {
-    const { bracketSize, bracketType, grandFinalReset = true } = options;
+    const { bracketSize, bracketType, winnerTakesAll = true } = options;
 
     if (bracketSize < 2) {
-        return { winners: [], losers: [], grandFinal: [] };
+        return { winners: [], losers: [], grandFinal: [], roundrobin: [] };
     }
 
     if (bracketType === "double") {
-        return generateDoubleEliminationBracket(bracketSize, grandFinalReset);
+        const deBracket = generateDoubleEliminationBracket(bracketSize, winnerTakesAll);
+        return { ...deBracket, roundrobin: [] };
+    }
+
+    if (bracketType === "roundrobin") {
+        return {
+            winners: [],
+            losers: [],
+            grandFinal: [],
+            roundrobin: generateRoundRobinBracket(bracketSize),
+        };
     }
 
     // Single elimination: winners bracket only
@@ -121,6 +132,7 @@ export function generateBracket(options: BracketGenerationOptions): GeneratedBra
         winners: generateWinnersBracket(bracketSize),
         losers: [],
         grandFinal: [],
+        roundrobin: [],
     };
 }
 
@@ -180,10 +192,10 @@ function generateWinnersBracket(bracketSize: number): BracketMatch[] {
  * Generate complete double elimination bracket
  *
  * @param bracketSize - Number of teams (must be power of 2)
- * @param grandFinalReset - Whether to include GF reset match
+ * @param winnerTakesAll - Whether to include GF reset match
  * @returns Generated bracket with winners, losers, and grandFinal
  */
-function generateDoubleEliminationBracket(bracketSize: number, grandFinalReset: boolean): GeneratedBracket {
+function generateDoubleEliminationBracket(bracketSize: number, winnerTakesAll: boolean): GeneratedBracket {
     const numRounds = Math.ceil(Math.log2(bracketSize));
     const fullBracketSize = Math.pow(2, numRounds);
     const seedPositions = generateSeedPositions(fullBracketSize);
@@ -342,7 +354,7 @@ function generateDoubleEliminationBracket(bracketSize: number, grandFinalReset: 
     });
 
     // Grand Final Reset (if enabled): Only played if losers bracket champion wins GF1
-    if (grandFinalReset) {
+    if (winnerTakesAll) {
         grandFinal.push({
             matchIndex: 1,
             bracket: "grand_final",
@@ -355,7 +367,69 @@ function generateDoubleEliminationBracket(bracketSize: number, grandFinalReset: 
         });
     }
 
-    return { winners, losers, grandFinal };
+    return { winners, losers, grandFinal, roundrobin: [] };
+}
+
+/**
+ * Generate round robin bracket using the circle method algorithm
+ *
+ * For n teams:
+ * 1. If n is odd, add a "bye" placeholder (n+1 positions)
+ * 2. Fix position 0, rotate positions 1 to n-1 clockwise each round
+ * 3. Pair: position[0] vs position[n-1], position[1] vs position[n-2], etc.
+ * 4. Skip matches involving the bye placeholder
+ *
+ * @param numTeams - Number of teams
+ * @returns Array of round robin matches
+ */
+function generateRoundRobinBracket(numTeams: number): BracketMatch[] {
+    if (numTeams < 2) return [];
+
+    const matches: BracketMatch[] = [];
+
+    // If odd number of teams, add a phantom team for bye handling
+    const isOdd = numTeams % 2 !== 0;
+    const n = isOdd ? numTeams + 1 : numTeams;
+
+    // Create initial positions (1 to n, where n might be a "bye" if odd)
+    // We use seeds 1-numTeams, and n represents bye if odd
+    const positions: number[] = [];
+    for (let i = 1; i <= n; i++) {
+        positions.push(i);
+    }
+
+    const numRounds = n - 1;
+    const matchesPerRound = n / 2;
+    let matchIndex = 0;
+
+    for (let round = 0; round < numRounds; round++) {
+        // Generate pairings for this round
+        for (let i = 0; i < matchesPerRound; i++) {
+            const pos1 = positions[i]!;
+            const pos2 = positions[n - 1 - i]!;
+
+            // Skip if either position is the bye (phantom team)
+            if (isOdd && (pos1 > numTeams || pos2 > numTeams)) {
+                continue;
+            }
+
+            matches.push({
+                matchIndex,
+                bracket: "roundrobin",
+                round,
+                team1Seed: pos1,
+                team2Seed: pos2,
+            });
+            matchIndex++;
+        }
+
+        // Rotate positions (keep position 0 fixed, rotate 1 to n-1)
+        // Circle method: last element moves to position 1, all others shift right
+        const last = positions.pop()!;
+        positions.splice(1, 0, last);
+    }
+
+    return matches;
 }
 
 // ============================================================================
@@ -385,7 +459,7 @@ export function getByeSeed(match: BracketMatch): number | null {
  * Get all matches from a generated bracket as a flat array
  */
 export function getAllMatches(bracket: GeneratedBracket): BracketMatch[] {
-    return [...bracket.winners, ...bracket.losers, ...bracket.grandFinal];
+    return [...bracket.winners, ...bracket.losers, ...bracket.grandFinal, ...bracket.roundrobin];
 }
 
 /**
@@ -530,6 +604,42 @@ export function getSingleEliminationRoundTitle(displayRoundIdx: number, totalDis
     return `SE${displayRoundIdx + 1}`;
 }
 
+/**
+ * Get match name for round robin
+ */
+export function getRoundRobinMatchName(match: BracketMatch, matchIdxInRound: number): string {
+    const roundNumber = match.round + 1;
+    const letter = getMatchLetterSuffix(matchIdxInRound);
+    return `RR${roundNumber}-${letter}`;
+}
+
+/**
+ * Get round title for round robin
+ */
+export function getRoundRobinRoundTitle(round: number): string {
+    return `RR${round + 1}`;
+}
+
+/**
+ * Get number of rounds in a round robin tournament
+ */
+export function getRoundRobinNumRounds(numTeams: number): number {
+    if (numTeams < 2) return 0;
+    // If odd, n-1 rounds where n = numTeams + 1 (for bye)
+    // If even, n-1 rounds where n = numTeams
+    const n = numTeams % 2 === 0 ? numTeams : numTeams + 1;
+    return n - 1;
+}
+
+/**
+ * Get total number of games in a round robin tournament
+ */
+export function getRoundRobinTotalGames(numTeams: number): number {
+    if (numTeams < 2) return 0;
+    // n*(n-1)/2 for each team plays every other team once
+    return (numTeams * (numTeams - 1)) / 2;
+}
+
 // ============================================================================
 // GRID LAYOUT HELPERS (Double Elimination)
 // ============================================================================
@@ -552,7 +662,7 @@ export interface DEGridPosition {
  */
 export function getDoubleEliminationGridDimensions(
     bracketSize: number,
-    grandFinalReset: boolean
+    winnerTakesAll: boolean
 ): DEGridDimensions {
     const numRounds = Math.ceil(Math.log2(bracketSize));
     const fullBracketSize = Math.pow(2, numRounds);
@@ -561,7 +671,7 @@ export function getDoubleEliminationGridDimensions(
     const losersRoundCount = Math.max(1, 2 * (numRounds - 1));
 
     // Total columns: 1 (W1) + losersRounds + 1 (Finals) + (1 if reset)
-    const totalCols = 1 + losersRoundCount + 1 + (grandFinalReset ? 1 : 0);
+    const totalCols = 1 + losersRoundCount + 1 + (winnerTakesAll ? 1 : 0);
 
     // Rows: Winners portion + Losers portion
     const winnersFirstRoundMatches = fullBracketSize / 2;
@@ -586,10 +696,10 @@ export function getDoubleEliminationGridPosition(
     match: BracketMatch,
     bracket: GeneratedBracket,
     bracketSize: number,
-    grandFinalReset: boolean
+    winnerTakesAll: boolean
 ): DEGridPosition {
     const numRounds = Math.ceil(Math.log2(bracketSize));
-    const dims = getDoubleEliminationGridDimensions(bracketSize, grandFinalReset);
+    const dims = getDoubleEliminationGridDimensions(bracketSize, winnerTakesAll);
 
     if (match.bracket === "winners") {
         const col = getWinnersColumnForRound(match.round, numRounds);
@@ -639,7 +749,7 @@ export function getDoubleEliminationGridPosition(
 /**
  * Get column header labels for double elimination grid
  */
-export function getDoubleEliminationColumnHeaders(bracketSize: number, grandFinalReset: boolean): string[] {
+export function getDoubleEliminationColumnHeaders(bracketSize: number, winnerTakesAll: boolean): string[] {
     const numRounds = Math.ceil(Math.log2(bracketSize));
     const losersRoundCount = Math.max(1, 2 * (numRounds - 1));
 
@@ -654,7 +764,7 @@ export function getDoubleEliminationColumnHeaders(bracketSize: number, grandFina
     headers.push('Finals');
 
     // Reset column if enabled
-    if (grandFinalReset) {
+    if (winnerTakesAll) {
         headers.push('Finals-2');
     }
 

@@ -23,10 +23,10 @@
     let { data }: Props = $props();
 
     initTournamentSubscription(
-        data.tournamentId,
-        data.isOrganizer,
-        data.initialTournament,
-        data.userId,
+        untrack(() => data.tournamentId),
+        untrack(() => data.isOrganizer),
+        untrack(() => data.initialTournament),
+        untrack(() => data.userId),
     );
     initBracketStore();
 

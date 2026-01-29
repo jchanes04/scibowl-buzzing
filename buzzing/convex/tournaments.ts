@@ -10,6 +10,8 @@ import {
     type BracketMatch,
     type MatchBracket,
 } from "$lib/functions/bracketGeneration";
+import { getTournament, getTournamentTeam, unwrapOrThrow, internalBusinessRule } from "./helpers";
+import { err } from "neverthrow";
 
 // ============================================================================
 // QUERIES
@@ -147,7 +149,6 @@ export const create = mutation({
             minPlayers: v.number(),
             maxPlayers: v.number(),
         }),
-        gameIds: v.array(v.string()),
     },
     handler: async (ctx, args) => {
         return await ctx.db.insert("tournaments", {
@@ -155,7 +156,6 @@ export const create = mutation({
             name: args.name,
             organizerId: args.organizerId,
             settings: args.settings,
-            gameIds: args.gameIds,
             bracketSeeds: [],
             createdAt: Date.now(),
         });
@@ -185,14 +185,7 @@ export const updateSettings = mutation({
         }),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         await ctx.db.patch(tournament._id, {
             settings: args.settings,
@@ -209,18 +202,14 @@ export const updateName = mutation({
         name: v.string(),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
-
-        if (tournament.bracketConfirmed) {
-            throw new Error("Tournament name cannot be changed after bracket is confirmed");
-        }
+        const result = await getTournament(ctx, args.tournamentId);
+        const tournament = unwrapOrThrow(
+            result.andThen((t) =>
+                t.bracketConfirmed
+                    ? err(internalBusinessRule("Tournament name cannot be changed after bracket is confirmed"))
+                    : result
+            )
+        );
 
         await ctx.db.patch(tournament._id, {
             name: args.name,
@@ -238,14 +227,7 @@ export const assignSeed = mutation({
         teamId: v.string(),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         // Remove existing seed assignment for this team or position
         const filteredSeeds = (tournament.bracketSeeds || []).filter(
@@ -270,14 +252,7 @@ export const removeSeed = mutation({
         seed: v.number(),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         const filteredSeeds = (tournament.bracketSeeds || []).filter(
             (s) => s.seed !== args.seed
@@ -302,15 +277,7 @@ export const registerTeam = mutation({
         registeredBy: v.string(),
     },
     handler: async (ctx, args) => {
-        // Check tournament exists
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         const minPlayers = tournament.settings?.minPlayers ?? 1;
         const maxPlayers = tournament.settings?.maxPlayers ?? 10;
@@ -345,30 +312,14 @@ export const updateTeam = mutation({
         userId: v.string(), // The user attempting to update
     },
     handler: async (ctx, args) => {
-        // Find the team
-        const team = await ctx.db
-            .query("tournamentTeams")
-            .withIndex("by_tournamentTeamId", (q) => q.eq("tournamentTeamId", args.teamId))
-            .first();
-
-        if (!team) {
-            throw new Error("Team not found");
-        }
+        const team = unwrapOrThrow(await getTournamentTeam(ctx, args.teamId));
 
         // Verify the user is the one who registered the team
         if (team.registeredBy !== args.userId) {
             throw new Error("You can only edit teams you registered");
         }
 
-        // Get tournament settings for validation
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", team.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error("Tournament not found");
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, team.tournamentId));
 
         // Check if bracket is confirmed (no edits allowed after confirmation)
         if (tournament.bracketConfirmed) {
@@ -422,27 +373,20 @@ export const advanceWinner = mutation({
     args: {
         tournamentId: v.string(),
         matchIndex: v.number(), // Match index within the bracket
-        bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"))), // For double elimination
+        bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"), v.literal("roundrobin"))), // For double elimination or round robin
         winningTeamId: v.string(),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         // Remove any existing result for this match (in case of re-run)
-        // For double elimination, must match both matchIndex and bracket
-        const filteredResults = (tournament.bracketResults || []).filter(
+        // For double elimination/round robin, must match both matchIndex and bracket
+        const filteredResults = (tournament.bracket?.results || []).filter(
             (r) => !(r.matchIndex === args.matchIndex && (r.bracket || undefined) === args.bracket)
         );
 
         // Add new result
-        const newResult: { matchIndex: number; bracket?: "winners" | "losers" | "grand_final"; winningTeamId: string } = {
+        const newResult: { matchIndex: number; bracket?: "winners" | "losers" | "grand_final" | "roundrobin"; winningTeamId: string } = {
             matchIndex: args.matchIndex,
             winningTeamId: args.winningTeamId
         };
@@ -454,7 +398,10 @@ export const advanceWinner = mutation({
         const newResults = [...filteredResults, newResult];
 
         await ctx.db.patch(tournament._id, {
-            bracketResults: newResults,
+            bracket: {
+                gameIds: tournament.bracket?.gameIds || [],
+                results: newResults,
+            },
         });
     },
 });
@@ -467,26 +414,19 @@ export const resolveTie = mutation({
     args: {
         tournamentId: v.string(),
         matchIndex: v.number(),
-        bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"))), // For double elimination
+        bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"), v.literal("roundrobin"))), // For double elimination or round robin
         winningTeamId: v.string(),
     },
     handler: async (ctx, args) => {
         // Same logic as advanceWinner - just a semantic alias for UI clarity
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
-
-        // For double elimination, must match both matchIndex and bracket
-        const filteredResults = (tournament.bracketResults || []).filter(
+        // For double elimination/round robin, must match both matchIndex and bracket
+        const filteredResults = (tournament.bracket?.results || []).filter(
             (r) => !(r.matchIndex === args.matchIndex && (r.bracket || undefined) === args.bracket)
         );
 
-        const newResult: { matchIndex: number; bracket?: "winners" | "losers" | "grand_final"; winningTeamId: string } = {
+        const newResult: { matchIndex: number; bracket?: "winners" | "losers" | "grand_final" | "roundrobin"; winningTeamId: string } = {
             matchIndex: args.matchIndex,
             winningTeamId: args.winningTeamId
         };
@@ -498,7 +438,10 @@ export const resolveTie = mutation({
         const newResults = [...filteredResults, newResult];
 
         await ctx.db.patch(tournament._id, {
-            bracketResults: newResults,
+            bracket: {
+                gameIds: tournament.bracket?.gameIds || [],
+                results: newResults,
+            },
         });
     },
 });
@@ -515,28 +458,24 @@ export const saveBracketStructure = mutation({
             teamId: v.string()
         })),
         bracketSize: v.number(),
-        bracketType: v.optional(v.union(v.literal("single"), v.literal("double"))),
-        grandFinalReset: v.optional(v.boolean()),
+        bracketType: v.optional(v.union(v.literal("single"), v.literal("double"), v.literal("roundrobin"))),
+        winnerTakesAll: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
-
-        if (tournament.bracketConfirmed) {
-            throw new Error("Bracket structure is already confirmed and cannot be changed");
-        }
+        const result = await getTournament(ctx, args.tournamentId);
+        const tournament = unwrapOrThrow(
+            result.andThen((t) =>
+                t.bracketConfirmed
+                    ? err(internalBusinessRule("Bracket structure is already confirmed and cannot be changed"))
+                    : result
+            )
+        );
 
         const updates: {
             bracketSeeds: typeof args.bracketSeeds;
             bracketSize: number;
-            bracketType?: "single" | "double";
-            grandFinalReset?: boolean;
+            bracketType?: "single" | "double" | "roundrobin";
+            winnerTakesAll?: boolean;
         } = {
             bracketSeeds: args.bracketSeeds,
             bracketSize: args.bracketSize,
@@ -545,8 +484,8 @@ export const saveBracketStructure = mutation({
         if (args.bracketType !== undefined) {
             updates.bracketType = args.bracketType;
         }
-        if (args.grandFinalReset !== undefined) {
-            updates.grandFinalReset = args.grandFinalReset;
+        if (args.winnerTakesAll !== undefined) {
+            updates.winnerTakesAll = args.winnerTakesAll;
         }
 
         await ctx.db.patch(tournament._id, updates);
@@ -565,14 +504,7 @@ export const confirmBracketStructure = mutation({
         tournamentId: v.string(),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         if (tournament.bracketConfirmed) {
             throw new Error("Bracket structure is already confirmed");
@@ -583,7 +515,7 @@ export const confirmBracketStructure = mutation({
             throw new Error("Bracket size must be at least 2");
         }
 
-        const bracketType = (tournament.bracketType || "single") as "single" | "double";
+        const bracketType = (tournament.bracketType || "single") as "single" | "double" | "roundrobin";
 
         // Double elimination requires power of 2 bracket size
         if (bracketType === "double") {
@@ -604,13 +536,13 @@ export const confirmBracketStructure = mutation({
             throw new Error("Tournament settings not found");
         }
 
-        const grandFinalReset = tournament.grandFinalReset ?? true;
+        const winnerTakesAll = tournament.winnerTakesAll ?? true;
 
         // Generate bracket using unified function
         const bracket = generateBracket({
             bracketSize,
             bracketType,
-            grandFinalReset,
+            winnerTakesAll,
         });
 
         const gameIds: string[] = [];
@@ -625,6 +557,7 @@ export const confirmBracketStructure = mutation({
             { matches: bracket.winners, bracketName: "winners" },
             { matches: bracket.losers, bracketName: "losers" },
             { matches: bracket.grandFinal, bracketName: "grand_final" },
+            { matches: bracket.roundrobin, bracketName: "roundrobin" },
         ];
 
         for (const { matches, bracketName } of sections) {
@@ -670,6 +603,9 @@ export const confirmBracketStructure = mutation({
                             matchName = `DE${col}-L${getMatchLetterSuffix(matchIdxInRound)}`;
                         }
                     }
+                } else if (bracketType === "roundrobin") {
+                    // Round robin naming: RR1-A, RR1-B, RR2-A, etc.
+                    matchName = `RR${match.round + 1}-${getMatchLetterSuffix(matchIdxInRound)}`;
                 } else {
                     // Single elimination naming
                     if (displayRoundIdx === displayRounds.length - 1) {
@@ -706,7 +642,10 @@ export const confirmBracketStructure = mutation({
 
         // Update tournament with game IDs and lock the bracket
         await ctx.db.patch(tournament._id, {
-            gameIds,
+            bracket: {
+                gameIds,
+                results: [],
+            },
             bracketConfirmed: true,
         });
 
@@ -722,14 +661,7 @@ export const generateTestTeams = mutation({
         tournamentId: v.string(),
     },
     handler: async (ctx, args) => {
-        const tournament = await ctx.db
-            .query("tournaments")
-            .withIndex("by_tournamentId", (q) => q.eq("tournamentId", args.tournamentId))
-            .first();
-
-        if (!tournament) {
-            throw new Error(`Tournament not found: ${args.tournamentId}`);
-        }
+        const tournament = unwrapOrThrow(await getTournament(ctx, args.tournamentId));
 
         const minPlayers = tournament.settings?.minPlayers ?? 1;
         const maxPlayers = tournament.settings?.maxPlayers ?? 4; // Default to 4

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { isAuthenticated, user, type User } from "$lib/stores/auth";
+    import { safeFetch } from "$lib/fetch.result";
 
     let authenticated = $state(false);
     let currentUser = $state<User | null>(null);
@@ -18,14 +19,14 @@
     import { goto } from '$app/navigation';
 
     async function handleLogin() {
-        try {
-            const response = await fetch('/api/auth');
-            const data = await response.json();
+        const result = await safeFetch('/api/auth');
+        if (result.isOk()) {
+            const data = await result.value.json();
             if (data.authorizationUrl) {
                 window.location.href = data.authorizationUrl;
             }
-        } catch (error) {
-            console.error('Error starting login:', error);
+        } else {
+            console.error('Error starting login:', result.error.message);
         }
     }
 

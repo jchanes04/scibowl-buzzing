@@ -48,7 +48,7 @@ export default defineSchema({
     // Tournament link (if this game is part of a tournament)
     tournamentId: v.optional(v.string()),
     tournamentMatchIndex: v.optional(v.number()), // 0=semifinal1, 1=semifinal2, 2=final
-    tournamentMatchBracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"))), // For double elimination
+    tournamentMatchBracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"), v.literal("roundrobin"))), // For double elimination or round robin
     moderatorJoinCode: v.optional(v.string()), // Legacy field for existing data
   })
     .index("by_gameId", ["gameId"])
@@ -130,38 +130,24 @@ export default defineSchema({
       minPlayers: v.number(),
       maxPlayers: v.number(),
     })),
-    gameIds: v.optional(v.array(v.string())), // New format - 3 games
     bracketSeeds: v.optional(v.array(v.object({
       seed: v.number(),
       teamId: v.string()
     }))),
-    bracketResults: v.optional(v.array(v.object({
-      matchIndex: v.number(), // 0=SF1, 1=SF2, 2=Final
-      bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"))), // For double elimination
-      winningTeamId: v.string(),
-    }))),
-    bracketType: v.optional(v.union(v.literal("single"), v.literal("double"))), // Single or double elimination
-    grandFinalReset: v.optional(v.boolean()), // For double elimination: whether bracket reset is enabled
+    bracket: v.optional(v.object({
+      gameIds: v.array(v.string()),
+      results: v.array(v.object({
+        matchIndex: v.number(),
+        bracket: v.optional(v.union(v.literal("winners"), v.literal("losers"), v.literal("grand_final"), v.literal("roundrobin"))), // For double elimination or round robin
+        winningTeamId: v.string(),
+      })),
+    })),
+    bracketType: v.optional(v.union(v.literal("single"), v.literal("double"), v.literal("roundrobin"))), // Single elimination, double elimination, or round robin
+    winnerTakesAll: v.optional(v.boolean()), // For double elimination: whether bracket reset is enabled
     createdAt: v.number(),
-    // Legacy fields
     ownerId: v.optional(v.string()),
-    signupCode: v.optional(v.string()),
     bracketSize: v.optional(v.number()), // Number of teams in the bracket (any size)
     bracketConfirmed: v.optional(v.boolean()), // Whether bracket structure is locked
-    started: v.optional(v.boolean()),
-    gameSettings: v.optional(v.object({
-      spectatorsAllowed: v.boolean(),
-      times: v.object({
-        tossup: v.array(v.number()),
-        bonus: v.array(v.number()),
-        visual: v.array(v.number()),
-      }),
-      pointValues: v.object({
-        tossup: v.number(),
-        bonus: v.number(),
-        penalty: v.number(),
-      }),
-    })),
   })
     .index("by_tournamentId", ["tournamentId"])
     .index("by_organizerId", ["organizerId"]),

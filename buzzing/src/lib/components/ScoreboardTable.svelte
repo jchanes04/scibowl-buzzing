@@ -224,6 +224,165 @@
         if (!scoreboardData) return 0;
         return calculateTeamScore(teamId, scoreboardData.scores, pointValues);
     }
+
+    // Statistics calculations - only shown when > 10 questions
+    const showStats = $derived(rowNumber > 10);
+
+    const categoryList: Category[] = ["bio", "earth", "chem", "physics", "math", "energy"];
+    const categoryLabels: Record<Category, string> = {
+        bio: "Biology",
+        earth: "Earth Science",
+        chem: "Chemistry",
+        physics: "Physics",
+        math: "Math",
+        energy: "Energy",
+    };
+
+    type TossupEntry = { playerId: string; scoreType: ScoreType };
+    type ScoreRow = {
+        category: Category;
+        tossup: Record<string, TossupEntry>;
+        bonus: { teamId: string; correct: boolean } | null
+    };
+
+    // Calculate stats per category per player (correct tossups)
+    const playerTossupsByCategory = $derived(
+        (() => {
+            const stats: Record<Category, Record<string, number>> = {
+                bio: {}, earth: {}, chem: {}, physics: {}, math: {}, energy: {}
+            };
+            if (!scoreboardData) return stats;
+
+            for (const [_, row] of Object.entries(scoreboardData.scores || {}) as [string, ScoreRow][]) {
+                const cat = row.category;
+                for (const [teamId, entry] of Object.entries(row.tossup)) {
+                    if (entry.scoreType === "correct") {
+                        stats[cat]![entry.playerId] = (stats[cat]![entry.playerId] || 0) + 1;
+                    }
+                }
+            }
+            return stats;
+        })()
+    );
+
+    // Calculate bonuses per category per team
+    const teamBonusesByCategory = $derived(
+        (() => {
+            const stats: Record<Category, Record<string, number>> = {
+                bio: {}, earth: {}, chem: {}, physics: {}, math: {}, energy: {}
+            };
+            if (!scoreboardData) return stats;
+
+            for (const [_, row] of Object.entries(scoreboardData.scores || {}) as [string, ScoreRow][]) {
+                const cat = row.category;
+                if (row.bonus?.correct) {
+                    stats[cat]![row.bonus.teamId] = (stats[cat]![row.bonus.teamId] || 0) + 1;
+                }
+            }
+            return stats;
+        })()
+    );
+
+    // Calculate total points per category per team (ignoring penalties)
+    const teamPointsByCategory = $derived(
+        (() => {
+            const stats: Record<Category, Record<string, number>> = {
+                bio: {}, earth: {}, chem: {}, physics: {}, math: {}, energy: {}
+            };
+            if (!scoreboardData) return stats;
+
+            for (const [_, row] of Object.entries(scoreboardData.scores || {}) as [string, ScoreRow][]) {
+                const cat = row.category;
+                // Tossup points (correct only)
+                for (const [teamId, entry] of Object.entries(row.tossup)) {
+                    if (entry.scoreType === "correct") {
+                        if (!stats[cat][teamId]) stats[cat][teamId] = 0;
+                        stats[cat][teamId] += pointValues.tossup;
+                    }
+                }
+                // Bonus points
+                if (row.bonus?.correct) {
+                    if (!stats[cat][row.bonus.teamId]) stats[cat][row.bonus.teamId] = 0;
+                    stats[cat][row.bonus.teamId] += pointValues.bonus;
+                }
+            }
+            return stats;
+        })()
+    );
+
+    // Calculate penalties and incorrects per player
+    const playerPenalties = $derived(
+        (() => {
+            const stats: Record<string, number> = {};
+            if (!scoreboardData) return stats;
+
+            for (const [_, row] of Object.entries(scoreboardData.scores || {}) as [string, ScoreRow][]) {
+                for (const [_, entry] of Object.entries(row.tossup)) {
+                    if (entry.scoreType === "penalty") {
+                        stats[entry.playerId] = (stats[entry.playerId] || 0) + 1;
+                    }
+                }
+            }
+            return stats;
+        })()
+    );
+
+    const playerIncorrects = $derived(
+        (() => {
+            const stats: Record<string, number> = {};
+            if (!scoreboardData) return stats;
+
+            for (const [_, row] of Object.entries(scoreboardData.scores || {}) as [string, ScoreRow][]) {
+                for (const [_, entry] of Object.entries(row.tossup)) {
+                    if (entry.scoreType === "incorrect") {
+                        stats[entry.playerId] = (stats[entry.playerId] || 0) + 1;
+                    }
+                }
+            }
+            return stats;
+        })()
+    );
+
+    // Calculate team totals for penalties/incorrects
+    function getTeamPenaltyTotal(teamId: string, teamPlayers: string[]) {
+        return teamPlayers.reduce((sum, playerId) => sum + (playerPenalties[playerId] || 0), 0);
+    }
+
+    function getTeamIncorrectTotal(teamId: string, teamPlayers: string[]) {
+        return teamPlayers.reduce((sum, playerId) => sum + (playerIncorrects[playerId] || 0), 0);
+    }
+
+    // Calculate TUH (tossups heard) per player - questions where player is not subbed out
+    const playerTUH = $derived(
+        (() => {
+            const stats: Record<string, number> = {};
+            if (!scoreboardData) return stats;
+
+            // TUH = total questions minus questions where player was subbed out
+            const totalQuestions = rowNumber;
+            const subbedCounts: Record<string, number> = {};
+
+            for (const [_, row] of Object.entries(scoreboardData.scores || {}) as [string, ScoreRow][]) {
+                for (const [teamId, entry] of Object.entries(row.tossup)) {
+                    if (entry.scoreType === "subbed") {
+                        subbedCounts[entry.playerId] = (subbedCounts[entry.playerId] || 0) + 1;
+                    }
+                }
+            }
+
+            for (const [_, teamPlayers] of players) {
+                for (const playerId of teamPlayers) {
+                    stats[playerId] = totalQuestions - (subbedCounts[playerId] || 0);
+                }
+            }
+
+            return stats;
+        })()
+    );
+
+    function getTeamTUHTotal(teamPlayers: string[]) {
+        return teamPlayers.reduce((sum, playerId) => sum + (playerTUH[playerId] || 0), 0);
+    }
 </script>
 
 <table>
@@ -377,6 +536,98 @@
             </tr>
         {/each}
     </tbody>
+    {#if showStats}
+        <tfoot class="stats-section">
+            <!-- Stats Header -->
+            <tr class="stats-header-row">
+                <th
+                    colspan={players.reduce(
+                        (acc, [_, x]) => acc + x.length + 2,
+                        0,
+                    ) + (isModerator ? 3 : 2)}
+                    class="stats-header"
+                >
+                    Score Statistics
+                </th>
+            </tr>
+            <!-- Category rows -->
+            {#each categoryList as cat}
+                <tr class="stats-row">
+                    <td colspan="2" class="stats-label">{categoryLabels[cat]}</td>
+                    {#each players as [teamId, teamPlayers]}
+                        {#each teamPlayers as playerId}
+                            <td class="stats-cell">
+                                {playerTossupsByCategory[cat][playerId] || 0}
+                            </td>
+                        {/each}
+                        <td class="stats-cell bonus">
+                            {teamBonusesByCategory[cat][teamId] || 0}
+                        </td>
+                        <td class="stats-cell scores">
+                            {teamPointsByCategory[cat][teamId] || 0}
+                        </td>
+                    {/each}
+                    {#if isModerator}
+                        <td></td>
+                    {/if}
+                </tr>
+            {/each}
+            <!-- Penalties row -->
+            <tr class="stats-row">
+                <td colspan="2" class="stats-label">Penalties</td>
+                {#each players as [teamId, teamPlayers]}
+                    {#each teamPlayers as playerId}
+                        <td class="stats-cell penalty-cell">
+                            {playerPenalties[playerId] || 0}
+                        </td>
+                    {/each}
+                    <td class="stats-cell bonus">
+                        {getTeamPenaltyTotal(teamId, teamPlayers)}
+                    </td>
+                    <td class="stats-cell scores"></td>
+                {/each}
+                {#if isModerator}
+                    <td></td>
+                {/if}
+            </tr>
+            <!-- Incorrects row -->
+            <tr class="stats-row">
+                <td colspan="2" class="stats-label">Incorrects</td>
+                {#each players as [teamId, teamPlayers]}
+                    {#each teamPlayers as playerId}
+                        <td class="stats-cell incorrect-cell">
+                            {playerIncorrects[playerId] || 0}
+                        </td>
+                    {/each}
+                    <td class="stats-cell bonus">
+                        {getTeamIncorrectTotal(teamId, teamPlayers)}
+                    </td>
+                    <td class="stats-cell scores"></td>
+                {/each}
+                {#if isModerator}
+                    <td></td>
+                {/if}
+            </tr>
+            <!-- TUH row -->
+            <tr class="stats-row">
+                <td colspan="2" class="stats-label">TUH</td>
+                {#each players as [teamId, teamPlayers]}
+                    {#each teamPlayers as playerId}
+                        <td class="stats-cell">
+                            {playerTUH[playerId] || 0}
+                        </td>
+                    {/each}
+                    <td class="stats-cell bonus">
+                        {getTeamTUHTotal(teamPlayers)}
+                    </td>
+                    <td class="stats-cell scores"></td>
+                {/each}
+                {#if isModerator}
+                    <td></td>
+                {/if}
+            </tr>
+        </tfoot>
+    {/if}
 </table>
 
 <style lang="scss">
@@ -494,6 +745,66 @@
             border-color: $red;
             transform: none;
             transition: all 0.2s ease-in-out;
+        }
+    }
+
+    // Stats section styles
+    .stats-section {
+        border-top: 3px solid $border-color;
+    }
+
+    .stats-header-row {
+        .stats-header {
+            background: $gray-1;
+            color: $primary;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.8em;
+            text-align: center;
+            border: 2px solid $border-color;
+        }
+    }
+
+    .stats-row {
+        background: $gray-1;
+
+        .stats-label {
+            font-weight: 600;
+            color: $text-muted;
+            background: $gray-1;
+            padding: 0.5em 0.8em;
+            text-align: left;
+            border: 2px solid $border-color;
+            font-size: 0.85rem;
+        }
+
+        .stats-cell {
+            text-align: center;
+            padding: 0.4em;
+            font-size: 0.9rem;
+            color: $text;
+            border: 1px solid $border-color;
+
+            &.bonus {
+                border-right: 2px solid $gray-2;
+                font-weight: 500;
+            }
+
+            &.scores {
+                border-right: 2px solid $gray-2;
+                font-weight: bold;
+                color: $primary;
+            }
+
+            &.penalty-cell {
+                color: $purple-dark;
+            }
+
+            &.incorrect-cell {
+                color: $red-dark;
+            }
         }
     }
 </style>

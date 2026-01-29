@@ -2,6 +2,8 @@ import { WorkOS } from '@workos-inc/node';
 import { json } from '@sveltejs/kit';
 import { config } from 'dotenv';
 import type { RequestHandler } from './$types';
+import { ok, err, type Result } from 'neverthrow';
+import { externalService, type ExternalServiceError } from '$lib/errors';
 
 // Load environment variables from .env file
 config();
@@ -14,16 +16,23 @@ export const GET: RequestHandler = async () => {
         return json({ error: 'WorkOS not configured' }, { status: 500 });
     }
 
+    let result: Result<string, ExternalServiceError>;
     try {
-        const authorizationUrl = await workos.userManagement.getAuthorizationUrl({
+        const urlOrPromise = workos.userManagement.getAuthorizationUrl({
             provider: 'authkit',
             redirectUri: process.env.PUBLIC_WORKOS_REDIRECT_URI || '',
             clientId: process.env.WORKOS_CLIENT_ID!,
         });
-
-        return json({ authorizationUrl });
+        const url = typeof urlOrPromise === 'string' ? urlOrPromise : await urlOrPromise;
+        result = ok(url);
     } catch (error) {
-        console.error('Error generating authorization URL:', error);
+        result = err(externalService('WorkOS', error instanceof Error ? error.message : String(error)));
+    }
+
+    if (result.isErr()) {
+        console.error('Error generating authorization URL:', result.error.message);
         return json({ error: 'Failed to generate authorization URL' }, { status: 500 });
     }
+
+    return json({ authorizationUrl: result.value });
 };

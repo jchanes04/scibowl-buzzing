@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { getGame, unwrapOrThrow } from "./helpers";
 
 // ============================================================================
 // TAG VALIDATION
@@ -84,14 +85,7 @@ export const addPublicTags = mutation({
     tags: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const game = await ctx.db
-      .query("games")
-      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-      .first();
-
-    if (!game) {
-      throw new Error(`Game not found: ${args.gameId}`);
-    }
+    const game = unwrapOrThrow(await getGame(ctx, args.gameId));
 
     const existingTags = game.tags ?? [];
     const newTags = normalizeTags(args.tags);
@@ -115,14 +109,7 @@ export const removePublicTag = mutation({
     tag: v.string(),
   },
   handler: async (ctx, args) => {
-    const game = await ctx.db
-      .query("games")
-      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-      .first();
-
-    if (!game) {
-      throw new Error(`Game not found: ${args.gameId}`);
-    }
+    const game = unwrapOrThrow(await getGame(ctx, args.gameId));
 
     const normalizedTag = normalizeTag(args.tag);
     if (!normalizedTag) {
@@ -149,14 +136,7 @@ export const setPublicTags = mutation({
     tags: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const game = await ctx.db
-      .query("games")
-      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-      .first();
-
-    if (!game) {
-      throw new Error(`Game not found: ${args.gameId}`);
-    }
+    const game = unwrapOrThrow(await getGame(ctx, args.gameId));
 
     const normalizedTags = normalizeTags(args.tags);
 

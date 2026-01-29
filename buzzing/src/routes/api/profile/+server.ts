@@ -2,6 +2,9 @@ import { WorkOS } from '@workos-inc/node';
 import { json, error } from '@sveltejs/kit';
 import { config } from 'dotenv';
 import type { RequestHandler } from './$types';
+import { getAuthenticatedUser, getAccessToken } from '$lib/auth.result';
+import { validation } from '$lib/errors';
+import { throwHttpError } from '$lib/sveltekit.result';
 
 // Load environment variables from .env file
 config();
@@ -10,20 +13,17 @@ const workos = new WorkOS(process.env.WORKOS_API_KEY!);
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
     try {
-        // Get the access token from cookies
-        const accessToken = cookies.get('workos_access_token');
-
-        if (!accessToken) {
-            throw error(401, 'Not authenticated');
+        const accessTokenResult = getAccessToken(cookies);
+        if (accessTokenResult.isErr()) {
+            throwHttpError(accessTokenResult.error);
         }
 
-        // Get user ID from cookies
-        const userCookie = cookies.get('workos_user');
-        if (!userCookie) {
-            throw error(401, 'User data not found');
+        const userResult = getAuthenticatedUser(cookies);
+        if (userResult.isErr()) {
+            throwHttpError(userResult.error);
         }
 
-        const userData = JSON.parse(userCookie);
+        const userData = userResult.value;
         console.log('User data from cookie:', JSON.stringify(userData, null, 2));
         const userId = userData.id;
         console.log('Extracted userId:', userId);
@@ -33,10 +33,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
         // Validate required fields
         if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
-            throw error(400, 'First name is required');
+            throwHttpError(validation('First name is required', 'firstName'));
         }
         if (!lastName || typeof lastName !== 'string' || lastName.trim().length === 0) {
-            throw error(400, 'Last name is required');
+            throwHttpError(validation('Last name is required', 'lastName'));
         }
 
         // Prepare metadata update

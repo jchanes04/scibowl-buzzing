@@ -24,7 +24,7 @@
     }
 
     function copyRegistrationLink() {
-        const url = `${$page.url.origin}/register/${tournament.id}`;
+        const url = `${$page.url.origin}/tournament/register/${tournament.id}`;
         navigator.clipboard.writeText(url);
         alert("Registration link copied to clipboard!");
     }

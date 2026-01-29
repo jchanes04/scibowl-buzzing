@@ -7,6 +7,7 @@
     import GameHistoryItem from "$lib/components/GameHistoryItem.svelte";
     import { setContext } from "svelte";
     import { writable } from "svelte/store";
+    import { safeFetch } from "$lib/fetch.result";
 
     const convex = useConvexClient();
 
@@ -182,35 +183,29 @@
         loading = true;
         success = false;
 
-        try {
-            const response = await fetch("/api/profile", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    firstName: firstName.trim(),
-                    lastName: lastName.trim(),
-                    username: username.trim(),
-                    school: school.trim(),
-                }),
-            });
+        const result = await safeFetch("/api/profile", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                username: username.trim(),
+                school: school.trim(),
+            }),
+        });
 
-            if (response.ok) {
-                const updatedUser = await response.json();
-                user.set(updatedUser);
-                success = true;
-                setTimeout(() => (success = false), 2000);
-            } else {
-                const error = await response.json();
-                alert(`Error: ${error.message || "Failed to update profile"}`);
-            }
-        } catch (error) {
-            console.error("Error updating profile:", error);
-            alert("Failed to update profile. Please try again.");
-        } finally {
-            loading = false;
+        if (result.isOk()) {
+            const updatedUser = await result.value.json();
+            user.set(updatedUser);
+            success = true;
+            setTimeout(() => (success = false), 2000);
+        } else {
+            alert(`Error: ${result.error.message}`);
         }
+
+        loading = false;
     }
 </script>
 

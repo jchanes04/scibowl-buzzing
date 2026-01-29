@@ -2,6 +2,9 @@ import type { PageServerLoad, Actions } from "./$types";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { getConvexClient, api } from "$lib/convex.server";
 import { createTeamID } from "$lib/functions/createId";
+import { safeQuery, safeMutation } from "$lib/convex.result";
+import { getAuthenticatedUser } from "$lib/auth.result";
+import { failFromError } from "$lib/sveltekit.result";
 
 export const load: PageServerLoad = async ({ params, cookies, url }) => {
     const tournamentId = params.id;
@@ -9,22 +12,18 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
     const convex = getConvexClient();
 
     // Get tournament data
-    const tournament = await convex.query(api.tournaments.getById, { tournamentId });
+    const queryResult = await safeQuery(convex, api.tournaments.getById, { tournamentId });
+    if (queryResult.isErr()) {
+        error(500, "Failed to load tournament");
+    }
+    const tournament = queryResult.value;
     if (!tournament) {
         error(404, "Tournament not found");
     }
 
     // Check if user is logged in
-    let userId: string | null = null;
-    const workosUserCookie = cookies.get("workos_user");
-    if (workosUserCookie) {
-        try {
-            const userData = JSON.parse(workosUserCookie);
-            userId = userData.id;
-        } catch {
-            // Not authenticated
-        }
-    }
+    const userResult = getAuthenticatedUser(cookies);
+    const userId = userResult.isOk() ? userResult.value.id : null;
 
     // Get user's registered teams
     let userTeams: { teamId: string; name: string; players: string[] }[] = [];
@@ -67,19 +66,11 @@ export const actions = {
     register: async function ({ request, cookies, params }) {
         const tournamentId = params.id;
 
-        // Check authentication
-        const workosUserCookie = cookies.get("workos_user");
-        if (!workosUserCookie) {
-            return fail(401, { message: "You must be logged in to register a team" });
+        const userResult = getAuthenticatedUser(cookies);
+        if (userResult.isErr()) {
+            return failFromError(userResult.error);
         }
-
-        let userId: string;
-        try {
-            const userData = JSON.parse(workosUserCookie);
-            userId = userData.id;
-        } catch {
-            return fail(401, { message: "Invalid session" });
-        }
+        const userId = userResult.value.id;
 
         const convex = getConvexClient();
 
@@ -125,7 +116,7 @@ export const actions = {
         // Generate team ID and register
         const teamId = createTeamID();
 
-        await convex.mutation(api.tournaments.registerTeam, {
+        const mutResult = await safeMutation(convex, api.tournaments.registerTeam, {
             tournamentId,
             teamId,
             name: teamName.trim(),
@@ -133,25 +124,21 @@ export const actions = {
             registeredBy: userId,
         });
 
+        if (mutResult.isErr()) {
+            return failFromError(mutResult.error);
+        }
+
         redirect(302, `/tournament/${tournamentId}`);
     },
 
     update: async function ({ request, cookies, params }) {
         const tournamentId = params.id;
 
-        // Check authentication
-        const workosUserCookie = cookies.get("workos_user");
-        if (!workosUserCookie) {
-            return fail(401, { message: "You must be logged in to update a team" });
+        const userResult = getAuthenticatedUser(cookies);
+        if (userResult.isErr()) {
+            return failFromError(userResult.error);
         }
-
-        let userId: string;
-        try {
-            const userData = JSON.parse(workosUserCookie);
-            userId = userData.id;
-        } catch {
-            return fail(401, { message: "Invalid session" });
-        }
+        const userId = userResult.value.id;
 
         const convex = getConvexClient();
 
@@ -199,16 +186,15 @@ export const actions = {
             });
         }
 
-        try {
-            await convex.mutation(api.tournaments.updateTeam, {
-                teamId,
-                name: teamName.trim(),
-                players: players.filter(p => p.trim()),
-                userId,
-            });
-        } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to update team";
-            return fail(400, { message });
+        const mutResult = await safeMutation(convex, api.tournaments.updateTeam, {
+            teamId,
+            name: teamName.trim(),
+            players: players.filter(p => p.trim()),
+            userId,
+        });
+
+        if (mutResult.isErr()) {
+            return failFromError(mutResult.error);
         }
 
         redirect(302, `/tournament/${tournamentId}`);

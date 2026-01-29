@@ -1,10 +1,6 @@
 <script lang="ts">
     import TournamentTeamCard from "$lib/components/TournamentTeamCard.svelte";
-    import ScoreboardModal from "$lib/components/ScoreboardModal.svelte";
     import BracketGame from "./BracketGame.svelte";
-    import { modalStore } from "$lib/stores/modal.svelte";
-    import { useConvexClient } from "convex-svelte";
-    import { api } from "../../../../../../convex/_generated/api";
     import {
         tournamentStore,
         tournamentTeamsStore,
@@ -13,30 +9,20 @@
         bracketSizeStore,
         bracketTypeStore,
         bracketStore,
-        handleSeedChange,
-        getByeSeedFromSource,
         getMatchesByRound,
         getDisplayRounds,
         getFirstRoundPairs,
         getMatchGridPosition,
-        getMatchName,
-        getGame,
-        isMatchLive,
-        matchNeedsTieResolution,
-        matchEndedInTie,
-        getTeamsForMatch,
-        buildTeamSlot,
         getDoubleEliminationGridDimensions,
         getDoubleEliminationGridPosition,
         getAllMatchesForGrid,
         getColumnHeaders,
-        type BracketMatch,
+        calculateRoundRobinStandings,
+        getRoundRobinMatchesByRound,
     } from "$lib/stores/bracket.svelte";
-    import {
-        isByeMatch,
-        getSingleEliminationRoundTitle,
-    } from "$lib/functions/bracketGeneration";
-    import type { TournamentTeam, MatchBracket } from "../types";
+    import { getSingleEliminationRoundTitle } from "$lib/functions/bracketGeneration";
+    import { getTeamOptions } from "$lib/functions/teamSelection";
+    import type { MatchBracket } from "../types";
 
     // Get values from stores
     let tournament = $derived(tournamentStore.value);
@@ -48,7 +34,9 @@
     // Unified bracket structure
     let totalGridRows = $derived(bracketStore.totalGridRows);
     let displayRoundsArr = $derived(getDisplayRounds("winners"));
-    let firstDisplayedRound = $derived(displayRoundsArr.length > 0 ? displayRoundsArr[0]! : 0);
+    let firstDisplayedRound = $derived(
+        displayRoundsArr.length > 0 ? displayRoundsArr[0]! : 0,
+    );
     let grandFinalMatches = $derived(bracketStore.grandFinal);
 
     // Double elimination grid layout
@@ -58,72 +46,17 @@
     let deAllMatches = $derived(getAllMatchesForGrid());
     let deColumnHeaders = $derived(getColumnHeaders());
 
-    const convex = useConvexClient();
-
-    let teamOptions = $derived(
-        teams.map((t: TournamentTeam) => ({
-            value: t.teamId,
-            label: t.name,
-        })),
+    // Round robin
+    let rrStandingsData = $derived(calculateRoundRobinStandings());
+    let rrStandings = $derived(rrStandingsData.standings);
+    let rrTeamOrder = $derived(rrStandingsData.teamOrder);
+    let rrMatchesByRound = $derived(getRoundRobinMatchesByRound());
+    let rrRounds = $derived(
+        Array.from(rrMatchesByRound.keys()).sort((a, b) => a - b),
     );
 
-    // Copy moderator link to clipboard (works for both SE and DE)
-    function copyModeratorLink(matchIndex: number, bracket: MatchBracket = "winners") {
-        const game = getGame(matchIndex, bracket);
-        if (!game) return;
-        const url = `${window.location.origin}/join/${game.gameId}?code=${game.moderatorJoinCode}`;
-        navigator.clipboard.writeText(url);
-    }
-
-    // Tie resolver modal state
-    let tieModalOpen = $state(false);
-    let tieMatchIndex = $state<number | null>(null);
-    let tieBracket = $state<MatchBracket | null>(null);
-
-    function openTieResolver(matchIndex: number, bracket?: MatchBracket) {
-        tieMatchIndex = matchIndex;
-        tieBracket = bracket || null;
-        tieModalOpen = true;
-    }
-
-    // Open scoreboard modal for a match (works for both SE and DE)
-    function openScoreboardModal(matchIndex: number, bracket: MatchBracket = "winners") {
-        const game = getGame(matchIndex, bracket);
-        if (!game) return;
-
-        const pointValues = game.pointValues || {
-            tossup: 4,
-            bonus: 10,
-            penalty: -4,
-        };
-        modalStore.showComponent(ScoreboardModal, {
-            scoreboardData: {
-                scores: game.scores || {},
-                teamNames: game.teamNames || {},
-                playerNames: game.playerNames || {},
-                pointValues: pointValues,
-            },
-        });
-    }
-
-    async function resolveTie(winningTeamId: string) {
-        if (tieMatchIndex === null) return;
-        await convex.mutation(api.tournaments.resolveTie, {
-            tournamentId: tournament.id,
-            matchIndex: tieMatchIndex,
-            bracket: tieBracket || undefined,
-            winningTeamId,
-        });
-        tieModalOpen = false;
-        tieMatchIndex = null;
-        tieBracket = null;
-    }
-
-    // Get teams for tie resolution (works for both SE and DE)
-    function getTieTeams() {
-        if (tieMatchIndex === null) return [];
-        return getTeamsForMatch(tieMatchIndex, tieBracket || "winners");
-    }
+    // Use shared getTeamOptions function for consistency with join page
+    let teamOptions = $derived(getTeamOptions(teams));
 </script>
 
 <section class="bracket-section">
@@ -131,20 +64,23 @@
         <h2>
             Bracket {bracketType === "double"
                 ? "(Double Elimination)"
-                : "(Single Elimination)"}
+                : bracketType === "roundrobin"
+                  ? "(Round Robin)"
+                  : "(Single Elimination)"}
         </h2>
         {#if selectedBracketSize >= 2}
             {#if bracketType === "double"}
                 <!-- DOUBLE ELIMINATION BRACKET - Unified Grid Layout -->
                 <div
-                    class="de-bracket"
-                    style="--de-total-cols: {deGridDimensions.totalCols}; --de-total-rows: {deGridDimensions.totalRows +
-                        1}; --de-winners-rows: {deGridDimensions.winnersRows}"
+                    class="bracket-container double-elimination"
+                    style="--de-total-cols: {deGridDimensions.totalCols}; 
+                           --de-total-rows: {deGridDimensions.totalRows + 1}; 
+                           --de-winners-rows: {deGridDimensions.winnersRows}"
                 >
                     <!-- Column Headers -->
                     {#each deColumnHeaders as header, idx}
                         <div
-                            class="de-header"
+                            class="round-title"
                             style="grid-column: {idx + 1}; grid-row: 1"
                         >
                             {header}
@@ -167,61 +103,118 @@
                                 1} / span {pos.rowSpan}"
                         >
                             <BracketGame
-                                matchName={getMatchName(
-                                    match,
-                                    0,
-                                    Math.max(0, matchIdxInRound),
-                                )}
-                                endedInTie={matchEndedInTie(
-                                    match.matchIndex,
-                                    match.bracket,
-                                )}
-                                hasGame={!!getGame(
-                                    match.matchIndex,
-                                    match.bracket,
-                                )}
-                                isLive={isMatchLive(
-                                    match.matchIndex,
-                                    match.bracket,
-                                )}
-                                team1={buildTeamSlot(match, 0)}
-                                team2={buildTeamSlot(match, 1)}
-                                {teamOptions}
+                                {match}
+                                namingRound={0}
+                                namingIndex={Math.max(0, matchIdxInRound)}
+                                tournamentId={tournament.id}
                                 {isOrganizer}
-                                needsTieResolution={matchNeedsTieResolution(
-                                    match.matchIndex,
-                                    match.bracket,
-                                )}
-                                onSeedChange={handleSeedChange}
-                                onCopyModLink={() =>
-                                    copyModeratorLink(
-                                        match.matchIndex,
-                                        match.bracket,
-                                    )}
-                                onResolveTie={() =>
-                                    openTieResolver(
-                                        match.matchIndex,
-                                        match.bracket,
-                                    )}
-                                onOpenScoreboard={() =>
-                                    openScoreboardModal(
-                                        match.matchIndex,
-                                        match.bracket,
-                                    )}
+                                {teamOptions}
                             />
                         </div>
                     {/each}
                 </div>
+            {:else if bracketType === "roundrobin"}
+                <!-- ROUND ROBIN BRACKET -->
+                <div class="rr-container">
+                    <!-- Standings Matrix Table -->
+                    <div class="rr-standings">
+                        <h3>Standings</h3>
+                        <div class="rr-matrix-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th class="team-col">Team</th>
+                                        {#each rrStandings as opponent}
+                                            <th>
+                                                <span class="h2h-header"
+                                                    >{opponent.teamName}</span
+                                                >
+                                            </th>
+                                        {/each}
+                                        <th>PPG</th>
+                                        <th>Pts</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {#each rrStandings as standing, idx}
+                                        <tr>
+                                            <td>{idx + 1}</td>
+                                            <td class="team-col"
+                                                >{standing.teamName}</td
+                                            >
+                                            {#each rrStandings as opponent}
+                                                <td
+                                                    class:self-cell={standing.teamId ===
+                                                        opponent.teamId}
+                                                >
+                                                    {#if standing.teamId !== opponent.teamId}
+                                                        {@const score =
+                                                            standing.headToHead.get(
+                                                                opponent.teamId,
+                                                            )}
+                                                        {#if score !== null && score !== undefined}
+                                                            {score}
+                                                        {:else}
+                                                            <span
+                                                                class="not-played"
+                                                                >-</span
+                                                            >
+                                                        {/if}
+                                                    {/if}
+                                                </td>
+                                            {/each}
+                                            <td>{standing.ppg}</td>
+                                            <td class="points-col"
+                                                >{standing.tournamentPoints}</td
+                                            >
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Matches Grid by Round -->
+                    <div class="bracket-container round-robin">
+                        {#each rrRounds as round}
+                            {@const matchesInRound =
+                                rrMatchesByRound.get(round) || []}
+                            <div class="bracket-round">
+                                <div class="round-title">RR{round + 1}</div>
+                                <div class="round-matches">
+                                    {#each matchesInRound as match, matchIdx}
+                                        <BracketGame
+                                            {match}
+                                            namingRound={round}
+                                            namingIndex={matchIdx}
+                                            tournamentId={tournament.id}
+                                            {isOrganizer}
+                                            {teamOptions}
+                                            bracketOverride="roundrobin"
+                                        />
+                                    {/each}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
             {:else}
                 <!-- SINGLE ELIMINATION BRACKET -->
-                <div class="bracket" style="--total-grid-rows: {totalGridRows}">
+                <div
+                    class="bracket-container single-elimination"
+                    style="--total-grid-rows: {totalGridRows}"
+                >
                     {#each displayRoundsArr as round, roundIdx}
                         {@const matchesInRound = getMatchesByRound(round)}
                         {@const isFirstDisplayedRound =
                             round === firstDisplayedRound}
                         <div class="bracket-round">
                             <div class="round-title">
-                                {getSingleEliminationRoundTitle(roundIdx, displayRoundsArr.length)}
+                                {getSingleEliminationRoundTitle(
+                                    roundIdx,
+                                    displayRoundsArr.length,
+                                )}
                             </div>
                             <div class="round-matches">
                                 {#if isFirstDisplayedRound}
@@ -236,57 +229,14 @@
                                             style="grid-row: {gridPos.start} / {gridPos.end}"
                                         >
                                             {#each pairMatches as match, matchIdx}
-                                                {@const byeSeed1 =
-                                                    getByeSeedFromSource(
-                                                        match.sourceMatch1,
-                                                    )}
-                                                {@const byeSeed2 =
-                                                    getByeSeedFromSource(
-                                                        match.sourceMatch2,
-                                                    )}
                                                 <BracketGame
-                                                    matchName={getMatchName(
-                                                        match,
-                                                        roundIdx,
-                                                        pairIdx * 2 + matchIdx,
-                                                    )}
-                                                    endedInTie={matchEndedInTie(
-                                                        match.matchIndex,
-                                                    )}
-                                                    hasGame={!!getGame(
-                                                        match.matchIndex,
-                                                    )}
-                                                    isLive={isMatchLive(
-                                                        match.matchIndex,
-                                                    )}
-                                                    team1={buildTeamSlot(
-                                                        match,
-                                                        0,
-                                                        byeSeed1,
-                                                    )}
-                                                    team2={buildTeamSlot(
-                                                        match,
-                                                        1,
-                                                        byeSeed2,
-                                                    )}
-                                                    {teamOptions}
+                                                    {match}
+                                                    namingRound={roundIdx}
+                                                    namingIndex={pairIdx * 2 +
+                                                        matchIdx}
+                                                    tournamentId={tournament.id}
                                                     {isOrganizer}
-                                                    needsTieResolution={matchNeedsTieResolution(
-                                                        match.matchIndex,
-                                                    )}
-                                                    onSeedChange={handleSeedChange}
-                                                    onCopyModLink={() =>
-                                                        copyModeratorLink(
-                                                            match.matchIndex,
-                                                        )}
-                                                    onResolveTie={() =>
-                                                        openTieResolver(
-                                                            match.matchIndex,
-                                                        )}
-                                                    onOpenScoreboard={() =>
-                                                        openScoreboardModal(
-                                                            match.matchIndex,
-                                                        )}
+                                                    {teamOptions}
                                                 />
                                             {/each}
                                         </div>
@@ -294,57 +244,15 @@
                                 {:else}
                                     <!-- Later rounds: position based on source matches -->
                                     {#each matchesInRound as match, matchIdx}
-                                        {@const byeSeed1 = getByeSeedFromSource(
-                                            match.sourceMatch1,
-                                        )}
-                                        {@const byeSeed2 = getByeSeedFromSource(
-                                            match.sourceMatch2,
-                                        )}
                                         {@const gridPos =
                                             getMatchGridPosition(match)}
                                         <BracketGame
-                                            matchName={getMatchName(
-                                                match,
-                                                roundIdx,
-                                                matchIdx,
-                                            )}
-                                            endedInTie={matchEndedInTie(
-                                                match.matchIndex,
-                                            )}
-                                            hasGame={!!getGame(
-                                                match.matchIndex,
-                                            )}
-                                            isLive={isMatchLive(
-                                                match.matchIndex,
-                                            )}
-                                            team1={buildTeamSlot(
-                                                match,
-                                                0,
-                                                byeSeed1,
-                                            )}
-                                            team2={buildTeamSlot(
-                                                match,
-                                                1,
-                                                byeSeed2,
-                                            )}
-                                            {teamOptions}
+                                            {match}
+                                            namingRound={roundIdx}
+                                            namingIndex={matchIdx}
+                                            tournamentId={tournament.id}
                                             {isOrganizer}
-                                            needsTieResolution={matchNeedsTieResolution(
-                                                match.matchIndex,
-                                            )}
-                                            onSeedChange={handleSeedChange}
-                                            onCopyModLink={() =>
-                                                copyModeratorLink(
-                                                    match.matchIndex,
-                                                )}
-                                            onResolveTie={() =>
-                                                openTieResolver(
-                                                    match.matchIndex,
-                                                )}
-                                            onOpenScoreboard={() =>
-                                                openScoreboardModal(
-                                                    match.matchIndex,
-                                                )}
+                                            {teamOptions}
                                             gridRowStyle="grid-row: {gridPos.start} / {gridPos.end}"
                                         />
                                     {/each}
@@ -373,41 +281,6 @@
         {/if}
     {/if}
 </section>
-
-{#if tieModalOpen && tieMatchIndex !== null}
-    <div
-        class="modal-backdrop"
-        role="button"
-        tabindex="-1"
-        onclick={() => (tieModalOpen = false)}
-        onkeydown={(e) => e.key === "Escape" && (tieModalOpen = false)}
-    >
-        <div
-            class="modal"
-            role="dialog"
-            aria-modal="true"
-            tabindex="-1"
-            onclick={(e) => e.stopPropagation()}
-            onkeydown={(e) => e.stopPropagation()}
-        >
-            <h3>Resolve Tie</h3>
-            <p>The game ended with a tie. Select the winning team:</p>
-            <div class="tie-options">
-                {#each getTieTeams() as team}
-                    <button
-                        class="tie-option"
-                        onclick={() => resolveTie(team.teamId)}
-                    >
-                        {team.name}
-                    </button>
-                {/each}
-            </div>
-            <button class="cancel-btn" onclick={() => (tieModalOpen = false)}>
-                Cancel
-            </button>
-        </div>
-    </div>
-{/if}
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
@@ -441,35 +314,66 @@
         width: 100%;
     }
 
-    .bracket {
-        display: flex;
-        align-items: stretch;
-        justify-content: flex-start;
-        gap: 1rem;
+    .bracket-container {
         padding: 1rem;
+        gap: 1rem;
         overflow-x: auto;
+
+        &.single-elimination {
+            display: flex;
+            align-items: stretch;
+            justify-content: flex-start;
+
+            .round-matches {
+                display: grid;
+                grid-template-rows: repeat(
+                    var(--total-grid-rows),
+                    minmax(40px, 1fr)
+                );
+                gap: 0.5rem;
+                flex: 1;
+            }
+        }
+
+        &.double-elimination {
+            display: grid;
+            grid-template-columns: repeat(
+                var(--de-total-cols),
+                minmax(180px, 1fr)
+            );
+            grid-template-rows: auto repeat(
+                    calc(var(--de-total-rows) - 1),
+                    minmax(50px, auto)
+                );
+            gap: 0.5rem 1rem;
+            position: relative;
+        }
+
+        &.round-robin {
+            display: flex;
+            padding: 1rem 0;
+
+            .round-matches {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+        }
     }
 
     .bracket-round {
         display: flex;
         flex-direction: column;
         min-width: 200px;
-
-        .round-title {
-            font-weight: 700;
-            color: $primary;
-            text-align: center;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid $border-color;
-            margin-bottom: 1rem;
-        }
     }
 
-    .round-matches {
-        display: grid;
-        grid-template-rows: repeat(var(--total-grid-rows), minmax(40px, 1fr));
-        gap: 0.5rem;
-        flex: 1;
+    .round-title {
+        font-weight: 700;
+        color: $primary;
+        text-align: center;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid $border-color;
+        margin-bottom: 1rem;
     }
 
     .match-pair {
@@ -479,88 +383,84 @@
         gap: 0.5rem;
     }
 
-    // Double Elimination Unified Grid Styles
-    .de-bracket {
-        display: grid;
-        grid-template-columns: repeat(var(--de-total-cols), minmax(180px, 1fr));
-        grid-template-rows: auto repeat(
-                calc(var(--de-total-rows) - 1),
-                minmax(50px, auto)
-            );
-        gap: 0.5rem 1rem;
-        padding: 1rem;
-        overflow-x: auto;
-        position: relative;
-    }
-
-    .de-header {
-        font-weight: 700;
-        color: $primary;
-        text-align: center;
-        padding: 0.5rem;
-        border-bottom: 2px solid $border-color;
-        font-size: 0.95rem;
-    }
-
     .de-bracket-game {
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    // Modal Styles
-    .modal-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-        backdrop-filter: blur(2px);
-    }
-
-    .modal {
-        background: $background-1;
-        border-radius: 1rem;
-        padding: 2rem;
-        max-width: 400px;
-        text-align: center;
-        box-shadow: $shadow;
-        border: 2px solid $border-color;
-
-        h3 {
-            margin: 0 0 1rem 0;
-            color: $text;
-        }
-
-        p {
-            color: $text-muted;
-            margin-bottom: 1.5rem;
-        }
-    }
-
-    .tie-options {
+    // Round Robin Styles
+    .rr-container {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
+        gap: 2rem;
     }
 
-    .tie-option {
-        @extend %button;
-        background: $primary;
-        font-size: 1.1rem;
-        padding: 0.75rem;
-    }
+    .rr-standings {
+        h3 {
+            color: $text;
+            font-size: 1.2rem;
+            margin: 0 0 1rem 0;
+        }
 
-    .cancel-btn {
-        @extend %button;
-        background: $gray-2;
-        font-size: 0.9rem;
-        padding: 0.5rem 1rem;
+        .rr-matrix-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            background: $background-2;
+            border-radius: 0.5rem;
+            overflow: hidden;
+
+            td {
+                padding: 0.75rem 1rem;
+                text-align: center;
+                border-bottom: 1px solid $border-color;
+            }
+
+            th {
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid $border-color;
+                vertical-align: bottom;
+                background: $background-1;
+                font-weight: 700;
+                color: $primary;
+            }
+
+            .team-col {
+                text-align: left;
+                font-weight: 600;
+            }
+
+            .h2h-header {
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                transform: rotate(180deg);
+                white-space: nowrap;
+                display: inline-block;
+                font-size: 0.85rem;
+            }
+
+            .self-cell {
+                background: $background-1;
+            }
+
+            .not-played {
+                color: $text-muted;
+            }
+
+            .points-col {
+                font-weight: 700;
+            }
+
+            tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            tbody tr:hover {
+                background: rgba($primary, 0.1);
+            }
+        }
     }
 </style>

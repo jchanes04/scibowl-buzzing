@@ -4,20 +4,13 @@ import { fail, redirect } from "@sveltejs/kit"
 import type { Actions } from "./$types"
 import { env } from "$env/dynamic/public"
 import { createMemberID } from "$lib/functions/createId"
+import { getAuthenticatedUser } from "$lib/auth.result"
 
 // Get or create a persistent member ID for the user
 function getPersistentMemberId(cookies: any): { memberId: string, isNew: boolean } {
-    // Check if user is logged in (has WorkOS user cookie)
-    const workosUserCookie = cookies.get("workos_user")
-    if (workosUserCookie) {
-        try {
-            const userData = JSON.parse(workosUserCookie)
-            if (userData.id) {
-                return { memberId: userData.id, isNew: false }
-            }
-        } catch (e) {
-            // Fall through to anonymous handling
-        }
+    const userResult = getAuthenticatedUser(cookies)
+    if (userResult.isOk()) {
+        return { memberId: userResult.value.id, isNew: false }
     }
 
     // Check for existing persistent member ID cookie

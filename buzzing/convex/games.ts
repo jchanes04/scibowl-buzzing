@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { getGame as getGameHelper, unwrapOrThrow } from "./helpers";
 
 const categoryValidator = v.union(
   v.literal("earth"),
@@ -278,16 +279,7 @@ export const deleteGame = mutation({
  * Helper: Get game document (throws if not found)
  */
 async function getGame(ctx: any, gameId: string) {
-  const game = await ctx.db
-    .query("games")
-    .withIndex("by_gameId", (q: any) => q.eq("gameId", gameId))
-    .first();
-
-  if (!game) {
-    throw new Error(`Game not found: ${gameId}`);
-  }
-
-  return game;
+  return unwrapOrThrow(await getGameHelper(ctx, gameId));
 }
 
 /**

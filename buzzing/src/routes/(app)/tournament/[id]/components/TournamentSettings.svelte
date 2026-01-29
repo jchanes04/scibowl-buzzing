@@ -206,11 +206,6 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-
-        p {
-            margin: 0;
-            color: $text;
-        }
     }
 
     .settings-form {

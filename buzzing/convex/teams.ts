@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { internalNotFound, unwrapOrThrow } from "./helpers";
+import { err, ok } from "neverthrow";
 
 // Get active teams for a game (for client subscription)
 export const getForGame = query({
@@ -126,15 +128,17 @@ export const rejoin = mutation({
       )
       .first();
 
-    if (!team) {
-      throw new Error(`Team ${args.teamId} not found in game ${args.gameId}`);
-    }
+    const validTeam = unwrapOrThrow(
+      team
+        ? ok(team)
+        : err(internalNotFound("Team", `${args.teamId} in game ${args.gameId}`))
+    );
 
-    await ctx.db.patch(team._id, {
+    await ctx.db.patch(validTeam._id, {
       isActive: true,
     });
 
-    return team._id;
+    return validTeam._id;
   },
 });
 

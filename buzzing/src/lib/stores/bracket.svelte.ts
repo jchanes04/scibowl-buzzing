@@ -11,7 +11,11 @@ import { api } from '../../../convex/_generated/api';
 import { tournamentStore, tournamentTeamsStore, tournamentGamesStore } from './tournament.svelte';
 import { calculateTeamScore } from '$lib/functions/scoreboard';
 import { toastStore } from './toast.svelte';
+import { safeMutation } from '$lib/convex.result';
 import type { BracketSeed, TournamentTeam, TournamentGame, BracketResult, BracketType } from '../../routes/(app)/tournament/[id]/types';
+
+// Re-export RR helpers for convenience
+export { getRoundRobinNumRounds, getRoundRobinTotalGames, getRoundRobinRoundTitle } from '$lib/functions/bracketGeneration';
 
 // Import from unified bracket generation module
 import {
@@ -26,6 +30,10 @@ import {
     getDoubleEliminationGridDimensions as getDEGridDimensions,
     getDoubleEliminationGridPosition as getDEGridPosition,
     getDoubleEliminationColumnHeaders as getDEColumnHeaders,
+    getRoundRobinMatchName,
+    getRoundRobinRoundTitle,
+    getRoundRobinNumRounds,
+    getRoundRobinTotalGames,
     type BracketMatch,
     type MatchBracket,
     type SourceMatch,
@@ -49,7 +57,7 @@ export interface TeamSlot {
 // Bracket editing state
 let _selectedBracketSize = $state(0);
 let _selectedBracketType = $state<BracketType>("single");
-let _selectedGrandFinalReset = $state(true);
+let _selectedWinnerTakesAll = $state(true);
 let _pendingSeeds = $state<Map<string, number | null>>(new Map());
 
 // Track initialization
@@ -70,8 +78,8 @@ export function initBracketStore() {
     if (tournament.bracketType) {
         _selectedBracketType = tournament.bracketType;
     }
-    if (tournament.grandFinalReset !== undefined) {
-        _selectedGrandFinalReset = tournament.grandFinalReset;
+    if (tournament.winnerTakesAll !== undefined) {
+        _selectedWinnerTakesAll = tournament.winnerTakesAll;
     }
 
     // Reactively update bracket size from tournament or teams
@@ -87,8 +95,8 @@ export function initBracketStore() {
             if (t.bracketType && _selectedBracketType !== t.bracketType) {
                 _selectedBracketType = t.bracketType;
             }
-            if (t.grandFinalReset !== undefined && _selectedGrandFinalReset !== t.grandFinalReset) {
-                _selectedGrandFinalReset = t.grandFinalReset;
+            if (t.winnerTakesAll !== undefined && _selectedWinnerTakesAll !== t.winnerTakesAll) {
+                _selectedWinnerTakesAll = t.winnerTakesAll;
             }
         }
         // Initialize only when tournament data is loaded (id exists)
@@ -103,8 +111,8 @@ export function initBracketStore() {
             if (t.bracketType) {
                 _selectedBracketType = t.bracketType;
             }
-            if (t.grandFinalReset !== undefined) {
-                _selectedGrandFinalReset = t.grandFinalReset;
+            if (t.winnerTakesAll !== undefined) {
+                _selectedWinnerTakesAll = t.winnerTakesAll;
             }
         }
     });
@@ -116,7 +124,7 @@ export function initBracketStore() {
 export function clearBracketStore() {
     _selectedBracketSize = 0;
     _selectedBracketType = "single";
-    _selectedGrandFinalReset = true;
+    _selectedWinnerTakesAll = true;
     _pendingSeeds = new Map();
     isInitialized = false;
 }
@@ -149,12 +157,12 @@ export const bracketTypeStore = {
  * Winner takes all finals store (for double elimination)
  * When false, a bracket reset match is played if losers bracket champion wins first Grand Final
  */
-export const grandFinalResetStore = {
+export const winnerTakesAllStore = {
     get value(): boolean {
-        return _selectedGrandFinalReset;
+        return _selectedWinnerTakesAll;
     },
     set value(reset: boolean) {
-        _selectedGrandFinalReset = reset;
+        _selectedWinnerTakesAll = reset;
     },
 };
 
@@ -188,7 +196,7 @@ export const hasUnsavedChanges = {
         if (_pendingSeeds.size > 0) return true;
         if (_selectedBracketSize !== (tournament.bracketSize || teams.length)) return true;
         if (_selectedBracketType !== (tournament.bracketType || "single")) return true;
-        if (_selectedGrandFinalReset !== (tournament.grandFinalReset ?? true)) return true;
+        if (_selectedWinnerTakesAll !== (tournament.winnerTakesAll ?? true)) return true;
         return false;
     },
 };
@@ -302,7 +310,7 @@ export function cancelPendingChanges() {
     _pendingSeeds = new Map();
     _selectedBracketSize = tournament.bracketSize || teams.length;
     _selectedBracketType = tournament.bracketType || "single";
-    _selectedGrandFinalReset = tournament.grandFinalReset ?? true;
+    _selectedWinnerTakesAll = tournament.winnerTakesAll ?? true;
 }
 
 /**
@@ -337,26 +345,26 @@ export function randomizeSeeds() {
 export async function saveBracketStructure(convex: any): Promise<boolean> {
     const tournament = tournamentStore.value;
 
-    try {
-        toastStore.add('Saving structure...', 'info', 1000);
+    toastStore.add('Saving structure...', 'info', 1000);
 
-        const seeds = getCurrentSeeds();
+    const seeds = getCurrentSeeds();
 
-        await convex.mutation(api.tournaments.saveBracketStructure, {
-            tournamentId: tournament.id,
-            bracketSeeds: seeds,
-            bracketSize: _selectedBracketSize,
-            bracketType: _selectedBracketType,
-            grandFinalReset: _selectedGrandFinalReset,
-        });
+    const result = await safeMutation(convex, api.tournaments.saveBracketStructure, {
+        tournamentId: tournament.id,
+        bracketSeeds: seeds,
+        bracketSize: _selectedBracketSize,
+        bracketType: _selectedBracketType,
+        winnerTakesAll: _selectedWinnerTakesAll,
+    });
 
-        _pendingSeeds = new Map();
-        toastStore.add('Structure saved successfully!', 'success');
-        return true;
-    } catch (error) {
-        toastStore.add(`Error saving structure: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    if (result.isErr()) {
+        toastStore.add(`Error saving structure: ${result.error.message}`, 'error');
         return false;
     }
+
+    _pendingSeeds = new Map();
+    toastStore.add('Structure saved successfully!', 'success');
+    return true;
 }
 
 /**
@@ -380,8 +388,12 @@ export async function confirmBracketStructure(convex: any) {
         }
     }
 
-    const bracketTypeName = _selectedBracketType === "double" ? "Double Elimination" : "Single Elimination";
-    const resetInfo = _selectedBracketType === "double" ? (_selectedGrandFinalReset ? "" : " (winner takes all finals)") : "";
+    const bracketTypeName = _selectedBracketType === "double"
+        ? "Double Elimination"
+        : _selectedBracketType === "roundrobin"
+            ? "Round Robin"
+            : "Single Elimination";
+    const resetInfo = _selectedBracketType === "double" ? (_selectedWinnerTakesAll ? "" : " (winner takes all finals)") : "";
 
     if (
         !confirm(
@@ -391,32 +403,33 @@ export async function confirmBracketStructure(convex: any) {
         return;
     }
 
-    try {
-        toastStore.add('Creating games...', 'info', 2000);
+    toastStore.add('Creating games...', 'info', 2000);
 
-        // First save any pending changes
-        const needsSave = _pendingSeeds.size > 0 ||
-            _selectedBracketSize !== tournament.bracketSize ||
-            _selectedBracketType !== (tournament.bracketType || "single") ||
-            _selectedGrandFinalReset !== (tournament.grandFinalReset ?? true);
+    // First save any pending changes
+    const needsSave = _pendingSeeds.size > 0 ||
+        _selectedBracketSize !== tournament.bracketSize ||
+        _selectedBracketType !== (tournament.bracketType || "single") ||
+        _selectedWinnerTakesAll !== (tournament.winnerTakesAll ?? true);
 
-        if (needsSave) {
-            const saveSuccess = await saveBracketStructure(convex);
-            if (!saveSuccess) {
-                toastStore.add('Cannot confirm bracket - save failed', 'error');
-                return;
-            }
+    if (needsSave) {
+        const saveSuccess = await saveBracketStructure(convex);
+        if (!saveSuccess) {
+            toastStore.add('Cannot confirm bracket - save failed', 'error');
+            return;
         }
-
-        // Then confirm the structure
-        await convex.mutation(api.tournaments.confirmBracketStructure, {
-            tournamentId: tournament.id,
-        });
-
-        toastStore.add(`Structure confirmed! Games created for ${bracketTypeName} bracket.`, 'success');
-    } catch (error) {
-        toastStore.add(`Error confirming structure: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     }
+
+    // Then confirm the structure
+    const result = await safeMutation(convex, api.tournaments.confirmBracketStructure, {
+        tournamentId: tournament.id,
+    });
+
+    if (result.isErr()) {
+        toastStore.add(`Error confirming structure: ${result.error.message}`, 'error');
+        return;
+    }
+
+    toastStore.add(`Structure confirmed! Games created for ${bracketTypeName} bracket.`, 'success');
 }
 
 // --- Bracket Match Generation ---
@@ -429,7 +442,7 @@ function getCurrentBracket(): GeneratedBracket {
     return generateBracket({
         bracketSize: _selectedBracketSize,
         bracketType: _selectedBracketType,
-        grandFinalReset: _selectedGrandFinalReset,
+        winnerTakesAll: _selectedWinnerTakesAll,
     });
 }
 
@@ -453,6 +466,9 @@ export const bracketStore = {
     get grandFinal(): BracketMatch[] {
         return this.bracket.grandFinal;
     },
+    get roundrobin(): BracketMatch[] {
+        return this.bracket.roundrobin;
+    },
     get allMatches(): BracketMatch[] {
         return getAllMatchesFn(this.bracket);
     },
@@ -463,6 +479,9 @@ export const bracketStore = {
     get losersNumRounds(): number {
         const matches = this.losers;
         return matches.length > 0 ? (matches[matches.length - 1]?.round ?? -1) + 1 : 0;
+    },
+    get roundrobinNumRounds(): number {
+        return getRoundRobinNumRounds(_selectedBracketSize);
     },
     get firstRoundMatchCount(): number {
         return this.winnersNumRounds > 0 ? Math.pow(2, this.winnersNumRounds - 1) : 0;
@@ -487,7 +506,7 @@ export function getByeSeedFromSource(source: SourceMatch | undefined): number | 
 }
 
 /**
- * Get non-bye matches for a specific round (winners bracket for SE, specified bracket for DE)
+ * Get non-bye matches for a specific round (winners bracket for SE, specified bracket for DE/RR)
  */
 export function getMatchesByRound(round: number, bracket: MatchBracket = "winners"): BracketMatch[] {
     let matches: BracketMatch[];
@@ -500,6 +519,9 @@ export function getMatchesByRound(round: number, bracket: MatchBracket = "winner
             break;
         case "grand_final":
             matches = bracketStore.grandFinal;
+            break;
+        case "roundrobin":
+            matches = bracketStore.roundrobin;
             break;
         default:
             matches = bracketStore.winners;
@@ -521,6 +543,9 @@ export function getDisplayRounds(bracket: MatchBracket = "winners"): number[] {
             break;
         case "grand_final":
             matches = bracketStore.grandFinal;
+            break;
+        case "roundrobin":
+            matches = bracketStore.roundrobin;
             break;
         default:
             matches = bracketStore.winners;
@@ -588,6 +613,9 @@ export function getMatchName(match: BracketMatch, displayRoundIdx: number, match
     if (_selectedBracketType === "double") {
         return getDEMatchName(match, matchIdxInRound, bracketStore.bracket, _selectedBracketSize);
     }
+    if (_selectedBracketType === "roundrobin") {
+        return getRoundRobinMatchName(match, matchIdxInRound);
+    }
     const displayRoundsArr = getDisplayRounds("winners");
     return getSingleEliminationMatchName(match, displayRoundIdx, matchIdxInRound, displayRoundsArr.length);
 }
@@ -605,6 +633,12 @@ export function getMatchNameByIndex(matchIndex: number, bracket: MatchBracket = 
         const matchesInRound = getMatchesByRound(match.round, bracket);
         const matchIdxInRound = matchesInRound.findIndex((m) => m.matchIndex === matchIndex);
         return getDEMatchName(match, matchIdxInRound, bracketStore.bracket, _selectedBracketSize);
+    }
+
+    if (_selectedBracketType === "roundrobin") {
+        const matchesInRound = getMatchesByRound(match.round, "roundrobin");
+        const matchIdxInRound = matchesInRound.findIndex((m) => m.matchIndex === matchIndex);
+        return getRoundRobinMatchName(match, matchIdxInRound);
     }
 
     // Single elimination naming
@@ -662,7 +696,7 @@ export function getMatchWinner(matchIndex: number, bracket: MatchBracket = "winn
     const allMatches = bracketStore.allMatches;
 
     // Check stored results
-    const result = tournament.bracketResults?.find((r: BracketResult) =>
+    const result = tournament.bracket?.results?.find((r: BracketResult) =>
         r.matchIndex === matchIndex && (r.bracket || "winners") === bracket
     );
     if (result) return result.winningTeamId;
@@ -772,7 +806,7 @@ export function matchNeedsTieResolution(matchIndex: number, bracket: MatchBracke
     const tournament = tournamentStore.value;
     const game = getGame(matchIndex, bracket);
     if (!game) return false;
-    const hasResult = tournament.bracketResults?.some((r: BracketResult) =>
+    const hasResult = tournament.bracket?.results?.some((r: BracketResult) =>
         r.matchIndex === matchIndex && (r.bracket || "winners") === bracket
     );
     return game.isCompleted === true && !hasResult;
@@ -785,7 +819,7 @@ export function matchEndedInTie(matchIndex: number, bracket: MatchBracket = "win
     const tournament = tournamentStore.value;
     const game = getGame(matchIndex, bracket);
     if (!game || game.isCompleted !== true) return false;
-    const hasResult = tournament.bracketResults?.some((r: BracketResult) =>
+    const hasResult = tournament.bracket?.results?.some((r: BracketResult) =>
         r.matchIndex === matchIndex && (r.bracket || "winners") === bracket
     );
     return !hasResult;
@@ -894,7 +928,7 @@ export function buildTeamSlot(match: BracketMatch, slotIndex: 0 | 1, byeSeed: nu
  */
 function isGrandFinalResetNeeded(): boolean {
     const tournament = tournamentStore.value;
-    if (!tournament.grandFinalReset) return false;
+    if (!tournament.winnerTakesAll) return false;
 
     const gf1Winner = getMatchWinner(0, "grand_final");
     if (!gf1Winner) return false;
@@ -922,22 +956,27 @@ function isGrandFinalResetNeeded(): boolean {
  * Calculate grid dimensions for double elimination bracket
  */
 export function getDoubleEliminationGridDimensions(bracketSize: number = _selectedBracketSize): DEGridDimensions {
-    return getDEGridDimensions(bracketSize, _selectedGrandFinalReset);
+    return getDEGridDimensions(bracketSize, _selectedWinnerTakesAll);
 }
 
 /**
  * Get grid position for a double elimination match
  */
 export function getDoubleEliminationGridPosition(match: BracketMatch): DEGridPosition {
-    return getDEGridPosition(match, bracketStore.bracket, _selectedBracketSize, _selectedGrandFinalReset);
+    return getDEGridPosition(match, bracketStore.bracket, _selectedBracketSize, _selectedWinnerTakesAll);
 }
 
 /**
- * Get all matches for grid rendering (works for both SE and DE)
+ * Get all matches for grid rendering (works for SE, DE, and RR)
  */
 export function getAllMatchesForGrid(): BracketMatch[] {
     const tournament = tournamentStore.value;
     const bracket = bracketStore.bracket;
+
+    // Round robin: return all matches
+    if (_selectedBracketType === "roundrobin") {
+        return bracket.roundrobin;
+    }
 
     // Filter out bye matches from winners
     const displayWinners = bracket.winners.filter(m => !isByeMatch(m));
@@ -950,7 +989,7 @@ export function getAllMatchesForGrid(): BracketMatch[] {
     const displayGrandFinal = bracket.grandFinal.filter((m, idx) => {
         if (idx === 0) return true; // Always show GF1
         // Show GF Reset only if bracket allows it and either not confirmed or reset is actually needed
-        return _selectedGrandFinalReset && (isGrandFinalResetNeeded() || !tournament.bracketConfirmed);
+        return _selectedWinnerTakesAll && (isGrandFinalResetNeeded() || !tournament.bracketConfirmed);
     });
 
     return [...displayWinners, ...bracket.losers, ...displayGrandFinal];
@@ -964,5 +1003,184 @@ export function getColumnHeaders(): string[] {
         const displayRoundsArr = getDisplayRounds("winners");
         return displayRoundsArr.map((_, idx) => getSingleEliminationRoundTitle(idx, displayRoundsArr.length));
     }
-    return getDEColumnHeaders(_selectedBracketSize, _selectedGrandFinalReset);
+    if (_selectedBracketType === "roundrobin") {
+        const numRounds = getRoundRobinNumRounds(_selectedBracketSize);
+        return Array.from({ length: numRounds }, (_, i) => getRoundRobinRoundTitle(i));
+    }
+    return getDEColumnHeaders(_selectedBracketSize, _selectedWinnerTakesAll);
+}
+
+// =============================================================================
+// ROUND ROBIN STANDINGS
+// =============================================================================
+
+export interface RoundRobinStanding {
+    teamId: string;
+    teamName: string;
+    wins: number;
+    losses: number;
+    ties: number;
+    gamesPlayed: number;
+    pointsFor: number;
+    pointsAgainst: number;
+    pointDifferential: number;
+    tournamentPoints: number; // 2 for win, 1 for tie, 0 for loss
+    ppg: number; // Points per game average
+    headToHead: Map<string, number | null>; // teamId -> score against that team (null if not played)
+}
+
+export interface RoundRobinStandingsData {
+    standings: RoundRobinStanding[];
+    teamOrder: string[]; // teamIds in display order (sorted by tournament points)
+}
+
+/**
+ * Calculate round robin standings based on completed matches
+ * Returns standings with head-to-head matrix data
+ */
+export function calculateRoundRobinStandings(): RoundRobinStandingsData {
+    const teams = tournamentTeamsStore.value;
+    const tournament = tournamentStore.value;
+
+    // Initialize standings for all seeded teams
+    const standings = new Map<string, RoundRobinStanding>();
+    const bracketSeeds = tournament.bracketSeeds || [];
+    const seededTeamIds: string[] = [];
+
+    for (const seedData of bracketSeeds) {
+        const team = teams.find((t: TournamentTeam) => t.teamId === seedData.teamId);
+        if (team) {
+            seededTeamIds.push(team.teamId);
+            standings.set(team.teamId, {
+                teamId: team.teamId,
+                teamName: team.name,
+                wins: 0,
+                losses: 0,
+                ties: 0,
+                gamesPlayed: 0,
+                pointsFor: 0,
+                pointsAgainst: 0,
+                pointDifferential: 0,
+                tournamentPoints: 0,
+                ppg: 0,
+                headToHead: new Map(),
+            });
+        }
+    }
+
+    // Initialize head-to-head maps with null (not played yet)
+    for (const teamId of seededTeamIds) {
+        const standing = standings.get(teamId);
+        if (standing) {
+            for (const opponentId of seededTeamIds) {
+                if (opponentId !== teamId) {
+                    standing.headToHead.set(opponentId, null);
+                }
+            }
+        }
+    }
+
+    // Process completed matches
+    const rrMatches = bracketStore.roundrobin;
+    for (const match of rrMatches) {
+        const game = getGame(match.matchIndex, "roundrobin");
+        if (!game || !game.isCompleted) continue;
+
+        // Get teams in this match
+        const team1 = match.team1Seed ? getTeamAtSeed(match.team1Seed) : null;
+        const team2 = match.team2Seed ? getTeamAtSeed(match.team2Seed) : null;
+        if (!team1 || !team2) continue;
+
+        // Get scores
+        const score1 = getTeamScoreForMatch(match.matchIndex, "roundrobin", team1.teamId) ?? 0;
+        const score2 = getTeamScoreForMatch(match.matchIndex, "roundrobin", team2.teamId) ?? 0;
+
+        // Update standings
+        const standing1 = standings.get(team1.teamId);
+        const standing2 = standings.get(team2.teamId);
+
+        if (standing1) {
+            standing1.pointsFor += score1;
+            standing1.pointsAgainst += score2;
+            standing1.pointDifferential = standing1.pointsFor - standing1.pointsAgainst;
+            standing1.gamesPlayed++;
+            standing1.headToHead.set(team2.teamId, score1);
+        }
+        if (standing2) {
+            standing2.pointsFor += score2;
+            standing2.pointsAgainst += score1;
+            standing2.pointDifferential = standing2.pointsFor - standing2.pointsAgainst;
+            standing2.gamesPlayed++;
+            standing2.headToHead.set(team1.teamId, score2);
+        }
+
+        // Determine winner/tie
+        const result = tournament.bracket?.results?.find(
+            (r: BracketResult) => r.matchIndex === match.matchIndex && r.bracket === "roundrobin"
+        );
+
+        let winnerId: string | null = null;
+        let isTie = false;
+
+        if (result) {
+            winnerId = result.winningTeamId;
+        } else if (score1 !== score2) {
+            winnerId = score1 > score2 ? team1.teamId : team2.teamId;
+        } else {
+            isTie = true;
+        }
+
+        if (winnerId) {
+            if (winnerId === team1.teamId && standing1 && standing2) {
+                standing1.wins++;
+                standing1.tournamentPoints += 2;
+                standing2.losses++;
+            } else if (winnerId === team2.teamId && standing1 && standing2) {
+                standing2.wins++;
+                standing2.tournamentPoints += 2;
+                standing1.losses++;
+            }
+        } else if (isTie && standing1 && standing2) {
+            standing1.ties++;
+            standing1.tournamentPoints += 1;
+            standing2.ties++;
+            standing2.tournamentPoints += 1;
+        }
+    }
+
+    // Calculate PPG for each team
+    for (const standing of standings.values()) {
+        standing.ppg = standing.gamesPlayed > 0
+            ? Math.round((standing.pointsFor / standing.gamesPlayed) * 10) / 10
+            : 0;
+    }
+
+    // Convert to array and sort by tournament points (desc), then point differential (desc)
+    const standingsArray = Array.from(standings.values());
+    standingsArray.sort((a, b) => {
+        if (b.tournamentPoints !== a.tournamentPoints) return b.tournamentPoints - a.tournamentPoints;
+        return b.pointDifferential - a.pointDifferential;
+    });
+
+    return {
+        standings: standingsArray,
+        teamOrder: standingsArray.map(s => s.teamId),
+    };
+}
+
+/**
+ * Group round robin matches by round for grid display
+ */
+export function getRoundRobinMatchesByRound(): Map<number, BracketMatch[]> {
+    const matches = bracketStore.roundrobin;
+    const byRound = new Map<number, BracketMatch[]>();
+
+    for (const match of matches) {
+        if (!byRound.has(match.round)) {
+            byRound.set(match.round, []);
+        }
+        byRound.get(match.round)!.push(match);
+    }
+
+    return byRound;
 }

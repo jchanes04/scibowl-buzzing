@@ -2,6 +2,21 @@
     import Select from "svelte-select";
     import { Copy, Check, Scale, Sheet } from "lucide-svelte";
     import { fade } from "svelte/transition";
+    import {
+        getMatchName,
+        getGame,
+        isMatchLive,
+        matchEndedInTie,
+        matchNeedsTieResolution,
+        buildTeamSlot,
+        getByeSeedFromSource,
+        handleSeedChange as storeHandleSeedChange,
+        getTeamsForMatch,
+    } from "$lib/stores/bracket.svelte";
+    import { modalStore } from "$lib/stores/modal.svelte";
+    import ScoreboardModal from "$lib/components/ScoreboardModal.svelte";
+    import TieResolverModal from "./TieResolverModal.svelte";
+    import type { BracketMatch, MatchBracket } from "../types";
 
     interface TeamSlot {
         display: string;
@@ -17,67 +32,103 @@
         label: string;
     }
 
-    let {
-        matchName,
-        endedInTie = false,
-        hasGame = false,
-        isLive = false,
-        team1,
-        team2,
-        teamOptions = [],
-        isOrganizer = false,
-        needsTieResolution = false,
-        onSeedChange,
-        onCopyModLink,
-        onResolveTie,
-        onOpenScoreboard,
-        gridRowStyle = "",
-    } = $props<{
-        matchName: string;
-        endedInTie?: boolean;
-        hasGame?: boolean;
-        isLive?: boolean;
-        team1: TeamSlot;
-        team2: TeamSlot;
-        teamOptions?: TeamOption[];
-        isOrganizer?: boolean;
-        needsTieResolution?: boolean;
-        onSeedChange?: (teamId: string, seedValue: string) => void;
-        onCopyModLink?: () => void;
-        onResolveTie?: () => void;
-        onOpenScoreboard?: () => void;
+    interface Props {
+        match: BracketMatch;
+        namingRound: number;
+        namingIndex: number;
+        tournamentId: string;
+        isOrganizer: boolean;
+        teamOptions: TeamOption[];
+        bracketOverride?: MatchBracket;
         gridRowStyle?: string;
-    }>();
+    }
+
+    let {
+        match,
+        namingRound,
+        namingIndex,
+        tournamentId,
+        isOrganizer,
+        teamOptions,
+        bracketOverride,
+        gridRowStyle = "",
+    }: Props = $props();
+
+    // Determine the effective bracket type (e.g. "roundrobin", "winners", etc.)
+    let bracketContext = $derived(
+        bracketOverride || match.bracket || "winners",
+    );
+
+    // Derived match information
+    let matchName = $derived(getMatchName(match, namingRound, namingIndex));
+    let game = $derived(getGame(match.matchIndex, bracketContext));
+    let hasGame = $derived(!!game);
+    let isLive = $derived(isMatchLive(match.matchIndex, bracketContext));
+    let endedInTie = $derived(
+        matchEndedInTie(match.matchIndex, bracketContext),
+    );
+    let needsTieResolution = $derived(
+        matchNeedsTieResolution(match.matchIndex, bracketContext),
+    );
+
+    // Initial bye/seed calculation for SE logic
+    // getByeSeedFromSource handles null/undefined inputs gracefully
+    let byeSeed1 = $derived(getByeSeedFromSource(match.sourceMatch1));
+    let byeSeed2 = $derived(getByeSeedFromSource(match.sourceMatch2));
+
+    let team1 = $derived(buildTeamSlot(match, 0, byeSeed1));
+    let team2 = $derived(buildTeamSlot(match, 1, byeSeed2));
 
     let copied = $state(false);
 
     function handleSeedChange(e: CustomEvent<{ value: string }>, seed: number) {
-        onSeedChange?.(e.detail.value, seed.toString());
+        // Use the imported store function
+        storeHandleSeedChange(e.detail.value, seed.toString());
     }
 
     function handleSeedClear(currentTeamId: string | null, seed: number) {
         if (currentTeamId) {
-            onSeedChange?.(currentTeamId, "");
+            storeHandleSeedChange(currentTeamId, "");
         }
     }
 
     function handleCopyModLink(e: MouseEvent) {
         e.stopPropagation();
-        if (onCopyModLink) {
-            onCopyModLink();
-            copied = true;
-            setTimeout(() => (copied = false), 1000);
-        }
+        if (!game) return;
+        const url = `${window.location.origin}/join/${game.gameId}?code=${game.moderatorJoinCode}`;
+        navigator.clipboard.writeText(url);
+        copied = true;
+        setTimeout(() => (copied = false), 1000);
     }
 
     function handleResolveTie(e: MouseEvent) {
         e.stopPropagation();
-        onResolveTie?.();
+        const teams = getTeamsForMatch(match.matchIndex, bracketContext);
+        modalStore.showComponent(TieResolverModal, {
+            tournamentId,
+            matchIndex: match.matchIndex,
+            bracket: bracketContext,
+            teams,
+        });
     }
 
     function handleOpenScoreboard(e: MouseEvent) {
         e.stopPropagation();
-        onOpenScoreboard?.();
+        if (!game) return;
+
+        const pointValues = game.pointValues || {
+            tossup: 4,
+            bonus: 10,
+            penalty: -4,
+        };
+        modalStore.showComponent(ScoreboardModal, {
+            scoreboardData: {
+                scores: game.scores || {},
+                teamNames: game.teamNames || {},
+                playerNames: game.playerNames || {},
+                pointValues: pointValues,
+            },
+        });
     }
 </script>
 

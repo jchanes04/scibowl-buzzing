@@ -1,37 +1,26 @@
 import { redirect, fail } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import { getConvexClient, api } from "$lib/convex.server";
+import { safeMutation } from "$lib/convex.result";
+import { getAuthenticatedUser } from "$lib/auth.result";
 import { createTournamentID } from "$lib/functions/createId";
+import { failFromError } from "$lib/sveltekit.result";
 
 export const load: PageServerLoad = async ({ cookies }) => {
-    // Check if user is logged in
-    const workosUserCookie = cookies.get("workos_user");
-    if (!workosUserCookie) {
+    const userResult = getAuthenticatedUser(cookies);
+    if (userResult.isErr()) {
         return { authenticated: false };
     }
-
-    try {
-        const userData = JSON.parse(workosUserCookie);
-        return { authenticated: true, userId: userData.id };
-    } catch {
-        return { authenticated: false };
-    }
+    return { authenticated: true, userId: userResult.value.id };
 };
 
 export const actions = {
     default: async function ({ request, cookies }) {
-        const workosUserCookie = cookies.get("workos_user");
-        if (!workosUserCookie) {
-            return fail(401, { message: "You must be logged in to create a tournament" });
+        const userResult = getAuthenticatedUser(cookies);
+        if (userResult.isErr()) {
+            return failFromError(userResult.error);
         }
-
-        let organizerId: string;
-        try {
-            const userData = JSON.parse(workosUserCookie);
-            organizerId = userData.id;
-        } catch {
-            return fail(401, { message: "Invalid session" });
-        }
+        const organizerId = userResult.value.id;
 
         const body = await request.formData();
         const tournamentName = body.get("tournament-name") as string;
@@ -68,9 +57,7 @@ export const actions = {
 
         const convex = getConvexClient();
 
-        // Create the tournament WITHOUT games
-        // Games will be created when the organizer confirms the bracket structure
-        await convex.mutation(api.tournaments.create, {
+        const mutationResult = await safeMutation(convex, api.tournaments.create, {
             tournamentId,
             name: tournamentName.trim(),
             organizerId,
@@ -81,8 +68,11 @@ export const actions = {
                 minPlayers,
                 maxPlayers,
             },
-            gameIds: [], // No games created yet - will be created on bracket confirmation
         });
+
+        if (mutationResult.isErr()) {
+            return failFromError(mutationResult.error);
+        }
 
         redirect(302, `/tournament/${tournamentId}`);
     },

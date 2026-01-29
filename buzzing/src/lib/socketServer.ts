@@ -12,6 +12,7 @@ import { Game } from '$lib/classes/Game'
 import { getDataFromGameToken } from './authentication'
 import { env } from "$env/dynamic/public"
 import { getConvexClient, api } from './convex.server'
+import { safeMutation, safeQuery } from './convex.result'
 import fs from 'fs'
 
 // Use a global variable to persist the socket.io server and game manager across HMR reloads in dev mode
@@ -63,12 +64,12 @@ export function attachSocketIO(httpServer: HTTPServer | HTTPSServer): Server {
         },
         allowRequest: async (req, callback) => {
             const gameToken = req.headers.cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
-            const tokenData = await getDataFromGameToken(gameToken || "")
-            if (!gameToken || !tokenData) {
+            const tokenResult = await getDataFromGameToken(gameToken || "")
+            if (!gameToken || tokenResult.isErr()) {
                 return callback(null, false)
             }
 
-            const { memberId, gameId, spectator } = tokenData
+            const { memberId, gameId, spectator } = tokenResult.value
             const game = await getGame(gameId)
             if (!game) {
                 return callback(null, false)
@@ -99,13 +100,13 @@ function setupSocketListeners(io: Server) {
         const cookie = socket.request.headers.cookie
         const spectatorParam = socket.handshake.query.spectator === "true"
         const gameToken = cookie?.split("; ").find(x => x.split("=")[0] === "gameToken")?.split("=")[1]
-        const tokenData = await getDataFromGameToken(gameToken || "")
-        if (!gameToken || !tokenData) {
+        const tokenResult = await getDataFromGameToken(gameToken || "")
+        if (!gameToken || tokenResult.isErr()) {
             socket.emit('authFailed')
             return socket.disconnect()
         }
 
-        const { gameId, memberId, spectator } = tokenData
+        const { gameId, memberId, spectator } = tokenResult.value
         const game = await getGame(gameId)
         const member = game?.people[memberId]
 
@@ -424,79 +425,86 @@ function setupSocketListeners(io: Server) {
             })
 
             // Check if this is a tournament game and handle bracket advancement
-            const gameData = await getConvexClient().query(api.games.getByGameId, { gameId })
+            const gameDataResult = await safeQuery(getConvexClient(), api.games.getByGameId, { gameId })
+            const gameData = gameDataResult.isOk() ? gameDataResult.value : null
             if (gameData?.tournamentId && gameData.tournamentMatchIndex !== undefined) {
-                try {
-                    // Calculate team scores
-                    const scores = gameData.scores || {}
-                    const pointValues = gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
-                    const teamScores: Record<string, number> = {}
+                // Calculate team scores
+                const scores = gameData.scores || {}
+                const pointValues = gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
+                const teamScores: Record<string, number> = {}
 
-                    for (const qNum of Object.keys(scores)) {
-                        const questionRow = scores[qNum]
-                        if (!questionRow) continue
+                for (const qNum of Object.keys(scores)) {
+                    const questionRow = scores[qNum]
+                    if (!questionRow) continue
 
-                        // Process tossup scores
-                        for (const teamId of Object.keys(questionRow.tossup || {})) {
-                            const tossupData = questionRow.tossup[teamId]
-                            if (!teamScores[teamId]) teamScores[teamId] = 0
+                    // Process tossup scores
+                    for (const teamId of Object.keys(questionRow.tossup || {})) {
+                        const tossupData = questionRow.tossup[teamId]
+                        if (!teamScores[teamId]) teamScores[teamId] = 0
 
-                            if (tossupData.scoreType === 'correct') {
-                                teamScores[teamId] += pointValues.tossup
-                            } else if (tossupData.scoreType === 'penalty') {
-                                teamScores[teamId] += pointValues.penalty
-                            }
-                            // incorrect and subbed don't add points
+                        if (tossupData.scoreType === 'correct') {
+                            teamScores[teamId] += pointValues.tossup
+                        } else if (tossupData.scoreType === 'penalty') {
+                            teamScores[teamId] += pointValues.penalty
                         }
-
-                        // Process bonus
-                        if (questionRow.bonus?.teamId) {
-                            const bonusTeamId = questionRow.bonus.teamId
-                            if (!teamScores[bonusTeamId]) teamScores[bonusTeamId] = 0
-                            if (questionRow.bonus.correct) {
-                                teamScores[bonusTeamId] += pointValues.bonus
-                            }
-                        }
+                        // incorrect and subbed don't add points
                     }
 
-                    // Determine winner
-                    const teamIds = Object.keys(teamScores)
-                    console.log(`Tournament ${gameData.tournamentId} match ${gameData.tournamentMatchIndex}: Final scores`, teamScores)
-
-                    if (teamIds.length >= 2) {
-                        const sortedTeams = teamIds.sort((a, b) => teamScores[b]! - teamScores[a]!)
-                        const topTeamId = sortedTeams[0]!
-                        const secondTeamId = sortedTeams[1]!
-                        const topScore = teamScores[topTeamId]!
-                        const secondScore = teamScores[secondTeamId]!
-
-                        // Only advance if there's a clear winner (no tie)
-                        if (topScore > secondScore) {
-                            await getConvexClient().mutation(api.tournaments.advanceWinner, {
-                                tournamentId: gameData.tournamentId,
-                                matchIndex: gameData.tournamentMatchIndex,
-                                bracket: gameData.tournamentMatchBracket,
-                                winningTeamId: topTeamId,
-                            })
-                            console.log(`Tournament ${gameData.tournamentId}: Team ${topTeamId} (${topScore}) advanced from match ${gameData.tournamentMatchIndex} (${gameData.tournamentMatchBracket || 'single'}), defeating team ${secondTeamId} (${secondScore})`)
-                        } else {
-                            console.log(`Tournament ${gameData.tournamentId}: Tie (${topScore}-${secondScore}) in match ${gameData.tournamentMatchIndex}, manual resolution required`)
+                    // Process bonus
+                    if (questionRow.bonus?.teamId) {
+                        const bonusTeamId = questionRow.bonus.teamId
+                        if (!teamScores[bonusTeamId]) teamScores[bonusTeamId] = 0
+                        if (questionRow.bonus.correct) {
+                            teamScores[bonusTeamId] += pointValues.bonus
                         }
-                    } else if (teamIds.length === 1) {
-                        // Only one team scored - they win by forfeit/walkover
-                        const winnerId = teamIds[0]!
-                        await getConvexClient().mutation(api.tournaments.advanceWinner, {
+                    }
+                }
+
+                // Determine winner
+                const teamIds = Object.keys(teamScores)
+                console.log(`Tournament ${gameData.tournamentId} match ${gameData.tournamentMatchIndex}: Final scores`, teamScores)
+
+                if (teamIds.length >= 2) {
+                    const sortedTeams = teamIds.sort((a, b) => teamScores[b]! - teamScores[a]!)
+                    const topTeamId = sortedTeams[0]!
+                    const secondTeamId = sortedTeams[1]!
+                    const topScore = teamScores[topTeamId]!
+                    const secondScore = teamScores[secondTeamId]!
+
+                    // Only advance if there's a clear winner (no tie)
+                    if (topScore > secondScore) {
+                        const advanceResult = await safeMutation(getConvexClient(), api.tournaments.advanceWinner, {
                             tournamentId: gameData.tournamentId,
                             matchIndex: gameData.tournamentMatchIndex,
                             bracket: gameData.tournamentMatchBracket,
-                            winningTeamId: winnerId,
+                            winningTeamId: topTeamId,
                         })
-                        console.log(`Tournament ${gameData.tournamentId}: Team ${winnerId} advanced from match ${gameData.tournamentMatchIndex} (${gameData.tournamentMatchBracket || 'single'}) (only team with scores)`)
+                        if (advanceResult.isErr()) {
+                            console.error('Failed to advance tournament winner:', advanceResult.error.message)
+                            socket.emit('error', { message: 'Failed to advance tournament winner' })
+                        } else {
+                            console.log(`Tournament ${gameData.tournamentId}: Team ${topTeamId} (${topScore}) advanced from match ${gameData.tournamentMatchIndex} (${gameData.tournamentMatchBracket || 'single'}), defeating team ${secondTeamId} (${secondScore})`)
+                        }
                     } else {
-                        console.log(`Tournament ${gameData.tournamentId}: No teams scored in match ${gameData.tournamentMatchIndex}, manual resolution required`)
+                        console.log(`Tournament ${gameData.tournamentId}: Tie (${topScore}-${secondScore}) in match ${gameData.tournamentMatchIndex}, manual resolution required`)
                     }
-                } catch (e) {
-                    console.error('Failed to advance tournament winner:', e)
+                } else if (teamIds.length === 1) {
+                    // Only one team scored - they win by forfeit/walkover
+                    const winnerId = teamIds[0]!
+                    const advanceResult = await safeMutation(getConvexClient(), api.tournaments.advanceWinner, {
+                        tournamentId: gameData.tournamentId,
+                        matchIndex: gameData.tournamentMatchIndex,
+                        bracket: gameData.tournamentMatchBracket,
+                        winningTeamId: winnerId,
+                    })
+                    if (advanceResult.isErr()) {
+                        console.error('Failed to advance tournament winner:', advanceResult.error.message)
+                        socket.emit('error', { message: 'Failed to advance tournament winner' })
+                    } else {
+                        console.log(`Tournament ${gameData.tournamentId}: Team ${winnerId} advanced from match ${gameData.tournamentMatchIndex} (${gameData.tournamentMatchBracket || 'single'}) (only team with scores)`)
+                    }
+                } else {
+                    console.log(`Tournament ${gameData.tournamentId}: No teams scored in match ${gameData.tournamentMatchIndex}, manual resolution required`)
                 }
             }
 
@@ -637,8 +645,10 @@ export async function createNewGame(ownerName: string,
     console.log(gameData.ownerId, "gameData.ownerId")
     const { game, ownerId, teamIds } = games.createGame({ ...gameData, ownerName, ownerId: gameData.ownerId })
     console.log(ownerId, "ownerId")
+    const convex = getConvexClient()
+
     // Create game in Convex with config and empty scoreboard
-    await getConvexClient().mutation(api.games.create, {
+    const createResult = await safeMutation(convex, api.games.create, {
         gameId: game.id,
         joinCode: game.joinCode,
         name: game.name,
@@ -655,26 +665,35 @@ export async function createNewGame(ownerName: string,
         pointValues: gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
         tags: gameData.tags,
     })
+    if (createResult.isErr()) {
+        throw new Error(`Failed to create game: ${createResult.error.message}`)
+    }
 
     // Add owner as moderator to Convex
-    await getConvexClient().mutation(api.gameMembers.add, {
+    const addOwnerResult = await safeMutation(convex, api.gameMembers.add, {
         gameId: game.id,
         memberId: ownerId,
         name: ownerName,
         type: "moderator"
     })
+    if (addOwnerResult.isErr()) {
+        throw new Error(`Failed to add owner: ${addOwnerResult.error.message}`)
+    }
 
     // Add teams to Convex
     await Promise.all(
-        gameData.teamNames.map((teamName, index) => {
+        gameData.teamNames.map(async (teamName, index) => {
             const teamId = teamIds[index];
-            if (!teamId) return Promise.resolve();
-            return getConvexClient().mutation(api.teams.add, {
+            if (!teamId) return;
+            const result = await safeMutation(convex, api.teams.add, {
                 gameId: game.id,
                 teamId,
                 name: teamName,
                 type: "default"
             });
+            if (result.isErr()) {
+                console.error(`Failed to add team ${teamName}:`, result.error.message)
+            }
         })
     )
 

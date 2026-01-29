@@ -7,7 +7,7 @@
     import {
         bracketSizeStore,
         bracketTypeStore,
-        grandFinalResetStore,
+        winnerTakesAllStore,
         randomizeSeeds,
     } from "$lib/stores/bracket.svelte";
     import type { BracketType } from "../types";
@@ -23,7 +23,7 @@
     let teams = $derived(tournamentTeamsStore.value);
     let selectedBracketSize = $derived(bracketSizeStore.value);
     let selectedBracketType = $derived(bracketTypeStore.value);
-    let selectedGrandFinalReset = $derived(grandFinalResetStore.value);
+    let selectedWinnerTakesAll = $derived(winnerTakesAllStore.value);
 
     // Helper to check if a number is a power of 2
     function isPowerOfTwo(n: number): boolean {
@@ -42,7 +42,7 @@
                 sizes.push(p);
             }
         } else {
-            // Single elimination supports any size >= 2
+            // Single elimination and round robin support any size >= 2
             for (let i = 2; i <= Math.max(maxTeams, 16); i++) {
                 sizes.push(i);
             }
@@ -93,8 +93,8 @@
 
     function handleWinnerTakesAllChange(event: Event) {
         const target = event.target as HTMLInputElement;
-        // Winner Takes All = true means no reset (grandFinalReset = false)
-        grandFinalResetStore.value = !target.checked;
+        // Winner Takes All = true means no reset (winnerTakesAll = false)
+        winnerTakesAllStore.value = !target.checked;
     }
 </script>
 
@@ -152,6 +152,7 @@
                 >
                     <option value="single">Single Elimination</option>
                     <option value="double">Double Elimination</option>
+                    <option value="roundrobin">Round Robin</option>
                 </select>
             </div>
 
@@ -161,7 +162,7 @@
                         <input
                             type="checkbox"
                             id="winner-takes-all"
-                            checked={!selectedGrandFinalReset}
+                            checked={!selectedWinnerTakesAll}
                             onchange={handleWinnerTakesAllChange}
                             disabled={tournament.bracketConfirmed}
                         />

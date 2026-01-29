@@ -267,6 +267,11 @@ export function createSocket(spectator: boolean = false) {
         socket.disconnect()
     })
 
+    socket.on('replaced', () => {
+        goto('/replaced')
+        socket.disconnect()
+    })
+
     socket.on('gameEnd', () => {
         goto('/')
         socket.disconnect()

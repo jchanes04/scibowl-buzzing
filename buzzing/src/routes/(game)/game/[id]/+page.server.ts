@@ -14,9 +14,9 @@ export const load = async function ({ params, cookies }) {
         redirect(302, "/join")
 
     const gameToken = cookies.get("gameToken")
-    const tokenData = gameToken ? await getDataFromGameToken(gameToken) : null
+    const tokenResult = gameToken ? await getDataFromGameToken(gameToken) : null
 
-    const memberId = tokenData?.memberId
+    const memberId = tokenResult?.isOk() ? tokenResult.value.memberId : undefined
     if (!memberId) {
         if (game.settings.spectatorsAllowed) {
             redirect(302, "/spectate/" + gameId)

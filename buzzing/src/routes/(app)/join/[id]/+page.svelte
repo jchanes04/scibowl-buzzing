@@ -1,21 +1,33 @@
 <script lang="ts">
     import { slide } from "svelte/transition";
-    import type { PageData } from "./$types";
+    import type { PageData, ActionData } from "./$types";
     import { user } from "$lib/stores/auth";
     import { useQuery } from "convex-svelte";
     import { api } from "../../../../../convex/_generated/api";
+    import {
+        transformToSelectableTeams,
+        type SelectableTeam,
+    } from "$lib/functions/teamSelection";
+    import Confirm from "$lib/components/Confirm.svelte";
 
     interface Props {
         data: PageData;
+        form: ActionData;
     }
 
-    let { data }: Props = $props();
+    let { data, form }: Props = $props();
     let gameId = $derived(data.gameId);
     let gameName = $derived(data.gameName);
     let settings = $derived(data.settings);
     let isTournamentGame = $derived(data.isTournamentGame);
     let tournamentData = $derived(data.tournamentData);
     let isModerator = $derived(data.isModerator);
+    let alreadyJoined = $derived(data.alreadyJoined);
+
+    // State for the confirmation modal when player is already in game
+    let showReplaceModal = $state(false);
+    let formElement: HTMLFormElement | null = $state(null);
+    let confirmReplaceInput: HTMLInputElement | null = $state(null);
 
     // Initial data from server (used as fallback before Convex loads)
     let initialMemberNames = $derived(data.memberNames);
@@ -39,28 +51,21 @@
         return initialMemberNames;
     });
 
-    // Type for team selection (matches CachedTeam shape)
-    type SelectableTeam = {
-        id: string;
-        name: string;
-        type: "default" | "created" | "individual" | "tournament";
-        captainId?: string;
-    };
-
     // Derive teams from Convex query, falling back to initial server data
-    // Filter out individual teams and transform teamId -> id for Select component
+    // Uses shared transformToSelectableTeams function for consistency with bracket view
     let teams: SelectableTeam[] = $derived.by(() => {
         if (teamsQuery.data) {
-            return teamsQuery.data
-                .filter((t) => t.type !== "individual")
-                .map((t) => ({
-                    id: t.teamId,
-                    name: t.name,
-                    type: t.type,
-                    captainId: t.captainId,
-                }));
+            return transformToSelectableTeams(teamsQuery.data, true);
         }
-        return initialTeams as SelectableTeam[];
+        // Transform initial server data (CachedTeam uses 'id', we need 'teamId')
+        return (initialTeams || [])
+            .filter((t) => t.type !== "individual")
+            .map((t) => ({
+                teamId: t.id,
+                name: t.name,
+                type: t.type,
+                captainId: t.captainId,
+            }));
     });
 
     // Combine teams and members for display card
@@ -71,7 +76,7 @@
 
         return currentTeams.map((team) => {
             const members = currentMembers
-                .filter((m) => m.teamId === team.id && m.isActive)
+                .filter((m) => m.teamId === team.teamId && m.isActive)
                 .sort((a, b) => {
                     // Captain first
                     if (a.id === team.captainId) return -1;
@@ -176,6 +181,26 @@
             newTeamName = newTeamName.slice(0, 30);
         }
     }
+
+    function handleFormSubmit(e: SubmitEvent) {
+        // If already joined and not yet confirmed, show the modal instead of submitting
+        if (alreadyJoined && confirmReplaceInput && !confirmReplaceInput.value) {
+            e.preventDefault();
+            showReplaceModal = true;
+        }
+    }
+
+    function confirmReplacement() {
+        if (confirmReplaceInput && formElement) {
+            confirmReplaceInput.value = "true";
+            showReplaceModal = false;
+            formElement.submit();
+        }
+    }
+
+    function cancelReplacement() {
+        showReplaceModal = false;
+    }
 </script>
 
 <svelte:head>
@@ -183,7 +208,18 @@
 </svelte:head>
 
 <div>
-    <form method="POST" autocomplete="off">
+    <form
+        method="POST"
+        autocomplete="off"
+        bind:this={formElement}
+        onsubmit={handleFormSubmit}
+    >
+        <input
+            type="hidden"
+            name="confirm-replace"
+            value=""
+            bind:this={confirmReplaceInput}
+        />
         {#if isModerator}
             <h1>Moderate {gameName}</h1>
         {:else}
@@ -272,11 +308,11 @@
 
             {#if !isTournamentGame && !isModerator}
                 <div class="team-list">
-                    {#each teamsWithMembers as team (team.id)}
+                    {#each teamsWithMembers as team (team.teamId)}
                         <label
                             class="team-card"
                             class:selected={teamOrIndiv === "team" &&
-                                selectedTeam?.id === team.id}
+                                selectedTeam?.teamId === team.teamId}
                         >
                             <input
                                 type="radio"
@@ -287,7 +323,7 @@
                                     selectedTeam = team;
                                 }}
                                 checked={teamOrIndiv === "team" &&
-                                    selectedTeam?.id === team.id}
+                                    selectedTeam?.teamId === team.teamId}
                             />
                             <div class="card-content">
                                 <div class="team-header">
@@ -313,7 +349,7 @@
                     <input
                         type="hidden"
                         name="team-id"
-                        value={selectedTeam?.id}
+                        value={selectedTeam?.teamId}
                     />
                 </div>
             {/if}
@@ -373,6 +409,17 @@
         </div>
     </form>
 </div>
+
+{#if showReplaceModal && alreadyJoined}
+    <Confirm
+        title="Already in Game"
+        message="You are already in this game as '{alreadyJoined.name}'. Joining again will disconnect your other session. Do you want to continue?"
+        confirmText="Join Anyway"
+        cancelText="Cancel"
+        confirmCallback={confirmReplacement}
+        cancelCallback={cancelReplacement}
+    />
+{/if}
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;

@@ -1,5 +1,6 @@
 import { toastStore } from "./toast.svelte";
 import { api } from "../../../convex/_generated/api";
+import { safeMutation } from "$lib/convex.result";
 import type { Tournament } from "../../routes/(app)/tournament/[id]/types";
 
 // Editable settings state
@@ -46,37 +47,43 @@ export function initSettings(tournament: Tournament) {
  * Save all settings to Convex
  */
 export async function saveSettings(convex: any, tournamentId: string) {
-    try {
-        toastStore.add("Saving settings...", "info", 1000);
+    toastStore.add("Saving settings...", "info", 1000);
 
-        // Update tournament name
-        await convex.mutation(api.tournaments.updateName, {
-            tournamentId,
-            name: editableSettings.name,
-        });
+    // Update tournament name
+    const nameResult = await safeMutation(convex, api.tournaments.updateName, {
+        tournamentId,
+        name: editableSettings.name,
+    });
 
-        // Update settings
-        await convex.mutation(api.tournaments.updateSettings, {
-            tournamentId,
-            settings: {
-                spectatorsAllowed: editableSettings.spectatorsAllowed,
-                times: {
-                    tossup: [editableSettings.tossupTime, editableSettings.tossupTime],
-                    bonus: [editableSettings.bonusTime, editableSettings.bonusTime],
-                    visual: [editableSettings.visualTime, editableSettings.visualTime],
-                },
-                pointValues: {
-                    tossup: editableSettings.tossupPoints,
-                    bonus: editableSettings.bonusPoints,
-                    penalty: editableSettings.penaltyPoints,
-                },
-                minPlayers: editableSettings.minPlayers,
-                maxPlayers: editableSettings.maxPlayers,
-            },
-        });
-
-        toastStore.add("Settings saved!", "success");
-    } catch (error) {
-        toastStore.add(`Error saving settings: ${error instanceof Error ? error.message : "Unknown error"}`, "error");
+    if (nameResult.isErr()) {
+        toastStore.add(`Error saving name: ${nameResult.error.message}`, "error");
+        return;
     }
+
+    // Update settings
+    const settingsResult = await safeMutation(convex, api.tournaments.updateSettings, {
+        tournamentId,
+        settings: {
+            spectatorsAllowed: editableSettings.spectatorsAllowed,
+            times: {
+                tossup: [editableSettings.tossupTime, editableSettings.tossupTime],
+                bonus: [editableSettings.bonusTime, editableSettings.bonusTime],
+                visual: [editableSettings.visualTime, editableSettings.visualTime],
+            },
+            pointValues: {
+                tossup: editableSettings.tossupPoints,
+                bonus: editableSettings.bonusPoints,
+                penalty: editableSettings.penaltyPoints,
+            },
+            minPlayers: editableSettings.minPlayers,
+            maxPlayers: editableSettings.maxPlayers,
+        },
+    });
+
+    if (settingsResult.isErr()) {
+        toastStore.add(`Error saving settings: ${settingsResult.error.message}`, "error");
+        return;
+    }
+
+    toastStore.add("Settings saved!", "success");
 }

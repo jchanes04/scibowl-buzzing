@@ -55,13 +55,15 @@ export function initTournamentSubscription(
                 name: tournamentQuery.data.name,
                 settings: tournamentQuery.data.settings,
                 bracketSeeds: tournamentQuery.data.bracketSeeds || [],
-                bracketResults: tournamentQuery.data.bracketResults || [],
+                bracket: tournamentQuery.data.bracket ? {
+                    gameIds: tournamentQuery.data.bracket.gameIds || [],
+                    results: tournamentQuery.data.bracket.results || [],
+                } : undefined,
                 bracketSize: tournamentQuery.data.bracketSize,
                 bracketType: tournamentQuery.data.bracketType,
-                grandFinalReset: tournamentQuery.data.grandFinalReset,
+                winnerTakesAll: tournamentQuery.data.winnerTakesAll,
                 bracketConfirmed: tournamentQuery.data.bracketConfirmed,
                 createdAt: tournamentQuery.data.createdAt,
-                gameIds: tournamentQuery.data.gameIds || [],
             };
         }
     });
