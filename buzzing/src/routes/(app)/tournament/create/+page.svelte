@@ -54,15 +54,9 @@
     let minPlayers = $state(1);
     let maxPlayers = $state(5);
 
-    // Bracket settings
-    let bracketType = $state<"single" | "double">("single");
-    let winnerTakesAll = $state(true);
-
     // Collapsible section states
-    let timerSettingsOpen = $state(false);
-    let pointSettingsOpen = $state(false);
+    let gameSettingsOpen = $state(false);
     let teamSettingsOpen = $state(false);
-    let bracketSettingsOpen = $state(false);
 
     let submitEnabled = $derived(authenticated && tournamentName.trim());
 </script>
@@ -97,9 +91,10 @@
                 title="Team Settings"
                 bind:open={teamSettingsOpen}
             >
-                <div class="settings-grid">
+                <div class="settings-grid two-col">
                     <div class="form-group">
-                        <label for="min-players">Min Players per Team</label>
+                        <label for="min-players">Minimum Players per Team</label
+                        >
                         <input
                             type="number"
                             id="min-players"
@@ -111,7 +106,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="max-players">Max Players per Team</label>
+                        <label for="max-players">Maximum Players per Team</label
+                        >
                         <input
                             type="number"
                             id="max-players"
@@ -138,9 +134,10 @@
             </CollapsibleSection>
 
             <CollapsibleSection
-                title="Timer Lengths"
-                bind:open={timerSettingsOpen}
+                title="Game Settings"
+                bind:open={gameSettingsOpen}
             >
+                <h3 class="sub-heading">Timer Lengths</h3>
                 <div class="settings-grid">
                     <div class="form-group">
                         <label for="tossup-time">Tossup</label>
@@ -181,12 +178,8 @@
                         />
                     </div>
                 </div>
-            </CollapsibleSection>
 
-            <CollapsibleSection
-                title="Point Values"
-                bind:open={pointSettingsOpen}
-            >
+                <h3 class="sub-heading">Point Values</h3>
                 <div class="settings-grid">
                     <div class="form-group">
                         <label for="tossup-points">Tossup</label>
@@ -227,58 +220,6 @@
                         />
                     </div>
                 </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection
-                title="Bracket Format"
-                bind:open={bracketSettingsOpen}
-            >
-                <div class="settings-grid two-col">
-                    <div class="form-group">
-                        <label for="bracket-type">Bracket Type</label>
-                        <select
-                            id="bracket-type"
-                            name="bracket-type"
-                            bind:value={bracketType}
-                        >
-                            <option value="single">Single Elimination</option>
-                            <option value="double">Double Elimination</option>
-                        </select>
-                    </div>
-
-                    {#if bracketType === "double"}
-                        <div class="form-group">
-                            <label for="grand-final-reset"
-                                >Winner Takes All Finals</label
-                            >
-                            <select
-                                id="grand-final-reset"
-                                name="grand-final-reset"
-                                bind:value={winnerTakesAll}
-                            >
-                                <option value={false}>Enabled</option>
-                                <option value={true}>Disabled</option>
-                            </select>
-                        </div>
-                    {/if}
-                </div>
-
-                <p class="settings-hint">
-                    {#if bracketType === "single"}
-                        <strong>Single Elimination:</strong> Teams are eliminated
-                        after one loss.
-                    {:else}
-                        <strong>Double Elimination:</strong> Teams must lose
-                        twice to be eliminated.
-                        {#if !winnerTakesAll}
-                            A single finals match determines the winner.
-                        {:else}
-                            If the losers bracket champion wins the first finals
-                            match, a second match is played to determine the
-                            tournament winner.
-                        {/if}
-                    {/if}
-                </p>
             </CollapsibleSection>
 
             <button type="submit" disabled={!submitEnabled}
@@ -364,25 +305,17 @@
         }
     }
 
-    .settings-hint {
-        color: $text-muted;
-        font-size: 0.9rem;
-        font-style: italic;
-        margin-top: 1rem;
+    .sub-heading {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: $text;
         text-align: left;
-        padding: 0.75rem;
-        background: $background-2;
-        border-radius: 0.5rem;
-        border: 1px solid $border-color;
-    }
+        margin-top: 1.25rem;
+        margin-bottom: 0;
 
-    select {
-        @extend %text-input;
-        margin: 0;
-        font-size: 1.1rem;
-        width: 100%;
-        box-sizing: border-box;
-        cursor: pointer;
+        &:first-child {
+            margin-top: 0;
+        }
     }
 
     .form-group {

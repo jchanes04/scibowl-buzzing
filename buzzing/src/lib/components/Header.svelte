@@ -4,17 +4,27 @@
 </script>
 
 <div class="header">
-    <a href="/"><h1 class="title">ESBOT Buzzing</h1></a>
+    <a href="/"
+        ><h1 class="title">
+            ESBOT <span class="buzzing-text">Buzzing</span>
+        </h1></a
+    >
     <nav>
-        <a href="/join">Join Game</a>
-        <a href="/create">Create Game</a>
+        <a href="/join" class="game-link"
+            >Join <span class="game-text">Game</span></a
+        >
+        <a href="/create" class="game-link"
+            >Create <span class="game-text">Game</span></a
+        >
         <LoginButton />
-        <ThemeSelector />
+        <div class="theme-selector">
+            <ThemeSelector />
+        </div>
     </nav>
 </div>
 
 <style lang="scss">
-    @use '$styles/_global.scss' as *;
+    @use "$styles/_global.scss" as *;
 
     .header {
         background: $background-2;
@@ -31,16 +41,19 @@
         box-shadow: $shadow;
         box-sizing: border-box;
     }
-    
+
     h1 {
         display: inline-block;
         margin: 0;
         font-size: 3rem;
         font-weight: 700;
         color: $primary;
+        margin-right: 0.5em;
 
-        @media (max-width: 800px) {
-            display: none;
+        .buzzing-text {
+            @media (max-width: 1100px) {
+                display: none;
+            }
         }
     }
 
@@ -48,12 +61,12 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 1.5em;
+        gap: 1em;
         margin-left: auto;
         font-size: 2rem;
         font-weight: 500;
     }
-    
+
     a {
         text-decoration: none;
         color: $text;
@@ -63,6 +76,25 @@
         &:hover {
             color: $primary;
         }
+
+        .game-text {
+            @media (max-width: 900px) {
+                display: none;
+            }
+        }
+
+        &.game-link {
+            @media (max-width: 550px) {
+                display: none;
+            }
+        }
     }
 
+    .theme-selector {
+        display: block;
+
+        @media (max-width: 750px) {
+            display: none;
+        }
+    }
 </style>

@@ -25,9 +25,8 @@
     let visualTime = $state(30);
 
     let teamSettingsOpen = $state(false);
-    let defaultTeamsOpen = $state(false);
-    let timerSettingsOpen = $state(false);
-    let pointSettingsOpen = $state(false);
+    let defaultTeamsOpen = $state(true);
+    let gameSettingsOpen = $state(false);
 
     // Point value settings (default values from GameScoreboard.ts)
     let tossupPoints = $state(4);
@@ -139,7 +138,8 @@
             <TeamList bind:teams={defaultTeams} bind:newTeamName />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Timer Lengths" bind:open={timerSettingsOpen}>
+        <CollapsibleSection title="Game Settings" bind:open={gameSettingsOpen}>
+            <h3 class="sub-heading">Timer Lengths</h3>
             <div class="timer-grid">
                 <div class="form-group">
                     <label for="tossup-time">Tossup</label>
@@ -180,9 +180,8 @@
                     />
                 </div>
             </div>
-        </CollapsibleSection>
 
-        <CollapsibleSection title="Point Values" bind:open={pointSettingsOpen}>
+            <h3 class="sub-heading">Point Values</h3>
             <div class="points-grid">
                 <div class="form-group">
                     <label for="tossup-points">Tossup</label>
@@ -333,6 +332,19 @@
         width: 90%;
         text-align: left;
         margin-bottom: 1rem;
+    }
+
+    .sub-heading {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: $text;
+        text-align: left;
+        margin-top: 1.25rem;
+        margin-bottom: 0;
+
+        &:first-child {
+            margin-top: 0;
+        }
     }
 
     .timer-grid,

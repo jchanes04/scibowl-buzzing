@@ -213,193 +213,199 @@
     <title>Profile - ESBOT Buzzing</title>
 </svelte:head>
 
-{#if authenticated}
-    <div class="profile-container">
-        <div class="profile-header">
-            <h1>Profile Settings</h1>
-            <button onclick={handleLogout} class="logout-button">
-                Logout
-            </button>
-        </div>
-        <form onsubmit={handleSubmit} class="profile-form">
-            <div class="form-grid">
-                <!-- Row 1: Email (Full Width) -->
-                <div class="form-group full-width">
-                    <label for="email-display">Email</label>
-                    <div id="email-display" class="email-text">
-                        {currentUser?.email || ""}
+<main>
+    {#if authenticated}
+        <div class="profile-container">
+            <div class="header">
+                <h1>Profile Settings</h1>
+                <button onclick={handleLogout} class="logout-button">
+                    Logout
+                </button>
+            </div>
+            <form onsubmit={handleSubmit} class="profile-form">
+                <div class="form-grid">
+                    <!-- Row 1: Email (Full Width) -->
+                    <div class="form-group full-width">
+                        <label for="email-display">Email</label>
+                        <div id="email-display" class="email-text">
+                            {currentUser?.email || ""}
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Names -->
+                    <div class="form-group">
+                        <label for="firstName"
+                            >First Name <span class="required">*</span></label
+                        >
+                        <input
+                            type="text"
+                            id="firstName"
+                            bind:value={firstName}
+                            placeholder="Enter your first name"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastName"
+                            >Last Name <span class="required">*</span></label
+                        >
+                        <input
+                            type="text"
+                            id="lastName"
+                            bind:value={lastName}
+                            placeholder="Enter your last name"
+                            required
+                        />
+                    </div>
+
+                    <!-- Row 3: Optional Info -->
+                    <div class="form-group">
+                        <label for="username"
+                            >Username <span class="optional">(Optional)</span
+                            ></label
+                        >
+                        <input
+                            type="text"
+                            id="username"
+                            bind:value={username}
+                            placeholder="Enter your username"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="school"
+                            >School <span class="optional">(Optional)</span
+                            ></label
+                        >
+                        <input
+                            type="text"
+                            id="school"
+                            bind:value={school}
+                            placeholder="Enter your school name"
+                        />
                     </div>
                 </div>
 
-                <!-- Row 2: Names -->
-                <div class="form-group">
-                    <label for="firstName"
-                        >First Name <span class="required">*</span></label
+                <div class="form-actions">
+                    <button
+                        type="submit"
+                        disabled={!submitEnabled || loading || success}
+                        class="submit-button"
                     >
-                    <input
-                        type="text"
-                        id="firstName"
-                        bind:value={firstName}
-                        placeholder="Enter your first name"
-                        required
-                    />
+                        {#if loading}
+                            Update Profile
+                        {:else if success}
+                            Updated!
+                        {:else}
+                            Update Profile
+                        {/if}
+                    </button>
                 </div>
+            </form>
+        </div>
 
-                <div class="form-group">
-                    <label for="lastName"
-                        >Last Name <span class="required">*</span></label
-                    >
-                    <input
-                        type="text"
-                        id="lastName"
-                        bind:value={lastName}
-                        placeholder="Enter your last name"
-                        required
-                    />
-                </div>
-
-                <!-- Row 3: Optional Info -->
-                <div class="form-group">
-                    <label for="username"
-                        >Username <span class="optional">(Optional)</span
-                        ></label
-                    >
-                    <input
-                        type="text"
-                        id="username"
-                        bind:value={username}
-                        placeholder="Enter your username"
-                    />
-                </div>
-
-                <div class="form-group">
-                    <label for="school"
-                        >School <span class="optional">(Optional)</span></label
-                    >
-                    <input
-                        type="text"
-                        id="school"
-                        bind:value={school}
-                        placeholder="Enter your school name"
-                    />
-                </div>
-            </div>
-
-            <div class="form-actions">
+        <!-- My Tournaments Section -->
+        <div class="profile-container">
+            <div class="header">
+                <h1>My Tournaments</h1>
                 <button
-                    type="submit"
-                    disabled={!submitEnabled || loading || success}
-                    class="submit-button"
+                    class="create-tournament-btn"
+                    onclick={() => goto("/tournament/create")}
                 >
-                    {#if loading}
-                        Update Profile
-                    {:else if success}
-                        Updated!
-                    {:else}
-                        Update Profile
-                    {/if}
+                    Create Tournament
                 </button>
             </div>
-        </form>
-    </div>
-
-    <!-- My Tournaments Section -->
-    <div class="tournaments-container">
-        <div class="tournaments-header">
-            <h2>My Tournaments</h2>
-            <button
-                class="create-tournament-btn"
-                onclick={() => goto("/tournament/create")}
-            >
-                Create Tournament
-            </button>
-        </div>
-        <div class="tournaments-section">
-            {#if tournamentsQuery?.isLoading}
-                <p class="loading-text">Loading tournaments...</p>
-            {:else if tournamentsQuery?.data && tournamentsQuery.data.length > 0}
-                <div class="tournament-list">
-                    {#each tournamentsQuery.data as tournament}
-                        <a
-                            href="/tournament/{tournament.tournamentId}"
-                            class="tournament-card"
-                        >
-                            <div class="tournament-name">{tournament.name}</div>
-                            <div class="tournament-date">
-                                {new Date(
-                                    tournament.createdAt,
-                                ).toLocaleDateString()}
-                            </div>
-                        </a>
-                    {/each}
-                </div>
-            {:else}
-                <p class="no-tournaments">
-                    No tournaments created yet. Create one to get started!
-                </p>
-            {/if}
-        </div>
-    </div>
-
-    <!-- Game History Section -->
-    <div class="game-history-container">
-        <div class="game-history-header">
-            <h2>Game History</h2>
-            <div class="history-role-selector">
-                <label for="moderator-radio">
-                    <input
-                        type="radio"
-                        id="moderator-radio"
-                        name="history-role"
-                        value="moderator"
-                        bind:group={selectedHistoryRole}
-                    />
-                    <span>Moderator</span>
-                </label>
-                <label for="player-radio">
-                    <input
-                        type="radio"
-                        id="player-radio"
-                        name="history-role"
-                        value="player"
-                        bind:group={selectedHistoryRole}
-                    />
-                    <span>Player</span>
-                </label>
+            <div class="tournaments-section">
+                {#if tournamentsQuery?.isLoading}
+                    <p class="loading-text">Loading tournaments...</p>
+                {:else if tournamentsQuery?.data && tournamentsQuery.data.length > 0}
+                    <div class="tournament-list">
+                        {#each tournamentsQuery.data as tournament}
+                            <a
+                                href="/tournament/{tournament.tournamentId}"
+                                class="tournament-card"
+                            >
+                                <div class="tournament-name">
+                                    {tournament.name}
+                                </div>
+                                <div class="tournament-date">
+                                    {new Date(
+                                        tournament.createdAt,
+                                    ).toLocaleDateString()}
+                                </div>
+                            </a>
+                        {/each}
+                    </div>
+                {:else}
+                    <p class="no-tournaments">
+                        No tournaments created yet. Create one to get started!
+                    </p>
+                {/if}
             </div>
         </div>
-        <div class="game-history-section">
-            {#if gameHistoryQuery?.isLoading}
-                <p class="loading-text">Loading game history...</p>
-            {:else if filteredGameHistory && filteredGameHistory.length > 0}
-                <ul class="game-list">
-                    {#each filteredGameHistory as game}
-                        <GameHistoryItem
-                            {game}
-                            {expandedGames}
-                            {tagInputs}
-                            {currentUser}
-                            {privateTagsQuery}
-                            {toggleGameExpanded}
-                            {getPrivateTagsForGame}
-                            {addPrivateTag}
-                            {removePrivateTag}
-                            {addPublicTag}
-                            {removePublicTag}
-                        />
-                    {/each}
-                </ul>
-            {:else}
-                <p class="no-games">
-                    No {selectedHistoryRole} games played yet.
-                </p>
-            {/if}
-        </div>
-    </div>
-{:else}
-    <div class="loading">Redirecting to login...</div>
-{/if}
 
+        <!-- Game History Section -->
+        <div class="profile-container">
+            <div class="header">
+                <h1>Game History</h1>
+                <div class="history-role-selector">
+                    <label for="moderator-radio">
+                        <input
+                            type="radio"
+                            id="moderator-radio"
+                            name="history-role"
+                            value="moderator"
+                            bind:group={selectedHistoryRole}
+                        />
+                        <span>Moderator</span>
+                    </label>
+                    <label for="player-radio">
+                        <input
+                            type="radio"
+                            id="player-radio"
+                            name="history-role"
+                            value="player"
+                            bind:group={selectedHistoryRole}
+                        />
+                        <span>Player</span>
+                    </label>
+                </div>
+            </div>
+            <div class="game-history-section">
+                {#if gameHistoryQuery?.isLoading}
+                    <p class="loading-text">Loading game history...</p>
+                {:else if filteredGameHistory && filteredGameHistory.length > 0}
+                    <ul class="game-list">
+                        {#each filteredGameHistory as game}
+                            <GameHistoryItem
+                                {game}
+                                {expandedGames}
+                                {tagInputs}
+                                {currentUser}
+                                {privateTagsQuery}
+                                {toggleGameExpanded}
+                                {getPrivateTagsForGame}
+                                {addPrivateTag}
+                                {removePrivateTag}
+                                {addPublicTag}
+                                {removePublicTag}
+                            />
+                        {/each}
+                    </ul>
+                {:else}
+                    <p class="no-games">
+                        No games {selectedHistoryRole == "moderator"
+                            ? "moderated"
+                            : "played"} yet.
+                    </p>
+                {/if}
+            </div>
+        </div>
+    {:else}
+        <div class="loading">Redirecting to login...</div>
+    {/if}
+</main>
 {#if $modalStore}
     <div class="modal-background"></div>
     {@const SvelteComponent = $modalStore.component}
@@ -408,6 +414,10 @@
 
 <style lang="scss">
     @use "$styles/_global.scss" as *;
+
+    main {
+        padding: 2rem;
+    }
 
     .profile-container {
         max-width: 900px;
@@ -419,7 +429,7 @@
         box-shadow: $shadow;
     }
 
-    .profile-header {
+    .header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -518,31 +528,6 @@
         background: $red;
     }
 
-    .game-history-container {
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: $background-1;
-        border: 3px solid $border-color;
-        border-radius: 1rem;
-        box-shadow: $shadow;
-    }
-
-    .game-history-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 3px solid $border-color;
-
-        h2 {
-            color: $text;
-            margin: 0;
-            font-size: 2rem;
-        }
-    }
-
     .history-role-selector {
         display: flex;
         gap: 0.25em;
@@ -591,32 +576,6 @@
                     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
                 }
             }
-        }
-    }
-
-    // Tournaments Panel Styles
-    .tournaments-container {
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: $background-1;
-        border: 3px solid $border-color;
-        border-radius: 1rem;
-        box-shadow: $shadow;
-    }
-
-    .tournaments-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 3px solid $border-color;
-
-        h2 {
-            color: $text;
-            margin: 0;
-            font-size: 2rem;
         }
     }
 
