@@ -6,7 +6,7 @@
 import { ok, err, type Result } from "neverthrow";
 import { authError, type AuthError } from "./errors";
 
-export interface WorkOSUser {
+export interface User {
     id: string;
     email: string;
     firstName?: string;
@@ -18,18 +18,18 @@ export interface WorkOSUser {
 /**
  * Extract and parse the `workos_user` cookie.
  *
- * Returns `Ok(WorkOSUser)` when the cookie exists and is valid JSON,
+ * Returns `Ok(User)` when the cookie exists and is valid JSON,
  * or `Err(AuthError)` otherwise.
  */
 export function getAuthenticatedUser(
     cookies: { get(name: string): string | undefined }
-): Result<WorkOSUser, AuthError> {
+): Result<User, AuthError> {
     const raw = cookies.get("workos_user");
     if (!raw) {
         return err(authError("Not authenticated"));
     }
     try {
-        const data = JSON.parse(raw) as WorkOSUser;
+        const data = JSON.parse(raw) as User;
         if (!data.id) {
             return err(authError("Invalid session: missing user ID"));
         }

@@ -4,6 +4,9 @@
     import { slide } from "svelte/transition";
     import ExpandChevron from "./ExpandChevron.svelte";
     import { modalStore } from "$lib/stores/modal.svelte";
+    import { derivePlayerNames, deriveTeamNames } from "$lib/functions/scoreboard";
+    import type { Scores, QuestionPairScore } from "$lib/stores/scoreboard.svelte";
+    import type { Member, Team } from "$lib/types/members";
 
     interface Props {
         game: {
@@ -12,9 +15,9 @@
             tags: string[];
             memberType: string;
             createdAt: number;
-            scores?: any;
-            teamNames?: Record<string, string>;
-            playerNames?: Record<string, any>;
+            scores?: Scores;
+            members?: Record<string, Member>;
+            teams?: Record<string, Team>;
             pointValues?: {
                 tossup: number;
                 bonus: number;
@@ -47,13 +50,17 @@
         removePublicTag,
     }: Props = $props();
 
+    // Derive playerNames/teamNames from members/teams
+    let gameTeamNames = $derived(deriveTeamNames(game.teams || {}));
+    let gamePlayerNames = $derived(derivePlayerNames(game.members || {}));
+
     const pointValues = $derived(
         game.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
     );
 
     function sumQuestionScores(teamId: string): number {
         if (!game.scores) return 0;
-        return Object.values(game.scores).reduce((acc: number, q: any) => {
+        return Object.values(game.scores).reduce((acc: number, q: QuestionPairScore) => {
             if (q.tossup[teamId]?.scoreType === "correct") {
                 acc += pointValues.tossup;
             } else if (q.tossup[teamId]?.scoreType === "penalty") {
@@ -71,9 +78,10 @@
         modalStore.showComponent(ScoreboardModal, {
             scoreboardData: {
                 scores: game.scores || {},
-                teamNames: game.teamNames || {},
-                playerNames: game.playerNames || {},
+                members: game.members || {},
+                teams: game.teams || {},
                 pointValues: pointValues,
+                isActive: false,
             },
         });
     }
@@ -176,11 +184,11 @@
             {/if}
 
             <!-- Team Scores Section -->
-            {#if game.teamNames && Object.keys(game.teamNames).length > 0}
+            {#if Object.keys(gameTeamNames).length > 0}
                 <div class="scores-section">
                     <h4>Final Scores</h4>
                     <div class="team-scores-list">
-                        {#each Object.entries(game.teamNames) as [teamId, teamName]}
+                        {#each Object.entries(gameTeamNames) as [teamId, teamName]}
                             <div class="team-score-item">
                                 <span class="team-name">{teamName}</span>
                                 <span class="team-score-value"

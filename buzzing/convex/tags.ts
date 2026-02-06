@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { getGame, unwrapOrThrow } from "./helpers";
+import { getGame, getOrCreateUser, unwrapOrThrow } from "./helpers";
 
 // ============================================================================
 // TAG VALIDATION
@@ -152,26 +152,6 @@ export const setPublicTags = mutation({
 // ============================================================================
 // PRIVATE TAGS (per user)
 // ============================================================================
-
-/**
- * Helper: Get or create user document
- */
-async function getOrCreateUser(ctx: any, userId: string) {
-  let user = await ctx.db
-    .query("users")
-    .withIndex("by_userId", (q: any) => q.eq("userId", userId))
-    .first();
-
-  if (!user) {
-    const id = await ctx.db.insert("users", {
-      userId,
-      privateTags: {},
-    });
-    user = await ctx.db.get(id);
-  }
-
-  return user;
-}
 
 /**
  * Query: Get all private tags for a user

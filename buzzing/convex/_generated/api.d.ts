@@ -11,12 +11,11 @@
 import type * as clearTables from "../clearTables.js";
 import type * as crons from "../crons.js";
 import type * as gameHistory from "../gameHistory.js";
-import type * as gameMembers from "../gameMembers.js";
 import type * as games from "../games.js";
 import type * as helpers from "../helpers.js";
 import type * as tags from "../tags.js";
-import type * as teams from "../teams.js";
 import type * as tournaments from "../tournaments.js";
+import type * as types from "../types.js";
 
 import type {
   ApiFromModules,
@@ -28,12 +27,11 @@ declare const fullApi: ApiFromModules<{
   clearTables: typeof clearTables;
   crons: typeof crons;
   gameHistory: typeof gameHistory;
-  gameMembers: typeof gameMembers;
   games: typeof games;
   helpers: typeof helpers;
   tags: typeof tags;
-  teams: typeof teams;
   tournaments: typeof tournaments;
+  types: typeof types;
 }>;
 
 /**

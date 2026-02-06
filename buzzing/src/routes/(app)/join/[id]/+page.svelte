@@ -2,12 +2,7 @@
     import { slide } from "svelte/transition";
     import type { PageData, ActionData } from "./$types";
     import { user } from "$lib/stores/auth";
-    import { useQuery } from "convex-svelte";
-    import { api } from "../../../../../convex/_generated/api";
-    import {
-        transformToSelectableTeams,
-        type SelectableTeam,
-    } from "$lib/functions/teamSelection";
+    import type { Team } from "$lib/types/members";
     import Confirm from "$lib/components/Confirm.svelte";
 
     interface Props {
@@ -29,70 +24,24 @@
     let formElement: HTMLFormElement | null = $state(null);
     let confirmReplaceInput: HTMLInputElement | null = $state(null);
 
-    // Initial data from server (used as fallback before Convex loads)
-    let initialMemberNames = $derived(data.memberNames);
-    let initialTeams = $derived(data.teams);
+    // Data from server (slightly stale but acceptable per requirements)
+    let memberNames = $derived(data.memberNames);
 
-    // Convex real-time queries for members and teams
-    let membersQuery = useQuery(api.gameMembers.getForGame, () =>
-        gameId ? { gameId } : "skip",
-    );
-    let teamsQuery = useQuery(api.teams.getForGame, () =>
-        gameId ? { gameId } : "skip",
+    let teams: Team[] = $derived(
+        (data.teams || []).filter((t: Team) => t.type !== "individual")
     );
 
-    // Derive member names from Convex query, falling back to initial server data
-    let memberNames = $derived.by(() => {
-        if (membersQuery.data) {
-            return membersQuery.data
-                .filter((m) => m.isActive)
-                .map((m) => m.name);
-        }
-        return initialMemberNames;
-    });
-
-    // Derive teams from Convex query, falling back to initial server data
-    // Uses shared transformToSelectableTeams function for consistency with bracket view
-    let teams: SelectableTeam[] = $derived.by(() => {
-        if (teamsQuery.data) {
-            return transformToSelectableTeams(teamsQuery.data, true);
-        }
-        // Transform initial server data (CachedTeam uses 'id', we need 'teamId')
-        return (initialTeams || [])
-            .filter((t) => t.type !== "individual")
-            .map((t) => ({
-                teamId: t.id,
-                name: t.name,
-                type: t.type,
-                captainId: t.captainId,
-            }));
-    });
-
-    // Combine teams and members for display card
-    let teamsWithMembers = $derived.by(() => {
-        const currentTeams = teams;
-        // Fallback to empty array if data isn't loaded yet
-        const currentMembers = membersQuery.data || [];
-
-        return currentTeams.map((team) => {
-            const members = currentMembers
-                .filter((m) => m.teamId === team.teamId && m.isActive)
-                .sort((a, b) => {
-                    // Captain first
-                    if (a.id === team.captainId) return -1;
-                    if (b.id === team.captainId) return 1;
-                    return a.name.localeCompare(b.name);
-                });
-
-            return {
-                ...team,
-                members,
-            };
-        });
-    });
+    // Teams for display card with member data from in-memory game state
+    let teamMembers = $derived(data.teamMembers || {});
+    let teamsWithMembers = $derived(
+        teams.map((team) => ({
+            ...team,
+            members: (teamMembers[team.id] || []) as Array<{ id: string; name: string }>,
+        }))
+    );
 
     let memberName = $state("");
-    let selectedTeam: SelectableTeam | undefined = $state();
+    let selectedTeam: Team | undefined = $state();
     let newTeamName: string = $state("");
 
     // Tournament-specific state
@@ -308,11 +257,11 @@
 
             {#if !isTournamentGame && !isModerator}
                 <div class="team-list">
-                    {#each teamsWithMembers as team (team.teamId)}
+                    {#each teamsWithMembers as team (team.id)}
                         <label
                             class="team-card"
                             class:selected={teamOrIndiv === "team" &&
-                                selectedTeam?.teamId === team.teamId}
+                                selectedTeam?.id === team.id}
                         >
                             <input
                                 type="radio"
@@ -323,7 +272,7 @@
                                     selectedTeam = team;
                                 }}
                                 checked={teamOrIndiv === "team" &&
-                                    selectedTeam?.teamId === team.teamId}
+                                    selectedTeam?.id === team.id}
                             />
                             <div class="card-content">
                                 <div class="team-header">
@@ -349,7 +298,7 @@
                     <input
                         type="hidden"
                         name="team-id"
-                        value={selectedTeam?.teamId}
+                        value={selectedTeam?.id}
                     />
                 </div>
             {/if}

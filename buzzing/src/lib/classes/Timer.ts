@@ -3,7 +3,7 @@ import { EventEmitter } from "events"
 export interface Timer extends EventEmitter {
     length: number,
     time: number,
-    interval: any,
+    interval: ReturnType<typeof setInterval> | undefined,
     live: boolean
 }
 

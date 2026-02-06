@@ -37,7 +37,7 @@ export function safeFetch(
                 typeof error === "object" &&
                 error !== null &&
                 "type" in error &&
-                (error as any).type === "ExternalServiceError"
+                (error as { type: string }).type === "ExternalServiceError"
             ) {
                 return error as ExternalServiceError;
             }

@@ -1,15 +1,8 @@
 import { createGameID } from "$lib/functions/createId"
 import { Timer } from "./Timer"
-import {
-    subscribeToGame,
-    getPlayersFromCache,
-    getModeratorsFromCache,
-    getTeamsFromCache,
-    getMemberFromCache,
-    getTeamFromCache,
-    type CachedMember,
-    type CachedTeam
-} from "$lib/server/gameMemberCache"
+import type { Member, Team } from "$lib/types/members"
+
+export type { Member as CachedMember, Team as CachedTeam }
 
 export type Category = 'earth' | 'bio' | 'chem' | 'physics' | 'math' | 'energy'
 
@@ -113,6 +106,10 @@ export class Game {
 
     chatMessages: ChatMessage[] = []
 
+    // In-memory member/team storage (socket-authoritative)
+    private _members: Record<string, Member> = {}
+    private _teams: Record<string, Team> = {}
+
     constructor({ name, settings, teamNames, ownerId, ownerName, joinCode, times, existingId }: GameParameters) {
         this.id = existingId || createGameID()
         this.joinCode = joinCode.toUpperCase()
@@ -141,39 +138,119 @@ export class Game {
             currentQuestion: null,
             buzzedTeamIds: new Set()
         }
-
-        // Subscribe to Convex for this game's members and teams
-        subscribeToGame(this.id)
     }
 
-    // Getters that pull from Convex cache
-    get players(): Record<string, CachedMember> {
-        return getPlayersFromCache(this.id)
+    // Getters that read from local in-memory state
+    get players(): Record<string, Member> {
+        const result: Record<string, Member> = {}
+        for (const [id, member] of Object.entries(this._members)) {
+            if (member.type === "player") {
+                result[id] = member
+            }
+        }
+        return result
     }
 
-    get moderators(): Record<string, CachedMember> {
-        return getModeratorsFromCache(this.id)
+    get moderators(): Record<string, Member> {
+        const result: Record<string, Member> = {}
+        for (const [id, member] of Object.entries(this._members)) {
+            if (member.type === "moderator") {
+                result[id] = member
+            }
+        }
+        return result
     }
 
-    get teams(): Record<string, CachedTeam> {
-        return getTeamsFromCache(this.id)
+    get teams(): Record<string, Team> {
+        return this._teams
     }
 
-    get people(): Record<string, CachedMember> {
-        return {
-            ...this.players,
-            ...this.moderators
+    get people(): Record<string, Member> {
+        return this._members
+    }
+
+    // Get a specific member
+    getMember(id: string): Member | null {
+        return this._members[id] ?? null
+    }
+
+    // Get a specific team
+    getTeam(id: string): Team | null {
+        return this._teams[id] ?? null
+    }
+
+    // Mutation methods for members
+    addMember(member: Member): void {
+        this._members[member.id] = member
+    }
+
+    removeMember(id: string): void {
+        delete this._members[id]
+    }
+
+    promoteMember(id: string): void {
+        const member = this._members[id]
+        if (member) {
+            member.type = "moderator"
+            delete member.teamId
+            delete member.isSubbed
         }
     }
 
-    // Get a specific member from cache
-    getMember(id: string): CachedMember | null {
-        return getMemberFromCache(this.id, id)
+    renameMember(id: string, name: string): void {
+        const member = this._members[id]
+        if (member) {
+            member.name = name
+        }
     }
 
-    // Get a specific team from cache
-    getTeam(id: string): CachedTeam | null {
-        return getTeamFromCache(this.id, id)
+    setMemberActive(id: string, isActive: boolean): void {
+        const member = this._members[id]
+        if (member) {
+            member.isActive = isActive
+        }
+    }
+
+    setMemberSubbed(id: string, isSubbed: boolean): void {
+        const member = this._members[id]
+        if (member) {
+            member.isSubbed = isSubbed
+        }
+    }
+
+    // Mutation methods for teams
+    addTeam(team: Team): void {
+        this._teams[team.id] = team
+    }
+
+    removeTeam(id: string): void {
+        delete this._teams[id]
+    }
+
+    setTeamCaptain(teamId: string, captainId: string): void {
+        const team = this._teams[teamId]
+        if (team) {
+            team.captainId = captainId
+        }
+    }
+
+    // Serialization for persistence
+    getMembersSnapshot(): Record<string, Member> {
+        return { ...this._members }
+    }
+
+    getTeamsSnapshot(): Record<string, Team> {
+        return { ...this._teams }
+    }
+
+    // Restore from persisted Convex data (for game reopen)
+    restoreFromConvexData(members?: Record<string, Member>, teams?: Record<string, Team>): void {
+        if (members) {
+            this._members = { ...members }
+        }
+        if (teams) {
+            this._teams = { ...teams }
+        }
     }
 
     // Add a chat message and return it with timestamp
@@ -184,9 +261,6 @@ export class Game {
     }
 
     // Get chat messages filtered for a specific member
-    // - No target (null/undefined) = broadcast to all
-    // - Empty array = no one receives it
-    // - Array with members = only those members receive it
     getChatMessagesForMember(memberId: string): ChatMessage[] {
         return this.chatMessages.filter(msg =>
             msg.target === undefined || msg.target === null || msg.target.includes(memberId)
@@ -197,12 +271,10 @@ export class Game {
         const player = this.players[playerId]
         if (!player || !player.teamId) return null
 
-        // Check if team has already buzzed
         if (this.state.buzzedTeamIds.has(player.teamId)) {
             return null
         }
 
-        // Record the buzz
         this.state.buzzedTeamIds.add(player.teamId)
 
         const buzzerData: BuzzerData = {
@@ -220,7 +292,6 @@ export class Game {
     newQuestion(question: Question) {
         if (!question) return
 
-        // For bonus questions, verify the team exists
         if (question.bonus && !this.teams[question.teamId]) return
 
         this.state.questionState = 'open'

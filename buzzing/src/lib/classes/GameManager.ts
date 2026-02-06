@@ -1,6 +1,5 @@
 import { Game, type GameSettings, type GameTimes } from './Game'
 import { createJoinCode, createMemberID, createTeamID } from '$lib/functions/createId'
-import { unsubscribeFromGame } from '$lib/server/gameMemberCache'
 import { getConvexClient, api } from '$lib/convex.server'
 // basically just a fancy array with methods and shit
 
@@ -48,8 +47,6 @@ export class GameManager {
     }
 
     deleteGame(id: string) {
-        // Unsubscribe from Convex before deleting
-        unsubscribeFromGame(id)
         delete this.games[id]
     }
 
@@ -62,6 +59,17 @@ export class GameManager {
                 g.timer.end()
                 g.gameClock.end()
 
+                // Persist member state before removing from memory
+                try {
+                    await getConvexClient().mutation(api.games.persistMemberState, {
+                        gameId: id,
+                        members: g.getMembersSnapshot(),
+                        teams: g.getTeamsSnapshot(),
+                    })
+                } catch (e) {
+                    console.error(`Failed to persist member state for game ${id}:`, e)
+                }
+
                 // Mark inactive, DON'T delete
                 try {
                     await getConvexClient().mutation(api.games.setActive, {
@@ -72,8 +80,7 @@ export class GameManager {
                     console.error(`Failed to mark game ${id} inactive:`, e)
                 }
 
-                // Remove from memory but keep sockets connected
-                unsubscribeFromGame(id)
+                // Remove from memory
                 delete this.games[id]
             }
         }
@@ -102,6 +109,9 @@ export class GameManager {
             },
             existingId: gameId  // Reuse the ID
         })
+
+        // Restore member/team state from last-persisted Convex data
+        game.restoreFromConvexData(gameData.members, gameData.teams)
 
         this.games[gameId] = game
         await convex.mutation(api.games.setActive, { gameId, isActive: true })

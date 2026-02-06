@@ -46,13 +46,12 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     }
 
     const authResponse = authResult.value;
-    const { user } = authResponse;
-    const access_token = (authResponse as any).accessToken || (authResponse as any).access_token;
+    const { user, accessToken } = authResponse;
 
     console.log('Authentication successful for user:', user.email);
 
     // Store the access token in a cookie
-    cookies.set('workos_access_token', (user as any).accessToken || access_token, {
+    cookies.set('workos_access_token', accessToken, {
         path: '/',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -66,8 +65,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        username: (user as any).rawAttributes?.username || null,
-        school: (user as any).rawAttributes?.school || null,
+        username: user.metadata?.username || null,
+        school: user.metadata?.school || null,
     }), {
         path: '/',
         httpOnly: false, // Allow client-side access for auth store

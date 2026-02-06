@@ -1,7 +1,7 @@
 <script lang="ts">
     import { user, isAuthenticated, type User } from "$lib/stores/auth";
     import { goto } from "$app/navigation";
-    import { onMount } from "svelte";
+    import { onMount, type Component } from "svelte";
     import { useQuery, useConvexClient } from "convex-svelte";
     import { api } from "../../../../convex/_generated/api";
     import GameHistoryItem from "$lib/components/GameHistoryItem.svelte";
@@ -13,7 +13,7 @@
 
     // Set up modal context
     const modalStore = writable<{
-        component: any;
+        component: Component<Record<string, unknown>>;
         props: Record<string, unknown>;
     } | null>(null);
     setContext("modalStore", modalStore);

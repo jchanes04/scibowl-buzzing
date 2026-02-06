@@ -2,8 +2,7 @@
     import ControlSection from "./ControlSection.svelte";
     import Select from "svelte-select";
     import type { Category } from "$lib/classes/Game";
-    import { getContext } from "svelte";
-    import { slide } from "svelte/transition";
+    import { getContext, onDestroy } from "svelte";
     import { cubicOut } from "svelte/easing";
     import type Debugger from "$lib/classes/Debugger";
 
@@ -33,8 +32,6 @@
         };
     }
     import {
-        moderatorsStore,
-        playersStore,
         teamsStore,
         type ClientTeamData,
     } from "$lib/stores/members.svelte";
@@ -44,13 +41,10 @@
     import getSocket from "$lib/socket.svelte";
     import gameIdStore from "$lib/stores/gameId.svelte";
     import { modalStore } from "$lib/stores/modal.svelte";
-    import Confirm from "$lib/components/Confirm.svelte";
-    import { useConvexClient } from "convex-svelte";
-    import { api } from "../../../../convex/_generated/api";
 
     let teamSelectValue = $state<ClientTeamData | undefined>();
     let selectedCategory: Category | "" = $state("");
-    let questionType: "tossup" | "bonus" | "visual" | "" = $state("");
+    let questionType = $state<"tossup" | "bonus" | "visual" | "">("tossup");
     let visualBonusFiles: FileList | undefined = $state();
     let visualBonusFilename: string = $state("");
     const categories: { id: Category; value: string }[] = [
@@ -64,7 +58,23 @@
 
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
-    const convex = useConvexClient();
+
+    socket.on("nextQuestion", ({ bonus, teamId }: { bonus: boolean, teamId?: string }) => {
+        if (bonus) {
+            questionType = "bonus";
+            if (teamId) {
+                const teams = teamsStore.value;
+                teamSelectValue = teams[teamId];
+            }
+        } else {
+            questionNumber++;
+            questionType = "tossup";
+        }
+    });
+
+    onDestroy(() => {
+        socket.off("nextQuestion");
+    });
 
     let newQuestionDisabled = $derived(
         !questionType ||

@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { getGame as getGameHelper, unwrapOrThrow } from "./helpers";
+import type { MutationCtx } from "./_generated/server";
+import { getGame as getGameHelper, getOrCreateUser, unwrapOrThrow } from "./helpers";
+import type { QuestionPairScore, Member, Team } from "./types";
 
 const categoryValidator = v.union(
   v.literal("earth"),
@@ -18,29 +20,7 @@ const scoreTypeValidator = v.union(
   v.literal("subbed")
 );
 
-// Validators for player and team lists (client-side types)
-const playerListValidator = v.optional(v.array(v.object({
-  id: v.string(),
-  name: v.string(),
-  type: v.literal("player"),
-  team: v.object({
-    id: v.string(),
-    name: v.string(),
-    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
-    captainId: v.union(v.string(), v.null()),
-    players: v.any(), // Record<string, player objects>
-  }),
-  isActive: v.boolean(),
-  isSubbed: v.boolean(),
-})));
-
-const teamListValidator = v.optional(v.array(v.object({
-  id: v.string(),
-  name: v.string(),
-  type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
-  captainId: v.union(v.string(), v.null()),
-  players: v.any(), // Record<string, player objects>
-})));
+// Members/teams snapshots are passed as v.any() (Record<string, CachedMember/CachedTeam>)
 
 // ============================================================================
 // QUERIES
@@ -115,8 +95,8 @@ export const getScoreboard = query({
           penalty: -4,
         },
         isActive: true,
-        playerNames: {},
-        teamNames: {},
+        members: {},
+        teams: {},
       };
     }
 
@@ -124,8 +104,8 @@ export const getScoreboard = query({
       scores: game.scores,
       pointValues: game.pointValues,
       isActive: game.isActive ?? true,
-      playerNames: game.playerNames || {},
-      teamNames: game.teamNames || {},
+      members: game.members || {},
+      teams: game.teams ?? {},
     };
   },
 });
@@ -174,6 +154,9 @@ export const create = mutation({
     tournamentId: v.optional(v.string()),
     tournamentMatchIndex: v.optional(v.number()),
     moderatorJoinCode: v.optional(v.string()),
+    // Socket-authoritative member/team state
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -202,6 +185,8 @@ export const create = mutation({
       tournamentId: args.tournamentId,
       tournamentMatchIndex: args.tournamentMatchIndex,
       moderatorJoinCode: args.moderatorJoinCode,
+      members: args.members,
+      teams: args.teams,
     });
   },
 });
@@ -278,52 +263,91 @@ export const deleteGame = mutation({
 /**
  * Helper: Get game document (throws if not found)
  */
-async function getGame(ctx: any, gameId: string) {
+async function getGame(ctx: MutationCtx, gameId: string) {
   return unwrapOrThrow(await getGameHelper(ctx, gameId));
 }
 
 /**
- * Helper: Update game scores and name lookups
+ * Helper: Update game scores and persist members/teams snapshots
  */
 async function updateScores(
-  ctx: any,
+  ctx: MutationCtx,
   gameId: string,
-  updater: (scores: any) => void,
-  playerList?: any[],
-  teamList?: any[]
+  updater: (scores: Record<string, QuestionPairScore>) => void,
+  members?: Record<string, Member>,
+  teams?: Record<string, Team>
 ) {
   const game = await getGame(ctx, gameId);
-  const scores = { ...game.scores };
+  const scores = { ...game.scores } as Record<string, QuestionPairScore>;
 
   updater(scores);
 
-  const patchData: any = {
+  const patchData: {
+    scores: Record<string, QuestionPairScore>;
+    lastUpdated: number;
+    members?: Record<string, Member>;
+    teams?: Record<string, Team>;
+  } = {
     scores,
     lastUpdated: Date.now(),
   };
 
-  // Only patch player/team names mapping if playerList/teamList was provided
-  if (playerList && playerList.length > 0) {
-    const playerNames: Record<string, { name: string, teamId: string }> = {};
-    for (const player of playerList) {
-      playerNames[player.id] = {
-        name: player.name,
-        teamId: player.team.id
-      };
-    }
-    patchData.playerNames = playerNames;
+  // Persist members/teams snapshots
+  if (members && Object.keys(members).length > 0) {
+    patchData.members = members;
   }
 
-  if (teamList && teamList.length > 0) {
-    const teamNames: Record<string, string> = {};
-    for (const team of teamList) {
-      teamNames[team.id] = team.name;
-    }
-    patchData.teamNames = teamNames;
+  if (teams && Object.keys(teams).length > 0) {
+    patchData.teams = teams;
   }
 
   await ctx.db.patch(game._id, patchData);
 }
+
+/**
+ * Mutation: Track a game join by adding the gameId to the user's gameIds array.
+ * Called when a member joins a game (not deferred to persistMemberState).
+ */
+export const trackGameJoin = mutation({
+  args: {
+    gameId: v.string(),
+    memberId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getOrCreateUser(ctx, args.memberId);
+    const gameIds = user.gameIds ?? [];
+    if (!gameIds.includes(args.gameId)) {
+      await ctx.db.patch(user._id, {
+        gameIds: [...gameIds, args.gameId],
+      });
+    }
+  },
+});
+
+/**
+ * Mutation: Persist member/team state from socket server to game object
+ */
+export const persistMemberState = mutation({
+  args: {
+    gameId: v.string(),
+    members: v.any(), // Record<string, CachedMember>
+    teams: v.any(), // Record<string, CachedTeam>
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (!game) return;
+
+    await ctx.db.patch(game._id, {
+      members: args.members,
+      teams: args.teams,
+      lastUpdated: Date.now(),
+    });
+  },
+});
 
 // ============================================================================
 // MUTATIONS - Scoring
@@ -339,8 +363,8 @@ export const correctTossup = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
-    playerList: playerListValidator,
-    teamList: teamListValidator,
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -363,7 +387,7 @@ export const correctTossup = mutation({
           bonus: null,
         };
       }
-    }, args.playerList, args.teamList);
+    }, args.members, args.teams);
   },
 });
 
@@ -377,8 +401,8 @@ export const incorrectTossup = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
-    playerList: playerListValidator,
-    teamList: teamListValidator,
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -401,7 +425,7 @@ export const incorrectTossup = mutation({
           bonus: null,
         };
       }
-    }, args.playerList, args.teamList);
+    }, args.members, args.teams);
   },
 });
 
@@ -415,8 +439,8 @@ export const penalty = mutation({
     playerId: v.string(),
     teamId: v.string(),
     category: categoryValidator,
-    playerList: playerListValidator,
-    teamList: teamListValidator,
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -439,7 +463,7 @@ export const penalty = mutation({
           bonus: null,
         };
       }
-    }, args.playerList, args.teamList);
+    }, args.members, args.teams);
   },
 });
 
@@ -451,8 +475,8 @@ export const dead = mutation({
     gameId: v.string(),
     number: v.number(),
     category: categoryValidator,
-    playerList: playerListValidator,
-    teamList: teamListValidator,
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -463,7 +487,7 @@ export const dead = mutation({
           bonus: null,
         };
       }
-    }, args.playerList, args.teamList);
+    }, args.members, args.teams);
   },
 });
 
@@ -476,8 +500,8 @@ export const correctBonus = mutation({
     number: v.number(),
     teamId: v.string(),
     category: categoryValidator,
-    playerList: playerListValidator,
-    teamList: teamListValidator,
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -497,7 +521,7 @@ export const correctBonus = mutation({
           },
         };
       }
-    }, args.playerList, args.teamList);
+    }, args.members, args.teams);
   },
 });
 
@@ -510,8 +534,8 @@ export const incorrectBonus = mutation({
     number: v.number(),
     teamId: v.string(),
     category: categoryValidator,
-    playerList: playerListValidator,
-    teamList: teamListValidator,
+    members: v.optional(v.any()),
+    teams: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     await updateScores(ctx, args.gameId, (scores) => {
@@ -531,7 +555,7 @@ export const incorrectBonus = mutation({
           },
         };
       }
-    }, args.playerList, args.teamList);
+    }, args.members, args.teams);
   },
 });
 
@@ -593,7 +617,7 @@ export const backfillSubbedScores = mutation({
 
     // Add subbed score for each question where this team doesn't have a score
     for (const [qNumStr, questionData] of Object.entries(scores)) {
-      const row = questionData as any;
+      const row = questionData as QuestionPairScore;
       if (row && !row.tossup[args.teamId]) {
         row.tossup[args.teamId] = {
           playerId: args.playerId,
@@ -602,20 +626,8 @@ export const backfillSubbedScores = mutation({
       }
     }
 
-    // Update playerNames and teamNames with the new player
-    const playerNames = { ...(game.playerNames || {}) };
-    playerNames[args.playerId] = {
-      name: args.playerName,
-      teamId: args.teamId,
-    };
-
-    const teamNames = { ...(game.teamNames || {}) };
-    teamNames[args.teamId] = args.teamName;
-
     await ctx.db.patch(game._id, {
       scores,
-      playerNames,
-      teamNames,
       lastUpdated: Date.now(),
     });
   },
@@ -695,8 +707,6 @@ export const clearScores = mutation({
     const game = await getGame(ctx, args.gameId);
     await ctx.db.patch(game._id, {
       scores: {},
-      playerNames: {},
-      teamNames: {},
       lastUpdated: Date.now(),
     });
   },

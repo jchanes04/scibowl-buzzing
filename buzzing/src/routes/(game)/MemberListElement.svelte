@@ -4,14 +4,10 @@
         ClientModerator,
         ClientPlayer,
     } from "$lib/stores/members.svelte";
-    import Confirm from "$lib/components/Confirm.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import kickSvg from "$lib/icons/kick.svg?raw";
     import badgeSvg from "$lib/icons/badge.svg?raw";
     import editNameSvg from "$lib/icons/edit-name.svg?raw";
-    import { useConvexClient } from "convex-svelte";
-    import { api } from "../../../convex/_generated/api";
-    import gameIdStore from "$lib/stores/gameId.svelte";
     import { modalStore } from "$lib/stores/modal.svelte";
 
     interface Props {
@@ -22,7 +18,6 @@
     let { member, showControls = false }: Props = $props();
 
     const socket = getSocket();
-    const convex = useConvexClient();
     let newName = $state("");
 
     function promote() {
@@ -34,18 +29,7 @@
                 " to moderator?",
             cancelCallback: () => modalStore.hide(),
             confirmCallback: async () => {
-                const gId = gameIdStore.value;
-                if (gId) {
-                    // Update Convex first
-                    await convex.mutation(api.gameMembers.promote, {
-                        gameId: gId,
-                        memberId: member.id,
-                    });
-
-                    // Then emit socket to disconnect and reconnect // todo confirm this
-                    socket.emit("promotePlayer", member.id);
-                }
-
+                socket.emit("promotePlayer", member.id);
                 modalStore.hide();
             },
         });
@@ -57,15 +41,11 @@
             message: "Are you sure you want to kick " + member.name + "?",
             cancelCallback: () => modalStore.hide(),
             confirmCallback: async () => {
-                const gId = gameIdStore.value;
-                if (gId) {
-                    socket.emit("kickPlayer", member.id);
-                    socket.emit("addChatMessage", {
-                        type: "notification",
-                        text: `${member.name} has been kicked`,
-                    });
-                }
-
+                socket.emit("kickPlayer", member.id);
+                socket.emit("addChatMessage", {
+                    type: "notification",
+                    text: `${member.name} has been kicked`,
+                });
                 modalStore.hide();
             },
         });
@@ -78,13 +58,8 @@
             message: renameMessage,
             cancelCallback: () => modalStore.hide(),
             confirmCallback: async () => {
-                const gId = gameIdStore.value;
-                if (gId) {
-                    await convex.mutation(api.gameMembers.rename, {
-                        gameId: gId,
-                        memberId: member.id,
-                        name: newName,
-                    });
+                if (newName.trim()) {
+                    socket.emit("renameMember", member.id, newName);
                 }
                 modalStore.hide();
             },
@@ -92,21 +67,11 @@
     }
 
     async function toggleSub() {
-        const gId = gameIdStore.value;
-        if (gId && member.type === "player") {
+        if (member.type === "player") {
             const newSubStatus = !(member as ClientPlayer).isSubbed;
 
-            // Update Convex
-            await convex.mutation(api.gameMembers.setSub, {
-                gameId: gId,
-                memberId: member.id,
-                isSubbed: newSubStatus,
-            });
-
-            // Emit socket for instant UI update
             socket.emit("setPlayerSub", member.id, newSubStatus);
 
-            // Add chat message
             socket.emit("addChatMessage", {
                 type: "notification",
                 text: newSubStatus
@@ -129,15 +94,8 @@
         onkeydown={(e) =>
             e.key === "Enter" &&
             newName.trim() !== "" &&
-            (async () => {
-                const gId = gameIdStore.value;
-                if (gId) {
-                    await convex.mutation(api.gameMembers.rename, {
-                        gameId: gId,
-                        memberId: member.id,
-                        name: newName,
-                    });
-                }
+            (() => {
+                socket.emit("renameMember", member.id, newName);
                 modalStore.hide();
             })()}
     />

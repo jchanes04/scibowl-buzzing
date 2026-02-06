@@ -2,12 +2,13 @@ import { generateGameToken } from "$lib/authentication"
 import { createNewGame } from "$lib/server"
 import { fail, redirect } from "@sveltejs/kit"
 import type { Actions } from "./$types"
+import type { Cookies } from "@sveltejs/kit"
 import { env } from "$env/dynamic/public"
 import { createMemberID } from "$lib/functions/createId"
 import { getAuthenticatedUser } from "$lib/auth.result"
 
 // Get or create a persistent member ID for the user
-function getPersistentMemberId(cookies: any): { memberId: string, isNew: boolean } {
+function getPersistentMemberId(cookies: Cookies): { memberId: string, isNew: boolean } {
     const userResult = getAuthenticatedUser(cookies)
     if (userResult.isOk()) {
         return { memberId: userResult.value.id, isNew: false }
@@ -34,7 +35,7 @@ export const actions = {
         const individualsAllowed = body.get("individual-teams-allowed") as string === "on"
         const newTeamsAllowed = body.get("new-teams-allowed") as string === "on"
         const spectatorsAllowed = body.get("spectators-allowed") as string === "on"
-        const teamNames = JSON.parse(body.get('teams') as string || "[]")
+        const teamNames = JSON.parse(body.get('items') as string || "[]")
 
         // Extract timer settings (extra time is always 2 seconds)
         const tossupTime = parseInt(body.get("tossup-time") as string) || 5

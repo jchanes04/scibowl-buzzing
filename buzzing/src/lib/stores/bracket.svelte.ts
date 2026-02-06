@@ -8,8 +8,9 @@
  * Uses the unified bracket generation module from $lib/functions/bracketGeneration
  */
 import { api } from '../../../convex/_generated/api';
+import type { ConvexClient } from 'convex/browser';
 import { tournamentStore, tournamentTeamsStore, tournamentGamesStore } from './tournament.svelte';
-import { calculateTeamScore } from '$lib/functions/scoreboard';
+import { calculateTeamScore, deriveTeamNames } from '$lib/functions/scoreboard';
 import { toastStore } from './toast.svelte';
 import { safeMutation } from '$lib/convex.result';
 import type { BracketSeed, TournamentTeam, TournamentGame, BracketResult, BracketType } from '../../routes/(app)/tournament/[id]/types';
@@ -342,7 +343,7 @@ export function randomizeSeeds() {
  * Save bracket structure (seeds and size) without creating games
  * Returns true on success, false on failure
  */
-export async function saveBracketStructure(convex: any): Promise<boolean> {
+export async function saveBracketStructure(convex: ConvexClient): Promise<boolean> {
     const tournament = tournamentStore.value;
 
     toastStore.add('Saving structure...', 'info', 1000);
@@ -370,7 +371,7 @@ export async function saveBracketStructure(convex: any): Promise<boolean> {
 /**
  * Confirm bracket structure and create games
  */
-export async function confirmBracketStructure(convex: any) {
+export async function confirmBracketStructure(convex: ConvexClient) {
     const tournament = tournamentStore.value;
     const seeds = getCurrentSeeds();
 
@@ -673,7 +674,8 @@ export function getGame(matchIndex: number, bracket: MatchBracket = "winners"): 
  */
 export function isMatchLive(matchIndex: number, bracket: MatchBracket = "winners"): boolean {
     const game = getGame(matchIndex, bracket);
-    return !!(Object.keys(game?.teamNames ?? {}).length > 0
+    const gameTeamNames = deriveTeamNames(game?.teams ?? {});
+    return !!(Object.keys(gameTeamNames).length > 0
         && game?.isActive
         && !game?.isCompleted);
 }
@@ -684,7 +686,8 @@ export function isMatchLive(matchIndex: number, bracket: MatchBracket = "winners
 export function getTeamScoreForMatch(matchIndex: number, bracket: MatchBracket, teamId: string): number | null {
     const game = getGame(matchIndex, bracket);
     if (!game || !game.scores || !game.pointValues) return null;
-    if (!game.teamNames || !(teamId in game.teamNames)) return null;
+    const gameTeamNames = deriveTeamNames(game.teams ?? {});
+    if (!(teamId in gameTeamNames)) return null;
     return calculateTeamScore(teamId, game.scores, game.pointValues);
 }
 

@@ -1,9 +1,10 @@
 <script lang="ts">
     import ScoreboardTable from "./ScoreboardTable.svelte";
     import { modalStore } from "$lib/stores/modal.svelte";
+    import type { ScoreboardData } from "$lib/stores/scoreboard.svelte";
 
     interface Props {
-        scoreboardData: any;
+        scoreboardData: ScoreboardData;
     }
 
     let { scoreboardData }: Props = $props();

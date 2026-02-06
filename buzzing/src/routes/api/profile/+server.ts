@@ -56,7 +56,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
                 metadata: {
                     username: metadata.username || undefined,
                     school: metadata.school || undefined,
-                } as any,
+                } as Record<string, string>,
             }
         );
 
@@ -80,10 +80,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
         return json(updatedUserData);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error updating profile:', err);
 
-        if (err.status) {
+        if (err && typeof err === 'object' && 'status' in err) {
             throw err; // Re-throw SvelteKit errors
         }
 

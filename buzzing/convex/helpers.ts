@@ -94,6 +94,28 @@ export async function getTournamentTeam(
 }
 
 // ---------------------------------------------------------------------------
+// User helper
+// ---------------------------------------------------------------------------
+
+export async function getOrCreateUser(ctx: MutationCtx, userId: string) {
+    let user = await ctx.db
+        .query("users")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .first();
+
+    if (!user) {
+        const id = await ctx.db.insert("users", {
+            userId,
+            privateTags: {},
+            gameIds: [],
+        });
+        user = await ctx.db.get(id);
+    }
+
+    return user!;
+}
+
+// ---------------------------------------------------------------------------
 // Boundary helper
 // ---------------------------------------------------------------------------
 

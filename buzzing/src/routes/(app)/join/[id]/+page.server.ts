@@ -64,10 +64,19 @@ export const load = async function ({ params, url, cookies }) {
     // Moderator status is determined solely by which code was used
     const moderator = isModeratorCode
 
-    const memberNames = Object.values(game.players).map(x => x.name)
+    const players = Object.values(game.players)
+    const memberNames = players.map(x => x.name)
     const settings = game.settings
     // game.teams returns CachedTeam which already has the right shape
     const teams = Object.values(game.teams).filter(t => t.type !== "individual")
+    // Send player-to-team associations so the join page can show team members
+    const teamMembers: Record<string, Array<{ id: string; name: string }>> = {}
+    for (const player of players) {
+        if (player.teamId) {
+            const arr = teamMembers[player.teamId] ??= []
+            arr.push({ id: player.id, name: player.name })
+        }
+    }
 
     // Check if this is a tournament game (gameData and convex already fetched above)
 
@@ -112,17 +121,16 @@ export const load = async function ({ params, url, cookies }) {
         }
     }
 
-    // Check if this player is already active in this game
+    // Check if this player is already active in this game (in-memory check)
     const memberId = getExistingMemberId(cookies)
     let existingActiveMember: { name: string; type: string; teamId?: string } | null = null
     if (memberId) {
-        const existingMembers = await convex.query(api.gameMembers.getAllForGame, { gameId: id })
-        const found = existingMembers.find(m => m.id === memberId && m.isActive)
-        if (found) {
+        const member = game.getMember(memberId)
+        if (member) {
             existingActiveMember = {
-                name: found.name,
-                type: found.type,
-                teamId: found.teamId,
+                name: member.name,
+                type: member.type,
+                teamId: member.teamId,
             }
         }
     }
@@ -132,6 +140,7 @@ export const load = async function ({ params, url, cookies }) {
         memberNames,
         settings,
         teams,
+        teamMembers,
         gameName: game.name,
         isTournamentGame: !!tournamentData,
         tournamentData,
@@ -158,11 +167,8 @@ export const actions = {
         // Get persistent member ID (from WorkOS or cookie)
         const { memberId: playerId, isNew: isNewMemberId } = getPersistentMemberId(cookies)
 
-        // Check if player is already active in this game
-        const existingMembers = await convex.query(api.gameMembers.getAllForGame, { gameId })
-        const existingActiveMember = existingMembers.find(
-            m => m.id === playerId && m.isActive
-        )
+        // Check if player is already active in this game (in-memory check)
+        const existingActiveMember = game.getMember(playerId)
 
         // If already active and didn't confirm replacement, reject the join
         if (existingActiveMember && !confirmReplace) {
@@ -195,21 +201,31 @@ export const actions = {
 
         // Moderators just need a name, no team affiliation
         if (isModerator) {
-            // Add moderator to Convex
-            await convex.mutation(api.gameMembers.add, {
-                gameId,
-                memberId: playerId,
+            // Add moderator to in-memory game
+            game.addMember({
+                id: playerId,
                 name,
                 type: "moderator",
-                teamId: undefined
+                isActive: true
             })
+
+            // Emit membersUpdate to all clients
+            const io = getIO()
+            if (io) {
+                io.to(gameId).emit('membersUpdate', {
+                    members: game.getMembersSnapshot(),
+                    teams: game.getTeamsSnapshot()
+                })
+            }
+
+            // Track game join on user document
+            await convex.mutation(api.games.trackGameJoin, { gameId, memberId: playerId })
 
             // Add chat message for moderator joining
             const chatMessage = game.addChatMessage({
                 text: `${name} has joined as moderator`,
                 type: "notification"
             })
-            const io = getIO()
             if (io) {
                 io.to(gameId).emit('chatMessage', chatMessage)
             }
@@ -253,15 +269,11 @@ export const actions = {
                 teamName = tournamentTeam.name || "Team"
                 teamType = "tournament"
 
-                // Create the team in the game (Convex + in-memory)
-                // Use tournamentTeamId as the teamId for consistent tracking across games
-                await convex.mutation(api.teams.add, {
-                    gameId,
-                    teamId,  // This is the tournamentTeamId
+                // Create the team in in-memory game
+                game.addTeam({
+                    id: teamId,
                     name: teamName,
-                    type: "tournament",
-                    tournamentId: gameData.tournamentId,
-                    playerNames: tournamentTeam.players || [],
+                    type: "tournament"
                 })
             }
         } else if (teamOrIndiv === 'team') {
@@ -279,10 +291,9 @@ export const actions = {
             teamName = body.get('new-team-name') as string
             teamType = "created"
 
-            // Add new team to Convex
-            await convex.mutation(api.teams.add, {
-                gameId,
-                teamId,
+            // Add new team to in-memory game
+            game.addTeam({
+                id: teamId,
                 name: teamName,
                 type: "created"
             })
@@ -292,23 +303,34 @@ export const actions = {
             teamName = name
             teamType = "individual"
 
-            // Add individual team to Convex
-            await convex.mutation(api.teams.add, {
-                gameId,
-                teamId,
+            // Add individual team to in-memory game
+            game.addTeam({
+                id: teamId,
                 name: teamName,
                 type: "individual"
             })
         }
 
-        // Add player to Convex
-        await convex.mutation(api.gameMembers.add, {
-            gameId,
-            memberId: playerId,
+        // Add player to in-memory game
+        game.addMember({
+            id: playerId,
             name,
             type: "player",
-            teamId
+            teamId,
+            isActive: true
         })
+
+        // Emit membersUpdate to all clients
+        const io = getIO()
+        if (io) {
+            io.to(gameId).emit('membersUpdate', {
+                members: game.getMembersSnapshot(),
+                teams: game.getTeamsSnapshot()
+            })
+        }
+
+        // Track game join on user document
+        await convex.mutation(api.games.trackGameJoin, { gameId, memberId: playerId })
 
         // Check if player is joining mid-game - if so, backfill subbed scores for prior questions
         const gameData = await convex.query(api.games.getByGameId, { gameId })
@@ -322,16 +344,11 @@ export const actions = {
             })
         }
 
-        // Emit socket event for instant UI update
-        const playerData = { id: playerId, name, type: "player" as const, teamID: teamId }
-        const teamData = { id: teamId, name: teamName, type: teamType, captainId: null }
-
         // Add chat message for player joining (stores in game memory and emits via socket)
         const chatMessage = game.addChatMessage({
             text: `${name} has joined the game`,
             type: "notification"
         })
-        const io = getIO()
         if (io) {
             io.to(gameId).emit('chatMessage', chatMessage)
         }

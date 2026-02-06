@@ -27,6 +27,13 @@ export type BracketGenerationOptions = _BracketGenerationOptions;
 export type DEGridDimensions = _DEGridDimensions;
 export type DEGridPosition = _DEGridPosition;
 
+// Re-export shared types
+import type { BracketSeed, BracketResult } from '$lib/functions/teamSelection';
+import type { PointValues } from '$lib/functions/scoreboard';
+import type { Member, Team } from '$lib/types/members';
+import type { QuestionPairScore } from '$lib/stores/scoreboard.svelte';
+export type { BracketSeed, BracketResult, PointValues };
+
 export interface TournamentSettings {
     spectatorsAllowed: boolean;
     times: {
@@ -34,24 +41,9 @@ export interface TournamentSettings {
         bonus: number[];
         visual: number[];
     };
-    pointValues: {
-        tossup: number;
-        bonus: number;
-        penalty: number;
-    };
+    pointValues: PointValues;
     minPlayers: number;
     maxPlayers: number;
-}
-
-export interface BracketSeed {
-    seed: number;
-    teamId: string;
-}
-
-export interface BracketResult {
-    matchIndex: number;
-    bracket?: MatchBracket; // For double elimination
-    winningTeamId: string;
 }
 
 export interface Tournament {
@@ -82,14 +74,10 @@ export interface TournamentGame {
     joinCode: string;
     moderatorJoinCode?: string;
     name: string;
-    scores: Record<number, unknown>;
-    teamNames?: Record<string, string>;
-    playerNames?: Record<string, { name: string; teamId: string }>;
-    pointValues: {
-        tossup: number;
-        bonus: number;
-        penalty: number;
-    };
+    scores: Record<string, QuestionPairScore>;
+    members?: Record<string, Member>;
+    teams?: Record<string, Team>;
+    pointValues: PointValues;
     isActive?: boolean;
     isCompleted?: boolean;
     tournamentMatchIndex?: number;

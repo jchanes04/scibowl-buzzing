@@ -1,9 +1,9 @@
-import type { Component } from 'svelte';
+import type { Component, Snippet } from 'svelte';
 
 interface ModalProps {
     title: string;
-    message: any; // string | Snippet
-    confirmCallback?: (...args: any[]) => void;
+    message: string | Snippet;
+    confirmCallback?: () => void;
     cancelCallback?: () => void;
     confirmText?: string;
     cancelText?: string;
@@ -25,7 +25,7 @@ export const modalStore = {
     show(props: ModalProps) {
         currentState = props;
     },
-    showComponent<T extends Record<string, any>>(component: Component<T>, props: T) {
+    showComponent<T extends Record<string, unknown>>(component: Component<T>, props: T) {
         currentState = { component, props };
     },
     hide() {

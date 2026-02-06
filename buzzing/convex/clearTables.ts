@@ -11,8 +11,6 @@ export const clearAll = internalMutation({
     handler: async (ctx) => {
         const tables = [
             "games",
-            "gameMembers",
-            "teams",
             "users",
             "tournaments",
             "tournamentTeams",

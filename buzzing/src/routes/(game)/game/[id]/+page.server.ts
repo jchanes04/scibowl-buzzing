@@ -2,7 +2,6 @@ import { getDataFromGameToken } from "$lib/authentication"
 import { getGame } from "$lib/server"
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
-import { getConvexClient, api } from "$lib/convex.server"
 import type { BuzzerData, Game } from "$lib/classes/Game"
 import type { ClientGameData } from "$lib/stores/game.svelte"
 
@@ -25,39 +24,14 @@ export const load = async function ({ params, cookies }) {
         }
     }
 
-    // Check if member is active in cache
-    let member = game.people[memberId]
-    const convex = getConvexClient()
-
-    if (!member) {
-        // Member not in active cache - check Convex for inactive member
-        const allMembers = await convex.query(api.gameMembers.getAllForGame, { gameId })
-        member = allMembers.find(m => m.id === memberId)
-    }
-
+    // Check if member is in in-memory game state
+    const member = game.people[memberId]
 
     if (member) {
-        await convex.mutation(api.gameMembers.rejoin, {
-            gameId,
-            memberId
-        })
-
-        // If it's a player with a created/individual team, reactivate the team too
-        if (member.type === "player" && member.teamId) {
-            const allTeams = await convex.query(api.teams.getAllForGame, { gameId })
-            const inactiveTeam = allTeams.find(t => t.teamId === member.teamId && !t.isActive)
-            if (inactiveTeam) {
-                await convex.mutation(api.teams.rejoin, {
-                    gameId,
-                    teamId: member.teamId
-                })
-            }
-        }
-
         return buildPageData(game, gameId, memberId)
     }
 
-    // Member not found at all - redirect
+    // Member not found in-memory - they need to re-join via join page
     if (game.settings.spectatorsAllowed) {
         redirect(302, "/spectate/" + gameId)
     } else {

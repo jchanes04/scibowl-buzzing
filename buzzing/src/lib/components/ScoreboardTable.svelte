@@ -6,14 +6,19 @@
     import Confirm from "$lib/components/Confirm.svelte";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
-    import { calculateTeamScore } from "$lib/functions/scoreboard";
+    import { calculateTeamScore, derivePlayerNames, deriveTeamNames } from "$lib/functions/scoreboard";
+    import type { ScoreboardData, QuestionPairScore } from "$lib/stores/scoreboard.svelte";
 
     interface Props {
-        scoreboardData: any;
+        scoreboardData: ScoreboardData;
         isModerator?: boolean;
     }
 
     let { scoreboardData, isModerator = false }: Props = $props();
+
+    // Derive playerNames/teamNames from members/teams
+    let playerNames = $derived(derivePlayerNames(scoreboardData?.members || {}));
+    let teamNames = $derived(deriveTeamNames(scoreboardData?.teams || {}));
 
     const convex = useConvexClient();
 
@@ -26,7 +31,7 @@
     let playersFromScores = $derived(
         scoreboardData
             ? Object.values(scoreboardData.scores).reduce(
-                  (acc: Record<string, string[]>, s: any) => {
+                  (acc: Record<string, string[]>, s: QuestionPairScore) => {
                       for (const t of Object.keys(s.tossup)) {
                           if (!acc[t]) {
                               acc[t] = [s.tossup[t]!.playerId];
@@ -44,22 +49,21 @@
         (() => {
             const result: Record<string, string[]> = {};
             if (!scoreboardData) return result;
-            const { playerNames, teamNames } = scoreboardData;
             // Only use teams that exist in teamNames
             for (const [playerId, playerInfo] of Object.entries(
                 playerNames || {},
             )) {
                 if (
                     playerInfo &&
-                    (playerInfo as any).teamId &&
-                    teamNames[(playerInfo as any).teamId]
+                    playerInfo.teamId &&
+                    teamNames[playerInfo.teamId]
                 ) {
-                    if (!result[(playerInfo as any).teamId])
-                        result[(playerInfo as any).teamId] = [];
+                    if (!result[playerInfo.teamId])
+                        result[playerInfo.teamId] = [];
                     if (
-                        !result[(playerInfo as any).teamId]?.includes(playerId)
+                        !result[playerInfo.teamId]?.includes(playerId)
                     ) {
-                        result[(playerInfo as any).teamId]?.push(playerId);
+                        result[playerInfo.teamId]?.push(playerId);
                     }
                 }
             }
@@ -71,10 +75,10 @@
             combinePlayersLists(playersFromScores, playersFromTeams),
         ).sort(([idA], [idB]) => {
             const nameA = (
-                scoreboardData?.teamNames?.[idA] || idA
+                teamNames?.[idA] || idA
             ).toLowerCase();
             const nameB = (
-                scoreboardData?.teamNames?.[idB] || idB
+                teamNames?.[idB] || idB
             ).toLowerCase();
             return nameA.localeCompare(nameB);
         }),
@@ -86,7 +90,7 @@
                   let totals: Record<string, number> = {};
                   let scoreHistory: Record<number, Record<string, number>> = {};
                   Object.entries(scoreboardData.scores || {}).forEach(
-                      ([rowNumStr, row]: [string, any]) => {
+                      ([rowNumStr, row]: [string, QuestionPairScore]) => {
                           const i = Number(rowNumStr);
                           // Copy previous
                           totals = { ...totals };
@@ -94,7 +98,7 @@
                               // Tossups
                               for (const [teamId, entry] of Object.entries(
                                   row.tossup,
-                              ) as [string, any][]) {
+                              ) as [string, TossupEntry][]) {
                                   if (!totals[teamId]) totals[teamId] = 0;
                                   if (entry.scoreType === "correct")
                                       totals[teamId] +=
@@ -302,8 +306,8 @@
                 }
                 // Bonus points
                 if (row.bonus?.correct) {
-                    if (!stats[cat][row.bonus.teamId]) stats[cat][row.bonus.teamId] = 0;
-                    stats[cat][row.bonus.teamId] += pointValues.bonus;
+                    if (!stats[cat]![row.bonus.teamId]) stats[cat]![row.bonus.teamId] = 0;
+                    stats[cat]![row.bonus.teamId]! += pointValues.bonus;
                 }
             }
             return stats;
@@ -411,7 +415,7 @@
                         class:team-name={true}
                         style:font-weight="bold"
                     >
-                        {scoreboardData.teamNames[teamId] || teamId}
+                        {teamNames[teamId] || teamId}
                     </th>
                 {/if}
             {/each}
@@ -425,7 +429,7 @@
                 {#each players as [_, p]}
                     {#each p as playerId}
                         <th class="player-name" style:font-weight="normal"
-                            >{scoreboardData.playerNames[playerId]?.name ||
+                            >{playerNames[playerId]?.name ||
                                 "Unknown"}</th
                         >
                     {/each}

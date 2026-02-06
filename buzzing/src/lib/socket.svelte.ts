@@ -3,13 +3,15 @@ import { io, Socket } from "socket.io-client"
 import gameStore from "./stores/game.svelte"
 import { timerStore, gameClockStore } from "./stores/timer.svelte"
 import visualBonusStore from "./stores/visualBonus.svelte"
-import { goto, invalidateAll } from "$app/navigation"
+import { goto } from "$app/navigation"
 import type { Category, Question, ScoreType, BuzzerData } from "$lib/classes/Game"
 import {
     teamsStore,
     playersStore,
-    myMemberStore
+    myMemberStore,
+    updateMembersFromSocket
 } from "./stores/members.svelte"
+import type { Member, Team } from "$lib/types/members"
 import { addChatMessage, type ChatMessage } from "./stores/chatMessages.svelte"
 
 // Direct access to store values via getters
@@ -43,25 +45,20 @@ export function createSocket(spectator: boolean = false) {
         socket.connect()
     }
 
-    socket.onAny((event: string, ...args: any[]) => {
+    socket.onAny((event: string, ...args: unknown[]) => {
         console.log(event, args);
     })
+
+    // NOTE: QuestionControls.svelte contains the socket handling for nextQuestion
 
     // Handle new chat messages from socket
     socket.on('chatMessage', (message: ChatMessage) => {
         addChatMessage(message)
     })
 
-    socket.on('promotion', async (memberId: string) => {
-        // If I was promoted, I need to refresh the page to get moderator controls
-        const myMember = getMyMember()
-        if (memberId === myMember.id) {
-            socket.once("disconnect", async () => {
-                await invalidateAll()
-                socket.connect()
-            })
-            socket.disconnect()
-        }
+    // Handle member/team state updates from socket
+    socket.on('membersUpdate', (data: { members: Record<string, Member>, teams: Record<string, Team> }) => {
+        updateMembersFromSocket(data)
     })
 
 
@@ -84,7 +81,6 @@ export function createSocket(spectator: boolean = false) {
         ) {
             gameStore.disableBuzzing()
         }
-        // Chat message handled by Convex (from PlayerControls.svelte)
     })
 
     socket.on('buzz', (id: string) => {
@@ -98,14 +94,12 @@ export function createSocket(spectator: boolean = false) {
             gameStore.buzz(player.team.id, buzzerData)
             buzzAudio?.play()
             timerStore.pause()
-            // Chat message handled by Convex (from server.ts)
         }
     })
 
     socket.on('buzzFailed', () => {
         const myMember = getMyMember()
         if (myMember.team) gameStore.removeTeamBuzz(myMember.team.id)
-        // Chat message handled by Convex (from server.ts)
     })
 
     type ScoreData = {
@@ -138,7 +132,6 @@ export function createSocket(spectator: boolean = false) {
         }
 
         // Scoreboard mutations handled by Convex subscription
-        // Chat messages handled by Convex (from ReaderControls.svelte)
 
         const myMember = getMyMember()
         if (open && game.state.currentQuestion) {
@@ -153,11 +146,10 @@ export function createSocket(spectator: boolean = false) {
         }
     })
 
-    socket.on("deadQuestion", (number: number, category: Category) => {
-        // Scoreboard dead marking handled by Convex subscription
+    socket.on("deadQuestion", () => {
+        // Scoreboard mutations handled by Convex subscription
         timerStore.end()
         gameStore.clearQuestion()
-        // Chat message handled by Convex (from ReaderControls.svelte)
     })
 
     socket.on('questionOpen', (question: Question) => {

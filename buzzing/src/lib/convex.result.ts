@@ -3,7 +3,6 @@
  * instead of throwing exceptions.
  */
 import { ok, err, type Result } from "neverthrow";
-import type { ConvexHttpClient } from "convex/browser";
 import type {
     FunctionReference,
     FunctionReturnType,
@@ -18,11 +17,15 @@ import {
     type ConvexError,
 } from "./errors";
 
+// Accept any object with query/mutation methods compatible with Convex clients
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ConvexClientLike = { query: (...args: any[]) => Promise<any>; mutation: (...args: any[]) => Promise<any> };
+
 /**
  * Wraps `client.query()` in a try/catch, returning `Result<T, ConvexError>`.
  */
 export async function safeQuery<Query extends FunctionReference<"query">>(
-    client: ConvexHttpClient,
+    client: ConvexClientLike,
     fn: Query,
     ...args: OptionalRestArgs<Query>
 ): Promise<Result<FunctionReturnType<Query>, ConvexError>> {
@@ -38,7 +41,7 @@ export async function safeQuery<Query extends FunctionReference<"query">>(
  * Wraps `client.mutation()` in a try/catch, returning `Result<T, ConvexError>`.
  */
 export async function safeMutation<Mutation extends FunctionReference<"mutation">>(
-    client: ConvexHttpClient,
+    client: ConvexClientLike,
     fn: Mutation,
     ...args: OptionalRestArgs<Mutation>
 ): Promise<Result<FunctionReturnType<Mutation>, ConvexError>> {

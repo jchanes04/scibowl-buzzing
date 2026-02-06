@@ -30,9 +30,9 @@ export default defineSchema({
       penalty: v.number(),
     }),
 
-    // Name lookups for scoreboard (updated only on score actions)
-    playerNames: v.optional(v.any()), // Record<string, {name: string, teamId: string}> - playerId -> player info
-    teamNames: v.optional(v.any()), // Record<string, string> - teamId -> teamName
+    // Socket-authoritative member/team state (persisted on score updates)
+    members: v.optional(v.any()), // Record<string, CachedMember> - full member records
+    teams: v.optional(v.any()), // Record<string, CachedTeam> - full team records
 
     // Public tags (added by moderators, visible to all)
     tags: v.optional(v.array(v.string())),
@@ -55,58 +55,13 @@ export default defineSchema({
     .index("by_joinCode", ["joinCode"])
     .index("by_tournamentId", ["tournamentId"]),
 
-  gameMembers: defineTable({
-    gameId: v.string(),
-    memberId: v.string(),
-    name: v.string(),
-    type: v.union(v.literal("player"), v.literal("moderator")),
-    teamId: v.optional(v.string()),
-    isActive: v.boolean(),
-    isSubbed: v.optional(v.boolean()),
-    leftAt: v.optional(v.number()),
-    // Denormalized game data - snapshotted when member leaves for efficient history queries
-    gameSnapshot: v.optional(v.object({
-      name: v.string(),
-      createdAt: v.number(),
-      isActive: v.boolean(),
-      playerNames: v.any(), // Record<string, {name: string, teamId: string}>
-      teamNames: v.any(), // Record<string, string>
-      scores: v.any(), // Record<number, QuestionPairScore>
-      pointValues: v.object({
-        tossup: v.number(),
-        bonus: v.number(),
-        penalty: v.number(),
-      }),
-      tags: v.array(v.string()),
-    })),
-  })
-    .index("by_gameId", ["gameId"])
-    .index("by_gameId_memberId", ["gameId", "memberId"])
-    .index("by_gameId_active", ["gameId", "isActive"])
-    .index("by_memberId", ["memberId"]),
-
-  teams: defineTable({
-    gameId: v.string(),
-    teamId: v.string(),
-    name: v.string(),
-    type: v.union(v.literal("default"), v.literal("created"), v.literal("individual"), v.literal("tournament")),
-    captainId: v.optional(v.string()),
-    isActive: v.boolean(),
-    // Tournament fields
-    tournamentId: v.optional(v.string()),
-    playerNames: v.optional(v.array(v.string())), // Player names for tournament teams
-    registeredBy: v.optional(v.string()), // userId who registered the team (for tournament teams)
-  })
-    .index("by_gameId", ["gameId"])
-    .index("by_gameId_teamId", ["gameId", "teamId"])
-    .index("by_gameId_active", ["gameId", "isActive"])
-    .index("by_tournamentId", ["tournamentId"]),
-
-  // User data for private tags
+  // User data for private tags and game history
   // privateTags is a Record<tag, gameId[]> mapping tags to arrays of game IDs
+  // gameIds tracks all games this user has participated in
   users: defineTable({
     userId: v.string(),
     privateTags: v.any(), // Record<string, string[]>
+    gameIds: v.optional(v.array(v.string())),
   })
     .index("by_userId", ["userId"]),
 

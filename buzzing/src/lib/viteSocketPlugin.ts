@@ -18,7 +18,7 @@ export function socketIOPlugin(): Plugin {
             server.httpServer.once('listening', async () => {
                 try {
                     // Import using the vite server's module loader
-                    const { attachSocketIO } = await server.ssrLoadModule('/src/lib/socketServer.ts')
+                    const { attachSocketIO } = await server.ssrLoadModule('/src/lib/server.ts')
                     attachSocketIO(server.httpServer)
                     console.log('✅ Socket.io attached to Vite dev server')
                 } catch (error) {

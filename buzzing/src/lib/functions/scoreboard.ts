@@ -1,6 +1,7 @@
 import type { Category, ScoreType } from "$lib/classes/Game"
-import type { Scores } from "$lib/stores/scoreboard.svelte"
+import type { Scores, QuestionPairScore } from "$lib/stores/scoreboard.svelte"
 import type { ScoreboardPlayerNames, ScoreboardTeamNames } from "$lib/stores/scoreboard.svelte"
+import type { Member, Team } from "$lib/types/members"
 import pkg from "json-2-csv"
 const { json2csv } = pkg
 
@@ -11,14 +12,39 @@ export type PointValues = {
 };
 
 /**
+ * Derive playerNames lookup from members snapshot
+ * Filters to players with a teamId
+ */
+export function derivePlayerNames(members: Record<string, Member>): ScoreboardPlayerNames {
+    const playerNames: ScoreboardPlayerNames = {};
+    for (const [id, member] of Object.entries(members)) {
+        if (member.type === "player" && member.teamId) {
+            playerNames[id] = { name: member.name, teamId: member.teamId };
+        }
+    }
+    return playerNames;
+}
+
+/**
+ * Derive teamNames lookup from teams snapshot
+ */
+export function deriveTeamNames(teams: Record<string, Team>): ScoreboardTeamNames {
+    const teamNames: ScoreboardTeamNames = {};
+    for (const [id, team] of Object.entries(teams)) {
+        teamNames[id] = team.name;
+    }
+    return teamNames;
+}
+
+/**
  * Calculate the total score for a team given scores data and point values
  */
 export function calculateTeamScore(
     teamId: string,
-    scores: Scores | Record<string, any>,
+    scores: Scores,
     pointValues: PointValues
 ): number {
-    return Object.values(scores).reduce((acc: number, q: any) => {
+    return Object.values(scores).reduce((acc: number, q: QuestionPairScore) => {
         if (q.tossup[teamId]?.scoreType === "correct") {
             acc += pointValues.tossup;
         } else if (q.tossup[teamId]?.scoreType === "penalty") {

@@ -14,35 +14,6 @@ export interface TeamOption {
     label: string; // team name
 }
 
-/**
- * Selectable team for join page team selection
- * Uses teamId to maintain consistency with bracket store
- */
-export interface SelectableTeam {
-    teamId: string;
-    name: string;
-    type: "default" | "created" | "individual" | "tournament";
-    captainId?: string;
-}
-
-/**
- * Raw team data from Convex queries (teams.getForGame)
- */
-export interface RawTeamData {
-    teamId: string;
-    name: string;
-    type: "default" | "created" | "individual" | "tournament";
-    captainId?: string;
-}
-
-/**
- * Tournament team data (from tournament store)
- */
-export interface TournamentTeamData {
-    teamId: string;
-    name: string;
-    players?: string[];
-}
 
 /**
  * Transform teams to dropdown options for seed selection and other selects
@@ -58,29 +29,6 @@ export function getTeamOptions<T extends { teamId: string; name: string }>(
     }));
 }
 
-/**
- * Transform raw team data to selectable teams
- * @param teams - Raw team data from Convex query
- * @param filterIndividuals - Whether to filter out individual teams (default: true)
- * @returns Array of SelectableTeam objects
- */
-export function transformToSelectableTeams(
-    teams: RawTeamData[],
-    filterIndividuals: boolean = true
-): SelectableTeam[] {
-    let result = teams;
-
-    if (filterIndividuals) {
-        result = result.filter((t) => t.type !== "individual");
-    }
-
-    return result.map((t) => ({
-        teamId: t.teamId,
-        name: t.name,
-        type: t.type,
-        captainId: t.captainId,
-    }));
-}
 
 /**
  * Find a team by its teamId

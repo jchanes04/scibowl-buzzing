@@ -11,6 +11,8 @@ import type {
     TournamentTeam,
     TournamentGame,
 } from '../../routes/(app)/tournament/[id]/types';
+import type { Member, Team } from '$lib/types/members';
+import type { QuestionPairScore } from '$lib/stores/scoreboard.svelte';
 
 let subscriptionTournamentId = $state<string | null>(null);
 let _isOrganizer = $state(false);
@@ -83,9 +85,9 @@ export function initTournamentSubscription(
                     joinCode: game.joinCode,
                     moderatorJoinCode: game.moderatorJoinCode,
                     name: game.name,
-                    scores: game.scores as Record<number, unknown>,
-                    teamNames: game.teamNames as Record<string, string> | undefined,
-                    playerNames: game.playerNames as Record<string, { name: string; teamId: string }> | undefined,
+                    scores: game.scores as Record<string, QuestionPairScore>,
+                    members: (game.members ?? {}) as Record<string, Member>,
+                    teams: (game.teams ?? {}) as Record<string, Team>,
                     pointValues: game.pointValues,
                     isActive: game.isActive,
                     isCompleted: game.isCompleted,

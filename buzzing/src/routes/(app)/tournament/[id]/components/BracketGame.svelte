@@ -124,9 +124,10 @@
         modalStore.showComponent(ScoreboardModal, {
             scoreboardData: {
                 scores: game.scores || {},
-                teamNames: game.teamNames || {},
-                playerNames: game.playerNames || {},
+                members: game.members || {},
+                teams: game.teams || {},
                 pointValues: pointValues,
+                isActive: game.isActive ?? false,
             },
         });
     }

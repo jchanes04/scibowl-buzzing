@@ -1,6 +1,7 @@
 import { toastStore } from "./toast.svelte";
 import { api } from "../../../convex/_generated/api";
 import { safeMutation } from "$lib/convex.result";
+import type { ConvexClient } from "convex/browser";
 import type { Tournament } from "../../routes/(app)/tournament/[id]/types";
 
 // Editable settings state
@@ -46,7 +47,7 @@ export function initSettings(tournament: Tournament) {
 /**
  * Save all settings to Convex
  */
-export async function saveSettings(convex: any, tournamentId: string) {
+export async function saveSettings(convex: ConvexClient, tournamentId: string) {
     toastStore.add("Saving settings...", "info", 1000);
 
     // Update tournament name

@@ -2,25 +2,15 @@
     import ControlSection from "./ControlSection.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import stopSvg from "$lib/icons/stop.svg?raw";
-    import {
-        moderatorsStore,
-        playersStore,
-        teamsStore,
-    } from "$lib/stores/members.svelte";
     import gameStore from "$lib/stores/game.svelte";
-    import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
     import { timerStore } from "$lib/stores/timer.svelte";
     import getSocket from "$lib/socket.svelte";
-    import { useConvexClient } from "convex-svelte";
-    import { api } from "../../../../convex/_generated/api";
     import gameIdStore from "$lib/stores/gameId.svelte";
-    import type { Writable } from "svelte/store";
     import { getContext } from "svelte";
     import type Debugger from "$lib/classes/Debugger";
 
     const socket = getSocket();
     const debug: Debugger = getContext("debug");
-    const convex = useConvexClient();
 
     let startTimerDisabled = $state(false);
     function startTimer() {
@@ -47,79 +37,9 @@
             gameStore.value.state.currentQuestion?.bonus,
     );
     function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
-        // Call Convex mutation first
         const gId = gameIdStore.value;
-        const currentQuestion = gameStore.value.state.currentQuestion;
-        const currentBuzzer = gameStore.value.state.currentBuzzer;
 
-        // Convex mutations
-        if (gId && currentQuestion) {
-            const number = currentQuestion.number;
-            const category = currentQuestion.category;
-
-            if (currentQuestion.bonus) {
-                const teamId = (currentQuestion as any).teamId;
-                if (!teamId) return;
-
-                if (selectedScore === "correct") {
-                    convex.mutation(api.games.correctBonus, {
-                        gameId: gId,
-                        number,
-                        teamId,
-                        category,
-                        playerList: Object.values(playersStore.value),
-                        teamList: Object.values(teamsStore.value),
-                    });
-                } else {
-                    convex.mutation(api.games.incorrectBonus, {
-                        gameId: gId,
-                        number,
-                        teamId,
-                        category,
-                        playerList: Object.values(playersStore.value),
-                        teamList: Object.values(teamsStore.value),
-                    });
-                }
-            } else {
-                if (!currentBuzzer) return;
-                const playerId = currentBuzzer.id;
-                const teamId = currentBuzzer.teamId;
-                if (!teamId) return;
-
-                if (selectedScore === "correct") {
-                    convex.mutation(api.games.correctTossup, {
-                        gameId: gId,
-                        number,
-                        playerId,
-                        teamId,
-                        category,
-                        playerList: Object.values(playersStore.value),
-                        teamList: Object.values(teamsStore.value),
-                    });
-                } else if (selectedScore === "incorrect") {
-                    convex.mutation(api.games.incorrectTossup, {
-                        gameId: gId,
-                        number,
-                        playerId,
-                        teamId,
-                        category,
-                        playerList: Object.values(playersStore.value),
-                        teamList: Object.values(teamsStore.value),
-                    });
-                } else if (selectedScore === "penalty") {
-                    convex.mutation(api.games.penalty, {
-                        gameId: gId,
-                        number,
-                        playerId,
-                        teamId,
-                        category,
-                        playerList: Object.values(playersStore.value),
-                        teamList: Object.values(teamsStore.value),
-                    });
-                }
-            }
-        }
-
+        // Scoring is now handled entirely by the socket server (which calls Convex)
         socket.emit("scoreQuestion", selectedScore);
 
         // Add chat message via socket
@@ -150,26 +70,13 @@
             });
         }
 
-        // Note: questionNumber and teamSelectValue updates are handled in QuestionControls
-
         debug.addEvent("scoreQuestion", { selectedScore });
     }
 
     function markDead() {
-        // Call Convex mutation first
         const gId = gameIdStore.value;
-        const currentQuestion = gameStore.value.state.currentQuestion;
 
-        if (gId && currentQuestion) {
-            convex.mutation(api.games.dead, {
-                gameId: gId,
-                number: currentQuestion.number,
-                category: currentQuestion.category,
-                playerList: Object.values(playersStore.value),
-                teamList: Object.values(teamsStore.value),
-            });
-        }
-
+        // Dead marking is now handled entirely by the socket server (which calls Convex)
         socket.emit("markDead");
 
         // Add chat message via socket

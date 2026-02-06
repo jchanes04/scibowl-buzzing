@@ -1,58 +1,53 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { getOrCreateUser } from "./helpers";
+import type { Member, QuestionPairScore, TossupScore } from "./types";
 
 /**
  * Get all games a member has participated in (for game history)
- * Uses denormalized gameSnapshot data when available for efficiency
+ * Uses the gameIds array on the users table
  */
 export const getByMemberId = query({
   args: {
     memberId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Find all game memberships for this member
-    const memberships = await ctx.db
-      .query("gameMembers")
-      .withIndex("by_memberId", (q) => q.eq("memberId", args.memberId))
-      .collect();
+    // Look up user to get their gameIds
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_userId", (q) => q.eq("userId", args.memberId))
+      .first();
 
-    // Process memberships - use snapshot data when available
+    const gameIds = (user?.gameIds ?? []) as string[];
+    if (gameIds.length === 0) {
+      return [];
+    }
+
+    // Batch-fetch all games
     const games = await Promise.all(
-      memberships.map(async (membership) => {
-        // If we have a snapshot (member has left), use it directly
-        if (membership.gameSnapshot) {
-          return {
-            gameId: membership.gameId,
-            name: membership.gameSnapshot.name,
-            createdAt: membership.gameSnapshot.createdAt,
-            isActive: membership.gameSnapshot.isActive,
-            memberType: membership.type,
-            memberName: membership.name,
-            playerNames: membership.gameSnapshot.playerNames,
-            teamNames: membership.gameSnapshot.teamNames,
-            scores: membership.gameSnapshot.scores,
-            pointValues: membership.gameSnapshot.pointValues,
-            tags: membership.gameSnapshot.tags,
-          };
-        }
-
-        // For active members without snapshot, fetch game data (only happens for in-progress games)
+      gameIds.map(async (gameId) => {
         const game = await ctx.db
           .query("games")
-          .withIndex("by_gameId", (q) => q.eq("gameId", membership.gameId))
+          .withIndex("by_gameId", (q) => q.eq("gameId", gameId))
           .first();
 
         if (!game) return null;
+
+        // Derive memberType and memberName from the persisted members snapshot
+        const members = (game.members ?? {}) as Record<string, Member>;
+        const memberData = members[args.memberId];
+        const memberType = memberData?.type ?? "player";
+        const memberName = memberData?.name ?? "Unknown";
 
         return {
           gameId: game.gameId,
           name: game.name,
           createdAt: game.createdAt,
           isActive: game.isActive ?? false,
-          memberType: membership.type,
-          memberName: membership.name,
-          playerNames: game.playerNames ?? {},
-          teamNames: game.teamNames ?? {},
+          memberType,
+          memberName,
+          members: game.members ?? {},
+          teams: game.teams ?? {},
           scores: game.scores ?? {},
           pointValues: game.pointValues ?? {
             tossup: 4,
@@ -72,7 +67,7 @@ export const getByMemberId = query({
 });
 
 /**
- * Migrate all game memberships from one memberId to another
+ * Migrate all game history from one memberId to another
  * Used when an anonymous user logs in and wants to link their account
  */
 export const migrateMemberId = mutation({
@@ -81,95 +76,86 @@ export const migrateMemberId = mutation({
     newMemberId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Find all memberships with the old memberId
-    const oldMemberships = await ctx.db
-      .query("gameMembers")
-      .withIndex("by_memberId", (q) => q.eq("memberId", args.oldMemberId))
-      .collect();
+    // Get or create both user documents
+    const oldUser = await getOrCreateUser(ctx, args.oldMemberId);
+    const newUser = await getOrCreateUser(ctx, args.newMemberId);
 
-    // Find all memberships with the new memberId upfront (avoids N queries in the loop)
-    const newMemberships = await ctx.db
-      .query("gameMembers")
-      .withIndex("by_memberId", (q) => q.eq("memberId", args.newMemberId))
-      .collect();
+    const oldGameIds = (oldUser.gameIds ?? []) as string[];
+    const newGameIds = (newUser.gameIds ?? []) as string[];
+    const oldPrivateTags = (oldUser.privateTags ?? {}) as Record<string, string[]>;
+    const newPrivateTags = (newUser.privateTags ?? {}) as Record<string, string[]>;
 
-    // Create a Set of gameIds where the new member already has a membership
-    const newMemberGameIds = new Set(newMemberships.map((m) => m.gameId));
+    // Merge gameIds (deduplicated)
+    const mergedGameIds = [...new Set([...newGameIds, ...oldGameIds])];
 
+    // Merge privateTags
+    for (const [tag, tagGameIds] of Object.entries(oldPrivateTags)) {
+      if (!newPrivateTags[tag]) {
+        newPrivateTags[tag] = [];
+      }
+      for (const gid of tagGameIds) {
+        if (!newPrivateTags[tag].includes(gid)) {
+          newPrivateTags[tag].push(gid);
+        }
+      }
+    }
+
+    // Update new user with merged data
+    await ctx.db.patch(newUser._id, {
+      gameIds: mergedGameIds,
+      privateTags: newPrivateTags,
+    });
+
+    // Clear old user's data (keep doc)
+    await ctx.db.patch(oldUser._id, {
+      gameIds: [],
+      privateTags: {},
+    });
+
+    // Update scoreboard data and members keys in affected games
     let migratedCount = 0;
+    for (const gameId of oldGameIds) {
+      const game = await ctx.db
+        .query("games")
+        .withIndex("by_gameId", (q) => q.eq("gameId", gameId))
+        .first();
 
-    for (const membership of oldMemberships) {
-      // Check if the new memberId already has a membership in this game
-      if (newMemberGameIds.has(membership.gameId)) {
-        // If the user already has a membership in this game with their new ID,
-        // just delete the old one
-        await ctx.db.delete(membership._id);
-      } else {
-        // Update the memberId to the new one
-        await ctx.db.patch(membership._id, {
-          memberId: args.newMemberId,
-        });
-        migratedCount++;
-      }
-    }
+      if (!game) continue;
 
-    // Also update any team captainIds that reference the old memberId
-    const teamsWithOldCaptain = await ctx.db
-      .query("teams")
-      .filter((q) => q.eq(q.field("captainId"), args.oldMemberId))
-      .collect();
+      let updated = false;
+      const patchData: { members?: Record<string, Member>; scores?: Record<string, QuestionPairScore> } = {};
 
-    for (const team of teamsWithOldCaptain) {
-      await ctx.db.patch(team._id, {
-        captainId: args.newMemberId,
-      });
-    }
-
-    // Also update scoreboard data and playerNames in games (playerId references)
-    const allGames = await ctx.db.query("games").collect();
-    for (const game of allGames) {
-      let scoresUpdated = false;
-      let playerNamesUpdated = false;
-      const newScores = { ...game.scores };
-      const newPlayerNames = { ...(game.playerNames ?? {}) };
-
-      // Update playerNames - migrate the key from oldMemberId to newMemberId
-      if (args.oldMemberId in newPlayerNames) {
-        newPlayerNames[args.newMemberId] = newPlayerNames[args.oldMemberId];
-        delete newPlayerNames[args.oldMemberId];
-        playerNamesUpdated = true;
+      // Migrate members key
+      const members = { ...(game.members ?? {}) } as Record<string, Member>;
+      if (args.oldMemberId in members) {
+        members[args.newMemberId] = members[args.oldMemberId]!;
+        delete members[args.oldMemberId];
+        patchData.members = members;
+        updated = true;
       }
 
-      // Update scores - migrate playerId references
-      if (game.scores) {
-        for (const [questionNum, questionData] of Object.entries(newScores)) {
-          const qData = questionData as any;
-          if (qData.tossup) {
-            for (const [teamId, tossupData] of Object.entries(qData.tossup)) {
-              const td = tossupData as any;
-              if (td.playerId === args.oldMemberId) {
-                (qData.tossup as any)[teamId] = {
-                  ...td,
-                  playerId: args.newMemberId,
-                };
-                scoresUpdated = true;
-              }
+      // Migrate playerId references in scores
+      const scores = { ...game.scores } as Record<string, QuestionPairScore>;
+      for (const [, questionData] of Object.entries(scores)) {
+        const qData = questionData as QuestionPairScore;
+        if (qData.tossup) {
+          for (const [teamId, tossupData] of Object.entries(qData.tossup)) {
+            const td = tossupData as TossupScore;
+            if (td.playerId === args.oldMemberId) {
+              qData.tossup[teamId] = {
+                ...td,
+                playerId: args.newMemberId,
+              };
+              patchData.scores = scores;
+              updated = true;
             }
           }
         }
       }
 
-      if (scoresUpdated || playerNamesUpdated) {
-        const patchData: any = {};
-        if (scoresUpdated) {
-          patchData.scores = newScores;
-        }
-        if (playerNamesUpdated) {
-          patchData.playerNames = newPlayerNames;
-        }
-        if (scoresUpdated || playerNamesUpdated) {
-          await ctx.db.patch(game._id, patchData);
-        }
+      if (updated) {
+        await ctx.db.patch(game._id, patchData);
+        migratedCount++;
       }
     }
 

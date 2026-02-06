@@ -28,7 +28,7 @@ export default class Debugger {
         this.socket = socket
         this.openWindow = null
 
-        socket.onAny((event: string, ...args: any[]) => {
+        socket.onAny((event: string, ...args: unknown[]) => {
             this.events.push({ name: event, data: args, type: "WS" })
 
             if (this.openWindow) {

@@ -1,60 +1,48 @@
 /**
- * Unified members store with Convex subscriptions
+ * Unified members store with socket-based state
  *
  * This replaces the separate players.svelte.ts, moderators.svelte.ts,
  * teams.svelte.ts, and myMember.svelte.ts stores.
  *
- * All data comes from Convex subscriptions - stores are read-only.
+ * All data comes from socket 'membersUpdate' events - stores are read-only.
  */
-import { useQuery } from 'convex-svelte';
-import { api } from '../../../convex/_generated/api';
+import type { Member, Team } from '$lib/types/members';
 
 // Subscription parameters
-let subscriptionGameId = $state<string | null>(null);
 let myMemberId = $state<string | null>(null);
 
-// Internal state populated from Convex queries
-let _members = $state<Array<{ id: string; name: string; type: "player" | "moderator"; teamId?: string; isActive: boolean; isSubbed?: boolean }>>([]);
-let _teams = $state<Array<{ teamId: string; name: string; type: "default" | "created" | "individual" | "tournament"; captainId?: string }>>([]);;
+// Internal state populated from socket updates
+let _members = $state<Record<string, Member>>({});
+let _teams = $state<Record<string, Team>>({});
 
 // Track if subscription is already initialized
 let isInitialized = $state(false);
 
 /**
- * Initialize subscriptions for members and teams
+ * Update members/teams from socket 'membersUpdate' event
  */
-export function initMembersSubscription(gameId: string, memberId: string) {
-    // Only initialize once
-    if (isInitialized) return;
-
-    subscriptionGameId = gameId;
-    myMemberId = memberId;
-    isInitialized = true;
-
-    // These create single subscriptions shared via the internal state
-    const membersQuery = useQuery(api.gameMembers.getForGame, () =>
-        subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
-    );
-
-    const teamsQuery = useQuery(api.teams.getForGame, () =>
-        subscriptionGameId ? { gameId: subscriptionGameId } : 'skip'
-    );
-
-    // Sync query results to state automatically
-    $effect(() => {
-        if (membersQuery.data) _members = membersQuery.data;
-        if (teamsQuery.data) _teams = teamsQuery.data;
-    });
+export function updateMembersFromSocket(data: { members: Record<string, Member>, teams: Record<string, Team> }) {
+    _members = data.members;
+    _teams = data.teams;
 }
 
 /**
- * Clear subscriptions
+ * Initialize members store with member ID (no Convex subscriptions needed)
+ */
+export function initMembersSubscription(gameId: string, memberId: string) {
+    if (isInitialized) return;
+
+    myMemberId = memberId;
+    isInitialized = true;
+}
+
+/**
+ * Clear state
  */
 export function clearMembersSubscription() {
-    subscriptionGameId = null;
     myMemberId = null;
-    _members = [];
-    _teams = [];
+    _members = {};
+    _teams = {};
     isInitialized = false;
 }
 
@@ -92,16 +80,16 @@ export type MyMember = {
 };
 
 /**
- * Teams store - derived from Convex data
+ * Teams store - derived from socket data
  */
 export const teamsStore = {
     get value(): Record<string, ClientTeamData> {
         const teamMap: Record<string, ClientTeamData> = {};
 
         // First pass: create team objects
-        for (const t of _teams) {
-            teamMap[t.teamId] = {
-                id: t.teamId,
+        for (const [id, t] of Object.entries(_teams)) {
+            teamMap[id] = {
+                id: t.id,
                 name: t.name,
                 type: t.type,
                 captainId: t.captainId ?? null,
@@ -110,15 +98,15 @@ export const teamsStore = {
         }
 
         // Second pass: add players to their teams
-        for (const m of _members) {
+        for (const [id, m] of Object.entries(_members)) {
             if (m.type === "player" && m.teamId) {
                 const team = teamMap[m.teamId];
                 if (team) {
-                    team.players[m.id] = {
+                    team.players[id] = {
                         id: m.id,
                         name: m.name,
                         type: "player",
-                        isActive: m.isActive,
+                        isActive: m.isActive ?? true,
                         isSubbed: m.isSubbed ?? false,
                     };
                 }
@@ -130,23 +118,23 @@ export const teamsStore = {
 };
 
 /**
- * Players store - derived from Convex data
+ * Players store - derived from socket data
  */
 export const playersStore = {
     get value(): Record<string, ClientPlayer> {
         const teams = teamsStore.value;
         const players: Record<string, ClientPlayer> = {};
 
-        for (const m of _members) {
+        for (const [id, m] of Object.entries(_members)) {
             if (m.type === "player" && m.teamId) {
                 const team = teams[m.teamId];
                 if (team) {
-                    players[m.id] = {
+                    players[id] = {
                         id: m.id,
                         name: m.name,
                         type: "player",
                         team,
-                        isActive: m.isActive,
+                        isActive: m.isActive ?? true,
                         isSubbed: m.isSubbed ?? false,
                     };
                 }
@@ -158,19 +146,19 @@ export const playersStore = {
 };
 
 /**
- * Moderators store - derived from Convex data
+ * Moderators store - derived from socket data
  */
 export const moderatorsStore = {
     get value(): Record<string, ClientModerator> {
         const moderators: Record<string, ClientModerator> = {};
 
-        for (const m of _members) {
+        for (const [id, m] of Object.entries(_members)) {
             if (m.type === "moderator") {
-                moderators[m.id] = {
+                moderators[id] = {
                     id: m.id,
                     name: m.name,
                     type: "moderator",
-                    isActive: m.isActive
+                    isActive: m.isActive ?? true
                 };
             }
         }

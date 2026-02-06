@@ -1,6 +1,6 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
-    import { user, isAuthenticated } from "$lib/stores/auth";
+    import { user, isAuthenticated, type User } from "$lib/stores/auth";
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import CollapsibleSection from "$lib/components/CollapsibleSection.svelte";
@@ -13,7 +13,7 @@
     let { form }: Props = $props();
 
     let authenticated = $state(false);
-    let currentUser = $state<any>(null);
+    let currentUser = $state<User | null>(null);
 
     // Subscribe to auth state
     $effect(() => {

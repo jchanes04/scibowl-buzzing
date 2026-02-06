@@ -1,21 +1,8 @@
 <script lang="ts">
-    import { getContext } from "svelte";
-    import type Debugger from "$lib/classes/Debugger";
-    import type { Writable } from "svelte/store";
-    import gameStore from "$lib/stores/game.svelte";
-    import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
-    import getSocket from "$lib/socket.svelte";
-    import { useConvexClient } from "convex-svelte";
     import ExpandedScoreboard from "$lib/components/ExpandedScoreboard.svelte";
     import GameClockControls from "./GameClockControls.svelte";
     import QuestionControls from "./QuestionControls.svelte";
     import ScoringControls from "./ScoringControls.svelte";
-
-    import { modalStore } from "$lib/stores/modal.svelte";
-
-    const socket = getSocket();
-    const debug: Debugger = getContext("debug");
-    const convex = useConvexClient();
 
     let scoreboardExpanded = $state(false);
 </script>

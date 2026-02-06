@@ -1,14 +1,7 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
-
-export interface User {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    username?: string;
-    school?: string;
-}
+import type { User } from '$lib/auth.result';
+export type { User };
 
 export const user = writable<User | null>(null);
 export const isAuthenticated = writable<boolean>(false);

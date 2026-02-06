@@ -13,8 +13,6 @@
         maxItems = undefined,
     }: Props = $props();
 
-    let itemsJSON = $derived(JSON.stringify(items));
-
     function addItem() {
         if (newItemName && !items.includes(newItemName.trim())) {
             items = [...items, newItemName.trim()];
@@ -45,8 +43,6 @@
 </script>
 
 <div class="multi-name-list">
-    <input type="hidden" name="items" value={itemsJSON} />
-
     {#each items as item}
         <div class="item-card">
             <span class="item-name">{item}</span>
@@ -135,9 +131,11 @@
     .icon-btn {
         width: 1.5rem;
         height: 1.5rem;
+        background: transparent;
         border: none;
         cursor: pointer;
         display: block;
+        position: relative;
         transition:
             transform 0.1s,
             opacity 0.2s;
@@ -147,6 +145,12 @@
         -webkit-appearance: none;
         appearance: none;
 
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+        }
+
         &:hover {
             opacity: 0.8;
             transform: #{"scale(1.1)"};
@@ -155,8 +159,8 @@
             transform: #{"scale(0.95)"};
         }
 
-        &.add {
-            background: $primary;
+        &.add::before {
+            background: $green;
             clip-path: polygon(
                 0 40%,
                 40% 40%,
@@ -173,7 +177,7 @@
             );
         }
 
-        &.remove {
+        &.remove::before {
             background: $red;
             clip-path: polygon(
                 20% 0%,

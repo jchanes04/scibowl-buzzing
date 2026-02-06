@@ -1,6 +1,7 @@
 <script lang="ts">
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
-    import { convertToCSV } from "$lib/functions/scoreboard";
+    import { convertToCSV, derivePlayerNames, deriveTeamNames } from "$lib/functions/scoreboard";
+    import type { QuestionPairScore } from "$lib/stores/scoreboard.svelte";
     import Confirm from "$lib/components/Confirm.svelte";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
@@ -23,8 +24,11 @@
         const scoreboardData = scoreboardStore.value;
         if (!scoreboardData) return;
 
+        const derivedPlayerNames = derivePlayerNames(scoreboardData.members || {});
+        const derivedTeamNames = deriveTeamNames(scoreboardData.teams || {});
+
         let playersFromScores = Object.values(scoreboardData.scores).reduce(
-            (acc: Record<string, string[]>, s: any) => {
+            (acc: Record<string, string[]>, s: QuestionPairScore) => {
                 for (const t of Object.keys(s.tossup)) {
                     if (!acc[t]) {
                         acc[t] = [s.tossup[t]!.playerId];
@@ -39,15 +43,14 @@
 
         let playersFromTeams = (() => {
             const result: Record<string, string[]> = {};
-            const { playerNames, teamNames } = scoreboardData;
             // Only use teams that exist in teamNames
             for (const [playerId, playerInfo] of Object.entries(
-                playerNames || {},
+                derivedPlayerNames || {},
             )) {
                 if (
                     playerInfo &&
                     playerInfo.teamId &&
-                    teamNames[playerInfo.teamId]
+                    derivedTeamNames[playerInfo.teamId]
                 ) {
                     if (!result[playerInfo.teamId])
                         result[playerInfo.teamId] = [];
@@ -85,8 +88,8 @@
         );
 
         const csv = await convertToCSV(
-            scoreboardData.teamNames,
-            scoreboardData.playerNames,
+            derivedTeamNames,
+            derivedPlayerNames,
             players,
             scoreboardData?.scores || {},
         );

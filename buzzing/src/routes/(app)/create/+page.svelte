@@ -1,6 +1,6 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
-    import TeamList from "$lib/components/TeamList.svelte";
+    import MultiNameInput from "$lib/components/MultiNameInput.svelte";
     import { user } from "$lib/stores/auth";
     import CollapsibleSection from "$lib/components/CollapsibleSection.svelte";
 
@@ -134,8 +134,9 @@
             </div>
         </CollapsibleSection>
 
+        <input type="hidden" name="items" value={JSON.stringify(defaultTeams)} />
         <CollapsibleSection title="Default Teams" bind:open={defaultTeamsOpen}>
-            <TeamList bind:teams={defaultTeams} bind:newTeamName />
+            <MultiNameInput bind:items={defaultTeams} bind:newItemName={newTeamName} placeholder="Add Team..." />
         </CollapsibleSection>
 
         <CollapsibleSection title="Game Settings" bind:open={gameSettingsOpen}>

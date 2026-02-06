@@ -1,10 +1,5 @@
-// Chat message type (matches server-side ChatMessage)
-export type ChatMessage = {
-  text: string;
-  type: "buzz" | "notification" | "warning" | "success";
-  target?: string[];
-  timestamp: number;
-};
+import type { ChatMessage } from '$lib/classes/Game';
+export type { ChatMessage };
 
 // Private state for chat messages
 let _chatMessages = $state<ChatMessage[]>([]);
