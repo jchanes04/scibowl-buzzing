@@ -1,7 +1,14 @@
 <script lang="ts">
     import { scoreboardStore } from "$lib/stores/scoreboard.svelte";
-    import { convertToCSV, derivePlayerNames, deriveTeamNames } from "$lib/functions/scoreboard";
-    import type { QuestionPairScore } from "$lib/stores/scoreboard.svelte";
+    import {
+        convertToCSV,
+        convertToASCII,
+        derivePlayerNames,
+        deriveTeamNames,
+        combinePlayersLists,
+        getPlayersFromScores,
+        getPlayersFromTeams,
+    } from "$lib/functions/scoreboard";
     import Confirm from "$lib/components/Confirm.svelte";
     import { useConvexClient } from "convex-svelte";
     import { api } from "../../../convex/_generated/api";
@@ -19,79 +26,41 @@
     const convex = useConvexClient();
     const socket = getSocket();
 
-    async function exportScores() {
-        // Need to compute players for CSV export
+    function getPlayersData() {
         const scoreboardData = scoreboardStore.value;
-        if (!scoreboardData) return;
+        if (!scoreboardData) return null;
 
-        const derivedPlayerNames = derivePlayerNames(scoreboardData.members || {});
-        const derivedTeamNames = deriveTeamNames(scoreboardData.teams || {});
-
-        let playersFromScores = Object.values(scoreboardData.scores).reduce(
-            (acc: Record<string, string[]>, s: QuestionPairScore) => {
-                for (const t of Object.keys(s.tossup)) {
-                    if (!acc[t]) {
-                        acc[t] = [s.tossup[t]!.playerId];
-                    } else if (!acc[t]!.includes(s.tossup[t]!.playerId)) {
-                        acc[t]!.push(s.tossup[t]!.playerId);
-                    }
-                }
-                return acc;
-            },
-            {} as Record<string, string[]>,
+        const derivedPlayerNames = derivePlayerNames(
+            scoreboardData.members || {},
         );
-
-        let playersFromTeams = (() => {
-            const result: Record<string, string[]> = {};
-            // Only use teams that exist in teamNames
-            for (const [playerId, playerInfo] of Object.entries(
-                derivedPlayerNames || {},
-            )) {
-                if (
-                    playerInfo &&
-                    playerInfo.teamId &&
-                    derivedTeamNames[playerInfo.teamId]
-                ) {
-                    if (!result[playerInfo.teamId])
-                        result[playerInfo.teamId] = [];
-                    if (!result[playerInfo.teamId]?.includes(playerId)) {
-                        result[playerInfo.teamId]?.push(playerId);
-                    }
-                }
-            }
-            return result;
-        })();
-
-        function combinePlayersLists(
-            list1: Record<string, string[]>,
-            list2: Record<string, string[]>,
-        ) {
-            const list: Record<string, string[]> = {};
-            const keys = new Set([
-                ...Object.keys(list1),
-                ...Object.keys(list2),
-            ]);
-            for (const teamId of keys) {
-                list[teamId] = [
-                    ...(list1[teamId] || []),
-                    ...(list2[teamId] || []).filter(
-                        (x) => !(list1[teamId] || []).includes(x),
-                    ),
-                ];
-            }
-            return list;
-        }
-
+        const derivedTeamNames = deriveTeamNames(scoreboardData.teams || {});
+        const playersFromScores = getPlayersFromScores(scoreboardData.scores);
+        const playersFromTeams = getPlayersFromTeams(
+            derivedPlayerNames,
+            derivedTeamNames,
+        );
         const players = combinePlayersLists(
             playersFromScores,
             playersFromTeams,
         );
 
-        const csv = await convertToCSV(
-            derivedTeamNames,
+        return {
+            scoreboardData,
             derivedPlayerNames,
+            derivedTeamNames,
             players,
-            scoreboardData?.scores || {},
+        };
+    }
+
+    async function exportScores() {
+        const data = getPlayersData();
+        if (!data) return;
+
+        const csv = await convertToCSV(
+            data.derivedTeamNames,
+            data.derivedPlayerNames,
+            data.players,
+            data.scoreboardData.scores || {},
         );
         const url = window.URL.createObjectURL(
             new Blob([csv], { type: "plain/text" }),
@@ -103,6 +72,37 @@
         document.body.appendChild(a);
         a.click();
         URL.revokeObjectURL(url);
+    }
+
+    let copyButtonText = $state("Copy as ASCII");
+
+    async function copyAsASCII() {
+        const data = getPlayersData();
+        if (!data) return;
+
+        const pointValues = data.scoreboardData.pointValues || {
+            tossup: 4,
+            bonus: 10,
+            penalty: -4,
+        };
+
+        const ascii = convertToASCII(
+            data.derivedTeamNames,
+            data.derivedPlayerNames,
+            data.players,
+            data.scoreboardData.scores || {},
+            pointValues,
+        );
+
+        try {
+            await navigator.clipboard.writeText(ascii);
+            copyButtonText = "Copied!";
+            setTimeout(() => {
+                copyButtonText = "Copy as ASCII";
+            }, 2000);
+        } catch (err) {
+            console.error("Failed to copy to clipboard:", err);
+        }
     }
 
     function clearScores() {
@@ -136,6 +136,7 @@
     <ScoreboardTable scoreboardData={scoreboardStore.value} {isModerator} />
     <div class="actions">
         <button onclick={exportScores}>Export Scores</button>
+        <button onclick={copyAsASCII}>{copyButtonText}</button>
         {#if isModerator}
             <button onclick={clearScores}>Clear Scores</button>
         {/if}

@@ -4,10 +4,8 @@
         ClientModerator,
         ClientPlayer,
     } from "$lib/stores/members.svelte";
-    import Icon from "$lib/components/Icon.svelte";
-    import kickSvg from "$lib/icons/kick.svg?raw";
-    import badgeSvg from "$lib/icons/badge.svg?raw";
-    import editNameSvg from "$lib/icons/edit-name.svg?raw";
+    import { Ban, Award, Pencil, UserLock, UserCheck } from "lucide-svelte";
+
     import { modalStore } from "$lib/stores/modal.svelte";
 
     interface Props {
@@ -121,19 +119,24 @@
         {#if showControls}
             <div class="controls">
                 <button
+                    class="sub-button"
                     onclick={toggleSub}
                     title={member.isSubbed ? "Put in play" : "Sub out"}
                 >
-                    {member.isSubbed ? "In" : "Sub"}
+                    {#if member.isSubbed}
+                        <UserCheck size="1.2em" strokeWidth={2.5} />
+                    {:else}
+                        <UserLock size="1.2em" strokeWidth={2.5} />
+                    {/if}
                 </button>
-                <button onclick={promote}>
-                    <Icon svg={badgeSvg} />
+                <button class="promote-button" onclick={promote}>
+                    <Award size="1.2em" strokeWidth={2.5} />
                 </button>
-                <button onclick={kick}>
-                    <Icon svg={kickSvg} />
+                <button class="kick-button" onclick={kick}>
+                    <Ban size="1.2em" strokeWidth={2.5} />
                 </button>
-                <button onclick={rename}>
-                    <Icon svg={editNameSvg} />
+                <button class="edit-button" onclick={rename}>
+                    <Pencil size="1.2em" strokeWidth={2.5} />
                 </button>
             </div>
         {/if}
@@ -192,6 +195,36 @@
         display: flex;
         gap: 0.25em;
         transition: opacity 0.2s;
+
+        .sub-button {
+            color: $gray-2;
+
+            &:hover {
+                background: rgba($gray-static, 0.15);
+                color: $gray-2;
+            }
+        }
+
+        .promote-button {
+            &:hover {
+                background: rgba($orange, 0.15);
+                color: $orange;
+            }
+        }
+
+        .kick-button {
+            &:hover {
+                background: rgba($red, 0.1);
+                color: $red;
+            }
+        }
+
+        .edit-button {
+            &:hover {
+                background: rgba($primary, 0.1);
+                color: $primary;
+            }
+        }
     }
 
     button {
@@ -208,16 +241,6 @@
         border-radius: 0.25em;
         transition: all 0.2s;
         color: $gray-2;
-
-        &:hover {
-            background: rgba($primary, 0.1);
-            color: $primary;
-        }
-
-        &:nth-child(3):hover {
-            background: rgba($red, 0.1);
-            color: $red;
-        }
     }
 
     .subbed-text {

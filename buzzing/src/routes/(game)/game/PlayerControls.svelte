@@ -117,11 +117,9 @@
 />
 
 <div class="player-controls" class:scoreboard-expanded={scoreboardExpanded}>
-    {#if isSubbed}
-        <div class="subbed-indicator">You are currently subbed out</div>
-    {/if}
     <div class="controls-element">
-        <button id="buzz" onclick={buzz} disabled={buzzingDisabled}>Buzz</button
+        <button id="buzz" onclick={buzz} disabled={buzzingDisabled}
+            >{isSubbed ? "Subbed Out" : "Buzz"}</button
         >
         <div class="timer-wrapper">
             <h2>
@@ -138,12 +136,9 @@
                     ":" +
                     (gameClockStore.value % 60).toString().padStart(2, "0")}
             </h3>
-            <br />
             <button onclick={claimCaptain} disabled={claimCaptainDisabled}
                 >Claim Captain</button
             >
-            <br />
-            <br />
             <button onclick={() => (scoreboardExpanded = !scoreboardExpanded)}>
                 {#if scoreboardExpanded}
                     Collapse Scoreboard
@@ -201,7 +196,8 @@
 
     #buzz {
         font-size: 3rem;
-        padding: 1.5em 2.5em;
+        width: 7em;
+        padding: 1.5em 0em;
         border-radius: 1em;
         background: $primary;
         box-shadow:
@@ -242,13 +238,17 @@
         font-variant-numeric: tabular-nums;
     }
 
-    .subbed-indicator {
-        background: rgba($orange, 0.15);
+    .buzz-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75em;
+    }
+
+    .subbed-label {
         color: $orange-dark;
-        padding: 0.75em 1.5em;
-        border-radius: 0.5em;
+        font-size: 0.85rem;
         font-weight: 600;
-        text-align: center;
-        border: 1px solid rgba($orange, 0.3);
+        font-style: italic;
     }
 </style>

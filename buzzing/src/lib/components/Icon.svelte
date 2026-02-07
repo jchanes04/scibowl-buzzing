@@ -16,5 +16,10 @@
         display: inline-block;
         width: 1em;
         height: 1em;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
     }
 </style>
