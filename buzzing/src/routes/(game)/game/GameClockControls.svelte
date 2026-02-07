@@ -24,21 +24,7 @@
     function startGameClock() {
         startGameClockDisabled = true;
         setTimeout(() => (startGameClockDisabled = false), 1000);
-
-        const minutes = Math.floor(gameClockTime / 60);
-        const seconds = gameClockTime % 60;
-        const timeDisplay = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
         socket.emit("startGameClock", gameClockTime);
-
-        // Add chat message via socket
-        const gId = gameIdStore.value;
-        if (gId) {
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: `${timeDisplay} game clock started`,
-            });
-        }
 
         gameClockTime = 0;
     }
@@ -46,36 +32,13 @@
     function pauseGameClock() {
         pauseGameClockDisabled = true;
         setTimeout(() => (pauseGameClockDisabled = false), 1000);
-
         socket.emit("pauseGameClock");
-
-        // Add chat message via socket
-        const gId = gameIdStore.value;
-        if (gId) {
-            const messageText = gameClockStore.live
-                ? "Game clock paused"
-                : "Game clock resumed";
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: messageText,
-            });
-        }
     }
 
     function stopGameClock() {
         stopGameClockDisabled = true;
         setTimeout(() => (stopGameClockDisabled = false), 1000);
-
         socket.emit("stopGameClock");
-
-        // Add chat message via socket
-        const gId = gameIdStore.value;
-        if (gId) {
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: "Game clock stopped",
-            });
-        }
     }
 
     function endGame() {

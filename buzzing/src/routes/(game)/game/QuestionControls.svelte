@@ -113,15 +113,6 @@
             number: questionNumber,
         });
 
-        // Add chat message via socket
-        const gId = gameIdStore.value;
-        if (gId) {
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: `${(questionType[0] || "").toUpperCase() + questionType.slice(1)} #${questionNumber} Opened - ${(selectedCategory[0] || "").toUpperCase() + selectedCategory.slice(1)}`,
-            });
-        }
-
         gameStore.newQuestion(
             {
                 category: selectedCategory as Category,

@@ -40,10 +40,6 @@
             cancelCallback: () => modalStore.hide(),
             confirmCallback: async () => {
                 socket.emit("kickPlayer", member.id);
-                socket.emit("addChatMessage", {
-                    type: "notification",
-                    text: `${member.name} has been kicked`,
-                });
                 modalStore.hide();
             },
         });
@@ -69,13 +65,6 @@
             const newSubStatus = !(member as ClientPlayer).isSubbed;
 
             socket.emit("setPlayerSub", member.id, newSubStatus);
-
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: newSubStatus
-                    ? `${member.name} has been subbed out`
-                    : `${member.name} is now in play`,
-            });
         }
     }
 </script>

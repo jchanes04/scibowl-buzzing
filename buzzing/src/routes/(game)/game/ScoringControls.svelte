@@ -38,55 +38,13 @@
     );
     function scoreQuestion(selectedScore: "correct" | "incorrect" | "penalty") {
         const gId = gameIdStore.value;
-
-        // Scoring is now handled entirely by the socket server (which calls Convex)
         socket.emit("scoreQuestion", selectedScore);
-
-        // Add chat message via socket
-        if (gId) {
-            const category =
-                gameStore.value.state.currentQuestion?.category || "";
-            const categoryDisplay = category
-                ? (category[0] || "").toUpperCase() + category.slice(1)
-                : "";
-
-            let messageText = "";
-            let messageType: "success" | "warning" = "success";
-
-            if (selectedScore === "correct") {
-                messageText = `Correct answer${categoryDisplay ? ` (${categoryDisplay})` : ""}`;
-                messageType = "success";
-            } else if (selectedScore === "incorrect") {
-                messageText = "Incorrect answer";
-                messageType = "warning";
-            } else if (selectedScore === "penalty") {
-                messageText = "Penalty applied";
-                messageType = "warning";
-            }
-
-            socket.emit("addChatMessage", {
-                type: messageType,
-                text: messageText,
-            });
-        }
-
         debug.addEvent("scoreQuestion", { selectedScore });
     }
 
     function markDead() {
         const gId = gameIdStore.value;
-
-        // Dead marking is now handled entirely by the socket server (which calls Convex)
         socket.emit("markDead");
-
-        // Add chat message via socket
-        if (gId) {
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: "Question marked dead",
-            });
-        }
-
         debug.addEvent("markDead", {});
     }
 </script>

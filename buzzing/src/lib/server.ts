@@ -14,6 +14,8 @@ import { env } from "$env/dynamic/public"
 import { getConvexClient, api } from './convex.server'
 import { safeMutation, safeQuery } from './convex.result'
 import fs from 'fs'
+import type { Team } from './types/members'
+import { calculateTeamScore } from './functions/scoreboard'
 
 // Use a global variable to persist the socket.io server and game manager across HMR reloads in dev mode
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -299,6 +301,21 @@ function setupSocketListeners(io: Server) {
             if (currentMember?.type !== "moderator") return
 
             currentGame.newQuestion(question)
+
+            let questionType = question.bonus ? (question.visual ? "visual" : "bonus") : "tossup"
+            
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: `${(questionType[0] || "").toUpperCase() + questionType.slice(1)} #${question.number} Opened`,
+                target: Object.keys(currentGame.players)
+            })
+
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: `${(questionType[0] || "").toUpperCase() + questionType.slice(1)} #${question.number} Opened - ${(question.category[0] || "").toUpperCase() + question.category.slice(1)}`,
+                target: Object.keys(currentGame.moderators)
+            })
+
             socket.to(gameId).emit('questionOpen', question)
         })
 
@@ -382,12 +399,37 @@ function setupSocketListeners(io: Server) {
             const membersSnapshot = currentGame.getMembersSnapshot()
             const teamsSnapshot = currentGame.getTeamsSnapshot()
 
+            const categoryDisplay = category
+                ? (category[0] || "").toUpperCase() + category.slice(1)
+                : "";
+
+            let messageText = "";
+            let messageType: "success" | "warning" = "warning";
+
             // Call the appropriate Convex scoring mutation
             let convexResult
-            if (bonus) {
-                if (scoreType === 'correct') {
+            if (scoreType === 'correct') {
+                if (!bonus) {
+                    if (!buzzer) return
+                    convexResult = await safeMutation(getConvexClient(), api.games.correctTossup, {
+                        gameId, number, playerId: buzzer.id, teamId, category,
+                        members: membersSnapshot, teams: teamsSnapshot,
+                    })
+                } else {
                     convexResult = await safeMutation(getConvexClient(), api.games.correctBonus, {
                         gameId, number, teamId, category,
+                        members: membersSnapshot, teams: teamsSnapshot,
+                    })
+                }
+
+                messageText = `Correct answer${categoryDisplay ? ` (${categoryDisplay})` : ""}`;
+                messageType = "success";
+
+            } else if (scoreType === 'incorrect') {
+                if (!bonus) {
+                    if (!buzzer) return
+                    convexResult = await safeMutation(getConvexClient(), api.games.incorrectTossup, {
+                        gameId, number, playerId: buzzer.id, teamId, category,
                         members: membersSnapshot, teams: teamsSnapshot,
                     })
                 } else {
@@ -396,25 +438,19 @@ function setupSocketListeners(io: Server) {
                         members: membersSnapshot, teams: teamsSnapshot,
                     })
                 }
-            } else {
+
+                messageText = "Incorrect answer";
+
+            } else if (scoreType === 'penalty') {
                 if (!buzzer) return
-                if (scoreType === 'correct') {
-                    convexResult = await safeMutation(getConvexClient(), api.games.correctTossup, {
-                        gameId, number, playerId: buzzer.id, teamId, category,
-                        members: membersSnapshot, teams: teamsSnapshot,
-                    })
-                } else if (scoreType === 'incorrect') {
-                    convexResult = await safeMutation(getConvexClient(), api.games.incorrectTossup, {
-                        gameId, number, playerId: buzzer.id, teamId, category,
-                        members: membersSnapshot, teams: teamsSnapshot,
-                    })
-                } else if (scoreType === 'penalty') {
-                    convexResult = await safeMutation(getConvexClient(), api.games.penalty, {
-                        gameId, number, playerId: buzzer.id, teamId, category,
-                        members: membersSnapshot, teams: teamsSnapshot,
-                    })
-                }
+                convexResult = await safeMutation(getConvexClient(), api.games.penalty, {
+                    gameId, number, playerId: buzzer.id, teamId, category,
+                    members: membersSnapshot, teams: teamsSnapshot,
+                })
+
+                messageText = "Penalty applied";
             }
+            
 
             if (convexResult && convexResult.isErr()) {
                 // Rollback game state
@@ -437,6 +473,11 @@ function setupSocketListeners(io: Server) {
                 teamId,
                 category,
                 number
+            })
+
+            emitChatMessage(currentGame, {
+                type: messageType,
+                text: messageText
             })
 
             if (open) {
@@ -493,6 +534,10 @@ function setupSocketListeners(io: Server) {
                 return
             }
 
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: "Question marked dead",
+            })
             io.to(gameId).emit('deadQuestion')
             io.to(gameId).emit('nextQuestion', { bonus: false })
         })
@@ -512,6 +557,11 @@ function setupSocketListeners(io: Server) {
                 socket.to(id).emit('kicked')
                 io.in(id).disconnectSockets()
             }
+
+            emitChatMessage(currentGame, {
+                text: `${currentMember.name} has been kicked`,
+                type: "notification"
+            })
         })
 
         socket.on('promotePlayer', async (id: string) => {
@@ -565,43 +615,20 @@ function setupSocketListeners(io: Server) {
             const gameDataResult = await safeQuery(getConvexClient(), api.games.getByGameId, { gameId })
             const gameData = gameDataResult.isOk() ? gameDataResult.value : null
             if (gameData?.tournamentId && gameData.tournamentMatchIndex !== undefined) {
-                // Calculate team scores
-                const scores = gameData.scores || {}
-                const pointValues = gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
-                const teamScores: Record<string, number> = {}
-
-                for (const qNum of Object.keys(scores)) {
-                    const questionRow = scores[qNum]
-                    if (!questionRow) continue
-
-                    // Process tossup scores
-                    for (const teamId of Object.keys(questionRow.tossup || {})) {
-                        const tossupData = questionRow.tossup[teamId]
-                        if (!teamScores[teamId]) teamScores[teamId] = 0
-
-                        if (tossupData.scoreType === 'correct') {
-                            teamScores[teamId] += pointValues.tossup
-                        } else if (tossupData.scoreType === 'penalty') {
-                            teamScores[teamId] += pointValues.penalty
-                        }
-                        // incorrect and subbed don't add points
-                    }
-
-                    // Process bonus
-                    if (questionRow.bonus?.teamId) {
-                        const bonusTeamId = questionRow.bonus.teamId
-                        if (!teamScores[bonusTeamId]) teamScores[bonusTeamId] = 0
-                        if (questionRow.bonus.correct) {
-                            teamScores[bonusTeamId] += pointValues.bonus
-                        }
-                    }
-                }
-
-                // Determine winner
-                const teamIds = Object.keys(teamScores)
-                console.log(`Tournament ${gameData.tournamentId} match ${gameData.tournamentMatchIndex}: Final scores`, teamScores)
+                const teamIds = Object.keys(currentGame.getTeamsSnapshot())
 
                 if (teamIds.length >= 2) {
+                    const teamScores: Record<string, number> = {}
+                    for (const team of Object.keys(currentGame.getTeamsSnapshot())) {
+                        teamScores[team] = calculateTeamScore(
+                            team, 
+                            gameData.scores || {}, 
+                            gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 }
+                        )
+                    }
+    
+                    console.log(`Tournament ${gameData.tournamentId} match ${gameData.tournamentMatchIndex}: Final scores`, teamScores)
+    
                     const sortedTeams = teamIds.sort((a, b) => teamScores[b]! - teamScores[a]!)
                     const topTeamId = sortedTeams[0]!
                     const secondTeamId = sortedTeams[1]!
@@ -690,6 +717,15 @@ function setupSocketListeners(io: Server) {
                 }
             })
             io.to(gameId).emit("gameClockStart", length)
+
+            const minutes = Math.floor(length / 60);
+            const seconds = length % 60;
+            const timeDisplay = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: `${timeDisplay} game clock started`,
+            })
         })
 
         socket.on('pauseGameClock', async () => {
@@ -699,6 +735,13 @@ function setupSocketListeners(io: Server) {
             const currentMember = currentGame.getMember(memberId)
             if (currentMember?.type !== "moderator") return
 
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: currentGame.gameClock.live
+                    ? "Game clock paused"
+                    : "Game clock resumed",
+            })
+
             if (currentGame.gameClock.live) {
                 currentGame.gameClock.pause()
                 io.to(gameId).emit('gameClockPause')
@@ -706,6 +749,8 @@ function setupSocketListeners(io: Server) {
                 currentGame.gameClock.resume()
                 io.to(gameId).emit('gameClockResume')
             }
+
+            
         })
 
         socket.on('stopGameClock', async () => {
@@ -717,6 +762,11 @@ function setupSocketListeners(io: Server) {
 
             currentGame.gameClock.end()
             io.to(gameId).emit('gameClockStop')
+
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: "Game clock stopped"
+            })
         })
 
         socket.on('claimCaptain', async () => {
@@ -728,6 +778,10 @@ function setupSocketListeners(io: Server) {
 
             currentGame.setTeamCaptain(currentMember.teamId, memberId)
             emitMembersUpdate(currentGame)
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: `${currentMember.name} is now captain of ${currentGame.teams[currentMember.teamId]}`
+            })
             io.to(gameId).emit('changeCaptain', currentMember.teamId, memberId)
         })
 
@@ -742,6 +796,13 @@ function setupSocketListeners(io: Server) {
 
             currentGame.setMemberSubbed(targetPlayerId, isSubbed)
             emitMembersUpdate(currentGame)
+
+            emitChatMessage(currentGame, {
+                type: "notification",
+                text: isSubbed
+                    ? `${currentMember.name} has been subbed out`
+                    : `${currentMember.name} is now in play`,
+            })
         })
 
         socket.onAny(async () => {

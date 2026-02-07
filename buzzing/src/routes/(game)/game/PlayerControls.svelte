@@ -45,12 +45,6 @@
         if (myMember && team) {
             // Socket server handles in-memory state update
             socket.emit("claimCaptain");
-
-            // Add chat message via socket
-            socket.emit("addChatMessage", {
-                type: "notification",
-                text: `${myMember.name} is now captain of ${team.name}`,
-            });
         }
 
         debug.addEvent("claimCaptain", {});
@@ -236,19 +230,5 @@
         margin: 0;
         color: $gray-2;
         font-variant-numeric: tabular-nums;
-    }
-
-    .buzz-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75em;
-    }
-
-    .subbed-label {
-        color: $orange-dark;
-        font-size: 0.85rem;
-        font-weight: 600;
-        font-style: italic;
     }
 </style>
