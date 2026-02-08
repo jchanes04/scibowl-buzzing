@@ -44,7 +44,7 @@
                 currentBuzzer: null,
                 currentQuestion: null,
                 buzzingEnabled: false,
-                buzzedTeamIds: [],
+                buzzedTeamIds: new Set<string>(),
             },
         };
         gameStore.set(gameData);

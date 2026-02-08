@@ -58,8 +58,8 @@ function emitMembersUpdate(game: Game) {
     if (!io) return
 
     io.to(game.id).emit('membersUpdate', {
-        members: game.getMembersSnapshot(),
-        teams: game.getTeamsSnapshot()
+        members: game.members,
+        teams: game.teams
     })
 }
 
@@ -86,7 +86,7 @@ export function attachSocketIO(httpServer: HTTPServer | HTTPSServer): Server {
             const game = await getGame(gameId)
             if (!game) {
                 return callback(null, false)
-            } else if (game.people[memberId] && !spectator) {
+            } else if (game.members[memberId] && !spectator) {
                 return callback(null, true)
             } else if (game.settings.spectatorsAllowed) {
                 return callback(null, true)
@@ -121,7 +121,7 @@ function setupSocketListeners(io: Server) {
 
         const { gameId, memberId, spectator } = tokenResult.value
         const game = await getGame(gameId)
-        const member = game?.people[memberId]
+        const member = game?.members[memberId]
 
         if (
             !game
@@ -185,8 +185,8 @@ function setupSocketListeners(io: Server) {
                         try {
                             await getConvexClient().mutation(api.games.persistMemberState, {
                                 gameId,
-                                members: currentGame.getMembersSnapshot(),
-                                teams: currentGame.getTeamsSnapshot(),
+                                members: currentGame.members,
+                                teams: currentGame.teams,
                             })
                         } catch (e) {
                             console.error(`Failed to persist member state for game ${gameId}:`, e)
@@ -264,7 +264,7 @@ function setupSocketListeners(io: Server) {
                     })
 
                     // Add chat message for others (all members except buzzer)
-                    const otherMembers = Object.keys(currentGame.people).filter(id => id !== memberId)
+                    const otherMembers = Object.keys(currentGame.members).filter(id => id !== memberId)
                     if (otherMembers.length > 0) {
                         emitChatMessage(currentGame, {
                             text: `${player.name} has buzzed`,
@@ -388,7 +388,7 @@ function setupSocketListeners(io: Server) {
                 questionState: currentGame.state.questionState,
                 currentBuzzer: currentGame.state.currentBuzzer,
                 currentQuestion: currentGame.state.currentQuestion,
-                buzzedTeamIds: Array.from(currentGame.state.buzzedTeamIds)
+                buzzedTeamIds: currentGame.state.buzzedTeamIds
             }))
 
             const result = currentGame.scoreQuestion(scoreType)
@@ -396,8 +396,8 @@ function setupSocketListeners(io: Server) {
             if (!result) return
 
             const { buzzer, teamId, category, bonus, open, number } = result
-            const membersSnapshot = currentGame.getMembersSnapshot()
-            const teamsSnapshot = currentGame.getTeamsSnapshot()
+            const membersSnapshot = currentGame.members
+            const teamsSnapshot = currentGame.teams
 
             const categoryDisplay = category
                 ? (category[0] || "").toUpperCase() + category.slice(1)
@@ -458,7 +458,7 @@ function setupSocketListeners(io: Server) {
                     questionState: stateSnapshot.questionState,
                     currentBuzzer: stateSnapshot.currentBuzzer,
                     currentQuestion: stateSnapshot.currentQuestion,
-                    buzzedTeamIds: new Set(stateSnapshot.buzzedTeamIds)
+                    buzzedTeamIds: stateSnapshot.buzzedTeamIds
                 } as Game['state']
                 socket.emit('error', { message: 'Failed to save score. Please try again.' })
                 console.error('Convex scoring failed, rolled back:', convexResult.error.message)
@@ -504,7 +504,7 @@ function setupSocketListeners(io: Server) {
                 questionState: currentGame.state.questionState,
                 currentBuzzer: currentGame.state.currentBuzzer,
                 currentQuestion: currentGame.state.currentQuestion,
-                buzzedTeamIds: Array.from(currentGame.state.buzzedTeamIds)
+                buzzedTeamIds: currentGame.state.buzzedTeamIds
             }))
 
             const result = currentGame.markDead()
@@ -513,8 +513,8 @@ function setupSocketListeners(io: Server) {
             if (!result) return
 
             const { number, category } = result
-            const membersSnapshot = currentGame.getMembersSnapshot()
-            const teamsSnapshot = currentGame.getTeamsSnapshot()
+            const membersSnapshot = currentGame.members
+            const teamsSnapshot = currentGame.teams
 
             const convexResult = await safeMutation(getConvexClient(), api.games.dead, {
                 gameId, number, category,
@@ -527,7 +527,7 @@ function setupSocketListeners(io: Server) {
                     questionState: stateSnapshot.questionState,
                     currentBuzzer: stateSnapshot.currentBuzzer,
                     currentQuestion: stateSnapshot.currentQuestion,
-                    buzzedTeamIds: new Set(stateSnapshot.buzzedTeamIds)
+                    buzzedTeamIds: stateSnapshot.buzzedTeamIds
                 } as Game['state']
                 socket.emit('error', { message: 'Failed to mark dead. Please try again.' })
                 console.error('Convex dead mutation failed, rolled back:', convexResult.error.message)
@@ -598,8 +598,8 @@ function setupSocketListeners(io: Server) {
             try {
                 await getConvexClient().mutation(api.games.persistMemberState, {
                     gameId,
-                    members: currentGame.getMembersSnapshot(),
-                    teams: currentGame.getTeamsSnapshot(),
+                    members: currentGame.members,
+                    teams: currentGame.teams,
                 })
             } catch (e) {
                 console.error(`Failed to persist member state on game end:`, e)
@@ -615,11 +615,11 @@ function setupSocketListeners(io: Server) {
             const gameDataResult = await safeQuery(getConvexClient(), api.games.getByGameId, { gameId })
             const gameData = gameDataResult.isOk() ? gameDataResult.value : null
             if (gameData?.tournamentId && gameData.tournamentMatchIndex !== undefined) {
-                const teamIds = Object.keys(currentGame.getTeamsSnapshot())
+                const teamIds = Object.keys(currentGame.teams)
 
                 if (teamIds.length >= 2) {
                     const teamScores: Record<string, number> = {}
-                    for (const team of Object.keys(currentGame.getTeamsSnapshot())) {
+                    for (const team of teamIds) {
                         teamScores[team] = calculateTeamScore(
                             team, 
                             gameData.scores || {}, 
@@ -881,8 +881,8 @@ export async function createNewGame(ownerName: string,
         },
         pointValues: gameData.pointValues || { tossup: 4, bonus: 10, penalty: -4 },
         tags: gameData.tags,
-        members: game.getMembersSnapshot(),
-        teams: game.getTeamsSnapshot(),
+        members: game.members,
+        teams: game.teams,
     })
     if (createResult.isErr()) {
         throw new Error(`Failed to create game: ${createResult.error.message}`)
@@ -897,10 +897,6 @@ export async function createNewGame(ownerName: string,
 export async function getGame(id: string) {
     const game = await games.get(id)
     return game
-}
-
-export function gameExists(id: string) {
-    return games.has(id)
 }
 
 export function getGameFromCode(code: string): Game | null {

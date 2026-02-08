@@ -5,7 +5,7 @@ type BuzzedState = {
     currentBuzzer: BuzzerData,
     currentQuestion: Question,
     buzzingEnabled: false,
-    buzzedTeamIds: string[]
+    buzzedTeamIds: Set<string>
 }
 
 type IdleState = {
@@ -13,7 +13,7 @@ type IdleState = {
     currentBuzzer: null,
     currentQuestion: null,
     buzzingEnabled: false,
-    buzzedTeamIds: string[]
+    buzzedTeamIds: Set<string>
 }
 
 type OpenState = {
@@ -21,10 +21,10 @@ type OpenState = {
     currentBuzzer: null,
     currentQuestion: Question,
     buzzingEnabled: boolean,
-    buzzedTeamIds: string[]
+    buzzedTeamIds: Set<string>
 }
 
-type ClientGameState = OpenState | IdleState | BuzzedState
+export type ClientGameState = OpenState | IdleState | BuzzedState
 
 export type ClientGameData = {
     id: string,
@@ -53,7 +53,7 @@ let gameData = $state<ClientGameData>({
         currentBuzzer: null,
         currentQuestion: null,
         buzzingEnabled: false,
-        buzzedTeamIds: []
+        buzzedTeamIds: new Set<string>()
     }
 })
 
@@ -72,7 +72,7 @@ export default {
     },
     buzz: (teamId: string, buzzerData: BuzzerData) => {
         gameData.state.buzzingEnabled = false
-        gameData.state.buzzedTeamIds.push(teamId)
+        gameData.state.buzzedTeamIds.add(teamId)
         gameData.state = {
             ...gameData.state,
             questionState: "buzzed",
@@ -82,7 +82,7 @@ export default {
         } as BuzzedState
     },
     removeTeamBuzz: (teamId: string) => {
-        gameData.state.buzzedTeamIds = gameData.state.buzzedTeamIds.filter(x => x !== teamId)
+        gameData.state.buzzedTeamIds.delete(teamId)
     },
     openQuestion: (buzzingEnabled: boolean) => {
         gameData.state = {
@@ -101,7 +101,7 @@ export default {
             currentBuzzer: null,
             currentQuestion: null,
             buzzingEnabled: false,
-            buzzedTeamIds: []
+            buzzedTeamIds: new Set<string>()
         }
     },
     newQuestion: (questionData: Question, buzzingEnabled: boolean) => {
@@ -110,7 +110,7 @@ export default {
             currentQuestion: questionData,
             currentBuzzer: null,
             buzzingEnabled,
-            buzzedTeamIds: []
+            buzzedTeamIds: new Set<string>()
         }
     },
 }

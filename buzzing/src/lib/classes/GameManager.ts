@@ -63,8 +63,8 @@ export class GameManager {
                 try {
                     await getConvexClient().mutation(api.games.persistMemberState, {
                         gameId: id,
-                        members: g.getMembersSnapshot(),
-                        teams: g.getTeamsSnapshot(),
+                        members: g.members,
+                        teams: g.teams,
                     })
                 } catch (e) {
                     console.error(`Failed to persist member state for game ${id}:`, e)

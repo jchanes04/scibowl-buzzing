@@ -213,8 +213,8 @@ export const actions = {
             const io = getIO()
             if (io) {
                 io.to(gameId).emit('membersUpdate', {
-                    members: game.getMembersSnapshot(),
-                    teams: game.getTeamsSnapshot()
+                    members: game.members,
+                    teams: game.teams
                 })
             }
 
@@ -324,8 +324,8 @@ export const actions = {
         const io = getIO()
         if (io) {
             io.to(gameId).emit('membersUpdate', {
-                members: game.getMembersSnapshot(),
-                teams: game.getTeamsSnapshot()
+                members: game.members,
+                teams: game.teams
             })
         }
 

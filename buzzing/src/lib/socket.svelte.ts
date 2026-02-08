@@ -135,7 +135,7 @@ export function createSocket(spectator: boolean = false) {
 
         const myMember = getMyMember()
         if (open && game.state.currentQuestion) {
-            if (myMember.team && game.state.buzzedTeamIds.includes(myMember.team.id)) {
+            if (myMember.team && game.state.buzzedTeamIds.has(myMember.team.id)) {
                 gameStore.openQuestion(false)
             } else {
                 gameStore.openQuestion(true)
@@ -199,10 +199,11 @@ export function createSocket(spectator: boolean = false) {
         const teams = getTeams()
         const bonusOpen = !!game.state.currentQuestion?.bonus
             && (game.state.currentQuestion?.teamId === myMember.team?.id
-                && (teams[myMember.team?.id ?? ""]?.captainId === myMember.id || teams[myMember.team?.id ?? ""]?.captainId === null))
+                && (teams[myMember.team?.id ?? ""]?.captainId === myMember.id 
+                    || teams[myMember.team?.id ?? ""]?.captainId === null))
         const buzzingEnabled = !myMember.moderator
             && (!game.state.currentQuestion?.bonus || bonusOpen)
-            && !game.state.buzzedTeamIds.includes(myMember.team?.id ?? "")
+            && !game.state.buzzedTeamIds.has(myMember.team?.id ?? "")
         gameStore.openQuestion(buzzingEnabled)
     })
 

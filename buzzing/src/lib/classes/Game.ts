@@ -165,7 +165,7 @@ export class Game {
         return this._teams
     }
 
-    get people(): Record<string, Member> {
+    get members(): Record<string, Member> {
         return this._members
     }
 
@@ -232,15 +232,6 @@ export class Game {
         if (team) {
             team.captainId = captainId
         }
-    }
-
-    // Serialization for persistence
-    getMembersSnapshot(): Record<string, Member> {
-        return { ...this._members }
-    }
-
-    getTeamsSnapshot(): Record<string, Team> {
-        return { ...this._teams }
     }
 
     // Restore from persisted Convex data (for game reopen)

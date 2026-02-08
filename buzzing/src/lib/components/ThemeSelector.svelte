@@ -121,7 +121,6 @@
                         : colorSchemes[currentThemeName]?.primary ||
                           colorSchemes["default"]?.primary}
                 />
-                <!-- Right half: Mode color -->
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <path
